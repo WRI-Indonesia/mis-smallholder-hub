@@ -66,3 +66,18 @@ Harapan:
 - Langkah 2: "✓ Tidak ada jendela terbuka", exit 0.
 - Langkah 3 (regresi insiden #373): tercantum `20260923120000_external_id_shared_code`, exit 1.
 Baseline dev: 2026-09-30 — v1.2.0 ✓ exit 0; `--tag v1.0.0` menangkap #373 exit 1; tag tak dikenal → pesan `git fetch --tags`, exit 2.
+
+## #232 — Prosedur rollback deploy
+
+### TC-232-01 · Rollback aplikasi staging lewat revert + perilaku build gagal [P1] (15 mnt)
+Prasyarat: v1.3.0 sudah ter-deploy di staging (TC-277-01 lolos); owner menyetujui dua deploy tambahan ke staging; tidak ada migrasi v1.3.0 yang memutus kode v1.2.0 (bila ada, jalur B dulu — `docs/standards/rollback.md`).
+Langkah:
+1. Di `staging`: `git revert -m 1 <merge commit mvp → staging v1.3.0>` → push → tunggu run **Deploy Staging**.
+2. Buka staging: header/versi & satu menu baru v1.3.0 (mis. Metrik Rilis versi baru) harus kembali ke perilaku v1.2.0.
+3. Batalkan revert (`git revert <commit-revert>`) → push → staging kembali ke v1.3.0.
+4. Catat durasi tiap run dan apakah ada jeda halaman galat.
+Harapan:
+- Log langkah 1 & 3: guard "Database schema is up to date!" (DB yang lebih maju dari kode tetap lolos), build ✓, `pm2 reload` ✓.
+- Staging melayani versi yang benar sesudah tiap run; tidak ada halaman galat selain jeda reload.
+- Durasi dicatat di rollback.md §Bukti gladi (angka nyata pengganti estimasi).
+Baseline dev: jalur migrasi (B1 roll-forward, B2 darurat, `resolve --rolled-back` ditolak untuk migrasi sukses) sudah digladi 2026-09-30 di `mis-staging-local`; jalur aplikasi belum pernah diuji.

@@ -456,7 +456,7 @@ Sebelum deploy migration ke production, pastikan:
 - [ ] Test di staging environment dengan production-like data volume
 - [ ] Backup database production sebelum migrate — cek dulu `pg_dump --version` ≥ versi server (staging & prod **PG 18**; Homebrew `postgresql@17` ditolak, pakai `/opt/homebrew/opt/postgresql@18/bin/pg_dump`; #309)
 - [ ] **Migrasi ber-ekspresi** (kolom `GENERATED`, backfill `UPDATE … SET x = f(y)`, CHECK ber-fungsi): jalankan ekspresi yang sama sebagai `SELECT` baca-saja atas **seluruh baris** dulu (`default_transaction_read_only = on`) — `ALTER … GENERATED … STORED` mengeksekusi ekspresi per baris dalam satu transaksi, satu baris cacat menggagalkan seluruh migrasi setelah mengunci tabel (#333: 14.003 baris `geom` dievaluasi < 1 dtk sebelum `migrate deploy`)
-- [ ] Ada rollback plan jika migration gagal
+- [ ] Ada rollback plan jika migration gagal — pilih jalur di [../standards/rollback.md](../standards/rollback.md) (B1 roll-forward baku; `migrate resolve --rolled-back` **hanya** untuk migrasi gagal); tulis SQL pembalik di header `-- ROLLBACK:`
 - [ ] Semua query di codebase sudah update (jika ada breaking change)
 - [ ] Index creation untuk tabel besar dilakukan CONCURRENTLY (jika perlu)
 - [ ] **Sesudah `migrate deploy` prod:** segarkan snapshot checksum — `npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts` (SELECT saja) → commit `prisma/migrations/applied-checksums.json`. Test `migration-guards.test.ts` (#303) membandingkan sha256 file lokal dengan daftar ini: **file migrasi yang sudah applied tidak boleh diedit** — kalau perlu koreksi, buat migrasi baru. Migrasi yang belum ada di daftar dianggap pending sah hanya bila lebih baru dari entri terakhir.

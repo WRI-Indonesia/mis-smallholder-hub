@@ -12,6 +12,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [standards/workflow.md](./standards/workflow.md) | Branching, Issue Workflow, Safety & Approval |
 | [standards/environments.md](./standards/environments.md) | Skema file `.env` per environment (local/dev/staging/prod), aturan S3 dev vs prod, akses prod eksplisit |
 | [standards/versioning.md](./standards/versioning.md) | SemVer aplikasi, kriteria bump versi, alur rilis & tag/GitHub Release |
+| [standards/rollback.md](./standards/rollback.md) | Prosedur rollback deploy: aplikasi (revert), migrasi (roll-forward / darurat / restore), migrasi gagal, paritas workflow deploy |
 | [standards/code-standards.md](./standards/code-standards.md) | Code standards, Data Access & Soft Delete, Revision Tracking |
 | [standards/rbac.md](./standards/rbac.md) | RBAC data-access hierarchy, user assignment & menu-access UI, hierarchical menu |
 | [standards/ui-ux.md](./standards/ui-ux.md) | Prinsip UI/UX, tata letak, modal, sensor data pribadi + indeks sub-standar: [tabel](./standards/ui-ux-tables.md) · [peta](./standards/ui-ux-map.md) · [bulk upload](./standards/ui-ux-bulk-upload.md) · [konten Bantuan](./standards/ui-ux-help.md) |
