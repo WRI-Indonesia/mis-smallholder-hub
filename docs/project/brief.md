@@ -26,7 +26,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Status keseluruhan | 🟢 On Track — **v1.0.0 (MVP) dan v1.1.0 live di produksi** 2026-09-23; Roadmap **88,5%** |
 | Basis review       | Audit docs ↔ code 2026-09-29 (roadmap Phase Status, status issue GitHub, `metrics.md`) |
 | Test lokal         | ✅ **1.868 test** saat rilis v1.1.0 · lint 0 error · typecheck ✅ · build ✅ |
-| Fokus berikutnya   | **v1.2.0 live 2026-09-29**; staging OOM (#363, DevOps) lalu sinkron staging ← main; Sprint 2: jalur rilis (#277, #376), #342, #390 |
+| Fokus berikutnya   | **v1.2.0 live 2026-09-29**; staging pulih 2026-09-30 (RAM 4 GB, #363) & sejajar v1.2.0; Sprint 2: jalur rilis (#277, #376), #342, #390 |
 
 ### Ringkasan Eksekutif
 
