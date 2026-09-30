@@ -99,16 +99,17 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 4 | **#308** Seragamkan selektor kolom di semua menu | 🔲 Todo | Kerapian |
 | 4 | **#259** Peta Data: pisahkan kolom audit dari kolom domain | 🔲 Todo | Kerapian |
 | 4 | **#218** Rekonsiliasi matriks cakupan pelatihan + a11y tooltip | 🔲 Todo | Kerapian |
-| 5 | **#334** KT HJP & SSJ kosong: KT+Blok tergabung atau kode blok? | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
-| 5 | **#260** Kecamatan & desa hanya 1 baris: isi atau sembunyikan? | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
-| 5 | **#261** Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ⚖️ Menunggu keputusan | Parkir roadmap; hanya keputusan, bukan kode |
+| 5 | **#334** KT HJP & SSJ kosong: KT+Blok tergabung atau kode blok? | ⚖️ Menunggu keputusan | Owner 2026-09-30: tanya tim lapangan dulu; jangan dipecah otomatis (APSS berpola sama tapi KT-nya terisi) |
+| 5 | **#260** Kecamatan & desa disembunyikan dari form & laporan | 🔲 Todo | ✅ Diputuskan 2026-09-30: sembunyikan; hierarki wilayah berhenti di Kabupaten (kolom DB tetap ada) |
+| 5 | **#261** Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ✅ Selesai | ✅ Diputuskan 2026-09-30: tetap sampel; indeks `Tree` baru dibahas bila cakupannya diperluas (ditutup) |
 | 5 | **#192** Epic API layer & offline sync aplikasi mobile | 🔲 Todo | Parkir roadmap (terkait FORM-01). ✅ Diputuskan 2026-09-30: tetap parkir |
 | 5 | **#124** Peta Lahan: overlay citra Planet NICFI | ✅ Selesai | ✅ Diputuskan 2026-09-30: close *not planned* (GIS-01 memakai GIBS #290 + Sentinel-2 #291) |
 | 6 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | 🔲 Todo | Audit 2026-09-29 |
 | 6 | **TD-049** Auto-fit kolom Excel | 🔲 Todo | Tech debt, audit 2026-09-29 |
 | 6 | **TD-050** 2 test RBAC menyalin logika | 🔲 Todo | Tech debt, audit 2026-09-29 |
 | 7 | **#365** Fire Alert: laporan bulanan titik api | ✅ Selesai | ✅ Diputuskan 2026-09-30: dicek owner di UI prod → retro + close |
-| 7 | **#373** UL Parcel Code boleh menempel di >1 lahan | ⚖️ Menunggu keputusan | Cek silang 82 kode ganda → pindah ke issue data, lalu close |
+| 7 | **#373** UL Parcel Code boleh menempel di >1 lahan | ✅ Selesai | ✅ Diputuskan 2026-09-30: fitur selesai (v1.1.0), ditutup + retro; cek silang pindah ke **#395** |
+| 7 | **#395** Cek silang 82 UL Parcel Code yang dipakai >1 lahan | 🔲 Todo | Dari #373; pekerjaan data, tanpa kode; pola dump → dry-run → approval → `--write` |
 
 <details>
 <summary>Fokus sprint sebelumnya (2026-08-18 → 2026-09-24, siklus v0.27.0 → v1.1.0)</summary>

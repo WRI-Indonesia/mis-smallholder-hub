@@ -173,7 +173,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>DQ-01</strong> · 🔲 Not Started — Perbaikan massal data prod</summary>
 
 - **Evidence:** Belum ada skrip perbaikan. Temuan DA-02: tanggal lahir tertukar hari/bulan ±5.400 petani (#354); import surat/STDB/luas Detail Lahan Siak ditahan (#366).
-- **Next step:** v1.3.0: skrip idempoten #354 (dry-run per Lembaga di local → staging-local → dump prod → dry-run prod → approval → `--write`); #366 keputusan A1 · B1 · D1 (token STDB pra-terbit, konversi m²→Ha, pecah nomor surat berdaftar). Keputusan data terbuka #334, #373 ikut ditutup di sini.
+- **Next step:** v1.3.0: skrip idempoten #354 (dry-run per Lembaga di local → staging-local → dump prod → dry-run prod → approval → `--write`); #366 keputusan A1 · B1 · D1 (token STDB pra-terbit, konversi m²→Ha, pecah nomor surat berdaftar). #334 menunggu jawaban tim lapangan; cek silang 82 kode ganda #395 (pecahan #373, ditutup 2026-09-30).
 - **Selesai bila:** #354 dan #366 terterapkan di prod dengan backup + laporan jumlah; skor Ketersediaan Data terkait naik.
 
 </details>
@@ -422,6 +422,6 @@ Daftar fase dan epic yang **tidak dihitung** di Roadmap % karena belum punya sco
 | COMM-02 | i18n | Belum ada scope; UI tetap Bahasa Indonesia |
 | #192 | Epic API layer & offline sync aplikasi mobile | ⚖️ masih direncanakan? Bila tidak, close *not planned* |
 | #124 | Overlay citra Planet NICFI di Peta Lahan | ✅ Diputuskan 2026-09-30: close *not planned* — GIS-01 memakai GIBS (#290) + Sentinel-2 (#291) |
-| #261 | Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ⚖️ keputusan cakupan, bukan kode |
+| #261 | Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ✅ Diputuskan 2026-09-30: tetap sampel (ditutup) |
 
 Butir kecil (kerapian, UX, temuan audit) tetap di **Backlog** [sprint.md](./sprint.md), bukan di roadmap.
