@@ -94,7 +94,7 @@ Satu baris per kuartal. Rilis K4 2026 mengikuti [sprint.md](./sprint.md). Rilis 
 
 | Kuartal | Tema | Fase | Rilis / tenggat |
 | ------- | ---- | ---- | --------------- |
-| **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 | **v1.3.0** 09-30 → 10-25 |
+| **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 · GIS-01 (langkah awal #290) | **v1.3.0** 09-30 → 10-25 |
 | | Supply Chain | SC-01 · SC-02 · SC-03 | **v1.4.0** 10-26 → 11-08 (prasyarat: lisensi UML #379) |
 | | Penyangga akhir tahun | tuntaskan PLATFORM-08 & DA-09 + concept note GIS-02/MD-12 + limpahan | **v1.5.0** 11-09 → 12-20 |
 | **K1 2027** (Jan–Mar) | Siap musim kemarau 2027 | GIS-01 · DA-05 | Fire Alert tuntas sebelum musim kemarau 2027 (#286) |
@@ -119,7 +119,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | SC-01       | Supply Chain: master Mill/Offtaker + import survei         | 🔲 Not Started | Now     | inti      |
 | SC-02       | Supply Chain: peta rantai pasok + report                   | 🔲 Not Started | Now     | inti      |
 | SC-03       | Supply Chain: analisa volume, jarak & risiko Mill          | 🔲 Not Started | Now     | pendukung |
-| GIS-01      | Fire Alert siap musim kemarau 2027                         | 🔲 Planned     | Next    | inti      |
+| GIS-01      | Fire Alert siap musim kemarau 2027                         | 🔲 Not Started | Next    | inti      |
 | DA-05       | Deteksi anomali data produksi                              | 🔲 Planned     | Next    | pendukung |
 | MD-08       | HCV/NKT: area NKT & patok NKT                              | 🟠 Partial     | Next    | inti      |
 | DA-08       | Ketersediaan data lanjutan                                 | 🔲 Planned     | Next    | pendukung |
@@ -145,8 +145,8 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>PLATFORM-08</strong> · 🟠 Partial — Pengerasan keamanan & RBAC pasca-MVP</summary>
 
-- **Evidence:** v1.2.0 (2026-09-29): struktur menu dikunci dari UI (#364), reaktivasi menu (#237), kunci berkas bukti pelatihan & path unggahan S3 divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383).
-- **Next step:** v1.3.0: role/`isActive` di JWT dibaca ulang berkala (#342), akun seed fiktif + rotasi password yang pernah terbuka (#390), rotasi key FIRMS (#286 butir 2). v1.5.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384).
+- **Evidence:** v1.2.0 (2026-09-29): struktur menu dikunci dari UI (#364), reaktivasi menu (#237), kunci berkas bukti pelatihan & path unggahan S3 divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). Di `mvp` (belum dirilis): role/`isActive` di JWT dibaca ulang berkala (#342, `src/lib/auth-role-refresh.ts` + test), akun seed fiktif + password dari `SEED_USER_PASSWORD` (#390, `5028ffd` + `seed-data-privacy.test.ts`).
+- **Next step:** v1.3.0: smoke lokal + retro #342, rotasi akun staging/prod yang memakai password seed lama (#390, owner/DevOps), rotasi key FIRMS (#286 butir 2). v1.5.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
 - **Selesai bila:** #342, #390, #386, #384 ditutup; tidak ada temuan keamanan P1 terbuka.
 
 </details>
@@ -154,7 +154,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>PLATFORM-09</strong> · 🔲 Not Started — Performa sebelum data membesar</summary>
 
-- **Evidence:** Belum ada. Indeks `ProductionRecord` belum dibuat, padahal produksi diproyeksikan tumbuh ±85× menuju 2028 (grain diputuskan 1 baris/lahan/bulan, Decision Log 2026-09-30).
+- **Evidence:** Belum ada pekerjaan fase ini. `ProductionRecord` baru punya indeks satu-kolom (`farmerId`, `parcelId`, `period`, `isActive`) + unique `(farmerId, parcelId, period, harvestNumber)` (`prisma/schema/production.prisma`); indeks komposit untuk pola query lahan×periode belum ada, padahal produksi diproyeksikan tumbuh ±85× menuju 2028 (grain diputuskan 1 baris/lahan/bulan, Decision Log 2026-09-30).
 - **Next step:** v1.3.0: indeks komposit `(parcel_id, period)` + partial `is_active` divalidasi `EXPLAIN ANALYZE` (#251), lazy-load titik patok Detail Lembaga/Petani (#335), agregat `getFarmerSummary` ke SQL (#253), memo izin per sesi di `/api/map-basemap` (#320).
 - **Selesai bila:** keempat issue ditutup dengan angka sebelum/sesudah tercatat.
 
@@ -163,7 +163,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>OPS-02</strong> · 🟠 Partial — DevOps: jalur rilis, guard migrasi & rollback</summary>
 
-- **Evidence:** Dockerfile, 5 workflow (`gitleaks`, `semgrep`, `deploy-dev`, `deploy-staging`, `deploy-main`); alur `mvp → staging → main` aktif sejak v0.32.0; RAM staging 4 GB sehingga build tak lagi OOM (#363, 2026-09-30). Migrasi DB masih manual sebelum merge.
+- **Evidence:** Dockerfile, 5 workflow (`gitleaks`, `semgrep`, `deploy-dev`, `deploy-staging`, `deploy-main`); alur `mvp → staging → main` aktif sejak v0.32.0; RAM staging 4 GB sehingga build tak lagi OOM (#363, 2026-09-30). Migrasi DB masih manual sebelum merge. Tooling internal pemantau pengembangan juga dicatat di fase ini: **Metrik Rilis** (`dashboard-metrics`, #227/#250; penyesuaian pasca-reset = #392) dan **Rencana Pengembangan** (`data-analyst-sprint`, #378/#389).
 - **Next step:** v1.3.0: guard `prisma migrate status` di `deploy-staging.yml` (#277, opsi 2), cek migrasi prod vs tag rilis terakhir (#376, TD-045), prosedur rollback terdokumentasi + diuji di staging (#232).
 - **Selesai bila:** #277, #376, #232 ditutup; satu rollback staging berhasil diuji dan dicatat.
 
@@ -182,7 +182,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>DA-09</strong> · 🟠 Partial — Tumpang tindih lahan: laporan lengkap, guard upload, layer peta</summary>
 
 - **Evidence:** #317 Fase 1: `LandParcel.geom` GENERATED + GiST (v0.35.0). Fase 2 (sebagian): menu Data Analyst › Tumpang Tindih Lahan (`data-analyst-parcel-overlap`), self-join 256 ms / 14.174 lahan, dirilis v1.2.0.
-- **Next step:** v1.3.0: tab Luar Boundary & Selisih Luas (sisa Fase 2), Fase 3 guard saat upload shapefile bila waktu cukup. Fase 4 layer tumpang tindih di Peta Lahan → v1.5.0.
+- **Next step:** v1.3.0: tab Luar Boundary & Selisih Luas (sisa Fase 2) — pakai ulang check DA-02 `persil-di-luar-boundary` & `luas-beda-geometri` (`src/lib/data-completeness-registry.ts`) agar satu definisi, Fase 3 guard saat upload shapefile bila waktu cukup. Fase 4 layer tumpang tindih di Peta Lahan → v1.5.0.
 - **Selesai bila:** keempat fase #317 selesai dan #317 ditutup.
 
 </details>
@@ -217,9 +217,9 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 #### Semester 1 2027 — Next
 
 <details>
-<summary><strong>GIS-01</strong> · 🔲 Planned — Fire Alert siap musim kemarau 2027</summary>
+<summary><strong>GIS-01</strong> · 🔲 Not Started — Fire Alert siap musim kemarau 2027</summary>
 
-- **Evidence:** Fire Alert live (DASH-07 arsip, termasuk laporan bulanan #365), tetapi rentang 30 hari masih bergantung cache Next (>2 MB) dan payload tanpa batas (#286 butir 1 & 3).
+- **Evidence:** Fire Alert live (DASH-07 arsip); laporan bulanan #365 kodenya ✅ tetapi issue masih open menunggu verifikasi owner di prod. Rentang 30 hari masih bergantung rentang 30 hari masih bergantung cache Next (>2 MB) dan payload tanpa batas (#286 butir 1 & 3).
 - **Next step:** basemap harian NASA GIBS mengikuti tanggal titik api (#290) sudah dijadwalkan di **v1.3.0**. K1 2027: cache FIRMS sendiri + batas payload rentang 30 hari (#286), basemap Sentinel-2 10 m via CDSE dengan cache wajib karena kuota (#291). #286 dan #291 dirancang bersama.
 - **Selesai bila:** tiga issue ditutup **sebelum musim kemarau 2027** dan uji beban rentang 30 hari tercatat.
 
@@ -228,7 +228,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>DA-05</strong> · 🔲 Planned — Deteksi anomali data produksi</summary>
 
-- **Evidence:** Belum ada. Kode fase DA-05 sudah dipesan sejak #178, tetapi belum pernah masuk Phase Status.
+- **Evidence:** Belum ada deteksi ambang produktivitas (kg/Ha). Check dasar sudah ada di registri DA-02: `produksi-nol` & `produksi-bulan-bolong` (`src/lib/data-completeness-registry.ts`) — DA-05 menambah, bukan membangun ulang. Kode fase DA-05 sudah dipesan sejak #178, tetapi belum pernah masuk Phase Status.
 - **Next step:** ⚖️ owner menjawab 3 pertanyaan terbuka di #178 (ambang default < 500 kg/Ha, unit lahan×bulan, tindak lanjut), lalu implementasi K1 2027 — sebaiknya sesudah PLATFORM-09 (#251) karena memindai seluruh `ProductionRecord`.
 - **Selesai bila:** #178 ditutup; anomali tampil sebagai daftar kerja per Lembaga.
 
@@ -384,7 +384,7 @@ Fase di bawah ini berasal dari [Visi Produk](#visi-produk) dan **belum punya con
 
 ### Visi Produk
 
-Pemetaan diagram modul MIS (lingkar inti, prioritas MVP, lingkar luar) ke fase. Setiap modul di diagram harus punya tempat di sini: Done (arsip MVP), fase aktif, atau Parkir.
+Pemetaan diagram modul MIS (lingkar inti, prioritas MVP, lingkar luar) ke fase. Setiap modul di diagram harus punya tempat di sini: Done (arsip MVP), fase aktif, atau Parkir. Kolom **Status** menggambarkan **kondisi modulnya di aplikasi**, bukan status fase: Fire "live" tetapi fase pengerasannya GIS-01 belum mulai; Certification sudah punya kolom status tetapi fase modulnya MD-12 belum mulai.
 
 | Modul diagram | Status | Fase |
 | ------------- | ------ | ---- |
