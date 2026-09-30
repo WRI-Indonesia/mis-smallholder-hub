@@ -146,7 +146,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>PLATFORM-08</strong> · 🟠 Partial — Pengerasan keamanan & RBAC pasca-MVP</summary>
 
 - **Evidence:** v1.2.0 (2026-09-29): struktur menu dikunci dari UI (#364), reaktivasi menu (#237), kunci berkas bukti pelatihan & path unggahan S3 divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). Di `mvp` (belum dirilis): role/`isActive` di JWT dibaca ulang berkala (#342, `src/lib/auth-role-refresh.ts` + test), akun seed fiktif + password dari `SEED_USER_PASSWORD` (#390, `5028ffd` + `seed-data-privacy.test.ts`).
-- **Next step:** v1.3.0: TC-342-01 di QA staging + retro #342, rotasi akun staging/prod yang memakai password seed lama (#390, owner/DevOps), rotasi key FIRMS (#286 butir 2). v1.5.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
+- **Next step:** v1.3.0: TC-342-01 di QA staging + retro #342, rotasi akun staging/prod yang memakai password seed lama (#390, owner/DevOps). #286 butir 2 (key FIRMS di log) risiko diterima tanpa rotasi (Decision Log 2026-09-30). v1.5.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
 - **Selesai bila:** #342, #390, #386, #384 ditutup; tidak ada temuan keamanan P1 terbuka.
 
 </details>
@@ -229,7 +229,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>DA-05</strong> · 🔲 Planned — Deteksi anomali data produksi</summary>
 
 - **Evidence:** Belum ada deteksi ambang produktivitas (kg/Ha). Check dasar sudah ada di registri DA-02: `produksi-nol` & `produksi-bulan-bolong` (`src/lib/data-completeness-registry.ts`) — DA-05 menambah, bukan membangun ulang. Kode fase DA-05 sudah dipesan sejak #178, tetapi belum pernah masuk Phase Status.
-- **Next step:** ⚖️ owner menjawab 3 pertanyaan terbuka di #178 (ambang default < 500 kg/Ha, unit lahan×bulan, tindak lanjut), lalu implementasi K1 2027 — sebaiknya sesudah PLATFORM-09 (#251) karena memindai seluruh `ProductionRecord`.
+- **Next step:** implementasi #178 K1 2027 sesuai keputusan owner 2026-09-30 (grain lahan×bulan < 500 kg/Ha, kategori tinggi > 4.000 kg/Ha/bulan, keduanya bisa diubah; bulan tanpa laporan di luar scope karena sudah di DA-02) — sebaiknya sesudah PLATFORM-09 (#251) karena memindai seluruh `ProductionRecord`.
 - **Selesai bila:** #178 ditutup; anomali tampil sebagai daftar kerja per Lembaga.
 
 </details>
