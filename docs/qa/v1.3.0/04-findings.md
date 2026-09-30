@@ -6,7 +6,7 @@ Severity: **blocker** (rilis ditahan) · **major** (fitur salah, ada jalan lain)
 
 | # | Kasus | Halaman · langkah | Yang terjadi vs harapan | Severity | Env | Issue | Keputusan | Bukti |
 |---|---|---|---|---|---|---|---|---|
-| 1 | TC-… | | | | staging | #… | fix rilis ini / defer | `evidence/…` |
+| 1 | TC-392-01 | Metrik Rilis › grafik Jumlah test otomatis · rentang **1 Minggu** | Label anotasi "+495 (v1.2.0)" di titik terakhir terpotong tepi kanan kartu (terbaca "+495 · 1.2"); rentang Semua normal | minor | staging | — (belum dibuka; kandidat digabung issue minor QA v1.3.0) | defer — kosmetik, tidak memblokir rilis | tangkapan layar sesi 2026-09-30 (tidak disimpan) |
 
 ## Membuka issue dari temuan
 
