@@ -24,7 +24,7 @@ import { SprintAnalysis } from "./sprint-analysis";
 import { SprintIssues } from "./sprint-issues";
 import { SprintHeaderStrip } from "./sprint-header-strip";
 
-export const STATE_LABEL: Record<ReleaseState, string> = { active: "Berjalan", upcoming: "Mendatang", released: "Dirilis", late: "Terlambat" };
+const STATE_LABEL: Record<ReleaseState, string> = { active: "Berjalan", upcoming: "Mendatang", released: "Dirilis", late: "Terlambat" };
 
 function SizeBadge({ item }: { item: PlanItem }) {
   return (
@@ -130,7 +130,9 @@ function ReleaseSummary({ release, state, today }: { release: Release; state: Re
         ? ` · target lewat ${daysBetween(release.end, today)} hari`
         : state === "upcoming"
           ? ` · mulai ${daysBetween(today, release.start)} hari lagi`
-          : "";
+          : release.releasedAt
+            ? ` · dirilis ${fmtDate(release.releasedAt)}`
+            : "";
   return (
     <div className={cn("space-y-2 rounded-lg border bg-card px-4 py-3 shadow-sm", state === "active" ? "border-primary/50" : state === "late" ? "border-amber-500/50" : "border-border/60")}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -229,7 +231,8 @@ export function SprintViewClient({ plan, today }: { plan: ReleasePlan; today: st
   const openIdx = states.flatMap((s, i) => (s === "released" ? [] : [i]));
   const released = plan.releases.filter((_, i) => states[i] === "released").reverse();
   const shownIdx = [...new Set([...openIdx, plan.releases.indexOf(selected)])].sort((a, b) => a - b);
-  const pick = (r: Release) => setMany({ rilis: r === plan.releases[fallback] ? null : r.version });
+  // `sprint: null` membersihkan parameter lama dari tautan era Sprint Mingguan.
+  const pick = (r: Release) => setMany({ rilis: r === plan.releases[fallback] ? null : r.version, sprint: null });
 
   return (
     <div className="space-y-6">
@@ -239,7 +242,7 @@ export function SprintViewClient({ plan, today }: { plan: ReleasePlan; today: st
         onOpenDecisions={() => setMany({ tab: "analisa", status: null, di: null, q: null })}
         onOpenBacklogDecisions={() => setMany({ tab: "issue", di: "backlog", status: "decision", q: null })}
       />
-      <Tabs value={tab} onValueChange={(v) => setMany({ tab: v === "rilis" ? null : v, status: null, di: null, q: null })} className="space-y-4">
+      <Tabs value={tab} onValueChange={(v) => setMany({ tab: v === "rilis" ? null : v, status: null, di: null, q: null, sprint: null })} className="space-y-4">
         <TabsList>
           <TabsTrigger value="rilis">Rilis</TabsTrigger>
           <TabsTrigger value="analisa">Analisa</TabsTrigger>

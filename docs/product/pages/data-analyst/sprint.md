@@ -16,7 +16,7 @@ Sub menu `data-analyst-sprint`, satu halaman: `/admin/data-analyst/sprint` (#378
 **2026-09-30 — perombakan (opsi ber-preview)**
 - **Unit rencana = RILIS, bukan sprint mingguan.** Pengembangan dikerjakan satu orang di sela cleaning data dan kunjungan distrik: ada minggu padat, ada minggu tanpa coding. Ritme Senin–Minggu membuat minggu kosong tampak seperti sprint gagal. Setiap rilis punya tanggal mulai & target bebas. Sprint 1–6 lama dipetakan: Sprint 1 selesai → v1.2.0, sisa Sprint 1 + Sprint 2–4 → v1.3.0, Sprint 5–6 → v1.4.0.
 - **Nama menu = "Rencana Pengembangan"** (label di `menu.csv`; seed per menu ke staging/prod ikut rilis berikutnya).
-- **Velocity = poin selesai per MINGGU KALENDER** (Σ selesai ÷ Σ minggu rilis yang lewat target), bukan per rilis — panjang rilis berbeda-beda. Grafik beban tidak lagi punya satu garis rata-rata; tiap kolom mendapat **penanda kapasitas** = velocity × panjang rilis.
+- **Velocity = poin selesai per MINGGU KALENDER** (Σ selesai ÷ Σ minggu mulai → tanggal dirilis, hanya rilis bertanda dirilis — bukan rilis terlambat yang masih dikerjakan), bukan per rilis — panjang rilis berbeda-beda. Grafik beban tidak lagi punya satu garis rata-rata; tiap kolom mendapat **penanda kapasitas** = velocity × panjang rilis.
 - **Pemilih tidak tumbuh bersama riwayat:** tombol hanya untuk rilis yang belum tuntas (berjalan / terlambat / mendatang); rilis yang sudah dirilis masuk combobox **Riwayat** ber-cari. Filter Rilis di Semua Issue juga combobox ber-cari (`shared/filter-combobox.tsx`), bukan chip.
 - **Tab Semua Issue** (`No. Issue | Rilis | Kategori | Status | Deskripsi`) diturunkan dari tabel Rilis + Backlog, **tanpa file md baru** (satu informasi satu tempat). Backlog berupa tabel satu issue per baris dan **hanya** tampil di tab ini; tabel Work Item lama di `sprint.md` diarsipkan.
 - **Kartu kanban ringkas** (judul, ukuran, kategori, keputusan yang masih terbuka; target di balik Detail; kartu Selesai satu baris bercentang) dan **strip ringkasan** di header (umur dokumen, rilis yang sedang dikejar, keputusan menunggu owner).
@@ -29,7 +29,8 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
 ├── Strip ringkasan (`sprint-header-strip.tsx`, dirender di `SprintViewClient`) — 3 kotak:
 │   · Dokumen rencana diperbarui (`updatedAt` + `daysBetween`, kuning bila > 14 hari)
 │   · Rilis yang sedang dikejar: berjalan, atau — bila tak ada — terlambat pertama; "sisa n hari (target …)"
-│     atau "target lewat n hari" (kuning) + bilah poin; tanpa keduanya: "Tidak ada rilis yang sedang dikejar"
+│     atau "target lewat n hari" (kuning) + bilah poin; rilis terlambat LAIN disebut di bawahnya ("Belum dirilis &
+│     lewat target: …"); tanpa keduanya: "Tidak ada rilis yang sedang dikejar"
 │   · Keputusan menunggu owner (`pendingDecisions`: butir · poin · terlambat → tombol ke tab Analisa) + "+ n keputusan
 │     di backlog" (butir backlog ⚖️ → tab Semua Issue, filter Backlog + Menunggu keputusan)
 │   Tombol memakai `setMany` induk, BUKAN `<Link href="?tab=…">` — `useUrlFilters` membaca URL sekali saat mount
@@ -78,7 +79,7 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
 | Elemen | Format | Diparse menjadi |
 |---|---|---|
 | Terakhir diperbarui | baris `Terakhir diperbarui: YYYY-MM-DD` (wajib) | `updatedAt` |
-| Heading rilis | `#### Rilis v<x.y.z> · <mulai YYYY-MM-DD> → <target YYYY-MM-DD> — <judul>` | `Release { version, start, end, title }` |
+| Heading rilis | `#### Rilis v<x.y.z> · <mulai YYYY-MM-DD> → <target YYYY-MM-DD> — <judul>`, + ` (dirilis YYYY-MM-DD)` di akhir setelah keluar | `Release { version, start, end, releasedAt, title }` |
 | Tabel rilis | 7 kolom: `# \| Issue \| Kategori \| Poin \| Target \| Status \| ⚖️ Keputusan owner` | `PlanItem[]`; `#nnn` di kolom Issue → `issueRefs` |
 | Kategori | Keamanan · Rilis · Performa · Data · Fitur · Kerapian (urutan = prioritas = urutan warna) | `PlanCategory` |
 | Poin | S · M · L | `size` + `points` 1/3/5 |
@@ -87,7 +88,7 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
 | Backlog | `#### Backlog …` + tabel 4 kolom `# \| Issue \| Status \| Catatan` (`#` = urutan kelompok, boleh berulang) | `backlog: BacklogItem[]` |
 
 - Rilis ditulis **urut** dan tidak tumpang tindih (mulai rilis berikutnya > target rilis sebelumnya). Versi unik. Konvensi: rilis dimulai **sehari setelah rilis sebelumnya dirilis**, agar velocity mencerminkan siklus sebenarnya (pemetaan awal v1.2.0 = 2 hari sempat menghasilkan 52,5 poin/minggu).
-- Keadaan rilis (`releaseState`): sebelum mulai = mendatang; dalam rentang = berjalan; lewat target + semua butir (tanpa digeser) selesai = **dirilis**; lewat target + masih ada sisa = **terlambat** (tetap tampil di depan).
+- Keadaan rilis (`releaseState`): bertanda `(dirilis …)` = **dirilis** (boleh sebelum target); tanpa penanda: sebelum mulai = mendatang, dalam rentang = berjalan, lewat target = **terlambat** (tetap tampil di depan sampai ditandai). Rilis bertanda dirilis tidak boleh menyisakan butir selain ✅/⏭️ (parser melempar), dan rilis berikutnya boleh mulai sesudah tanggal dirilis. Review `98ba652`: dulu "dirilis" disimpulkan dari tanggal + semua ✅ — rilis yang keluar lebih awal tetap "Berjalan", rilis yang seluruhnya ⏭️ terhitung "dirilis".
 - Butir yang digeser ditulis di rilis asal dengan ⏭️, **lalu** ditulis ulang di rilis tujuan dengan **teks kolom Issue yang sama persis**. Carry-over dikunci per teks Issue (satu baris = satu butir): "#286 butir 2" dan "#286 butir 1 & 3" dua butir.
 - Dua hitungan sengaja berbeda untuk butir ⏭️: **progres rilis** tidak menghitungnya (sisa kerja rilis tujuan); **velocity** menghitungnya di komitmen rilis asal, supaya selisih rencana vs selesai terlihat.
 - Kolom Issue memuat **paling banyak satu** `#nnn`; rujukan lain ditulis di kolom Target/Catatan — dijaga test file nyata.

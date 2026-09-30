@@ -47,6 +47,8 @@ export type Release = {
   start: string;
   /** Target rilis, "YYYY-MM-DD". */
   end: string;
+  /** Tanggal benar-benar dirilis (penanda `(dirilis YYYY-MM-DD)` di akhir heading); null = belum. */
+  releasedAt: string | null;
   title: string;
   items: PlanItem[];
 };
@@ -91,6 +93,7 @@ export const PLAN_STATUS_LABEL: Record<PlanItemStatus, string> = {
 
 const SECTION_HEADING = "### Rencana Rilis";
 const RELEASE_HEADING = /^#### Rilis (v\d+\.\d+\.\d+) · (\d{4}-\d{2}-\d{2}) → (\d{4}-\d{2}-\d{2}) — (.+)$/;
+const RELEASED_SUFFIX = /\s*\(dirilis (\d{4}-\d{2}-\d{2})\)$/;
 const BACKLOG_HEADING = /^#### Backlog\b/;
 const UPDATED = /^Terakhir diperbarui:\s*(\d{4}-\d{2}-\d{2})\s*$/;
 const ROW = /^\|\s*(\d+)\s*\|/;
@@ -146,7 +149,15 @@ export function parseReleasePlan(markdown: string): ReleasePlan {
     }
     const heading = line.match(RELEASE_HEADING);
     if (heading) {
-      current = { version: heading[1], start: heading[2], end: heading[3], title: heading[4].trim(), items: [] };
+      const released = heading[4].match(RELEASED_SUFFIX);
+      current = {
+        version: heading[1],
+        start: heading[2],
+        end: heading[3],
+        releasedAt: released?.[1] ?? null,
+        title: heading[4].replace(RELEASED_SUFFIX, "").trim(),
+        items: [],
+      };
       releases.push(current);
       inBacklog = false;
       continue;
@@ -209,8 +220,19 @@ export function parseReleasePlan(markdown: string): ReleasePlan {
     }
     if (r.items.length === 0) throw new Error(`sprint.md: Rilis ${r.version} tanpa baris tabel`);
     if (r.start > r.end) throw new Error(`sprint.md: Rilis ${r.version} tanggal mulai sesudah target`);
-    if (i > 0 && r.start <= releases[i - 1].end) {
-      throw new Error(`sprint.md: Rilis ${r.version} mulai sebelum target ${releases[i - 1].version} berakhir — urutkan & jangan tumpang tindih`);
+    if (r.releasedAt) {
+      if (r.releasedAt < r.start) throw new Error(`sprint.md: Rilis ${r.version} dirilis sebelum tanggal mulai`);
+      // Rilis yang sudah keluar tidak boleh menyisakan butir terbuka: yang tidak ikut ditandai ⏭️ dan
+      // ditulis ulang di rilis tujuan — kalau tidak, slip hilang dari carry-over & velocity.
+      const open = r.items.filter((it) => it.status !== "done" && it.status !== "moved");
+      if (open.length > 0) {
+        throw new Error(`sprint.md: Rilis ${r.version} sudah dirilis tapi baris ${open.map((it) => it.no).join(", ")} belum ✅/⏭️ — tandai ⏭️ Digeser dan tulis ulang di rilis tujuan`);
+      }
+    }
+    // Rilis berikutnya boleh mulai sesudah rilis sebelumnya benar-benar keluar (bisa lebih awal dari targetnya).
+    const prevEnd = i > 0 ? (releases[i - 1].releasedAt ?? releases[i - 1].end) : null;
+    if (prevEnd !== null && r.start <= prevEnd) {
+      throw new Error(`sprint.md: Rilis ${r.version} mulai sebelum ${releases[i - 1].version} berakhir (${prevEnd}) — urutkan & jangan tumpang tindih`);
     }
   });
   return { updatedAt, releases, backlog };
@@ -254,39 +276,43 @@ export function releaseProgress(release: Pick<Release, "items">) {
 export type ReleaseState = "upcoming" | "active" | "released" | "late";
 
 /**
- * Keadaan rilis untuk pemilih & label: target lewat + semua butir (tanpa
- * digeser) selesai = "released"; target lewat tapi masih ada sisa = "late" —
- * tetap tampil di depan, tidak disembunyikan ke riwayat.
+ * Keadaan rilis untuk pemilih & label. **Dirilis** hanya bila heading bertanda
+ * `(dirilis YYYY-MM-DD)` — tanggal kalender saja tidak cukup: rilis bisa keluar
+ * sebelum target, dan rilis yang semua butirnya digeser bukan rilis. Tanpa
+ * penanda: sebelum mulai = mendatang, dalam rentang = berjalan, lewat target =
+ * **terlambat** (tetap tampil di depan sampai ditandai dirilis).
  */
-export function releaseState(release: Release, today: string): ReleaseState {
+export function releaseState(release: Pick<Release, "start" | "end" | "releasedAt">, today: string): ReleaseState {
+  if (release.releasedAt && release.releasedAt <= today) return "released";
   const phase = releasePhase(release, today);
-  if (phase !== "past") return phase;
-  const p = releaseProgress(release);
-  return p.done === p.total ? "released" : "late";
+  return phase === "past" ? "late" : phase;
 }
 
-export type ReleaseVelocity = { version: string; phase: ReleasePhase; planned: number; moved: number; done: number; weeks: number };
+export type ReleaseVelocity = { version: string; phase: ReleasePhase; state: ReleaseState; planned: number; moved: number; done: number; weeks: number };
 
 /**
  * Velocity per rilis: poin KOMITMEN (termasuk butir yang kemudian Digeser —
  * selisih rencana vs selesai harus terlihat) vs selesai. `average` = poin
- * selesai per MINGGU KALENDER, dari rilis yang sudah lewat saja (rilis berjalan
- * belum selesai dan akan menarik rata-rata ke bawah): Σ selesai ÷ Σ minggu.
- * Per minggu, bukan per rilis, karena panjang rilis berbeda-beda. null bila
- * belum ada rilis lewat.
+ * selesai per MINGGU KALENDER, hanya dari rilis yang sudah **dirilis**, dengan
+ * durasi SEBENARNYA (mulai → tanggal dirilis): rilis berjalan atau terlambat
+ * belum selesai dan akan menarik rata-rata ke bawah; target yang meleset tak
+ * boleh membuat velocity tampak lebih cepat. Per minggu, bukan per rilis,
+ * karena panjang rilis berbeda-beda. `weeks` di baris = durasi rencana (untuk
+ * kapasitas). null bila belum ada rilis yang dirilis.
  */
 export function releaseVelocity(plan: Pick<ReleasePlan, "releases">, today: string) {
   const rows: ReleaseVelocity[] = plan.releases.map((r) => {
     const p = releaseProgress(r);
     const moved = r.items.filter((i) => i.status === "moved").reduce((t, i) => t + i.points, 0);
-    return { version: r.version, phase: releasePhase(r, today), planned: p.totalPoints + moved, moved, done: p.donePoints, weeks: (daysBetween(r.start, r.end) + 1) / 7 };
+    return { version: r.version, phase: releasePhase(r, today), state: releaseState(r, today), planned: p.totalPoints + moved, moved, done: p.donePoints, weeks: (daysBetween(r.start, r.end) + 1) / 7 };
   });
-  const past = rows.filter((r) => r.phase === "past");
-  const weeks = past.reduce((s, r) => s + r.weeks, 0);
-  const average = past.length === 0 ? null : past.reduce((s, r) => s + r.done, 0) / weeks;
+  const shipped = plan.releases.filter((r) => releaseState(r, today) === "released");
+  const weeks = shipped.reduce((s, r) => s + (daysBetween(r.start, r.releasedAt!) + 1) / 7, 0);
+  const done = shipped.reduce((s, r) => s + releaseProgress(r).donePoints, 0);
+  const average = shipped.length === 0 ? null : done / weeks;
   // Ukuran sampel ikut dikembalikan: velocity dari satu rilis pendek mudah menyesatkan,
   // jadi UI menuliskannya di samping angka.
-  return { rows, average, sample: { releases: past.length, weeks } };
+  return { rows, average, sample: { releases: shipped.length, weeks } };
 }
 
 export type PendingDecision = { release: string; phase: ReleasePhase; item: PlanItem };

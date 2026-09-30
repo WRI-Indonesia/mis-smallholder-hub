@@ -34,8 +34,12 @@ export function SprintHeaderStrip({
 }) {
   const age = daysBetween(plan.updatedAt, today);
   const stale = age > STALE_DAYS;
-  // Rilis yang sedang dikejar: berjalan, atau — bila tidak ada — yang sudah lewat target tapi belum tuntas.
-  const current = plan.releases.find((r) => releaseState(r, today) === "active") ?? plan.releases.find((r) => releaseState(r, today) === "late") ?? null;
+  // Rilis yang sedang dikejar: berjalan, atau — bila tidak ada — yang sudah lewat target tapi belum dirilis.
+  // Rilis terlambat LAIN tetap disebut di bawahnya: begitu rilis berikutnya mulai, sisa kerja
+  // yang lewat target tak boleh hilang dari ringkasan.
+  const lateReleases = plan.releases.filter((r) => releaseState(r, today) === "late");
+  const current = plan.releases.find((r) => releaseState(r, today) === "active") ?? lateReleases[0] ?? null;
+  const otherLate = lateReleases.filter((r) => r !== current);
   const progress = current ? releaseProgress(current) : null;
   const timeline = current ? releaseTimeline(current, today) : null;
   const pending = pendingDecisions(plan, today);
@@ -92,6 +96,11 @@ export function SprintHeaderStrip({
                 {progress.donePoints}/{progress.totalPoints} poin
               </span>
             </div>
+            {otherLate.length > 0 && (
+              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                Belum dirilis & lewat target: {otherLate.map((r) => `${r.version} (${daysBetween(r.end, today)} hari)`).join(", ")}
+              </span>
+            )}
           </>
         ) : (
           <>

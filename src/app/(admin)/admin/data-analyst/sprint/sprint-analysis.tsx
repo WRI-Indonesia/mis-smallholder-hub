@@ -203,7 +203,7 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
       </div>
       <p className="text-xs text-muted-foreground">
         {average === null
-          ? "Penanda kapasitas muncul setelah rilis pertama lewat target — rilis berjalan belum dihitung karena akan menarik rata-rata ke bawah."
+          ? "Penanda kapasitas muncul setelah rilis pertama ditandai dirilis — rilis berjalan atau terlambat belum dihitung karena akan menarik rata-rata ke bawah."
           : `Garis putus di tiap kolom = kapasitas perkiraan: ${fmt1(average)} poin/minggu × panjang rilis. Batang jauh di atas garis = rilis kelebihan beban.`}
       </p>
     </div>
@@ -369,6 +369,7 @@ export function SprintAnalysis({ plan, today }: { plan: ReleasePlan; today: stri
   ].filter(Boolean);
   const active = plan.releases.find((r) => releasePhase(r, today) === "active");
   const activeProgress = active ? releaseProgress(active) : null;
+  const activeTimeline = active ? releaseTimeline(active, today) : null;
 
   return (
     <div className="space-y-4">
@@ -396,10 +397,10 @@ export function SprintAnalysis({ plan, today }: { plan: ReleasePlan; today: stri
           value={velocity.average === null ? "—" : `${fmt1(velocity.average)} poin`}
           note={
             velocity.average !== null
-              ? `per minggu kalender · dari ${velocity.sample.releases} rilis (${fmt1(velocity.sample.weeks)} minggu)${velocity.sample.weeks < 4 ? " — sampel masih kecil" : ""}`
+              ? `per minggu kalender · dari ${velocity.sample.releases} rilis dirilis (${fmt1(velocity.sample.weeks)} minggu)${velocity.sample.weeks < 4 ? " — sampel masih kecil" : ""}`
               : active && activeProgress
-                ? `${active.version} berjalan: ${activeProgress.donePoints}/${activeProgress.totalPoints} poin, hari ke-${releaseTimeline(active, today).day} dari ${releaseTimeline(active, today).days}`
-                : "belum ada rilis yang lewat target"
+                ? `${active.version} berjalan: ${activeProgress.donePoints}/${activeProgress.totalPoints} poin, hari ke-${activeTimeline?.day} dari ${activeTimeline?.days}`
+                : "belum ada rilis yang dirilis"
           }
         />
         <Stat

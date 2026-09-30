@@ -221,15 +221,34 @@ describe("fase, linimasa & keadaan rilis", () => {
     expect(releaseTimeline(r, "2026-10-05")).toEqual({ days: 7, day: null, daysLeft: null });
   });
 
-  it("keadaan: lewat target + semua selesai = dirilis; lewat target + sisa = terlambat (tetap tampil di depan)", () => {
-    const base = { version: "v1", title: "t", ...r };
-    const done = { no: 1, issue: "a", issueRefs: [], category: "Rilis" as const, size: "S" as const, points: 1, target: "", status: "done" as const, decision: null };
-    const moved = { ...done, no: 2, status: "moved" as const };
-    const todo = { ...done, no: 3, status: "todo" as const };
-    expect(releaseState({ ...base, items: [done, moved] }, "2026-10-05")).toBe("released");
-    expect(releaseState({ ...base, items: [done, todo] }, "2026-10-05")).toBe("late");
-    expect(releaseState({ ...base, items: [done, todo] }, "2026-09-30")).toBe("active");
-    expect(releaseState({ ...base, items: [todo] }, "2026-09-01")).toBe("upcoming");
+  it("keadaan: dirilis HANYA dengan penanda (boleh sebelum target); tanpa penanda lewat target = terlambat (review 98ba652)", () => {
+    expect(releaseState({ ...r, releasedAt: null }, "2026-09-01")).toBe("upcoming");
+    expect(releaseState({ ...r, releasedAt: null }, "2026-09-30")).toBe("active");
+    // Semua butir selesai/digeser pun tetap "terlambat" tanpa penanda — tanggal saja tidak berarti rilis keluar.
+    expect(releaseState({ ...r, releasedAt: null }, "2026-10-05")).toBe("late");
+    // Keluar lebih awal dari target: langsung dirilis, bukan "berjalan" sampai targetnya lewat.
+    expect(releaseState({ ...r, releasedAt: "2026-10-01" }, "2026-10-02")).toBe("released");
+    expect(releaseState({ ...r, releasedAt: "2026-10-01" }, "2026-09-30")).toBe("active");
+  });
+
+  it("penanda (dirilis …): dibaca dari akhir judul; rilis bertanda tak boleh menyisakan butir terbuka; berikutnya boleh mulai sesudah tanggal rilis", () => {
+    const plan = parseReleasePlan(
+      doc(
+        [
+          heading("v1.0.0", "2026-09-28", "2026-10-10", "Satu (dirilis 2026-10-02)"),
+          "",
+          table(["| 1 | A | Rilis | S | t | ✅ Selesai | — |", "| 2 | B | Rilis | S | t | ⏭️ Digeser | — |"]),
+          "",
+          heading("v1.1.0", "2026-10-03", "2026-10-11"),
+          "",
+          table(["| 1 | B | Rilis | S | t | 🔲 Todo | — |"]),
+        ].join("\n")
+      )
+    );
+    expect(plan.releases.map((x) => [x.version, x.title, x.releasedAt])).toEqual([["v1.0.0", "Satu", "2026-10-02"], ["v1.1.0", "Uji", null]]);
+    const released = (rows: string[], mark = "2026-10-02") => doc([heading("v1.0.0", "2026-09-28", "2026-10-10", `Satu (dirilis ${mark})`), "", table(rows)].join("\n"));
+    expect(() => parseReleasePlan(released(["| 1 | A | Rilis | S | t | 🔲 Todo | — |"]))).toThrow(/sudah dirilis tapi baris 1/);
+    expect(() => parseReleasePlan(released(["| 1 | A | Rilis | S | t | ✅ Selesai | — |"], "2026-09-01"))).toThrow(/dirilis sebelum tanggal mulai/);
   });
 
   it("daysBetween: selisih hari kalender (umur dokumen di strip header)", () => {
@@ -262,18 +281,34 @@ describe("analisa rilis", () => {
     )
   );
 
-  it("velocity: komitmen awal TERMASUK butir digeser; rata-rata = Σ selesai ÷ Σ minggu rilis yang lewat", () => {
+  it("velocity: komitmen awal TERMASUK butir digeser; rata-rata hanya dari rilis BERTANDA dirilis, durasi sebenarnya", () => {
+    // Rilis tanpa penanda (fixture analisa) belum dirilis → belum ada velocity, walau targetnya lewat.
     const v = releaseVelocity(plan, "2026-10-06");
     expect(v.rows).toEqual([
-      { version: "v1.0.0", phase: "past", planned: 9, moved: 5, done: 3, weeks: 1 },
-      { version: "v1.1.0", phase: "active", planned: 8, moved: 5, done: 0, weeks: 2 },
-      { version: "v1.2.0", phase: "upcoming", planned: 5, moved: 0, done: 0, weeks: 1 },
+      { version: "v1.0.0", phase: "past", state: "late", planned: 9, moved: 5, done: 3, weeks: 1 },
+      { version: "v1.1.0", phase: "active", state: "active", planned: 8, moved: 5, done: 0, weeks: 2 },
+      { version: "v1.2.0", phase: "upcoming", state: "upcoming", planned: 5, moved: 0, done: 0, weeks: 1 },
     ]);
-    expect(v.average).toBe(3);
-    expect(v.sample).toEqual({ releases: 1, weeks: 1 });
-    expect(releaseVelocity(plan, "2026-09-28").average).toBeNull();
-    // Rilis panjang tidak menggelembungkan rata-rata: 3 poin dalam (1 + 2) minggu = 1/minggu.
-    expect(releaseVelocity(plan, "2026-10-20").average).toBe(1);
+    expect(v.average).toBeNull();
+    expect(v.sample).toEqual({ releases: 0, weeks: 0 });
+
+    // Dirilis lebih awal (3 hari dari target 14 hari): dibagi durasi SEBENARNYA, bukan rencana.
+    const shipped = parseReleasePlan(
+      doc(
+        [
+          heading("v1.0.0", "2026-09-28", "2026-10-11", "Satu (dirilis 2026-10-11)"),
+          "",
+          table(["| 1 | **#10** A | Keamanan | L | t | ✅ Selesai | — |", "| 2 | **#11** B | Rilis | L | t | ✅ Selesai | — |"]),
+          "",
+          heading("v1.1.0", "2026-10-12", "2026-10-18", "Dua"),
+          "",
+          table(["| 1 | **#12** C | Rilis | L | t | ✅ Selesai | — |", "| 2 | **#13** D | Rilis | L | t | 🔲 Todo | — |"]),
+        ].join("\n")
+      )
+    );
+    expect(releaseVelocity(shipped, "2026-10-12")).toMatchObject({ average: 5, sample: { releases: 1, weeks: 2 } });
+    // v1.1.0 lewat target tapi belum dirilis (terlambat): TIDAK ikut menarik rata-rata ke bawah.
+    expect(releaseVelocity(shipped, "2026-10-25")).toMatchObject({ average: 5, sample: { releases: 1, weeks: 2 } });
   });
 
   it("poin per status: tumpukan kolom Analisa = komitmen awal velocity (termasuk digeser)", () => {
