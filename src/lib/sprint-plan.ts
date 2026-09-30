@@ -60,8 +60,6 @@ export type SprintPlan = {
   /** "YYYY-MM-DD" dari baris `Terakhir diperbarui:` — halaman ini statis (dibaca saat build). */
   updatedAt: string;
   sprints: Sprint[];
-  /** Judul heading backlog, mis. "Backlog terurut (setelah Sprint 4)"; null bila tidak ada. */
-  backlogTitle: string | null;
   /** Baris tabel backlog, urut dokumen. */
   backlog: BacklogItem[];
 };
@@ -120,7 +118,6 @@ export function parseSprintPlan(markdown: string): SprintPlan {
   const sprints: Sprint[] = [];
   const backlog: BacklogItem[] = [];
   let updatedAt: string | null = null;
-  let backlogTitle: string | null = null;
   let current: Sprint | null = null;
   let inBacklog = false;
 
@@ -150,7 +147,6 @@ export function parseSprintPlan(markdown: string): SprintPlan {
     }
     const backlogHeading = line.match(BACKLOG_HEADING);
     if (backlogHeading) {
-      backlogTitle = backlogHeading[1].trim();
       current = null;
       inBacklog = true;
       continue;
@@ -210,7 +206,7 @@ export function parseSprintPlan(markdown: string): SprintPlan {
     if (s.items.length === 0) throw new Error(`sprint.md: Sprint ${s.number} tanpa baris tabel`);
     if (s.start > s.end) throw new Error(`sprint.md: Sprint ${s.number} tanggal mulai sesudah selesai`);
   }
-  return { updatedAt, sprints, backlogTitle, backlog };
+  return { updatedAt, sprints, backlog };
 }
 
 /** Posisi sprint terhadap `today` ("YYYY-MM-DD", WIB) — batas inklusif. */
@@ -370,8 +366,11 @@ export function sprintKanban(sprint: Pick<Sprint, "items">): {
 export type IssuePlace = { kind: "sprint"; sprint: number } | { kind: "backlog"; order: number };
 
 export type IssueRow = {
-  /** "#nnn". */
+  /** "#nnn", atau kode lain (mis. "TD-049") untuk butir backlog tanpa issue GitHub. */
   ref: string;
+  /** true bila `ref` = issue GitHub (bisa ditautkan). */
+  isIssue: boolean;
+  /** Nomor issue; butir tanpa issue diurutkan di akhir. */
   number: number;
   place: IssuePlace;
   status: SprintItemStatus;
@@ -387,7 +386,7 @@ export type IssueRow = {
 export function issueDescription(issue: string, ref: string): string {
   return issue
     .replace(/\*\*/g, "")
-    .replace(new RegExp(`${ref}(?!\\d)`), "")
+    .replace(new RegExp(`${ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?!\\d)`), "")
     .replace(/^[\s·:—-]+/, "")
     .trim();
 }
@@ -397,8 +396,9 @@ export function issueDescription(issue: string, ref: string): string {
  * urut nomor issue lalu posisi (sprint sebelum backlog). Satu issue bisa muncul
  * beberapa kali bila dipecah per bagian ("#380 bagian 1", "#286 butir 2") —
  * status melekat pada bagiannya, bukan pada issue. Butir sprint "Digeser" tidak
- * ikut: ia sudah ditulis ulang di sprint tujuan atau backlog. Baris tanpa
- * `#nnn` (rilis, TD-xxx) juga tidak ikut.
+ * ikut: ia sudah ditulis ulang di sprint tujuan atau backlog. Baris SPRINT tanpa
+ * `#nnn` (rilis) tidak ikut; baris BACKLOG tanpa `#nnn` (TD-xxx) tetap ikut
+ * dengan kode awal kolom Issue sebagai rujukan — backlog hanya tampil di sini.
  */
 export function allIssues(plan: Pick<SprintPlan, "sprints" | "backlog">): IssueRow[] {
   const rows: IssueRow[] = [];
@@ -406,13 +406,19 @@ export function allIssues(plan: Pick<SprintPlan, "sprints" | "backlog">): IssueR
     for (const item of s.items) {
       if (item.status === "moved") continue;
       for (const ref of item.issueRefs) {
-        rows.push({ ref, number: Number(ref.slice(1)), place: { kind: "sprint", sprint: s.number }, status: item.status, category: item.category, description: issueDescription(item.issue, ref), note: null });
+        rows.push({ ref, isIssue: true, number: Number(ref.slice(1)), place: { kind: "sprint", sprint: s.number }, status: item.status, category: item.category, description: issueDescription(item.issue, ref), note: null });
       }
     }
   }
   for (const item of plan.backlog) {
+    if (item.issueRefs.length === 0) {
+      const ref = item.issue.replace(/\*\*/g, "").trim().split(/\s+/)[0] ?? "—";
+      const base = { status: item.status, category: null, description: issueDescription(item.issue, ref), note: item.note };
+      rows.push({ ref, isIssue: false, number: Number.MAX_SAFE_INTEGER, place: { kind: "backlog", order: item.order }, ...base });
+      continue;
+    }
     for (const ref of item.issueRefs) {
-      rows.push({ ref, number: Number(ref.slice(1)), place: { kind: "backlog", order: item.order }, status: item.status, category: null, description: issueDescription(item.issue, ref), note: item.note });
+      rows.push({ ref, isIssue: true, number: Number(ref.slice(1)), place: { kind: "backlog", order: item.order }, status: item.status, category: null, description: issueDescription(item.issue, ref), note: item.note });
     }
   }
   return sortIssueRows(rows, "issue", "asc");
@@ -432,8 +438,8 @@ export function sortIssueRows(rows: IssueRow[], key: IssueSortKey, dir: "asc" | 
   const sign = dir === "asc" ? 1 : -1;
   return [...rows].sort((a, b) =>
     key === "issue"
-      ? sign * (a.number - b.number) || placeRank(a.place) - placeRank(b.place)
-      : sign * (placeRank(a.place) - placeRank(b.place)) || a.number - b.number
+      ? sign * (a.number - b.number) || a.ref.localeCompare(b.ref) || placeRank(a.place) - placeRank(b.place)
+      : sign * (placeRank(a.place) - placeRank(b.place)) || a.number - b.number || a.ref.localeCompare(b.ref)
   );
 }
 

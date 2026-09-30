@@ -20,12 +20,9 @@ import {
 import { CategoryLabel, Inline, ProgressBar, STATUS_STYLE, fmtDate, plainInline } from "./sprint-shared";
 import { SprintAnalysis } from "./sprint-analysis";
 import { SprintIssues } from "./sprint-issues";
+import { SprintHeaderStrip } from "./sprint-header-strip";
 
 const PHASE_LABEL: Record<SprintPhase, string> = { active: "Minggu ini", upcoming: "Mendatang", past: "Selesai" };
-
-function CategoryDot({ item }: { item: SprintItem }) {
-  return <CategoryLabel category={item.category} />;
-}
 
 function SizeBadge({ item }: { item: SprintItem }) {
   return (
@@ -55,6 +52,8 @@ function KanbanCard({ item }: { item: SprintItem }) {
   const [open, setOpen] = useState(false);
   const detailId = useId();
   const done = item.status === "done";
+  const decided = item.decision?.startsWith("✅") ?? false;
+  const openDecision = !!item.decision && !decided;
   const toggle = (
     <button
       type="button"
@@ -73,12 +72,12 @@ function KanbanCard({ item }: { item: SprintItem }) {
   );
   const detail = open && (
     <div id={detailId} className="space-y-2 border-t pt-2">
-      {done && <CategoryDot item={item} />}
+      {done && <CategoryLabel category={item.category} />}
       <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
         <span className="font-medium text-foreground">Target: </span>
         <Inline text={item.target} />
       </p>
-      {done && item.decision && <DecisionNote text={item.decision} />}
+      {(done || decided) && item.decision && <DecisionNote text={item.decision} />}
     </div>
   );
 
@@ -107,10 +106,12 @@ function KanbanCard({ item }: { item: SprintItem }) {
         <SizeBadge item={item} />
       </div>
       <div className="flex items-center justify-between gap-2">
-        <CategoryDot item={item} />
+        <CategoryLabel category={item.category} />
         {toggle}
       </div>
-      {item.decision && <DecisionNote text={item.decision} />}
+      {/* Keputusan yang sudah diambil ("✅ Diputuskan: …") masuk Detail; di kartu hanya yang masih terbuka
+          — termasuk pertanyaan pada butir Todo (mis. "Nilai N"), bukan hanya status ⚖️. */}
+      {openDecision && <DecisionNote text={item.decision!} />}
       {detail}
     </li>
   );
@@ -202,66 +203,74 @@ export function SprintViewClient({ plan, today }: { plan: SprintPlan; today: str
   const allPast = phases.every((p) => p === "past");
 
   return (
-    <Tabs value={tab} onValueChange={(v) => setMany({ tab: v === "sprint" ? null : v, status: null, di: null })} className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="sprint">Sprint</TabsTrigger>
-        <TabsTrigger value="analisa">Analisa</TabsTrigger>
-        <TabsTrigger value="issue">Semua Issue</TabsTrigger>
-      </TabsList>
+    <div className="space-y-6">
+      <SprintHeaderStrip
+        plan={plan}
+        today={today}
+        onOpenDecisions={() => setMany({ tab: "analisa", status: null, di: null, q: null })}
+        onOpenBacklogDecisions={() => setMany({ tab: "issue", di: "backlog", status: "decision", q: null })}
+      />
+      <Tabs value={tab} onValueChange={(v) => setMany({ tab: v === "sprint" ? null : v, status: null, di: null, q: null })} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="sprint">Sprint</TabsTrigger>
+          <TabsTrigger value="analisa">Analisa</TabsTrigger>
+          <TabsTrigger value="issue">Semua Issue</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="sprint" className="space-y-4">
-        {allPast && (
-          <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-            Semua sprint yang direncanakan sudah lewat. Rencana minggu berikutnya belum ditulis di dokumen sprint.
+        <TabsContent value="sprint" className="space-y-4">
+          {allPast && (
+            <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+              Semua sprint yang direncanakan sudah lewat. Rencana minggu berikutnya belum ditulis di dokumen sprint.
+            </p>
+          )}
+
+          <nav aria-label="Pilih minggu" className="flex flex-wrap gap-2">
+            {plan.sprints.map((s, i) => {
+              const on = selected === String(s.number);
+              const p = sprintProgress(s);
+              return (
+                <button
+                  key={s.number}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setMany({ sprint: i === fallback ? null : String(s.number) })}
+                  className={cn(
+                    "flex min-w-[7.5rem] flex-col rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+                    on ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                  )}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    {phases[i] === "active" && <span aria-label="minggu ini" className="h-2 w-2 rounded-full bg-primary" />}
+                    Sprint {s.number}
+                    {phases[i] === "past" && <span className="text-xs font-normal text-muted-foreground">· selesai</span>}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {fmtDate(s.start, false)} – {fmtDate(s.end, false)}
+                  </span>
+                  <span className="text-xs tabular-nums text-muted-foreground">{p.donePoints}/{p.totalPoints} poin</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {(() => {
+            const idx = plan.sprints.findIndex((s) => String(s.number) === selected);
+            return <SprintDetail sprint={plan.sprints[idx]} phase={phases[idx]} today={today} />;
+          })()}
+
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <ExternalLink className="h-3 w-3" /> Nomor #… membuka issue di GitHub (tab baru) · papan dibaca kiri → kanan: belum dimulai, dikerjakan, menunggu keputusan owner, selesai. Backlog ada di tab Semua Issue.
           </p>
-        )}
+        </TabsContent>
 
-        <nav aria-label="Pilih minggu" className="flex flex-wrap gap-2">
-          {plan.sprints.map((s, i) => {
-            const on = selected === String(s.number);
-            const p = sprintProgress(s);
-            return (
-              <button
-                key={s.number}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setMany({ sprint: i === fallback ? null : String(s.number) })}
-                className={cn(
-                  "flex min-w-[7.5rem] flex-col rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-ring",
-                  on ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
-                )}
-              >
-                <span className="flex items-center gap-1.5 text-sm font-semibold">
-                  {phases[i] === "active" && <span aria-label="minggu ini" className="h-2 w-2 rounded-full bg-primary" />}
-                  Sprint {s.number}
-                  {phases[i] === "past" && <span className="text-xs font-normal text-muted-foreground">· selesai</span>}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {fmtDate(s.start, false)} – {fmtDate(s.end, false)}
-                </span>
-                <span className="text-xs tabular-nums text-muted-foreground">{p.donePoints}/{p.totalPoints} poin</span>
-              </button>
-            );
-          })}
-        </nav>
+        <TabsContent value="analisa">
+          <SprintAnalysis plan={plan} today={today} />
+        </TabsContent>
 
-        {(() => {
-          const idx = plan.sprints.findIndex((s) => String(s.number) === selected);
-          return <SprintDetail sprint={plan.sprints[idx]} phase={phases[idx]} today={today} />;
-        })()}
-
-        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-          <ExternalLink className="h-3 w-3" /> Nomor #… membuka issue di GitHub (tab baru) · papan dibaca kiri → kanan: belum dimulai, dikerjakan, menunggu keputusan owner, selesai. Backlog ada di tab Semua Issue.
-        </p>
-      </TabsContent>
-
-      <TabsContent value="analisa">
-        <SprintAnalysis plan={plan} today={today} />
-      </TabsContent>
-
-      <TabsContent value="issue">
-        <SprintIssues plan={plan} />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="issue">
+          <SprintIssues plan={plan} get={get} setMany={setMany} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

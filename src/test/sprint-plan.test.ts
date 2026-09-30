@@ -56,7 +56,6 @@ describe("parseSprintPlan — file sprint.md nyata", () => {
   });
 
   it("riwayat fokus lama di <details> tidak ikut terparse; backlog terbaca", () => {
-    expect(plan.backlogTitle).toMatch(/^Backlog/);
     expect(plan.backlog.length).toBeGreaterThan(0);
   });
 
@@ -66,14 +65,20 @@ describe("parseSprintPlan — file sprint.md nyata", () => {
     expect(allIssues(plan).filter((r) => r.description === "")).toEqual([]);
   });
 
-  it("'Terakhir diperbarui' tidak lebih lama dari tanggal terbaru (≤ hari ini) yang tercatat di tabel", () => {
+  it("'Terakhir diperbarui' tidak lebih lama dari tanggal terbaru di baris ✅ Selesai", () => {
     // Halaman statis: tanggal ini satu-satunya petunjuk kesegaran bagi pembaca.
-    const section = sprintMd.slice(sprintMd.indexOf("### Sprint Focus"), sprintMd.indexOf("\n### ", sprintMd.indexOf("### Sprint Focus") + 1));
-    const today = new Date().toISOString().slice(0, 10);
+    // Hanya baris SELESAI (tanggal penyelesaian = masa lalu menurut definisinya) —
+    // tenggat masa depan di baris Todo tidak boleh membuat test merah begitu harinya
+    // tiba (review 4505de9). Batas "hari ini" memakai WIB, sama dengan halaman.
+    const focus = sprintMd.indexOf("### Sprint Focus");
+    const section = sprintMd.slice(focus, sprintMd.indexOf("\n### ", focus + 1));
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
     const dates = section
       .split("\n")
       .filter((l) => l.startsWith("|"))
-      .flatMap((l) => l.match(/\d{4}-\d{2}-\d{2}/g) ?? [])
+      .map(splitRow)
+      .filter((cells) => cells.length === 7 && cells[5].startsWith("✅"))
+      .flatMap((cells) => cells.join(" ").match(/\d{4}-\d{2}-\d{2}/g) ?? [])
       .filter((d) => d <= today);
     const latest = dates.sort().at(-1);
     expect(latest && plan.updatedAt >= latest ? "ok" : `Terakhir diperbarui ${plan.updatedAt} < ${latest}`).toBe("ok");
@@ -375,26 +380,29 @@ describe("allIssues — tab Semua Issue", () => {
     )
   );
 
-  it("satu baris per #nnn, urut nomor lalu sprint → backlog; digeser & baris tanpa #nnn tidak ikut", () => {
-    expect(allIssues(plan).map((r) => [r.ref, r.place, r.status, r.category, r.description, r.note])).toEqual([
-      ["#30", { kind: "sprint", sprint: 1 }, "done", "Keamanan", "Tiga puluh", null],
-      ["#40", { kind: "sprint", sprint: 2 }, "todo", "Rilis", "Digeser", null],
-      ["#286", { kind: "sprint", sprint: 1 }, "decision", "Keamanan", "butir 2 Key FIRMS", null],
-      ["#286", { kind: "backlog", order: 1 }, "todo", null, "butir 1 & 3 Cache FIRMS", "target 2027"],
+  it("satu baris per #nnn, urut nomor lalu sprint → backlog; digeser & baris SPRINT tanpa #nnn tidak ikut", () => {
+    expect(allIssues(plan).map((r) => [r.ref, r.isIssue, r.place, r.status, r.category, r.description, r.note])).toEqual([
+      ["#30", true, { kind: "sprint", sprint: 1 }, "done", "Keamanan", "Tiga puluh", null],
+      ["#40", true, { kind: "sprint", sprint: 2 }, "todo", "Rilis", "Digeser", null],
+      ["#286", true, { kind: "sprint", sprint: 1 }, "decision", "Keamanan", "butir 2 Key FIRMS", null],
+      ["#286", true, { kind: "backlog", order: 1 }, "todo", null, "butir 1 & 3 Cache FIRMS", "target 2027"],
+      // Butir backlog tanpa issue (TD-xxx) tetap tampil — backlog hanya ada di tab ini (review 4505de9).
+      ["TD-049", false, { kind: "backlog", order: 2 }, "todo", null, "Auto-fit", null],
     ]);
   });
 
   it("urutkan per issue / sprint: kunci utama ikut arah, kunci kedua selalu menaik", () => {
     const rows = allIssues(plan);
     const key = (r: (typeof rows)[number]) => `${r.ref}@${r.place.kind === "sprint" ? `S${r.place.sprint}` : `B${r.place.order}`}`;
-    expect(sortIssueRows(rows, "issue", "desc").map(key)).toEqual(["#286@S1", "#286@B1", "#40@S2", "#30@S1"]);
-    expect(sortIssueRows(rows, "sprint", "asc").map(key)).toEqual(["#30@S1", "#286@S1", "#40@S2", "#286@B1"]);
-    expect(sortIssueRows(rows, "sprint", "desc").map(key)).toEqual(["#286@B1", "#40@S2", "#30@S1", "#286@S1"]);
-    expect(rows.map(key)).toEqual(["#30@S1", "#40@S2", "#286@S1", "#286@B1"]); // input tidak dimutasi
+    expect(sortIssueRows(rows, "issue", "desc").map(key)).toEqual(["TD-049@B2", "#286@S1", "#286@B1", "#40@S2", "#30@S1"]);
+    expect(sortIssueRows(rows, "sprint", "asc").map(key)).toEqual(["#30@S1", "#286@S1", "#40@S2", "#286@B1", "TD-049@B2"]);
+    expect(sortIssueRows(rows, "sprint", "desc").map(key)).toEqual(["TD-049@B2", "#286@B1", "#40@S2", "#30@S1", "#286@S1"]);
+    expect(rows.map(key)).toEqual(["#30@S1", "#40@S2", "#286@S1", "#286@B1", "TD-049@B2"]); // input tidak dimutasi
   });
 
   it("deskripsi: tebal & rujukan dibuang, kode dipertahankan, #nnn awalan lain tidak ikut terhapus", () => {
     expect(issueDescription("**#253** Agregat `getFarmerSummary` ke SQL", "#253")).toBe("Agregat `getFarmerSummary` ke SQL");
     expect(issueDescription("**#25** lihat #253", "#25")).toBe("lihat #253");
+    expect(issueDescription("**TD-049** Auto-fit kolom", "TD-049")).toBe("Auto-fit kolom");
   });
 });

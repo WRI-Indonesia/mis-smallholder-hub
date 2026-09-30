@@ -1,7 +1,13 @@
-import Link from "next/link";
 import { ChevronRight, Clock, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { daysBetween, pendingDecisions, sprintDay, sprintPhase, sprintProgress, type SprintPlan } from "@/lib/sprint-plan";
+import {
+  daysBetween,
+  pendingDecisions,
+  sprintDay,
+  sprintPhase,
+  sprintProgress,
+  type SprintPlan,
+} from "@/lib/sprint-plan";
 import { ProgressBar, fmtDate } from "./sprint-shared";
 
 /** Lebih lama dari ini = dokumen sprint dianggap basi (satu sprint penuh tanpa pembaruan). */
@@ -17,8 +23,22 @@ function ago(days: number): string {
  * Strip ringkasan di atas tab: kesegaran dokumen (halaman statis), sprint
  * minggu ini, dan antrean keputusan owner — tiga hal yang dicari pertama kali
  * saat membuka halaman, tanpa harus berpindah tab.
+ *
+ * Dirender di dalam `SprintViewClient` dan berpindah tab lewat callback, bukan
+ * `<Link href="?tab=…">`: tab dibaca `useUrlFilters` sekali saat mount, jadi
+ * navigasi router tidak mengganti tab yang sedang terbuka (review 4505de9).
  */
-export function SprintHeaderStrip({ plan, today }: { plan: SprintPlan; today: string }) {
+export function SprintHeaderStrip({
+  plan,
+  today,
+  onOpenDecisions,
+  onOpenBacklogDecisions,
+}: {
+  plan: SprintPlan;
+  today: string;
+  onOpenDecisions: () => void;
+  onOpenBacklogDecisions: () => void;
+}) {
   const age = daysBetween(plan.updatedAt, today);
   const stale = age > STALE_DAYS;
   const active = plan.sprints.find((s) => sprintPhase(s, today) === "active") ?? null;
@@ -26,6 +46,9 @@ export function SprintHeaderStrip({ plan, today }: { plan: SprintPlan; today: st
   const pending = pendingDecisions(plan, today);
   const pendingPoints = pending.reduce((t, d) => t + d.item.points, 0);
   const late = pending.filter((d) => d.phase === "past").length;
+  // Butir backlog ⚖️ ("hanya keputusan", verifikasi owner) — tidak berpoin, jadi tidak ikut
+  // antrean Analisa; ditautkan ke tab Semua Issue agar tidak tersembunyi.
+  const backlogPending = plan.backlog.filter((b) => b.status === "decision").length;
 
   const cell = "flex min-w-0 flex-col justify-center gap-1.5 px-4 py-3";
   return (
@@ -36,9 +59,21 @@ export function SprintHeaderStrip({ plan, today }: { plan: SprintPlan; today: st
         </span>
         <span className="text-sm">
           <span className="font-semibold">{fmtDate(plan.updatedAt)}</span>
-          <span className={cn("text-muted-foreground", stale && "font-medium text-amber-700 dark:text-amber-300")}> · {ago(age)}</span>
+          <span
+            className={cn(
+              "text-muted-foreground",
+              stale && "font-medium text-amber-700 dark:text-amber-300",
+            )}
+          >
+            {" "}
+            · {ago(age)}
+          </span>
         </span>
-        {stale && <span className="text-xs text-amber-700 dark:text-amber-300">Mungkin sudah tidak sesuai — cek status di GitHub.</span>}
+        {stale && (
+          <span className="text-xs text-amber-700 dark:text-amber-300">
+            Mungkin sudah tidak sesuai — cek status di GitHub.
+          </span>
+        )}
       </div>
 
       <div className={cell}>
@@ -48,7 +83,11 @@ export function SprintHeaderStrip({ plan, today }: { plan: SprintPlan; today: st
               Sprint {active.number} · hari ke-{sprintDay(active, today)} dari 7
             </span>
             <div className="flex items-center gap-2">
-              <ProgressBar value={progress.donePoints} max={progress.totalPoints} label={`${progress.donePoints} dari ${progress.totalPoints} poin selesai`} />
+              <ProgressBar
+                value={progress.donePoints}
+                max={progress.totalPoints}
+                label={`${progress.donePoints} dari ${progress.totalPoints} poin selesai`}
+              />
               <span className="shrink-0 text-sm font-semibold tabular-nums">
                 {progress.donePoints}/{progress.totalPoints} poin
               </span>
@@ -62,21 +101,40 @@ export function SprintHeaderStrip({ plan, today }: { plan: SprintPlan; today: st
         )}
       </div>
 
-      <Link
-        href="?tab=analisa"
-        className={cn(cell, "group transition-colors hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring", pending.length > 0 && "bg-amber-500/5")}
-      >
+      <div className={cn(cell, pending.length > 0 && "bg-amber-500/5")}>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Scale className="h-3.5 w-3.5" aria-hidden /> Keputusan menunggu owner
         </span>
-        <span className="flex items-center text-sm">
-          <span className="font-semibold tabular-nums">{pending.length} butir</span>
+        <button
+          type="button"
+          onClick={onOpenDecisions}
+          className="group flex items-center rounded text-left text-sm hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <span className="font-semibold tabular-nums">{pending.length} butir sprint</span>
           <span className="text-muted-foreground">
-            &nbsp;· {pendingPoints} poin tertahan{late > 0 && <span className="font-medium text-amber-700 dark:text-amber-300"> · {late} terlambat</span>}
+            &nbsp;· {pendingPoints} poin tertahan
+            {late > 0 && (
+              <span className="font-medium text-amber-700 dark:text-amber-300">
+                {" "}
+                · {late} terlambat
+              </span>
+            )}
           </span>
-          <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
-        </span>
-      </Link>
+          <ChevronRight
+            className="ml-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+            aria-hidden
+          />
+        </button>
+        {backlogPending > 0 && (
+          <button
+            type="button"
+            onClick={onOpenBacklogDecisions}
+            className="self-start rounded text-left text-xs text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            + {backlogPending} keputusan di backlog
+          </button>
+        )}
+      </div>
     </div>
   );
 }

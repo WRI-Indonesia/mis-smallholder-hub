@@ -20,9 +20,11 @@ Sub menu `data-analyst-sprint`, satu halaman: `/admin/data-analyst/sprint` (#378
 ```text
 Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 ├── Header — judul + HelpHint (tutorial p-15) + deskripsi sumber data
-├── Strip ringkasan (`sprint-header-strip.tsx`, server) — 3 kotak: Dokumen sprint diperbarui (`updatedAt` + `daysBetween`,
-│   kuning bila > 7 hari) · Sprint aktif hari ke-n + bilah poin (atau "Tidak ada sprint aktif") · Keputusan menunggu owner
-│   (`pendingDecisions`: butir · poin · terlambat) → tautan `?tab=analisa`
+├── Strip ringkasan (`sprint-header-strip.tsx`, dirender di `SprintViewClient`) — 3 kotak: Dokumen sprint diperbarui
+│   (`updatedAt` + `daysBetween`, kuning bila > 7 hari) · Sprint aktif hari ke-n + bilah poin (atau "Tidak ada sprint aktif")
+│   · Keputusan menunggu owner (`pendingDecisions`: butir sprint · poin · terlambat → tombol ke tab Analisa) + "+ n keputusan
+│   di backlog" (butir backlog ⚖️ → tab Semua Issue, filter Backlog + Menunggu keputusan). Tombol memakai `setMany` induk,
+│   BUKAN `<Link href="?tab=…">` — `useUrlFilters` membaca URL sekali saat mount, jadi navigasi router tak mengganti tab
 ├── Tabs (URL ?tab=analisa|issue; bawaan Sprint)
 ├── Tab Sprint
 │   ├── Peringatan (kuning) — hanya bila SEMUA sprint sudah lewat
@@ -35,7 +37,7 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 │   │   + jumlah butir + poin ("poin tertahan" di kolom keputusan, berlatar kuning bila berisi); kolom kosong = "Kosong";
 │   │   grid 1 kolom (ponsel) · 2 (sm) · 4 (xl)
 │   │   └── Kartu ringkas (2026-09-30): judul (markdown inline, `#nnn` → GitHub) · ukuran "M · 3" · titik kategori ·
-│   │       keputusan owner (kotak kuning) bila ada · tombol "Detail"/"Tutup" (berlabel judul butir, `aria-expanded`) →
+│   │       keputusan owner yang masih terbuka (kotak kuning; yang sudah "✅ …" pindah ke Detail) · tombol "Detail"/"Tutup" (berlabel judul butir, `aria-expanded`) →
 │   │       target minggu ini. Kartu SELESAI satu baris: ✓ + judul + ukuran + panah detail (kategori, target, keputusan
 │   │       di dalam detail). Read-only — status diubah di sprint.md
 │   ├── Lajur terlipat "Digeser ke sprint lain (n)" — kartu butir ⏭️ (poinnya dihitung di sprint tujuan)
@@ -54,13 +56,14 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 │   └── Carry-over — butir ber-status Digeser: dari sprint mana → sprint tujuan (atau "belum dijadwalkan"), berapa kali
 └── Tab Semua Issue (`sprint-issues.tsx`, `allIssues`)
     ├── Ringkasan: n issue unik (m baris)
-    ├── Kotak Cari (state lokal, `matchesQuery`: setiap kata harus ada di nomor/sprint/status/deskripsi/catatan)
-    ├── Chip filter Sprint (URL ?di=<n>|backlog; memilih Backlog mengurutkan per urutan prioritas) + jumlah
+    ├── Kotak Cari (URL ?q=, `matchesQuery`: setiap kata harus ada di nomor/sprint/status/deskripsi/catatan)
+    ├── Chip filter Sprint (URL ?di=<n>|backlog; setiap kali filter berpindah ke Backlog — chip, tautan, strip — urutan
+    │   jadi urutan prioritas) + jumlah. `get`/`setMany` dioper dari induk (instance hook kedua = URL basi)
     ├── Chip filter status (URL ?status=todo|progress|decision|done) + jumlah per status (setelah pencarian & filter sprint)
     └── Tabel No. Issue (tautan GitHub) · Sprint ("Sprint n" / "Backlog (urutan n)") · Kategori (— untuk backlog) · Status (badge) · Deskripsi (kolom Issue tanpa `#nnn`,
         catatan backlog di baris kedua). Satu baris per `#nnn` per bagian. Header No. Issue & Sprint bisa diklik
         (`sortIssueRows`, `aria-sort`; kunci kedua selalu menaik); bawaan urut nomor issue lalu sprint → backlog;
-        butir ⏭️ dan baris tanpa `#nnn` (rilis, TD-xxx) tidak ikut
+        butir ⏭️ dan baris SPRINT tanpa `#nnn` (rilis) tidak ikut; baris BACKLOG tanpa `#nnn` (TD-xxx) ikut, tanpa tautan
 ```
 
 ## Format sumber (`docs/project/sprint.md` §Sprint Focus)
@@ -74,12 +77,12 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 | Status | awalan 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser | `todo`/`progress`/`decision`/`done`/`moved` |
 | Keputusan owner | teks; `—` = tidak ada | `decision: string \| null` |
 | Terakhir diperbarui | baris `Terakhir diperbarui: YYYY-MM-DD` di §Sprint Focus (wajib) | `updatedAt` |
-| Heading backlog | `#### Backlog …` diikuti tabel 4 kolom `# \| Issue \| Status \| Catatan` (`#` = urutan kelompok, boleh berulang) | `backlog: BacklogItem[]` |
+| Heading backlog | `#### Backlog …` diikuti tabel 4 kolom `# \| Issue \| Status \| Catatan` (`#` = urutan kelompok, boleh berulang) | `backlog: BacklogItem[]` (judul heading tidak disimpan) |
 
 - Butir yang digeser ditulis di sprint asal dengan ⏭️, **lalu** ditulis ulang di sprint tujuan dengan **teks kolom Issue yang sama persis**. Carry-over dikunci per teks Issue (satu baris = satu butir), bukan per `#nnn`: "**#253** · **#320**" satu butir, "#286 butir 2" dan "#286 butir 1 & 3" dua butir.
 - Dua hitungan sengaja berbeda untuk butir ⏭️: **progres sprint** (kartu ringkasan) tidak menghitungnya, karena itu sisa kerja sprint tujuan; **velocity** menghitungnya di komitmen sprint asal, supaya selisih rencana vs selesai terlihat.
 - Kolom Issue (sprint & backlog) memuat **paling banyak satu** `#nnn`, diikuti deskripsi singkat; rujukan issue lain ditulis di kolom Target/Catatan. Dijaga test file nyata, karena tab Semua Issue menampilkan satu baris per rujukan.
-- `Terakhir diperbarui` tidak boleh lebih lama dari tanggal terbaru (≤ hari ini) di baris tabel — dijaga test.
+- `Terakhir diperbarui` tidak boleh lebih lama dari tanggal terbaru (≤ hari ini, WIB) di baris sprint berstatus ✅ — dijaga test. Hanya baris selesai, agar tenggat masa depan di baris Todo tidak membuat test merah saat harinya tiba.
 - Pipa di dalam sel wajib di-escape `\|` (aturan GFM, juga di dalam `kode`); parser mengembalikannya menjadi `|`.
 - Blok `<details>` di dalam §Sprint Focus (riwayat fokus lama, catatan) **dilewati**, tidak menghentikan parse; section berakhir di heading `###` berikutnya. Tag buka/tutup dihitung per baris, jadi `<details>…</details>` satu baris atau `teks </details>` juga aman (wrap-up 2026-09-29: dulu sisa section terbuang diam-diam).
 - Format rusak (status/kategori/poin tak dikenal, jumlah kolom ≠ 7 (sprint) / ≠ 4 (backlog), baris `Terakhir diperbarui` hilang, heading `####` asing, sprint tanpa baris, nomor sprint atau nomor baris dobel) **melempar**, jadi build gagal alih-alih salah render diam-diam.
