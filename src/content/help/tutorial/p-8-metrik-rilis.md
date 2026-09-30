@@ -40,7 +40,7 @@ Halaman ini memantau pengembangan **aplikasinya sendiri**, bukan data petani. Ti
 
 **Roadmap % di kartu berbeda dengan hasil hitung di Detail roadmap** — kartu membaca `metrics.md`, sedangkan Detail roadmap menghitung ulang dari tabel fase di `roadmap.md`. Selisih kecil (di bawah 0,1 poin persen) wajar karena pembulatan; selisih besar berarti salah satu file belum diperbarui — dan itu akan membuat test otomatis gagal saat pengembang menjalankan gate.
 
-**Grafik Progres roadmap terputus: bagian kiri pudar di 88,5%, titik baru di 8,6%** — itu reset baseline, bukan kemunduran. Setelah MVP (v1.0.0), roadmap lama dibekukan dan diganti Roadmap 2026–2027 yang berisi fase pasca-MVP dan modul visi produk (30 September 2026). Titik sebelum reset mengukur jalan menuju go-live; titik sesudahnya mengukur rencana 2026–2027, jadi keduanya sengaja tidak disambung garis.
+**Grafik Progres roadmap terputus: bagian kiri pudar di 88,5%, titik baru jauh lebih rendah (11,4% di v1.3.0)** — itu reset baseline, bukan kemunduran. Setelah MVP (v1.0.0), roadmap lama dibekukan dan diganti Roadmap 2026–2027 yang berisi fase pasca-MVP dan modul visi produk (30 September 2026). Titik sebelum reset mengukur jalan menuju go-live; titik sesudahnya mengukur rencana 2026–2027, jadi keduanya sengaja tidak disambung garis.
 
 **Fase yang sudah selesai masih tampil sebagai sisa** — statusnya belum diubah di tabel Phase Status `roadmap.md`. Halaman tidak pernah menebak status dari kode; ia hanya membaca tabel itu.
 

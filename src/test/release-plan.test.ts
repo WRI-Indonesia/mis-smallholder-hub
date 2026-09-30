@@ -46,7 +46,9 @@ describe("parseReleasePlan — file sprint.md nyata", () => {
       expect(r.version).toMatch(/^v\d+\.\d+\.\d+$/);
       expect(r.start <= r.end).toBe(true);
       expect(r.items.length).toBeGreaterThan(0);
-      if (i > 0) expect(r.start > plan.releases[i - 1].end).toBe(true);
+      // Sama dengan aturan parser: rilis berikutnya boleh mulai sesudah rilis sebelumnya benar-benar
+      // keluar (bisa lebih awal dari targetnya — v1.3.0 dirilis 09-30, target 10-25).
+      if (i > 0) expect(r.start > (plan.releases[i - 1].releasedAt ?? plan.releases[i - 1].end)).toBe(true);
     });
   });
 
