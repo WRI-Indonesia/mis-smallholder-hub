@@ -154,6 +154,17 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "dashboard-supply-chain",
+    "route": "(admin)/admin/dashboard/supply-chain",
+    "models": {
+      "farmerGroup": "R"
+    },
+    "modules": [
+      "src/server/actions/supply-chain-prototype.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "dashboard-training",
     "route": "(admin)/admin/dashboard/training",
     "models": {
@@ -327,6 +338,17 @@ export const DATA_LINEAGE: DataLineage = [
       "src/server/actions/land-parcel-export.ts",
       "src/server/actions/land-parcel.ts",
       "src/server/actions/map.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
+    "menuKey": "map-supply-chain",
+    "route": "(admin)/admin/map/supply-chain",
+    "models": {
+      "farmerGroup": "R"
+    },
+    "modules": [
+      "src/server/actions/supply-chain-prototype.ts"
     ],
     "dynamicAccess": null
   },
