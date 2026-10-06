@@ -37,6 +37,7 @@ dashboard-snapshot,tools,Dashboard Snapshot,/admin/tools/snapshot,Camera,1,TRUE,
 map,,Map,/admin/map,Map,2,TRUE,TRUE
 map-parcel,map,Peta Lahan,/admin/map/parcel,MapPin,1,TRUE,TRUE
 map-bmp,map,Peta BMP,/admin/map/bmp,Sprout,2,TRUE,TRUE
+map-supply-chain,map,Peta Rantai Pasok,/admin/map/supply-chain,Navigation,3,TRUE,TRUE
 dashboard-bmp,dashboard,BMP Dashboard (Produksi),/admin/dashboard/bmp,Sprout,3,TRUE,TRUE
 dashboard-training,dashboard,Dashboard Pelatihan,/admin/dashboard/training,GraduationCap,2,TRUE,TRUE
 dashboard-snapshot-bmp,tools,Dashboard Snapshot BMP,/admin/tools/snapshot-bmp,Camera,2,TRUE,TRUE
@@ -47,3 +48,4 @@ dashboard-risk,dashboard,Risk Management,/admin/dashboard/risk,ShieldAlert,5,TRU
 dashboard-risk-fire,dashboard-risk,Fire Alert,/admin/dashboard/risk/fire,Flame,1,TRUE,TRUE
 master-data-bmp-monev,master-data,Monev BMP,/admin/master-data/bmp-monev,ClipboardCheck,6,TRUE,TRUE
 dashboard-bmp-monev,dashboard,Monev BMP,/admin/dashboard/bmp-monev,ClipboardCheck,4,TRUE,TRUE
+dashboard-supply-chain,dashboard,Dashboard Rantai Pasok,/admin/dashboard/supply-chain,Network,6,TRUE,TRUE

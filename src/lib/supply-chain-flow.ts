@@ -166,7 +166,9 @@ export function recordCollectorId(r: ScRecord, offtakers: Map<string, ScOfftaker
 export function recordRampId(r: ScRecord, offtakers: Map<string, ScOfftaker>): string | null {
   const o1 = r.offtakerId ? offtakers.get(r.offtakerId) : undefined;
   if (o1?.type === "RAMP") return o1.id;
-  return r.nextOfftakerId && offtakers.has(r.nextOfftakerId) ? r.nextOfftakerId : null;
+  // Offtaker kedua hanya dianggap RAMP bila memang bertipe RAMP (mis. bukan KUD/koperasi).
+  const o2 = r.nextOfftakerId ? offtakers.get(r.nextOfftakerId) : undefined;
+  return o2?.type === "RAMP" ? o2.id : null;
 }
 
 /** Nilai filter Mill untuk record tanpa Mill (kolom kosong / beberapa PT). */
@@ -733,6 +735,8 @@ export interface UndrawnSummary {
   unknownMillTon: number;
   /** Mill dikenal tapi tanpa koordinat (tak ada di UML). */
   millWithoutPointTon: number;
+  /** Lembaga tanpa titik lokasi di MIS — garisnya tak bisa dimulai. */
+  groupWithoutPointTon: number;
   /** Tonase yang melewati offtaker tanpa titik — garis dilompatkan ke titik berikutnya. */
   skippedOfftakerTon: number;
   offtakersWithoutPoint: number;
@@ -751,7 +755,7 @@ export function buildFlowSegments(
   const offtakers = new Map(data.offtakers.map((o) => [o.id, o]));
   const mills = new Map(data.mills.map((m) => [m.id, m]));
   const groups = new Map(data.groups.map((g) => [g.code, g]));
-  const undrawn: UndrawnSummary = { unknownMillTon: 0, millWithoutPointTon: 0, skippedOfftakerTon: 0, offtakersWithoutPoint: 0 };
+  const undrawn: UndrawnSummary = { unknownMillTon: 0, millWithoutPointTon: 0, groupWithoutPointTon: 0, skippedOfftakerTon: 0, offtakersWithoutPoint: 0 };
   const noPoint = new Set<string>();
   const acc = new Map<string, FlowSegment>();
 
@@ -768,7 +772,10 @@ export function buildFlowSegments(
       continue;
     }
     const g = groups.get(r.groupCode);
-    if (!g || g.lat == null || g.lon == null) continue;
+    if (!g || g.lat == null || g.lon == null) {
+      undrawn.groupWithoutPointTon += ton;
+      continue;
+    }
     const pts: FlowPoint[] = [{ key: `L:${g.code}`, kind: "LEMBAGA", lat: g.lat, lon: g.lon }];
     let skipped = false;
     // Mode Ringkas: garis langsung Lembaga → Mill, titik offtaker tidak disinggahi.

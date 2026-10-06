@@ -118,7 +118,13 @@ export function SupplyChainSankey({
   }, [hover, lit, layout.links, nodeById]);
 
   if (graph.nodes.length === 0) {
-    return <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Tidak ada aliran bertonase pada filter ini.</div>;
+    // Wrapper ber-ref yang SAMA dengan tampilan berisi: elemen yang diamati ResizeObserver
+    // (efek sekali pasang) tak boleh terlepas saat hasil filter kosong lalu terisi lagi.
+    return (
+      <div ref={wrapRef} className="relative w-full">
+        <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Tidak ada aliran bertonase pada filter ini.</div>
+      </div>
+    );
   }
 
   return (

@@ -190,7 +190,10 @@ describe("buildFlowSegments", () => {
     expect(keys).toContain("O:RMP-1>M:M1");
     expect(keys).toContain("L:G1>M:M1");
     expect(keys).not.toContain("L:G1>O:KOP-1");
-    expect(undrawn).toEqual({ unknownMillTon: 2, millWithoutPointTon: 7, skippedOfftakerTon: 30, offtakersWithoutPoint: 1 });
+    expect(undrawn).toEqual({ unknownMillTon: 2, millWithoutPointTon: 7, groupWithoutPointTon: 0, skippedOfftakerTon: 30, offtakersWithoutPoint: 1 });
+    // Lembaga tanpa titik lokasi: tonasenya tercatat "tidak tergambar", bukan hilang diam-diam.
+    const noPoint = { ...data, groups: data.groups.map((g) => (g.code === "G1" ? { ...g, lat: null, lon: null } : g)) };
+    expect(buildFlowSegments(noPoint, [rec({ id: "z", groupCode: "G1", supplyTon: 4 })]).undrawn.groupWithoutPointTon).toBe(4);
     // Ringkas: tanpa singgah offtaker → Lembaga langsung ke Mill.
     const direct = buildFlowSegments(data, records, { viaOfftakers: false }).segments.map((x) => `${x.from.key}>${x.to.key}`);
     expect(direct).toContain("L:G2>M:M1");
@@ -214,6 +217,10 @@ describe("filter Lembaga / Agen / RAMP / Mill", () => {
     expect(recordCollectorId(records[1], offs)).toBeNull();
     expect(recordRampId(records[1], offs)).toBe("RMP-1");
     expect(recordCollectorId(records[2], offs)).toBe("KOP-1");
+  });
+
+  it("offtaker kedua bukan RAMP (mis. koperasi) tidak masuk kolom/filter RAMP", () => {
+    expect(recordRampId(rec({ offtakerId: "AGN-1", nextOfftakerId: "KOP-1" }), offs)).toBeNull();
   });
 
   it("menggabungkan filter sebagai irisan dan mengenali Mill tidak diketahui", () => {

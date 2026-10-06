@@ -58,8 +58,7 @@ export function useSupplyChainFilters(view: SupplyChainView) {
   const update = useCallback(
     (patch: Patch) => {
       // Lingkup berubah → pilihan rantai bisa jadi di luar lingkup; mulai bersih.
-      if ("distrik" in patch) Object.assign(patch, { lembaga: null, agen: null, ramp: null, mill: null, ...patch });
-      if ("kategori" in patch && !("lembaga" in patch)) patch.lembaga = null;
+      if ("distrik" in patch || "kategori" in patch) Object.assign(patch, { lembaga: null, agen: null, ramp: null, mill: null, ...patch });
       setMany(patch);
     },
     [setMany],

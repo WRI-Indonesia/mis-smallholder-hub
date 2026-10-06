@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, BadgeCheck, ChevronDown, CircleCheck, CircleDashed, CircleHelp, Factory, FlaskConical, Map as MapIcon, Truck, Weight } from "lucide-react";
+import { AlertTriangle, BadgeCheck, ChevronDown, CircleCheck, CircleDashed, CircleHelp, Factory, FlaskConical, Map as MapIcon, RotateCcw, Truck, Weight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import {
   CHANNEL_ORDER,
   MILL_BASIS_LABEL,
   MILL_STATUS_LABEL,
+  GROUP_CATEGORY_LABEL,
+  UL_FILTER_LABEL,
   UNKNOWN_MILL_FILTER,
   buildSupplyChainSankey,
   millVolumes,
@@ -107,11 +109,30 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
   const [destination, setDestination] = useState<SankeyDestination>("MILL");
 
   const summary = useMemo(() => summarizeSupplyChain(records, offtakers), [records, offtakers]);
+
+  // Reset di kartu diagram: bar filter sudah di luar layar saat diagram dibaca.
+  const activeFilters = [
+    f.district && `Distrik: ${f.district}`,
+    f.category && `Kategori: ${GROUP_CATEGORY_LABEL[f.category]}`,
+    f.filter.groupCode && `Lembaga: ${f.options.groupCode.find((o) => o.id === f.filter.groupCode)?.name ?? f.filter.groupCode}`,
+    f.filter.collectorId && `Agen: ${offtakers.get(f.filter.collectorId)?.name ?? f.filter.collectorId}`,
+    f.filter.rampId && `RAMP: ${offtakers.get(f.filter.rampId)?.name ?? f.filter.rampId}`,
+    f.filter.millId && `Mill: ${f.options.millId.find((o) => o.id === f.filter.millId)?.name ?? f.filter.millId}`,
+    f.filter.ul && UL_FILTER_LABEL[f.filter.ul],
+  ].filter((x): x is string => !!x);
+  const viewChanged = mode !== "RINGKAS" || origin !== "LEMBAGA" || destination !== "MILL" || unit !== "TON";
+  const resetAll = () => {
+    f.reset();
+    setMode("RINGKAS");
+    setOrigin("LEMBAGA");
+    setDestination("MILL");
+    setUnit("TON");
+  };
   const graph = useMemo(() => buildSupplyChainSankey(view.data, records, { mode, origin, destination, maxPerColumn: mode === "RINGKAS" ? RINGKAS_MILLS : Number(top) }), [view.data, records, mode, origin, destination, top]);
   const millRows = useMemo(() => millVolumes(records, millsById), [records, millsById]);
 
   // Asal PKS: disebut langsung di survei vs dipetakan dari nama PT lewat UML (dikonfirmasi owner 2026-10-06).
-  const namedPksTon = useMemo(() => records.filter((r) => r.millBasis === "NAMA_PKS").reduce((a, r) => a + (r.supplyTon ?? 0), 0), [records]);
+  const namedPksTon = useMemo(() => records.filter((r) => r.millBasis === "NAMA_PKS" && r.millStatus === "PKS_PASTI").reduce((a, r) => a + (r.supplyTon ?? 0), 0), [records]);
 
   const offTypeCount = useMemo(() => {
     const ids = new Set(records.flatMap((r) => [r.offtakerId, r.nextOfftakerId]).filter((x): x is string => !!x));
@@ -211,7 +232,21 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
                 {mode === "RINGKAS" ? "; klik Agen / KT/Koperasi / RAMP untuk melihat per orang." : "."}
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+              {(activeFilters.length > 0 || viewChanged) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetAll}
+                  title={activeFilters.length > 0 ? `Filter aktif — ${activeFilters.join(" · ")}` : "Kembalikan tampilan bawaan"}
+                  className="h-8 gap-1.5 text-xs"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> Reset
+                  {activeFilters.length > 0 && (
+                    <span className="rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">{activeFilters.length}</span>
+                  )}
+                </Button>
+              )}
               {mode === "RINCI" && (
                 <Select value={top} onValueChange={(v) => setTop(v as (typeof TOP_OPTIONS)[number])}>
                   <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue /></SelectTrigger>

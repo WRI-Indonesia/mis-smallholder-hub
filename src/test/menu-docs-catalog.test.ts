@@ -52,7 +52,7 @@ describe("menu.csv ↔ docs/product/pages", () => {
 });
 
 describe("readMenuSeed (seeder menu)", () => {
-  it("membaca 46 baris CSV dengan key unik; P4 terbaca; seed memperbarui kolom struktural baris yang ada", () => {
+  it("membaca 48 baris CSV dengan key unik; P4 terbaca; seed memperbarui kolom struktural baris yang ada", () => {
     const rows = readMenuSeed();
     expect(rows.length).toBe(menuRows.length);
     expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);

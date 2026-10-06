@@ -88,7 +88,7 @@ function ensureIcons(map: { hasImage: (id: string) => boolean; addImage: (id: st
  * offtaker, atau Mill menyorot jaringannya dan meredupkan sisanya. Filter
  * dibagi dengan Dashboard lewat URL.
  */
-export function MapSupplyChainClient({ view }: { view: SupplyChainMapView }) {
+export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapView; helpSlot?: React.ReactNode }) {
   const dark = useChartDark();
   const [styleOverride, setStyleOverride] = useState<MapStyleKey | null>(null);
   const styleKey: MapStyleKey = styleOverride ?? (dark ? "dark" : "light");
@@ -125,10 +125,11 @@ export function MapSupplyChainClient({ view }: { view: SupplyChainMapView }) {
     const max = Math.max(1, ...segments.map((s) => s.ton));
     return {
       type: "FeatureCollection",
-      features: segments.map((s, i) => ({
+      features: segments.map((s) => ({
         type: "Feature",
         properties: {
-          kind: "flow", id: String(i), ton: s.ton, color: channelColor(s.channel, dark),
+          // Kunci stabil (bukan indeks larik) — popup garis tetap benar setelah filter berubah.
+          kind: "flow", id: flowSegmentKey(s), ton: s.ton, color: channelColor(s.channel, dark),
           w: 1.5 + Math.sqrt(s.ton / max) * 12, on: !focus || focus.segments.has(flowSegmentKey(s)),
         },
         geometry: { type: "LineString", coordinates: [[s.from.lon, s.from.lat], [s.to.lon, s.to.lat]] },
@@ -155,8 +156,9 @@ export function MapSupplyChainClient({ view }: { view: SupplyChainMapView }) {
         if (g?.lat != null && g.lon != null) feats.push({ type: "Feature", properties: { kind: "lembaga", id, label: g.abrv, ton, on }, geometry: { type: "Point", coordinates: [g.lon, g.lat] } });
       } else if (k.startsWith("O:")) {
         const o = offById.get(id);
-        // Koperasi = Lembaga itu sendiri → sudah tergambar sebagai titik Lembaga.
-        if (o?.lat != null && o.lon != null && !o.farmerGroupCode)
+        // Koperasi = Lembaga → titiknya sudah tergambar sebagai Lembaga; gambar sendiri
+        // hanya bila Lembaga pemiliknya tak ada di peta (agar garis tak berbelok di titik kosong).
+        if (o?.lat != null && o.lon != null && !(o.farmerGroupCode && tonBy.has(`L:${o.farmerGroupCode}`)))
           feats.push({ type: "Feature", properties: { kind: "offtaker", id, label: o.name, ton, on }, geometry: { type: "Point", coordinates: [o.lon, o.lat] } });
       } else {
         const m = millById.get(id);
@@ -240,7 +242,7 @@ export function MapSupplyChainClient({ view }: { view: SupplyChainMapView }) {
   };
 
   const totalTon = records.reduce((a, r) => a + (r.supplyTon ?? 0), 0);
-  const drawnTon = totalTon - undrawn.unknownMillTon - undrawn.millWithoutPointTon;
+  const drawnTon = totalTon - undrawn.unknownMillTon - undrawn.millWithoutPointTon - undrawn.groupWithoutPointTon;
   const dimOpacity = (on: number, off: number) => ["case", ["get", "on"], on, off] as unknown as number;
   const textPaint = { "text-color": dark ? "#f3f4f6" : "#111827", "text-halo-color": dark ? "#111827" : "#ffffff", "text-halo-width": 1.5 };
 
@@ -356,6 +358,7 @@ export function MapSupplyChainClient({ view }: { view: SupplyChainMapView }) {
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold">Peta Rantai Pasok</h1>
               <Badge variant="outline" className="gap-1"><FlaskConical className="h-3 w-3" /> Prototipe</Badge>
+              {helpSlot}
               <button type="button" onClick={() => setPanelOpen(false)} className="ml-auto rounded p-1 text-muted-foreground hover:bg-muted" aria-label="Lipat panel">
                 <PanelLeftClose className="h-4 w-4" />
               </button>
@@ -418,6 +421,7 @@ export function MapSupplyChainClient({ view }: { view: SupplyChainMapView }) {
               <div className="pt-2 font-medium">Tidak tergambar</div>
               <Row label="Mill tidak diketahui" value={fmtTon(undrawn.unknownMillTon)} />
               <Row label="Mill tanpa koordinat (tak ada di UML)" value={fmtTon(undrawn.millWithoutPointTon)} />
+              {undrawn.groupWithoutPointTon > 0 && <Row label="Lembaga tanpa titik lokasi" value={fmtTon(undrawn.groupWithoutPointTon)} />}
               {detail && (
                 <>
                   <Row label={`Lewat ${undrawn.offtakersWithoutPoint} offtaker tanpa titik*`} value={fmtTon(undrawn.skippedOfftakerTon)} />
@@ -567,7 +571,7 @@ function SelectedCard({
       </>
     );
   } else if (selected.kind === "flow") {
-    const s = segments[Number(selected.id)];
+    const s = segments.find((x) => flowSegmentKey(x) === selected.id);
     const label = (k: string) => {
       const id = k.slice(2);
       return k.startsWith("L:") ? (groups.get(id)?.abrv ?? id) : k.startsWith("O:") ? (offs.get(id)?.name ?? id) : millName(id);

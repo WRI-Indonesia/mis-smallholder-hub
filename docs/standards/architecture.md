@@ -59,11 +59,11 @@ src/
 <!-- GENERATED:tech-summary — npm run build:docs; jangan sunting tangan -->
 | Aspek | Angka | Sumber |
 |---|---|---|
-| Berkas test | **157** | `src/test/**/*.test.ts(x)` — jumlah kasus uji per rilis di [metrics.md](../project/metrics.md) |
+| Berkas test | **159** | `src/test/**/*.test.ts(x)` — jumlah kasus uji per rilis di [metrics.md](../project/metrics.md) |
 | Server Actions | **40 berkas** | `src/server/actions/` — satu berkas per domain, seluruh akses data lewat sini |
 | Prisma | **25 berkas skema · 40 model · 19 enum · 40 migrasi** | `prisma/schema/`, `prisma/migrations/` |
-| Menu | **9 top-level · 38 sub menu · 1 level-3** | `prisma/seeds/data/menu.csv` |
-| Materi Bantuan | **65 berkas Markdown** | `src/content/help/**` |
+| Menu | **9 top-level · 40 sub menu · 1 level-3** | `prisma/seeds/data/menu.csv` |
+| Materi Bantuan | **67 berkas Markdown** | `src/content/help/**` |
 <!-- /GENERATED:tech-summary -->
 
 Status fase: [roadmap.md § Phase Status](../project/roadmap.md#phase-status-indeks). Semua model ber-audit field + `isActive` (pengecualian: [decisions/0001](../decisions/0001-soft-delete-dan-pengecualian.md)).

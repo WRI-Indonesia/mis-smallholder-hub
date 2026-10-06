@@ -39,6 +39,7 @@ npm test
 
 | Bulan | Berkas |
 |---|---|
+| Oktober 2026 | [changelog/2026-10.md](./changelog/2026-10.md) |
 | September 2026 | [changelog/2026-09.md](./changelog/2026-09.md) |
 | Agustus 2026 | [changelog/2026-08.md](./changelog/2026-08.md) |
 | Juli 2026 | [changelog/2026-07.md](./changelog/2026-07.md) |

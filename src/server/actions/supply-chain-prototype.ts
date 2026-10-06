@@ -71,8 +71,8 @@ export async function getSupplyChainMapView(): Promise<SupplyChainMapView> {
   const points =
     parcelIds.length === 0
       ? []
-      : await prisma.$queryRaw<{ parcel_id: string; group_code: string; farmer_name: string; lat: number; lon: number }[]>`
-          SELECT lp.parcel_id, fg.code AS group_code, f.name AS farmer_name,
+      : await prisma.$queryRaw<{ parcel_id: string; group_code: string; farmer_id: string; farmer_name: string; lat: number; lon: number }[]>`
+          SELECT lp.parcel_id, fg.code AS group_code, f.farmer_id, f.name AS farmer_name,
                  ST_Y(ST_PointOnSurface(lp.geom)) AS lat, ST_X(ST_PointOnSurface(lp.geom)) AS lon
             FROM tbl_land_parcel lp
             JOIN tbl_farmer f ON f.id = lp.farmer_id
@@ -80,7 +80,10 @@ export async function getSupplyChainMapView(): Promise<SupplyChainMapView> {
            WHERE lp.is_active AND f.is_active AND lp.geom IS NOT NULL
              AND lp.parcel_id = ANY(${parcelIds}::text[])
              AND fg.code = ANY(${groupCodes}::text[])`;
-  const pointByParcel = new Map(points.map((p) => [`${p.group_code}|${p.parcel_id}`, p]));
+  // Parcel ID unik PER PETANI (bukan per Lembaga): satu Lembaga bisa punya beberapa
+  // petani ber-Parcel ID sama, jadi kunci wajib menyertakan Farmer ID.
+  const parcelKey = (group: string, farmer: string | null, parcel: string) => `${group}|${farmer ?? ""}|${parcel}`;
+  const pointByParcel = new Map(points.map((p) => [parcelKey(p.group_code, p.farmer_id, p.parcel_id), p]));
 
   const flowsBySurvey = new Map<string, ScParcelPoint["flows"]>();
   for (const r of view.data.records) {
@@ -94,7 +97,7 @@ export async function getSupplyChainMapView(): Promise<SupplyChainMapView> {
   for (const s of surveys) {
     const flows = flowsBySurvey.get(s.id);
     if (!flows) continue;
-    const p = s.parcelId ? pointByParcel.get(`${s.groupCode}|${s.parcelId}`) : undefined;
+    const p = s.parcelId ? pointByParcel.get(parcelKey(s.groupCode, s.farmerId, s.parcelId)) : undefined;
     const lat = p?.lat ?? s.lat;
     const lon = p?.lon ?? s.lon;
     if (lat == null || lon == null) continue;

@@ -199,7 +199,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>SC-02</strong> · 🔲 Not Started — Supply Chain: peta rantai pasok + report</summary>
 
-- **Evidence:** Belum ada.
+- **Evidence:** Belum ada versi final. **Prototipe** (2026-10-06, untuk diskusi): Dashboard Rantai Pasok (Sankey) + Peta Rantai Pasok membaca tabel CSV hasil konversi survei 2025 (lokal / S3 privat), **bukan** model DB — status fase tetap Not Started sampai #380 menyediakan model & import.
 - **Next step:** v1.5.0 (#381): garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel.
 - **Selesai bila:** #381 ditutup; Bantuan tutorial peta & report tersedia.
 

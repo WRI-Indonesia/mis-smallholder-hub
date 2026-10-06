@@ -86,6 +86,8 @@ import pPetaDataSkema from "@/content/help/tutorial/p-10-peta-data-skema.md";
 import pFireAlert from "@/content/help/tutorial/p-11-fire-alert.md";
 import pUnduhSpasialLahan from "@/content/help/tutorial/p-12-unduh-spasial-lahan.md";
 import pDashboardMonevBmp from "@/content/help/tutorial/p-13-dashboard-monev-bmp.md";
+import pDashboardRantaiPasok from "@/content/help/tutorial/p-16-dashboard-rantai-pasok.md";
+import pPetaRantaiPasok from "@/content/help/tutorial/p-17-peta-rantai-pasok.md";
 import pTumpangTindihLahan from "@/content/help/tutorial/p-14-tumpang-tindih-lahan.md";
 import pSprintMingguan from "@/content/help/tutorial/p-15-sprint-mingguan.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
@@ -226,9 +228,11 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "membaca-peta", source: pMembacaPeta },
       { id: "dashboard-bmp", source: pDashboardBmp },
       { id: "dashboard-monev-bmp", source: pDashboardMonevBmp },
+      { id: "dashboard-rantai-pasok", source: pDashboardRantaiPasok },
       { id: "peta-lahan", source: pPetaLahan },
       { id: "unduh-spasial-lahan", source: pUnduhSpasialLahan },
       { id: "fire-alert", source: pFireAlert },
+      { id: "peta-rantai-pasok", source: pPetaRantaiPasok },
       { id: "ketersediaan-data", source: pKetersediaanData },
       { id: "ringkasan-petani", source: pRingkasanPetani },
       { id: "komparasi-data-acuan", source: pKomparasiDataAcuan },

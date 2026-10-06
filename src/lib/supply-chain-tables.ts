@@ -126,9 +126,17 @@ export async function loadSupplyChainTables(): Promise<SupplyChainTables | null>
   const key = `${src.label}|${src.stamp}`;
   if (cache?.key === key) return cache.tables;
 
-  const texts = Object.fromEntries(
-    await Promise.all(SUPPLY_CHAIN_TABLE_FILES.map(async (f) => [f, await src.read(f)] as const)),
-  ) as Record<TableFile, string>;
+  let texts: Record<TableFile, string>;
+  try {
+    texts = Object.fromEntries(
+      await Promise.all(SUPPLY_CHAIN_TABLE_FILES.map(async (f) => [f, await src.read(f)] as const)),
+    ) as Record<TableFile, string>;
+  } catch (e) {
+    // Berkas pendukung belum lengkap (unggahan setengah jalan / folder parsial) →
+    // "data belum tersedia", bukan halaman error.
+    console.warn("[supply-chain] tabel tidak lengkap di", src.label, "—", (e as Error).message);
+    return null;
+  }
   const tables = parseSupplyChainTables(texts, src.label);
   cache = { key, tables };
   return tables;
