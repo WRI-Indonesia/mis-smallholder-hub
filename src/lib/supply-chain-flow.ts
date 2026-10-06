@@ -95,7 +95,7 @@ export interface SupplyChainData {
 /** Payload halaman prototipe (Dashboard & Peta). `available=false` bila folder tabel tidak ada. */
 export interface SupplyChainView {
   available: boolean;
-  /** Lokasi folder tabel relatif ke root repo — ditampilkan di keadaan kosong. */
+  /** Lokasi sumber tabel (folder lokal / S3) — ditampilkan di keadaan kosong. */
   tablesDir: string;
   data: SupplyChainData;
   years: number[];

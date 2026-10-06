@@ -45,8 +45,8 @@ export function SupplyChainUnavailable({ tablesDir }: { tablesDir: string }) {
       <CardContent className="py-10 text-center text-sm text-muted-foreground space-y-2">
         <p className="font-medium text-foreground">Data prototipe rantai pasok belum tersedia di server ini.</p>
         <p>
-          Halaman ini membaca folder tabel CSV <code className="rounded bg-muted px-1">{tablesDir}</code> yang tidak ikut repo (berisi nama
-          orang). Bangkitkan dengan skrip <code className="rounded bg-muted px-1">build-tables.mjs</code> di folder yang sama.
+          Halaman ini membaca tabel CSV dari <code className="rounded bg-muted px-1">{tablesDir}</code> — sengaja tidak ikut repo (berisi
+          nama orang). Unggah dengan skrip <code className="rounded bg-muted px-1">scripts/seed/upload-supply-chain-tables.mjs</code>.
         </p>
       </CardContent>
     </Card>
