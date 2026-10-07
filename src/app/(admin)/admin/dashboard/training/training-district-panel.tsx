@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/lib/training-dashboard-aggregation";
 import type { TrainingCoverageRow, TrainingPackageCode } from "@/types/dashboard";
 import { formatNumber, formatPct } from "@/lib/format";
+import { stackedBarLabelLayout } from "@/lib/stacked-bar-labels";
 
 /**
  * Satu sel: persen di kiri luar bar (revisi owner #198), lalu stacked bar
@@ -22,11 +23,11 @@ import { formatNumber, formatPct } from "@/lib/format";
  * tahun ada segmen tengah hijau muda = dilatih HANYA di tahun lain (#201) —
  * mereka bukan "belum dilatih", cakupan program kumulatif.
  *
- * Penempatan angka (#205): "muat" diukur dari lebar piksel segmen via
- * container query — bukan persen, yang menyesatkan di bar lebar. Angka dilatih
- * tahun terpilih di DALAM segmennya bila muat (≥3rem), kalau tidak menempel
- * tepat setelah batas segmen; angka "tahun lain" butuh ruang ekstra (≥6rem,
- * rata kanan) agar tak bertabrakan dengan fallback tsb. Tooltip selalu lengkap.
+ * Penempatan angka (#205): satu keputusan untuk ketiga angka dari lebar piksel
+ * bar yang diukur (`stackedBarLabelLayout`) — angka dilatih di DALAM segmennya
+ * bila muat, kalau tidak tepat setelah batasnya; angka "tahun lain" & "belum"
+ * hanya tampil bila ruangnya cukup tanpa menyentuh angka itu (dulu bisa
+ * berdempetan di area abu, terbaca seolah milik segmen belum). Tooltip selalu lengkap.
  */
 function DistrictCell({
   label,
@@ -43,40 +44,61 @@ function DistrictCell({
   total: number;
   year: number | null;
 }) {
+  // Lebar bar terukur — dasar keputusan penempatan angka (0 sampai terukur = angka disembunyikan).
+  // Callback ref: observer ikut terpasang bila bar baru muncul (sel kosong → terisi setelah filter).
+  const [barEl, setBarEl] = useState<HTMLDivElement | null>(null);
+  const [barWidth, setBarWidth] = useState(0);
+  useEffect(() => {
+    if (!barEl) return;
+    const ro = new ResizeObserver(([entry]) => setBarWidth(entry.contentRect.width));
+    ro.observe(barEl);
+    return () => ro.disconnect();
+  }, [barEl]);
   if (total <= 0) {
     return <div className="text-center text-xs text-muted-foreground">—</div>;
   }
   const pct = (trained / total) * 100;
   const pctOther = (trainedOther / total) * 100;
   const belum = total - trained - trainedOther;
-  const belumInside = 100 - pct - pctOther >= 20;
+  const layout = stackedBarLabelLayout({
+    widthPx: barWidth,
+    trainedPct: pct,
+    otherPct: pctOther,
+    trainedText: trained > 0 ? formatNumber(trained) : "",
+    otherText: trainedOther > 0 ? formatNumber(trainedOther) : null,
+    belumText: belum > 0 ? formatNumber(belum) : null,
+  });
   return (
     <Tooltip>
       <TooltipTrigger render={<div className="flex items-center gap-2" />}>
         <span className="w-11 shrink-0 text-right text-xs font-semibold tabular-nums">
           {formatPct(pct)}%
         </span>
-        <div className="relative h-5 flex-1 overflow-hidden rounded-full bg-muted">
+        <div ref={setBarEl} className="relative h-5 flex-1 overflow-hidden rounded-full bg-muted">
           {trainedOther > 0 && (
             <div
-              className="absolute inset-y-0 @container flex items-center justify-end bg-emerald-300 dark:bg-emerald-800"
+              className="absolute inset-y-0 flex items-center justify-end bg-emerald-300 dark:bg-emerald-800"
               style={{ left: `${Math.min(pct, 100)}%`, width: `${Math.min(pctOther, 100)}%` }}
             >
-              <span className="hidden @min-[6rem]:inline pr-2 text-[10px] font-semibold text-emerald-950 dark:text-emerald-100 tabular-nums whitespace-nowrap">
-                {formatNumber(trainedOther)}
-              </span>
+              {layout.other && (
+                <span className="pr-2 text-[10px] font-semibold text-emerald-950 dark:text-emerald-100 tabular-nums whitespace-nowrap">
+                  {formatNumber(trainedOther)}
+                </span>
+              )}
             </div>
           )}
           <div
-            className="absolute inset-y-0 left-0 @container flex items-center justify-end bg-emerald-600 dark:bg-emerald-500"
+            className="absolute inset-y-0 left-0 flex items-center justify-end bg-emerald-600 dark:bg-emerald-500"
             style={{ width: `${Math.min(pct, 100)}%` }}
           >
-            <span className="hidden @min-[3rem]:inline pr-2 text-[10px] font-semibold text-white tabular-nums whitespace-nowrap">
-              {formatNumber(trained)}
-            </span>
-            {trained > 0 && (
+            {layout.trained === "inside" && (
+              <span className="pr-2 text-[10px] font-semibold text-white tabular-nums whitespace-nowrap">
+                {formatNumber(trained)}
+              </span>
+            )}
+            {layout.trained === "outside" && (
               <span
-                className={`@min-[3rem]:hidden absolute inset-y-0 left-full flex items-center pl-1.5 text-[10px] font-semibold tabular-nums whitespace-nowrap ${
+                className={`absolute inset-y-0 left-full flex items-center pl-1.5 text-[10px] font-semibold tabular-nums whitespace-nowrap ${
                   trainedOther > 0
                     ? "text-emerald-950 dark:text-emerald-100"
                     : "text-emerald-700 dark:text-emerald-400"
@@ -86,7 +108,7 @@ function DistrictCell({
               </span>
             )}
           </div>
-          {belumInside && (
+          {layout.belum && (
             <span className="absolute inset-y-0 right-0 flex items-center pr-2 text-[10px] tabular-nums text-muted-foreground whitespace-nowrap">
               {formatNumber(belum)}
             </span>
