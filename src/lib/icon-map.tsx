@@ -138,7 +138,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Gauge: Gauge,
   // Data Analyst › Tumpang Tindih Lahan (#317): lapisan poligon yang bertumpuk.
   Layers: Layers,
-  // Data Analyst › Sprint Mingguan (#378): rentang satu minggu kerja.
+  // Data Analyst › Rencana Pengembangan (#378): rentang tanggal rilis (mulai → target).
   CalendarRange: CalendarRange,
   BookOpen: BookOpen,
   BookMarked: BookMarked,

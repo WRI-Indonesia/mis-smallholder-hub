@@ -1,5 +1,7 @@
 import type { NextRequest } from "next/server";
+import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { createPermissionMemo } from "@/lib/permission-memo";
 import { rasterTileTemplate } from "@/lib/map-style";
 import {
   BASEMAP_MAX_ZOOM,
@@ -43,18 +45,25 @@ function intParam(raw: string | null, max: number): number | null {
   return n <= max ? n : null;
 }
 
+/**
+ * Memo izin per pengguna (#320): satu ekspor grid memicu 1.000–4.000 permintaan
+ * tile; tanpa memo, tiap tile mengulang query izin. Kunci `userId:role` — role
+ * yang berubah (#342) langsung memutus memo. Jendela pencabutan izin ≤ 60 detik
+ * untuk endpoint baca-saja ini disetujui owner 2026-09-30.
+ */
+const basemapPermission = createPermissionMemo();
+
 export async function GET(req: NextRequest) {
   // Guard permission halaman yang memakainya — endpoint tile bukan proxy anonim
-  // (paritas /api/map-overlay & /api/map-hotspot).
-  //
-  // Biaya yang disadari (#320): ini berjalan PER TILE. `getUserPermissionsForMenu`
-  // dibungkus React `cache()` yang hanya men-dedup dalam satu request, jadi satu
-  // ekspor grid besar bisa memicu ribuan lookup sesi + query izin — dua sampai
-  // tiga orde lebih banyak daripada endpoint tile sejenis. Jangan menghapus
-  // guard-nya; perbaikannya memo per sesi berumur pendek.
-  if (!(await hasPermission("report-land-parcel", "VIEW"))) {
-    return new Response("Forbidden", { status: 403 });
-  }
+  // (paritas /api/map-overlay & /api/map-hotspot). Sesi tetap dicek tiap tile
+  // (JWT; lookup role sudah dimemo #342); yang dimemo hanya query izin.
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return new Response("Forbidden", { status: 403 });
+  const allowed = await basemapPermission(`${userId}:${session.user.role ?? ""}`, () =>
+    hasPermission("report-land-parcel", "VIEW"),
+  );
+  if (!allowed) return new Response("Forbidden", { status: 403 });
 
   const params = req.nextUrl.searchParams;
   const key = params.get("key") ?? "";

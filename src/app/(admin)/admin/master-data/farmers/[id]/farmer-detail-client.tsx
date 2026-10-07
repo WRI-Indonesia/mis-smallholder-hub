@@ -32,7 +32,8 @@ import { getFarmerParcelPassport } from "@/server/actions/farmer";
 import { maskNik, maskBirthDate } from "@/lib/mask";
 import type { FarmerDetailData } from "@/lib/farmer-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
-import type { MarkerPoint } from "@/lib/land-marker-query";
+import type { MarkerStats } from "@/lib/land-marker-query";
+import { getFarmerMarkerPoints } from "@/server/actions/farmer";
 import type { FarmerTreeParcelSummary } from "@/server/actions/tree";
 import type { BmpAssessmentListItem } from "@/server/actions/bmp-assessment";
 import { formatNumber } from "@/lib/format";
@@ -91,7 +92,7 @@ interface Props {
   parcels: ParcelRow[];
   mapParcels: DistributionMapParcel[];
   /** Patok batas lahan petani ini (#331). */
-  markerPoints: MarkerPoint[];
+  markerStats: MarkerStats;
   treeSummary: FarmerTreeParcelSummary[];
   treePoints: { longitude: number; latitude: number }[];
   canEdit: boolean;
@@ -198,7 +199,7 @@ export function FarmerDetailClient({
   detail,
   parcels,
   mapParcels,
-  markerPoints,
+  markerStats,
   treeSummary,
   treePoints,
   canEdit,
@@ -506,7 +507,8 @@ export function FarmerDetailClient({
             </h2>
             <ParcelsDistributionMap
               parcels={mapParcels}
-              markerPoints={markerPoints}
+              markerStats={markerStats}
+              loadMarkers={() => getFarmerMarkerPoints(farmer.id)}
               canViewParcel={canViewParcel}
               canEditParcel={canEditParcel}
               treePoints={treePoints}

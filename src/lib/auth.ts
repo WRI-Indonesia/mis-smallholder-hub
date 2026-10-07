@@ -3,9 +3,20 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/lib/auth.config";
+import { createRoleLookup, withRoleRefresh } from "@/lib/auth-role-refresh";
+
+const lookupUserRole = createRoleLookup((id) =>
+  prisma.user.findUnique({ where: { id }, select: { role: true, isActive: true } })
+);
 
 export const { handlers, auth } = NextAuth({
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    // Jalur Node saja (middleware tetap memakai authConfig tanpa Prisma):
+    // role + isActive dibaca ulang dari DB, dimemo ≤ 1 menit per user (#342).
+    jwt: withRoleRefresh(authConfig.callbacks!.jwt!, lookupUserRole),
+  },
   providers: [
     Credentials({
       credentials: {

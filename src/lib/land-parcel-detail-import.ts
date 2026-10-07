@@ -67,7 +67,7 @@ export const LAND_DOCUMENT_TYPE_LABELS: Record<LandDocumentTypeCode, string> = {
  * memang tak diisi. Untuk kolom STDB keduanya kini dibedakan; untuk kolom lain
  * (jenis/nomor surat, luas) tidak ada tahapan, jadi keduanya tetap = kosong.
  */
-const PENDING_TOKENS = new Set(["n/a", "na", "belum dapat", "belum ada", "belum", "tidak ada", "dalam proses", "sedang diurus", "proses"]);
+const PENDING_TOKENS = new Set(["n/a", "na", "belum dapat", "belum ada", "belum", "tidak ada", "dalam proses", "sedang diurus", "proses", "belum terbit", "tidak terbit"]);
 const BLANK_TOKENS = new Set(["", "-", "0", "null", "nil", "none"]);
 const EMPTY_TOKENS = new Set([...BLANK_TOKENS, ...PENDING_TOKENS]);
 
@@ -136,6 +136,8 @@ export function normalizeDocumentType(raw: unknown): NormalizedDocumentType {
     SKKT: "SKKT",
     SKTB: "SKTB",
     SK: "SK",
+    // AJB = Akta Jual Beli; ejaan panjangnya sudah tertangkap pola JUAL BELI di bawah (#366).
+    AJB: "JUAL_BELI",
   };
   if (acronym in byAcronym) return { type: byAcronym[acronym], typeRaw: text, custodyNote: null };
 
@@ -169,9 +171,23 @@ export function parseStdbNumber(raw: unknown): ParsedStdb | null {
   return { number: text, issuedYear: year >= 1990 && year <= 2100 ? year : null, stage: "TERBIT" };
 }
 
-/** Luas tertera (ha): angka > 0; koma desimal diterima; 0/kosong → null. Satu parser dengan Luas NKT. */
+/**
+ * Batas kewajaran luas tertera per surat (#366, keputusan B): 25 ha = batas
+ * pekebun kecil (wajib STDB). Data prod ≤ 16,83 ha (p99 2,18); berkas Siak
+ * menulis m² di kolom ha, dan nilai 1.000–9.999 sebelumnya lolos diam-diam
+ * sebagai hektar. Konversi TIDAK dilakukan di sini — aturannya khas per berkas
+ * (skrip penyiapan); importer hanya menolak dengan pesan yang menunjuk satuan.
+ */
+export const STATED_AREA_MAX_HA = 25;
+
+/** Luas tertera (ha): angka > 0; koma desimal diterima; 0/kosong → null; > 25 ha → error "kemungkinan m²". Satu parser dengan Luas NKT. */
 export function parseStatedArea(raw: unknown): { value: number | null; error: string | null } {
-  return parsePositiveNumber(raw, "Luas tertera");
+  // Tanpa batas `max` umum: nilai m² (bisa > 10.000) harus mendapat pesan satuan di bawah, bukan "terlalu besar".
+  const parsed = parsePositiveNumber(raw, "Luas tertera", Infinity);
+  if (parsed.value !== null && parsed.value > STATED_AREA_MAX_HA) {
+    return { value: null, error: `Luas tertera ${parsed.value} ha tidak wajar untuk lahan pekebun (maks ${STATED_AREA_MAX_HA} ha) — kemungkinan satuannya m²; ubah ke ha (m² ÷ 10.000)` };
+  }
+  return parsed;
 }
 
 // ─── NKT (#328) ───
@@ -415,11 +431,25 @@ function rawNktStatusCell(value: unknown): string {
   return s === "0" ? s : cleanFreeTextCell(s);
 }
 
+/**
+ * Kolom STDB memakai `cleanFreeTextCell`, bukan `cleanCell`: `cleanCell` membuang
+ * token pra-terbit ("n/a", "belum terbit", …) sebelum `parseStdbNumber` sempat
+ * melihatnya, sehingga baris `PERSIAPAN_DATA` tak pernah tercipta lewat import
+ * (bug laten #306, ditemukan saat analisis Siak — #366 keputusan A1).
+ */
+const PENDING_AWARE_KEYS: ReadonlySet<ParcelDetailFieldKey> = new Set(["stdbNumber"]);
+
 function readRaw(row: RawRow, mapping: Mapping): Record<ParcelDetailFieldKey, string> {
   const out = {} as Record<ParcelDetailFieldKey, string>;
   for (const f of PARCEL_DETAIL_TARGET_FIELDS) {
     const col = mapping[f.key];
-    out[f.key] = !col ? "" : f.key === "nktStatus" ? rawNktStatusCell(row[col]) : FREE_TEXT_KEYS.has(f.key) ? cleanFreeTextCell(row[col]) : cleanCell(row[col]);
+    out[f.key] = !col
+      ? ""
+      : f.key === "nktStatus"
+        ? rawNktStatusCell(row[col])
+        : FREE_TEXT_KEYS.has(f.key) || PENDING_AWARE_KEYS.has(f.key)
+          ? cleanFreeTextCell(row[col])
+          : cleanCell(row[col]);
   }
   return out;
 }
@@ -501,6 +531,11 @@ export function validateParcelDetailRows(
     }
 
     const doc = normalizeDocumentType(r.documentType);
+    // Sel berisi daftar "A || B" (#366, keputusan D direvisi 2026-09-30): di berkas Siak itu daftar
+    // surat PETANI yang disalin ke tiap lahannya — memecahnya menempelkan semua surat ke setiap lahan.
+    if (r.documentNumber.includes("||")) {
+      errors.push("Nomor Surat berisi beberapa nomor (||) — isi satu nomor surat per lahan");
+    }
     const area = parseStatedArea(r.statedArea);
     if (area.error) errors.push(area.error);
     const stdb = parseStdbNumber(r.stdbNumber);

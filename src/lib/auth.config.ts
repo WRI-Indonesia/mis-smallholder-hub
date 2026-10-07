@@ -10,12 +10,12 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnAdmin = nextUrl.pathname.startsWith("/admin");
-      const isOnLogin = nextUrl.pathname === "/login";
 
       if (isOnAdmin && !isLoggedIn) return false;
-      if (isOnLogin && isLoggedIn) {
-        return Response.redirect(new URL("/admin", nextUrl));
-      }
+      // /login → /admin bagi yang sudah login diputuskan halaman login (jalur
+      // Node, role/isActive dicek ulang — #342). Di sini hanya cookie yang
+      // dibaca; akun yang dinonaktifkan masih tampak login dan akan terjebak
+      // loop /admin ↔ /login.
       return true;
     },
     jwt({ token, user }) {

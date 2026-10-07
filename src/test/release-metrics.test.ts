@@ -108,6 +108,42 @@ describe("parseReleaseMetrics — validasi invarian (§7)", () => {
   });
 });
 
+describe("parseReleaseMetrics — batas baseline roadmap (#392)", () => {
+  const rows = [
+    "| v0.9.0 | 2026-07-15 | 71,0% | — · — · 440 · — · — | 1000 | anchor | a |",
+    "| v0.10.0 | 2026-07-16 | 88,5% | — · — · 441 · — · — | 1010 | +10 | b |",
+    "| v0.11.0 | 2026-07-17 | 8,6% | — · — · 442 · — · — | 1020 | +10 | **Roadmap direset** ke baseline baru |",
+    "| v0.12.0 | 2026-07-18 | 10,0% | — · — · 443 · — · — | 1030 | +10 | c |",
+  ];
+
+  it("frasa 'Roadmap direset' membuka baseline baru; baris sesudahnya ikut baseline itu", () => {
+    const r = parseReleaseMetrics(table(rows));
+    expect(r.map((x) => x.roadmapReset)).toEqual([false, false, true, false]);
+    expect(r.map((x) => x.roadmapBaseline)).toEqual([0, 0, 1, 1]);
+  });
+
+  it("tanpa frasa reset semua baris baseline 0 (riwayat lama tak berubah)", () => {
+    const r = parseReleaseMetrics(table(rows.slice(0, 2)));
+    expect(r.every((x) => x.roadmapBaseline === 0 && !x.roadmapReset)).toBe(true);
+  });
+
+  it("frasa di baris pertama tidak menaikkan baseline (tak ada baseline sebelumnya)", () => {
+    const r = parseReleaseMetrics(table([rows[2].replace("v0.11.0", "v0.9.0").replace("1020 | +10", "1000 | anchor")]));
+    expect(r[0]).toMatchObject({ roadmapReset: true, roadmapBaseline: 0 });
+  });
+
+  it("metrics.md nyata: tepat satu reset (2026-09-30) sesudah baseline MVP 88,5%", () => {
+    // Tidak mengunci versi barisnya: saat siklus berjalan dirilis, frasa
+    // "Roadmap direset" pindah ke baris rilis resminya (aturan pengisian 5).
+    const real = parseReleaseMetrics(realMd);
+    const idx = real.findIndex((x) => x.roadmapReset);
+    expect(real.filter((x) => x.roadmapReset)).toHaveLength(1);
+    expect(real[idx - 1].roadmapPct).toBe(88.5);
+    expect(real.slice(0, idx).every((x) => x.roadmapBaseline === 0)).toBe(true);
+    expect(real.slice(idx).every((x) => x.roadmapBaseline === 1)).toBe(true);
+  });
+});
+
 describe("kalender & agregasi Panel 2", () => {
   it("dayKind timezone-agnostik: 1 Ags 2026 = Sabtu, 15 Jul 2026 = hari kerja", () => {
     expect(dayKind("2026-08-01")).toBe("saturday");

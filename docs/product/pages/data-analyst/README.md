@@ -7,7 +7,7 @@
 | Menu key | `data-analyst` |
 | URL | `/admin/data-analyst` |
 | Icon | `BarChart3` |
-| Sub menu | 8 — Ringkasan Petani (`data-analyst-farmer-summary`), Data — All Lembaga (`data-analyst-data-availability`), Data — Per Lembaga (`data-analyst-data-completeness`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`), Metrik Rilis (`dashboard-metrics`, SUPERADMIN/ADMIN/MANAGEMENT), Peta Data & Skema (`data-analyst-data-map`, SUPERADMIN/ADMIN/MANAGEMENT), Tumpang Tindih Lahan (`data-analyst-parcel-overlap`, SUPERADMIN/ADMIN/MANAGEMENT/OPERATOR), Sprint Mingguan (`data-analyst-sprint`, SUPERADMIN/ADMIN/MANAGEMENT) — urut sesuai kolom `order` di `menu.csv` (1–8) |
+| Sub menu | 8 — Ringkasan Petani (`data-analyst-farmer-summary`), Data — All Lembaga (`data-analyst-data-availability`), Data — Per Lembaga (`data-analyst-data-completeness`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`), Metrik Rilis (`dashboard-metrics`, SUPERADMIN/ADMIN/MANAGEMENT), Peta Data & Skema (`data-analyst-data-map`, SUPERADMIN/ADMIN/MANAGEMENT), Tumpang Tindih Lahan (`data-analyst-parcel-overlap`, SUPERADMIN/ADMIN/MANAGEMENT/OPERATOR), Rencana Pengembangan (`data-analyst-sprint`, SUPERADMIN/ADMIN/MANAGEMENT) — urut sesuai kolom `order` di `menu.csv` (1–8) |
 
 ## Diagram objek
 
@@ -27,8 +27,8 @@ Menu: Data Analyst (/admin/data-analyst)
 │   └── Page: Peta Data & Skema (/admin/data-analyst/data-map)
 ├── Sub Menu: Tumpang Tindih Lahan (data-analyst-parcel-overlap) — SUPERADMIN/ADMIN/MANAGEMENT/OPERATOR
 │   └── Page: Tumpang Tindih Lahan (/admin/data-analyst/parcel-overlap)
-└── Sub Menu: Sprint Mingguan (data-analyst-sprint) — SUPERADMIN/ADMIN/MANAGEMENT
-    └── Page: Sprint Mingguan (/admin/data-analyst/sprint)
+└── Sub Menu: Rencana Pengembangan (data-analyst-sprint) — SUPERADMIN/ADMIN/MANAGEMENT
+    └── Page: Rencana Pengembangan (/admin/data-analyst/sprint)
 ```
 
 > **Urutan & label Ketersediaan Data (#352, keputusan owner P4, 2026-09-21).** Dua route dipertahankan (key & RolePermission tetap — preseden Metrik Rilis), tetapi order ditukar dan label diperjelas: **Semua Lembaga** (dashboard, order 2) jadi pintu masuk, **Per Lembaga** (analisa, order 3) jadi drill-down lewat `?lembaga=`. Perubahan hanya di `menu.csv` → seed ke staging/prod lewat `scripts/seed/seed-menu-only.ts` (bukan full seed). Nama berkas dokumen dan route lama dibiarkan.
@@ -46,7 +46,7 @@ Menu: Data Analyst (/admin/data-analyst)
 | 5 | Metrik Rilis | `dashboard-metrics` | `/admin/dashboard/metrics` | [metrics.md](metrics.md) |
 | 6 | Peta Data & Skema | `data-analyst-data-map` | `/admin/data-analyst/data-map` | [data-map.md](data-map.md) |
 | 7 | Tumpang Tindih Lahan | `data-analyst-parcel-overlap` | `/admin/data-analyst/parcel-overlap` | [parcel-overlap.md](parcel-overlap.md) |
-| 8 | Sprint Mingguan | `data-analyst-sprint` | `/admin/data-analyst/sprint` | [sprint.md](sprint.md) |
+| 8 | Rencana Pengembangan | `data-analyst-sprint` | `/admin/data-analyst/sprint` | [sprint.md](sprint.md) |
 
 ## Catatan route induk
 

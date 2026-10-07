@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import type { ActionResult } from "@/types/action-result";
 import MapGL, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { LayerProps } from "react-map-gl/maplibre";
 import {
@@ -24,6 +26,14 @@ import { geomBounds, parcelLabelFit, quantizeZoom, PARCEL_LABEL_FONT_PX } from "
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
 import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan, useMapPopupDrag, MapPopupDragHandle } from "@/components/shared/map-popup";
+
+export interface MarkerPointWire {
+  id: string;
+  code: string;
+  longitude: number;
+  latitude: number;
+  condition: string;
+}
 
 export interface DistributionMapParcel {
   id: string;
@@ -52,8 +62,14 @@ interface Props {
    * agar ikut checklist legenda; tanpa itu titik dianggap tanpa-KT.
    */
   treePoints?: { longitude: number; latitude: number; landParcelId?: string }[];
-  /** Patok batas (#331): satu layer kuning untuk semua patok lahan (#345), toggle sendiri di legenda; popup kode. */
-  markerPoints?: { id: string; code: string; longitude: number; latitude: number; condition: string }[];
+  /**
+   * Patok batas (#331): satu layer kuning (#345), toggle sendiri di legenda; popup kode.
+   * #335: halaman hanya membawa HITUNGAN (`markerStats`, untuk legenda) — titik dimuat
+   * malas lewat `loadMarkers` saat layer pertama kali dicentang. Cache terikat identitas
+   * `markerStats`: `router.refresh()` membawa objek baru → cache otomatis kosong.
+   */
+  markerStats?: { total: number; present: number } | null;
+  loadMarkers?: () => Promise<ActionResult<MarkerPointWire[]>>;
   /** Pilihan "Warna berdasarkan: Kelompok Tani · Blok" di legenda (#372, Detail Lembaga). */
   allowColorByBlok?: boolean;
 }
@@ -116,7 +132,8 @@ export function ParcelsDistributionMap({
   canViewParcel = false,
   canEditParcel = false,
   treePoints,
-  markerPoints,
+  markerStats,
+  loadMarkers,
   allowColorByBlok = false,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
@@ -131,6 +148,29 @@ export function ParcelsDistributionMap({
   const [showNkt, setShowNkt] = useState(true);
   // Patok (#331) — satu toggle; default mati supaya peta Lembaga (ribuan titik) tetap ringan.
   const [showMarkers, setShowMarkers] = useState(false);
+  // #335: titik dimuat malas. Cache ber-kunci objek `markerStats` (bukan useEffect reset):
+  // refresh halaman = objek stats baru = cache lama tak lagi cocok → dimuat ulang saat perlu.
+  const [markerCache, setMarkerCache] = useState<{ key: object; points: MarkerPointWire[] } | null>(null);
+  const [markerLoadingKey, setMarkerLoadingKey] = useState<object | null>(null);
+  const markerRequest = useRef(0);
+  const markerPoints = markerStats && markerCache?.key === markerStats ? markerCache.points : null;
+  const markerLoading = markerStats != null && markerLoadingKey === markerStats;
+  const toggleMarkers = async (checked: boolean) => {
+    setShowMarkers(checked);
+    // Sesudah refresh cache kosong → checkbox tampil tak tercentang (lihat `checked`), satu klik memuat ulang.
+    if (!checked || markerPoints || markerLoading || !markerStats || !loadMarkers) return;
+    const key = markerStats;
+    const req = ++markerRequest.current;
+    setMarkerLoadingKey(key);
+    const res = await loadMarkers().catch(() => ({ success: false as const, error: "Gagal memuat titik patok" }));
+    if (req !== markerRequest.current) return; // permintaan basi (dicentang ulang / halaman di-refresh)
+    setMarkerLoadingKey(null);
+    if (res.success) setMarkerCache({ key, points: res.data ?? [] });
+    else {
+      setShowMarkers(false);
+      toast.error(res.error);
+    }
+  };
   const [selectedMarker, setSelectedMarker] = useState<{ lngLat: [number, number]; code: string; condition: string } | null>(null);
   const markerGeojson = useMemo<FeatureCollection>(
     () => ({
@@ -143,7 +183,7 @@ export function ParcelsDistributionMap({
     }),
     [markerPoints],
   );
-  const markerCount = markerPoints?.length ?? 0;
+  const markerCount = markerStats?.total ?? 0;
   const [zoom, setZoom] = useState(13);
   const [selected, setSelected] = useState<SelectedParcel | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
@@ -424,7 +464,7 @@ export function ParcelsDistributionMap({
         )}
 
         {/* Patok (#331): satu layer kuning, warna sama dengan Peta Lahan & tab Patok (#345: layer merah turunan dihapus). */}
-        {markerCount > 0 && (
+        {markerPoints && markerPoints.length > 0 && (
           <Source type="geojson" data={markerGeojson}>
             <Layer
               id="group-markers"
@@ -607,9 +647,9 @@ export function ParcelsDistributionMap({
             )}
             {markerCount > 0 && (
               <label className="flex cursor-pointer items-center gap-2 text-xs">
-                <input type="checkbox" className="h-3.5 w-3.5 accent-primary" checked={showMarkers} onChange={(e) => setShowMarkers(e.target.checked)} />
+                <input type="checkbox" className="h-3.5 w-3.5 accent-primary" checked={markerPoints ? showMarkers : markerLoading} onChange={(e) => void toggleMarkers(e.target.checked)} />
                 <span className="h-3 w-3 shrink-0 rounded-[2px] border-2 border-[#854d0e] bg-[#facc15]" />
-                <span className="flex-1 truncate" title="Patok batas lahan">Patok lahan</span>
+                <span className="flex-1 truncate" title="Patok batas lahan">{markerLoading ? "Memuat patok…" : "Patok lahan"}</span>
                 <span className="tabular-nums text-muted-foreground">{markerCount}</span>
               </label>
             )}

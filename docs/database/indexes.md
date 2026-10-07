@@ -149,10 +149,9 @@
 | **Tree** | `(landParcelId, isActive)` | Set pohon aktif satu lahan (detail lahan, agregat count) | HIGH — tabel terbesar (10⁵–10⁶ baris), semua query lewat index ini |
 | Tree | `parcelId` | Relink pohon ke lahan by kunci bisnis (revisi lahan) | MEDIUM |
 | Tree | `isActive` | Filter global pohon aktif | LOW |
-| **ProductionRecord** | `farmerId` | Get all production records for a farmer | HIGH — list production, farmer summary |
-| ProductionRecord | `parcelId` | Get production records by parcel | MEDIUM — parcel-level analysis |
-| ProductionRecord | `period` | Filter production by period (YYYY-MM) | HIGH — monthly/yearly reports |
-| ProductionRecord | `isActive` | Filter active production records | HIGH |
+| **ProductionRecord** | `farmerId` | Produksi per petani; cek duplikat bulk upload (`farmer_id IN` literal: 35 ms vs 52 ms lewat unique, 840k baris) | HIGH — bulk upload produksi, detail petani |
+| ProductionRecord | `(parcelId, period)` | Produksi per lahan (+ periode): Peta BMP, Detail Lahan, Profil Lahan, list per lahan+periode — menggantikan `parcelId` tunggal (#251) | HIGH — peta & detail lahan |
+| ProductionRecord | `period` | Rentang periode (Report Produksi per Lembaga — planner memilih indeks ini) | HIGH — laporan bulanan/tahunan |
 | **MainDashboardSnapshot** | `snapshotDate` | Ambil snapshot terbaru (dashboard read) | HIGH |
 | MainDashboardSnapshot | `createdBy` | Audit/list snapshot per user | LOW |
 | MainDashboardSnapshot | `isActive` | Filter snapshot aktif (soft delete) | MEDIUM |
@@ -165,6 +164,21 @@
 - **CUID vs Auto-Increment**: CUID digunakan untuk semua PK (kecuali `LandMarkerCounter`, PK = `prefix`) karena distribusi random lebih baik untuk UUID-style lookups dan tidak bocorkan business metrics
 - **Composite Unique Indexes**: Digunakan untuk enforce business rule (contoh: satu farmer hanya bisa terdaftar 1x di satu training activity)
 - **Missing Indexes**: Tidak ada index pada `created_at` / `modified_at` karena audit query jarang dilakukan dan bisa pakai full table scan
+
+### Pengukuran ProductionRecord (#251, 2026-09-30)
+
+Grain diputuskan owner: **1 baris/lahan/bulan** → proyeksi ±900k baris 2028. Diukur di DB lokal terpisah (salinan snapshot prod 2026-09-28 + baris sintetis semua 14.016 lahan aktif × 60 bulan 2024-01…2028-12 = **840.960 baris aktif**), `EXPLAIN ANALYZE` hangat, Lembaga terbesar (`ICS-1408-02`, 858 petani, 2.192 lahan):
+
+| Query (asal kode) | Indeks lama | Indeks baru | Rencana eksekusi baru |
+| --- | --- | --- | --- |
+| Peta BMP — `parcel IN (…) + aktif`, group by lahan+periode (`map.ts` `getBmpMapData`) | 182 ms | **116 ms** | Index Scan `(parcel_id, period)` × 2.192 |
+| Detail Lahan / Profil Lahan — `parcel = X + aktif` | 0,08 ms | 0,05 ms | Bitmap `(parcel_id, period)` |
+| List per lahan+periode (`production.ts`) | 0,22 ms | **0,005 ms** | Index Scan `(parcel_id, period)` — dulu BitmapAnd dgn 14k entri periode |
+| Report Produksi — Lembaga + rentang 2026 (`report.ts`) | 36 ms | 29 ms | Index Scan `period` (168k baris) + hash join; `(farmer_id, period)` diuji, **tidak dipakai planner** → tidak ditambah |
+| Cek duplikat bulk upload — `farmer_id IN` 200 literal | 35 ms | 35 ms | Bitmap `farmer_id` (tanpanya 52 ms lewat unique) |
+| Insert 20k baris (median 7×, 2 putaran bergantian) | 434 / 469 ms | 479 / 519 ms | **±10% lebih lambat** — komposit (47 MB) lebih berat dari `parcel_id`+`is_active` tunggal; ≈ +2 dtk untuk import penuh 900k |
+
+`isActive` tunggal dibuang: tak satu pun rencana eksekusi memakainya (hampir semua baris aktif). Partial index `WHERE is_active` tidak dipakai karena Prisma 7 tak bisa mendeklarasikannya di schema — akan terus diusulkan DROP oleh `migrate dev` seperti GiST `*_geom_idx`. **Ukur ulang sesudah import besar pertama di prod** (#251) dan catat di sini.
 
 ### Target Performa Query
 
