@@ -494,7 +494,7 @@ export const TRAINING_BENEFIT_LABELS: Partial<Record<TrainingPackageCode, string
 };
 
 /** Label baris total — petani yang mengikuti minimal satu pelatihan (paket apa pun). */
-export const TRAINING_BENEFIT_ANY_LABEL = "Petani mengikuti ≥ 1 pelatihan";
+export const TRAINING_BENEFIT_ANY_LABEL = "Petani pernah mengikuti pelatihan (minimal 1)";
 
 export interface TrainingBenefitYear {
   year: number;
@@ -502,7 +502,7 @@ export interface TrainingBenefitYear {
   upTo: boolean;
 }
 export interface TrainingBenefitRow {
-  /** `ANY` = baris "petani mengikuti ≥ 1 pelatihan" (semua paket, termasuk Lainnya). */
+  /** `ANY` = baris "Petani pernah mengikuti pelatihan (minimal 1)" (semua paket, termasuk Lainnya). */
   code: TrainingPackageCode | "ANY";
   label: string;
   /** Sejajar `years`: actual = penerima manfaat BARU di kolom itu; cumulative = s.d. akhir tahun kolom. */

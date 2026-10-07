@@ -271,13 +271,8 @@ export function TrainingDashboardClient({
 
       <TrainingScoreCards totals={totals} yearLabel={yearLabel} />
 
-      {/* Roll-up cakupan ke level distrik dulu (gambaran besar), baru rincian
-          per Lembaga — urutan revisi owner (#198). Disembunyikan saat filter
-          Lembaga aktif: roll-up distrik atas satu Lembaga tidak bermakna. */}
-      {!groupId && <TrainingDistrictPanel rows={coverage} packages={packages} year={year} />}
-
-      {/* Penerima manfaat baru & kumulatif per tahun (#402) — di bawah Capaian Paket per
-          Distrik (keputusan owner). Ikut filter Distrik/Lembaga, bukan filter Tahun. */}
+      {/* Penerima manfaat baru & kumulatif per tahun (#402) — tepat di bawah kartu skor
+          (keputusan owner 2026-10-07). Ikut filter Distrik/Lembaga, bukan filter Tahun. */}
       <TrainingBenefitPanel
         groups={groups}
         canExport={canExport}
@@ -285,6 +280,11 @@ export function TrainingDashboardClient({
         filterActive={!!districtId || !!groupId}
         scopeLabel={allGroups.find((g) => g.id === groupId)?.name ?? districtOptions.find((d) => d.id === districtId)?.name ?? null}
       />
+
+      {/* Roll-up cakupan ke level distrik dulu (gambaran besar), baru rincian
+          per Lembaga — urutan revisi owner (#198). Disembunyikan saat filter
+          Lembaga aktif: roll-up distrik atas satu Lembaga tidak bermakna. */}
+      {!groupId && <TrainingDistrictPanel rows={coverage} packages={packages} year={year} />}
 
       <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} canExport={canExport} />
 

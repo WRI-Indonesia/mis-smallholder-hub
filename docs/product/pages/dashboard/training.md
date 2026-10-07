@@ -21,16 +21,18 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Total Sesi
 │   ├── Partisipasi Perempuan
 │   └── Petani Lulus Post-Test (≥ 60, #214)
+├── Card Training Benefit per year (full row, collapsible, #402; selalu tampil; tepat di bawah kartu KPI — owner 2026-10-07)
+│   ├── Subjudul berganti per tampilan (definisi Tabel · cara baca Grafis · cara baca A · cara baca B)
+│   ├── Toggle dua kelompok: Capaian [Tabel · Grafis] | vs Kontrak [A · B] (state lokal, bawaan Tabel; A & B berdampingan untuk diskusi manajemen 2026-10-08) · ⓘ popover "Cara menghitung" (Tabel/Grafis: aturan hitung, padanan Capaian Paket per Distrik, chip filter) · tombol "Excel (tabel)" (izin EXPORT; selalu format tabel, header dua tingkat)
+│   ├── Grafis: bar bertumpuk per baris — panjang = kumulatif t, segmen ≤ t−2 (gelap) · baru t−1 · baru t (terang), angka di segmen bila ≥ 9% trek; trek abu netral; garis putus-putus = total petani aktif (Σ petani Lembaga tersaring), skala = maks(total aktif, kumulatif) × 1,05
+│   ├── Tabel (format donor; header netral — tahun teks biasa, sub-kolom abu; kolom proporsional, rata tengah, Package 34%) paket (P1 · P2 Group Dynamic · P2 HSE · P3) + baris total "Petani pernah mengikuti pelatihan (minimal 1)" × kolom tahun ≤ t−2 · t−1 · t (masing-masing Actual · Kumulative); Kumulative t ditebalkan + latar netral; Actual kolom ≤ t−2 tanpa "+"
+│   ├── vs Kontrak A: kartu trayektori per baris kontrak; "≈ sesuai target" bila |selisih| < 1% target; titik target berimpit → cincin di sekeliling titik realisasi
+│   └── vs Kontrak B: bar menuju total kontrak + penanda target s.d. t; status ≈/⚠/✓; chip per periode ber-titik hijau (≥ 100%) / amber + "% dari target", tahun mendatang putus-putus "belum mulai"
 ├── Card Capaian Paket per Distrik (full row, collapsible, #198; tersembunyi saat filter Lembaga aktif)
 │   ├── Legend Sudah/Belum
 │   ├── Tabel paket × distrik (baris = paket + Pernah Ikut Pelatihan; kolom = Total (Riau) lalu distrik, header memuat total petani; lebar kolom seragam)
 │   ├── Sel: % di kiri + stacked bar tebal (sudah di segmen hijau, belum di segmen abu)
 │   └── Empty state
-├── Card Training Benefit per year (full row, collapsible, #402; selalu tampil)
-│   ├── Toggle Tabel | Grafis | vs Kontrak (A) | vs Kontrak (B) (state lokal, bawaan Tabel; A & B berdampingan untuk diskusi manajemen 2026-10-08) · tombol Excel (izin EXPORT; selalu format tabel, header dua tingkat)
-│   ├── Grafis: bar bertumpuk per baris — panjang = kumulatif t, segmen ≤ t−2 (gelap) · baru t−1 · baru t (terang), angka di segmen bila ≥ 9% trek; trek abu netral
-│   ├── Tabel (format donor; header netral — tahun teks biasa, sub-kolom abu; kolom proporsional, rata tengah, Package 34%) paket (P1 · P2 Group Dynamic · P2 HSE · P3) + baris total "Petani mengikuti ≥ 1 pelatihan" × kolom tahun ≤ t−2 · t−1 · t (masing-masing Actual · Kumulative)
-│   └── Catatan kaki: definisi, kesetaraan dengan Capaian Paket per Distrik, filter Tahun tak berlaku
 ├── Matriks Capaian Paket per Lembaga (collapsible)
 │   ├── Kolom Lembaga Petani
 │   ├── Kolom Petani
@@ -133,7 +135,7 @@ Label tahun: "semua tahun" atau "{YYYY}".
 | Kolom tahun | Bergeser otomatis: ≤ (t−2) · t−1 · t, t = tahun berjalan (2026: ≤2024 · 2025 · 2026); kegiatan bertanggal > t diabaikan |
 | Paket & label | 4 paket, label tabel rujukan owner: P1 \| BMP, P&C RSPO, HCV · P2 \| Group Dynamic (MK) · P2 \| HSE · P3 \| GEDSI, Alternative Livelihood, Business Development (Paket 3 & 4); `OTHER` tidak dilaporkan |
 | Filter | Distrik & Lembaga; filter Tahun diabaikan |
-| Baris total | "Petani mengikuti ≥ 1 pelatihan" (permintaan owner 2026-10-07): tahun pertama petani ikut pelatihan **apa pun, termasuk Lainnya** — padanan baris "Pernah Ikut Pelatihan" |
+| Baris total | "Petani pernah mengikuti pelatihan (minimal 1)" (permintaan owner 2026-10-07; label diganti owner hari yang sama, semula "Petani mengikuti ≥ 1 pelatihan"): tahun pertama petani ikut pelatihan **apa pun, termasuk Lainnya** — padanan baris "Pernah Ikut Pelatihan" |
 | Konsistensi | Kumulative t = Σ "sudah dilatih" per paket di Capaian Paket per Distrik tanpa filter tahun; baris total = "Pernah Ikut Pelatihan" (dikunci test) |
 | Ekspor | Excel sheet "Training Benefit", header dua tingkat ber-merge, berkas `training-benefit-per-year_<Lembaga\|Distrik\|semua>_<t>.xlsx` |
 | Fungsi | `trainingBenefitPerYear(groups, t)` · `trainingBenefitYears(t)` — `src/lib/training-dashboard-aggregation.ts` |

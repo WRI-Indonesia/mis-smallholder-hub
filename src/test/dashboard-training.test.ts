@@ -478,7 +478,7 @@ describe("trainingBenefitPerYear — Training Benefit per year (#402)", () => {
   it("baris ≥ 1 pelatihan: paket apa pun (termasuk Lainnya), petani dihitung sekali pada tahun pertamanya; = Pernah Ikut Pelatihan", () => {
     const current = [group("g1", { activities: groups[0].activities.filter((a) => a.date < "2027") }), groups[1]];
     const { any } = trainingBenefitPerYear(current, 2026);
-    expect(any.label).toBe("Petani mengikuti ≥ 1 pelatihan");
+    expect(any.label).toBe("Petani pernah mengikuti pelatihan (minimal 1)");
     // g1: f1,f2 (2023) · f3 (2025) · f4, f5 (2026; f5 hanya Lainnya; f1 MK 2026 bukan baru) · g2: f1 (2025)
     expect(any.cells).toEqual([
       { actual: 2, cumulative: 2 },

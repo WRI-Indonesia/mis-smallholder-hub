@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Download, TrendingUp } from "lucide-react";
+import { ChevronDown, Download, Info, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   trainingBenefitPerYear,
   type TrainingBenefitRow,
@@ -19,6 +20,8 @@ import {
   type ProgramTargetRecord,
 } from "@/lib/program-target";
 
+type BenefitView = "tabel" | "grafis" | "kontrak" | "progres";
+
 const yearLabel = (y: TrainingBenefitYear) => (y.upTo ? `≤ ${y.year}` : String(y.year));
 const segmentLabel = (y: TrainingBenefitYear) => (y.upTo ? `s.d. ${y.year}` : `baru ${y.year}`);
 
@@ -32,7 +35,20 @@ const SEGMENT_CLASS = [
 const MIN_LABEL_SHARE = 0.09;
 
 /** Satu bar bertumpuk tampilan Grafis: panjang = kumulatif t, segmen = kapan petani pertama dilatih. */
-function BenefitBar({ r, years, max, strong = false }: { r: TrainingBenefitRow; years: TrainingBenefitYear[]; max: number; strong?: boolean }) {
+function BenefitBar({
+  r,
+  years,
+  max,
+  activeFarmers,
+  strong = false,
+}: {
+  r: TrainingBenefitRow;
+  years: TrainingBenefitYear[];
+  max: number;
+  /** Total petani aktif (penyebut cakupan) — garis acuan putus-putus di tiap trek. */
+  activeFarmers: number;
+  strong?: boolean;
+}) {
   const lastIdx = years.length - 1;
   const total = r.cells[lastIdx].cumulative;
   return (
@@ -57,6 +73,12 @@ function BenefitBar({ r, years, max, strong = false }: { r: TrainingBenefitRow; 
               ) : null,
             )}
           </div>
+          {activeFarmers > 0 && (
+            <div
+              className="pointer-events-none absolute inset-y-0 border-l-2 border-dashed border-slate-500 dark:border-slate-300"
+              style={{ left: `${Math.min(100, (activeFarmers / max) * 100)}%` }}
+            />
+          )}
         </div>
         <span className={`w-14 shrink-0 text-right tabular-nums ${strong ? "font-bold" : "font-semibold"}`}>{formatNumber(total)}</span>
       </div>
@@ -84,6 +106,10 @@ function trajectory(row: ContractRow, baselineYear: number | null, years: number
   return pts;
 }
 
+/** Selisih realisasi − target dalam 1% target dianggap sesuai (angka kontrak dibulatkan). */
+const ON_TARGET_TOLERANCE = 0.01;
+const onTarget = (gap: number, target: number) => target > 0 && Math.abs(gap) < target * ON_TARGET_TOLERANCE;
+
 const fmtK = (n: number) => (n >= 1000 ? `${(n / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}k` : String(n));
 
 /**
@@ -103,6 +129,7 @@ function TrajectoryChart({ points, currentLabel }: { points: TrajectoryPoint[]; 
   const curIdx = points.findIndex((p) => p.label === currentLabel);
   const gapIdx = curIdx >= 0 && points[curIdx].actual != null ? curIdx : lastReal;
   const gap = gapIdx >= 0 ? (points[gapIdx].actual ?? 0) - points[gapIdx].target : 0;
+  const near = gapIdx >= 0 && onTarget(gap, points[gapIdx].target);
   const ticks = [0, 0.5, 1].map((f) => Math.round((max / 1.08) * f));
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Trayektori target kontrak vs realisasi">
@@ -121,11 +148,6 @@ function TrajectoryChart({ points, currentLabel }: { points: TrajectoryPoint[]; 
         </text>
       ))}
       <polyline points={path(points.map((p) => p.target))} fill="none" className="stroke-slate-400" strokeWidth={2} strokeDasharray="5 4" />
-      {points.map((p, i) => (
-        <circle key={`t${i}`} cx={x(i)} cy={y(p.target)} r={3.5} className="fill-background stroke-slate-400" strokeWidth={1.5}>
-          <title>{`Target kumulatif ${p.label}: ${formatNumber(p.target)}`}</title>
-        </circle>
-      ))}
       <polyline points={path(real)} fill="none" className="stroke-emerald-600" strokeWidth={2.75} />
       {points.map((p, i) =>
         p.actual == null ? null : (
@@ -134,7 +156,34 @@ function TrajectoryChart({ points, currentLabel }: { points: TrajectoryPoint[]; 
           </circle>
         ),
       )}
-      {gapIdx >= 0 && gap !== 0 && (
+      {/* Titik target digambar SETELAH realisasi: bila berimpit, jadi cincin di sekeliling
+          titik realisasi agar target tetap terlihat. */}
+      {points.map((p, i) => {
+        const ring = p.actual != null && Math.abs(y(p.actual) - y(p.target)) < 7;
+        return (
+          <circle
+            key={`t${i}`}
+            cx={x(i)}
+            cy={y(p.target)}
+            r={ring ? 6.5 : 3.5}
+            className={`${ring ? "fill-none" : "fill-background"} stroke-slate-400`}
+            strokeWidth={1.5}
+          >
+            <title>{`Target kumulatif ${p.label}: ${formatNumber(p.target)}`}</title>
+          </circle>
+        );
+      })}
+      {gapIdx >= 0 && near && (
+        <text
+          x={Math.min(x(gapIdx) + 10, W - R)}
+          y={y(points[gapIdx].target) + 18}
+          textAnchor={x(gapIdx) + 10 > W - R - 60 ? "end" : "start"}
+          className="fill-emerald-700 text-[10px] font-semibold"
+        >
+          ≈ sesuai target
+        </text>
+      )}
+      {gapIdx >= 0 && !near && gap !== 0 && (
         <text
           x={Math.min(x(gapIdx) + 8, W - R)}
           y={(y(points[gapIdx].target) + y(points[gapIdx].actual ?? 0)) / 2 + 3}
@@ -281,30 +330,39 @@ function ContractProgressView({ targets, groups, filterActive }: { targets: Prog
                   <b className="text-foreground tabular-nums">{formatNumber(realized)}</b> dari {formatNumber(total)} petani (total kontrak) · ▏target s.d. {currentYear}:{" "}
                   {formatNumber(toDate)}
                 </span>
-                {gap < 0 ? (
+                {onTarget(gap, toDate) ? (
+                  <span className="font-semibold text-emerald-700">≈ sesuai target</span>
+                ) : gap < 0 ? (
                   <span className="font-semibold text-amber-600">⚠ tertinggal {formatNumber(-gap)}</span>
                 ) : (
-                  <span className="font-semibold text-emerald-700">✓ sesuai target</span>
+                  <span className="font-semibold text-emerald-700">✓ {gap > 0 ? `+${formatNumber(gap)} di atas target` : "sesuai target"}</span>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
+              {/* Chip per periode: titik hijau = target periode tercapai, amber = belum. */}
+              <div className="flex flex-wrap gap-1.5">
                 {chips.map(({ label, c, future }) => {
                   const ok = c.pct != null && c.pct >= 100;
                   return (
                     <span
                       key={label}
-                      className={`rounded-md border px-2 py-1 text-xs tabular-nums ${
-                        future ? "border-dashed text-muted-foreground" : ok ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30" : "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] tabular-nums ${
+                        future ? "border-dashed text-muted-foreground" : "bg-background"
                       }`}
+                      title={c.target == null ? undefined : `Realisasi ${formatNumber(c.actual)} dari target ${formatNumber(c.target)}`}
                     >
-                      <span className="font-semibold">{label}</span>{" "}
+                      {!future && <span className={`h-2 w-2 shrink-0 rounded-full ${ok ? "bg-emerald-600" : "bg-amber-500"}`} />}
+                      <span className="font-semibold">{label}</span>
                       {future ? (
-                        <>— target {c.target == null ? "—" : formatNumber(c.target)}, belum mulai</>
+                        <span>target {c.target == null ? "—" : formatNumber(c.target)} · belum mulai</span>
                       ) : (
-                        <>
-                          {ok ? "✓" : "▲"} {formatNumber(c.actual)} / {c.target == null ? "—" : formatNumber(c.target)}
-                          {c.pct != null && ` (${Math.round(c.pct)}%)`}
-                        </>
+                        <span>
+                          {formatNumber(c.actual)}/{c.target == null ? "—" : formatNumber(c.target)}
+                          {c.pct != null && (
+                            <span className={`ml-1 font-semibold ${ok ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+                              {Math.round(c.pct)}% dari target
+                            </span>
+                          )}
+                        </span>
                       )}
                     </span>
                   );
@@ -327,9 +385,20 @@ function ContractProgressView({ targets, groups, filterActive }: { targets: Prog
  * Tampilan Grafis (#402, pilihan owner 2026-10-07: toggle Tabel | Grafis dalam satu kartu) —
  * paket yang tumbuh pesat tahun ini terlihat dari lebar segmen terangnya.
  */
-function BenefitChart({ years, rows, any }: { years: TrainingBenefitYear[]; rows: TrainingBenefitRow[]; any: TrainingBenefitRow }) {
+function BenefitChart({
+  years,
+  rows,
+  any,
+  activeFarmers,
+}: {
+  years: TrainingBenefitYear[];
+  rows: TrainingBenefitRow[];
+  any: TrainingBenefitRow;
+  activeFarmers: number;
+}) {
   const lastIdx = years.length - 1;
-  const max = Math.max(1, ...[...rows, any].map((r) => r.cells[lastIdx].cumulative));
+  // Skala memuat total petani aktif + ruang 5% agar garis acuan tak berimpit dengan ujung trek.
+  const max = Math.max(1, activeFarmers, ...[...rows, any].map((r) => r.cells[lastIdx].cumulative)) * 1.05;
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
@@ -339,13 +408,19 @@ function BenefitChart({ years, rows, any }: { years: TrainingBenefitYear[]; rows
             {segmentLabel(y)}
           </span>
         ))}
+        {activeFarmers > 0 && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-3 border-l-2 border-dashed border-slate-500 dark:border-slate-300" />
+            total petani aktif <b className="tabular-nums text-foreground">{formatNumber(activeFarmers)}</b>
+          </span>
+        )}
         <span className="ml-auto">Angka di ujung = kumulatif s.d. {years[lastIdx].year}</span>
       </div>
       {rows.map((r) => (
-        <BenefitBar key={r.code} r={r} years={years} max={max} />
+        <BenefitBar key={r.code} r={r} years={years} max={max} activeFarmers={activeFarmers} />
       ))}
       <div className="border-t pt-3">
-        <BenefitBar r={any} years={years} max={max} strong />
+        <BenefitBar r={any} years={years} max={max} activeFarmers={activeFarmers} strong />
       </div>
     </div>
   );
@@ -373,12 +448,35 @@ export function TrainingBenefitPanel({
   filterActive: boolean;
 }) {
   const [open, setOpen] = useState(true);
-  const [view, setView] = useState<"tabel" | "grafis" | "kontrak" | "progres">("tabel");
+  const [view, setView] = useState<BenefitView>("tabel");
   const currentYear = new Date().getFullYear();
   const { years, rows, any } = useMemo(() => trainingBenefitPerYear(groups, currentYear), [groups, currentYear]);
   const lastIdx = years.length - 1;
   const totalCumulative = any.cells[lastIdx].cumulative;
   const totalNew = any.cells[lastIdx].actual;
+  const activeFarmers = useMemo(() => groups.reduce((sum, g) => sum + g.totalFarmers, 0), [groups]);
+  const subtitle: Record<BenefitView, string> = {
+    tabel: "Petani unik per paket. Actual = penerima manfaat baru (pertama kali dilatih paket itu) pada tahun tersebut; Kumulative = total s.d. akhir tahun.",
+    grafis: `Panjang bar = petani unik yang sudah dilatih s.d. ${currentYear}; warna segmen = tahun pertama dilatih. Garis putus-putus = total petani aktif.`,
+    kontrak: "Target kontrak kumulatif (garis putus-putus) dibanding realisasi penerima manfaat baru (garis tegas). Target diisi di Master Data › Target Program.",
+    progres: `Realisasi menuju total kontrak; garis penanda di bar = target s.d. ${currentYear}, chip = capaian tiap periode.`,
+  };
+  /** Tombol toggle (fungsi biasa, bukan komponen — tak di-remount tiap render). */
+  const viewButton = (v: BenefitView, label: string, title?: string) => (
+    <button
+      key={v}
+      type="button"
+      aria-pressed={view === v}
+      aria-label={title ?? label}
+      title={title}
+      onClick={() => setView(v)}
+      className={`rounded px-3 py-1 text-xs font-semibold transition-colors ${
+        view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {label}
+    </button>
+  );
 
   const exportExcel = async () => {
     const ExcelJS = (await import("exceljs")).default;
@@ -415,7 +513,7 @@ export function TrainingBenefitPanel({
   return (
     <Card className="border border-border/60 shadow-sm">
       <Collapsible open={open} onOpenChange={setOpen}>
-        <div className="flex items-start justify-between gap-3 px-6 py-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 px-6 py-4">
           <CollapsibleTrigger
             render={
               <button type="button" className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left">
@@ -425,8 +523,8 @@ export function TrainingBenefitPanel({
                   </span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     {open
-                      ? "Petani unik per paket. Actual = penerima manfaat baru (pertama kali dilatih paket itu) pada tahun tersebut; Kumulative = total s.d. akhir tahun."
-                      : `${formatNumber(totalNew)} petani baru dilatih ${currentYear} · ${formatNumber(totalCumulative)} petani mengikuti ≥ 1 pelatihan`}
+                      ? subtitle[view]
+                      : `${formatNumber(totalNew)} petani baru dilatih ${currentYear} · ${formatNumber(totalCumulative)} petani pernah mengikuti pelatihan`}
                   </span>
                 </span>
                 <ChevronDown className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
@@ -435,25 +533,54 @@ export function TrainingBenefitPanel({
           />
           {open && (
             <div className="flex shrink-0 items-center gap-2">
-              <div className="flex rounded-md border bg-muted/40 p-0.5" role="group" aria-label="Tampilan">
-                {(["tabel", "grafis", "kontrak", "progres"] as const).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    aria-pressed={view === v}
-                    onClick={() => setView(v)}
-                    className={`rounded px-3 py-1 text-xs font-semibold transition-colors ${
-                      view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {v === "tabel" ? "Tabel" : v === "grafis" ? "Grafis" : v === "kontrak" ? "vs Kontrak (A)" : "vs Kontrak (B)"}
-                  </button>
-                ))}
+              {/* Dua kelompok: capaian (Tabel · Grafis) | vs Kontrak (A · B). */}
+              <div className="flex items-center rounded-md border bg-muted/40 p-0.5" role="group" aria-label="Tampilan">
+                <span className="px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Capaian</span>
+                {viewButton("tabel", "Tabel")}
+                {viewButton("grafis", "Grafis")}
+                <span className="mx-1.5 h-4 w-px bg-border" aria-hidden />
+                <span className="px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">vs Kontrak</span>
+                {viewButton("kontrak", "A", "vs Kontrak (A) — trayektori")}
+                {viewButton("progres", "B", "vs Kontrak (B) — progres")}
               </div>
+              {(view === "tabel" || view === "grafis") && (
+                <Popover>
+                  <PopoverTrigger
+                    render={
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label="Cara menghitung">
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
+                  <PopoverContent align="end" className="w-80 gap-0 p-0 text-xs">
+                    <div className="flex items-center gap-2 border-b px-3 py-2 font-semibold">
+                      <Info className="h-3.5 w-3.5 text-primary" /> Cara menghitung
+                    </div>
+                    <dl className="space-y-2 px-3 py-2.5 leading-snug">
+                      {[
+                        ["Per paket", "Satu petani dihitung sekali — pada tahun pertama ia dilatih paket itu."],
+                        ["Baris terakhir", "Petani yang ikut pelatihan apa pun, termasuk Lainnya."],
+                        ["Cocok dengan", `Kumulative ${currentYear} = petani sudah dilatih di Capaian Paket per Distrik (tanpa filter tahun).`],
+                      ].map(([term, desc]) => (
+                        <div key={term} className="grid grid-cols-[6.5rem_1fr] gap-2">
+                          <dt className="font-semibold text-foreground">{term}</dt>
+                          <dd className="text-muted-foreground">{desc}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <div className="flex flex-wrap items-center gap-1.5 border-t bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+                      Filter:
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">✓ Distrik</span>
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">✓ Lembaga</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-500 line-through dark:bg-slate-800 dark:text-slate-400">Tahun</span>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
               {canExport && (
-                <Button variant="outline" size="sm" className="h-8 gap-2" onClick={exportExcel} title="Unduh dalam format tabel donor">
+                <Button variant="outline" size="sm" className="h-8 gap-2" onClick={exportExcel} title="Unduh format tabel donor (angka saja, apa pun tampilan yang aktif)">
                   <Download className="h-4 w-4" />
-                  Excel
+                  Excel (tabel)
                 </Button>
               )}
             </div>
@@ -466,7 +593,7 @@ export function TrainingBenefitPanel({
             ) : view === "kontrak" ? (
               <ContractView targets={programTargets} groups={groups} filterActive={filterActive} />
             ) : view === "grafis" ? (
-              <BenefitChart years={years} rows={rows} any={any} />
+              <BenefitChart years={years} rows={rows} any={any} activeFarmers={activeFarmers} />
             ) : (
               <div className="overflow-x-auto">
                 {/* Format tabel donor; header netral (owner 2026-10-07: fokus pada capaian, bukan
@@ -496,11 +623,15 @@ export function TrainingBenefitPanel({
                       ))}
                     </tr>
                     <tr className="border-b border-border text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                      {years.flatMap((y) => [
+                      {years.flatMap((y, i) => [
                         <th key={`${y.year}-a`} className="border-l border-border/60 px-2 py-1.5 text-center" title="Penerima manfaat baru pada tahun tsb">
                           Actual
                         </th>,
-                        <th key={`${y.year}-k`} className="px-2 py-1.5 text-center" title="Total s.d. akhir tahun tsb">
+                        <th
+                          key={`${y.year}-k`}
+                          className={`px-2 py-1.5 text-center ${i === lastIdx ? "bg-slate-50 text-foreground dark:bg-slate-900/50" : ""}`}
+                          title="Total s.d. akhir tahun tsb"
+                        >
                           Kumulative
                         </th>,
                       ])}
@@ -522,9 +653,18 @@ export function TrainingBenefitPanel({
                         </td>
                         {r.cells.flatMap((c, i) => [
                           <td key={`${i}-a`} className="border-l border-border/60 px-2 py-2.5 text-center tabular-nums">
-                            {c.actual > 0 ? <span className="font-semibold text-emerald-700 dark:text-emerald-400">+{formatNumber(c.actual)}</span> : <span className="text-muted-foreground">0</span>}
+                            {/* Kolom ≤ t−2 = gabungan tahun-tahun awal, bukan tambahan → tanpa "+". */}
+                            {c.actual > 0 ? (
+                              <span className="font-semibold text-emerald-700 dark:text-emerald-400">{i === 0 ? formatNumber(c.actual) : `+${formatNumber(c.actual)}`}</span>
+                            ) : (
+                              <span className="text-muted-foreground">0</span>
+                            )}
                           </td>,
-                          <td key={`${i}-k`} className="px-2 py-2.5 text-center font-semibold tabular-nums">
+                          // Kumulative tahun berjalan = angka utama kartu → ditebalkan & diberi latar netral.
+                          <td
+                            key={`${i}-k`}
+                            className={`px-2 py-2.5 text-center tabular-nums ${i === lastIdx ? "bg-slate-50 text-base font-bold dark:bg-slate-900/50" : "font-semibold"}`}
+                          >
                             {formatNumber(c.cumulative)}
                           </td>,
                         ])}
@@ -533,14 +673,6 @@ export function TrainingBenefitPanel({
                   </tbody>
                 </table>
               </div>
-            )}
-            {view !== "kontrak" && view !== "progres" && (
-              <p className="mt-3 text-xs text-muted-foreground">
-              Satu petani dihitung sekali per paket; baris terakhir menghitung petani yang mengikuti minimal satu pelatihan
-              (paket apa pun, termasuk Lainnya) pada tahun pertama ia ikut. Kumulative tahun {currentYear} sama dengan jumlah
-              petani sudah dilatih di kartu Capaian Paket per Distrik (tanpa filter tahun). Mengikuti filter Distrik & Lembaga; filter Tahun tidak
-              berlaku untuk kartu ini.
-            </p>
             )}
           </CardContent>
         </CollapsibleContent>
