@@ -22,12 +22,11 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Partisipasi Perempuan
 │   └── Petani Lulus Post-Test (≥ 60, #214)
 ├── Card Training Benefit per year (full row, collapsible, #402; selalu tampil; tepat di bawah kartu KPI — owner 2026-10-07)
-│   ├── Subjudul berganti per tampilan (definisi Tabel · cara baca Grafis · cara baca A · cara baca B)
-│   ├── Toggle dua kelompok: Capaian [Tabel · Grafis] | vs Kontrak [A · B] (state lokal, bawaan Tabel; A & B berdampingan untuk diskusi manajemen 2026-10-08) · ⓘ popover "Cara menghitung" (Tabel/Grafis: aturan hitung, padanan Capaian Paket per Distrik, chip filter) · tombol "Excel (tabel)" (izin EXPORT; selalu format tabel, header dua tingkat)
+│   ├── Subjudul berganti per tampilan (definisi Tabel · cara baca Grafis · cara baca vs Kontrak)
+│   ├── Toggle: Capaian [Tabel · Grafis] | vs Kontrak (state lokal, bawaan Tabel; tab (B) progres dihapus — owner 2026-10-07 memilih (A) trayektori) · ⓘ popover "Cara menghitung" (Tabel/Grafis: aturan hitung, padanan Capaian Paket per Distrik, chip filter) · tombol "Excel (tabel)" (izin EXPORT; selalu format tabel, header dua tingkat)
 │   ├── Grafis: bar bertumpuk per baris — panjang = kumulatif t, segmen ≤ t−2 (gelap) · baru t−1 · baru t (terang), angka di segmen bila ≥ 9% trek; trek abu netral; **trek penuh = total petani aktif** (Σ petani Lembaga tersaring) → sisa abu = belum dilatih, tanpa label angka (owner 2026-10-07; jumlahnya di tooltip) (garis acuan putus-putus + ruang 5% dihapus owner 2026-10-07: ruang di kanan garis tak bermakna)
 │   ├── Tabel (format donor; header netral — tahun teks biasa, sub-kolom abu; kolom proporsional, rata tengah, Package 34%) paket (P1 · P2 Group Dynamic · P2 HSE · P3) + baris total "Petani pernah mengikuti pelatihan (minimal 1)" × kolom tahun ≤ t−2 · t−1 · t (masing-masing Actual · Kumulative); Kumulative t ditebalkan + latar netral; Actual kolom ≤ t−2 tanpa "+"
-│   ├── vs Kontrak A: kartu trayektori per baris kontrak; "≈ sesuai target" bila |selisih| < 1% target; titik target berimpit → cincin di sekeliling titik realisasi
-│   └── vs Kontrak B: bar menuju total kontrak + penanda target s.d. t; status ≈/⚠/✓; chip per periode ber-titik hijau (≥ 100%) / amber + "% dari target", tahun mendatang putus-putus "belum mulai"
+│   └── vs Kontrak: 5 grafik kecil trayektori per paket; "≈ sesuai target" bila |selisih| < 1% target; titik target berimpit → cincin di sekeliling titik realisasi
 ├── Card Capaian Paket per Distrik (full row, collapsible, #198; tersembunyi saat filter Lembaga aktif)
 │   ├── Legend Sudah/Belum
 │   ├── Tabel paket × distrik (baris = paket + Pernah Ikut Pelatihan; kolom = Total (Riau) lalu distrik, header memuat total petani; lebar kolom seragam)
@@ -142,16 +141,15 @@ Label tahun: "semua tahun" atau "{YYYY}".
 
 Terverifikasi 2026-10-07 (mis-dev): Kumulative 2026 P1 8.279 · MK 7.769 · HSE 8.076 · P3 3.756 · ≥ 1 pelatihan 8.401 = Total Capaian Paket per Distrik.
 
-### Tampilan vs Kontrak (A) & (B) (#403)
+### Tampilan vs Kontrak (#403)
 
 Target kontrak dari Master Data › Target Program ([program-target.md](../master-data/program-target.md)) vs realisasi penerima manfaat baru, **per paket** (owner 2026-10-07): P1 · P2 Group Dynamic · P2 HSE · P3 · Petani pernah mengikuti pelatihan (pelatihan apa pun, = baris total kartu); Start ↔ kumulatif s.d. tahun baseline; hanya tahun bertarget; realisasi ikut filter Distrik/Lembaga dengan catatan amber. Fungsi data: `programContractRows` (`src/lib/program-target.ts`).
 
 | Tab | Isi |
 |---|---|
-| **(A)** trayektori | 5 grafik kecil (grid 1/2/3 kolom), **skala sumbu Y sama** agar tinggi garis antarpaket bisa dibandingkan; kotak "pernah mengikuti" ditonjolkan (bingkai hijau). Tiap kotak: judul kecil, angka besar "realisasi dari total kontrak" + % besar (target kosong → "target belum diisi"); grafik SVG — garis putus-putus = target kumulatif (Start → tahun), garis tegas = realisasi kumulatif s.d. tahun berjalan (tahun mendatang tanpa titik realisasi), pita tahun berjalan, label "tertinggal N" / "+N di atas target" / "≈ sesuai target". Legenda; tanpa baris total hitungan (menjumlah paket menghitung petani berkali-kali) |
-| **(B)** progres | Per paket (baris "pernah mengikuti" dipisah garis di bawah): % besar, bar realisasi vs total kontrak + garis penanda target s.d. tahun berjalan, status ≈ / ⚠ tertinggal / ✓, chip per periode ber-titik hijau (tercapai) / amber (di bawah) + "% dari target"; tahun mendatang "belum mulai". Dibiarkan berdampingan dengan (A) sampai manajemen memilih |
+| vs Kontrak (trayektori) | 5 grafik kecil (grid 1/2/3 kolom), **skala sumbu Y sama** agar tinggi garis antarpaket bisa dibandingkan; kotak "pernah mengikuti" ditonjolkan (bingkai hijau). Tiap kotak: judul kecil, angka besar "realisasi dari total kontrak" + % besar (target kosong → "target belum diisi"); grafik SVG — garis putus-putus = target kumulatif (Start → tahun), garis tegas = realisasi kumulatif s.d. tahun berjalan (tahun mendatang tanpa titik realisasi), pita tahun berjalan, label "tertinggal N" / "+N di atas target" / "≈ sesuai target". Legenda; tanpa baris total hitungan (menjumlah paket menghitung petani berkali-kali) |
 
-Catatan kaki definisi kartu disembunyikan di kedua tab ini. Target gagal dimuat → pesan di tab ini saja; belum ada target → arahan ke Master Data › Target Program.
+Popover ⓘ "Cara menghitung" disembunyikan di tab ini. Tab (B) progres (bar menuju total kontrak + chip per periode) sempat dibuat berdampingan untuk dibandingkan, lalu dihapus — owner 2026-10-07 memilih trayektori. Target gagal dimuat → pesan di tab ini saja; belum ada target → arahan ke Master Data › Target Program.
 
 ## Matriks cakupan (`TrainingCoverageMatrix`)
 

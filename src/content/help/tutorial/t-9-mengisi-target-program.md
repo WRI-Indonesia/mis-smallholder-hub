@@ -26,7 +26,7 @@ Halaman ini menyimpan angka **kontrak** program — bukan data petani. Angkanya 
 + Kolom **Total** (Start + semua tahun) dihitung otomatis — tidak perlu diisi.
 4. Klik **Simpan target**.
 + Mengosongkan sel lalu menyimpan berarti target sel itu dihapus. Waktu dan nama pengubah terakhir tercatat di bawah tabel.
-5. Buka **Dashboard → Dashboard Pelatihan**, kartu *Training Benefit per year*, lalu pilih **vs Kontrak A** atau **B** untuk melihat target, realisasi, dan % capaiannya.
+5. Buka **Dashboard → Dashboard Pelatihan**, kartu *Training Benefit per year*, lalu pilih **vs Kontrak** untuk melihat target, realisasi, dan % capaiannya.
 + Tiap baris dibandingkan dengan penerima manfaat baru paketnya; baris "pernah mengikuti" dengan petani yang pertama kali ikut pelatihan apa pun. Paket yang targetnya belum diisi tetap tampil dengan tulisan "target belum diisi". Bila filter Distrik/Lembaga aktif, realisasi hanya untuk wilayah itu sedangkan target tetap seluruh program — muncul catatan agar % tidak disalahbaca.
 
 ## Kalau bermasalah
