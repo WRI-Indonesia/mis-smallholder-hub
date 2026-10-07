@@ -65,7 +65,7 @@ Bobot dipakai formula **Roadmap %** ([standards/versioning.md](../standards/vers
 
 Kolom ini adalah **satu-satunya sumber klasifikasi** (dibaca mesin oleh section Detail Roadmap di dashboard Metrik Rilis). Mengubah bobot sebuah fase = mengubah baseline → wajib dicatat di Decision Log.
 
-**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. **v1.4.0 (berjalan, 2026-10-07):** OPS-02 🟠 → ✅ (#232 TC-232-01) → pendukung 1,5/17 → **4,5/35 = 12,9%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md).
+**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. **v1.4.0 (berjalan, 2026-10-07):** OPS-02 🟠 → ✅ (#232 TC-232-01) → pendukung 1,5/17 → **4,5/35 = 12,9%**; DQ-01 🔲 → 🟠 (#366 di prod) → inti 4/18 → **5,5/35 = 15,7%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md).
 
 </details>
 
@@ -114,7 +114,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | PLATFORM-08 | Pengerasan keamanan & RBAC pasca-MVP                       | 🟠 Partial     | Now     | inti      |
 | PLATFORM-09 | Performa sebelum data membesar                             | 🟠 Partial     | Now     | inti      |
 | OPS-02      | DevOps: jalur rilis, guard migrasi & rollback              | ✅ Done        | Now     | pendukung |
-| DQ-01       | Perbaikan massal data prod                                 | 🔲 Not Started | Now     | inti      |
+| DQ-01       | Perbaikan massal data prod                                 | 🟠 Partial     | Now     | inti      |
 | DA-09       | Tumpang tindih lahan: laporan lengkap, guard upload, layer peta | 🟠 Partial | Now     | pendukung |
 | SC-01       | Supply Chain: master Mill/Offtaker + import survei         | 🔲 Not Started | Now     | inti      |
 | SC-02       | Supply Chain: peta rantai pasok + report                   | 🔲 Not Started | Now     | inti      |
@@ -170,10 +170,10 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 </details>
 
 <details>
-<summary><strong>DQ-01</strong> · 🔲 Not Started — Perbaikan massal data prod</summary>
+<summary><strong>DQ-01</strong> · 🟠 Partial — Perbaikan massal data prod</summary>
 
-- **Evidence:** Belum ada skrip perbaikan. Temuan DA-02: tanggal lahir tertukar hari/bulan ±5.400 petani (#354); import surat/STDB/luas Detail Lahan Siak ditahan (#366).
-- **Next step:** v1.4.0: skrip idempoten #354 (dry-run per Lembaga di local → staging-local → dump prod → dry-run prod → approval → `--write`); #366 skrip penyiapan Siak + import (kode aplikasi A1 · pagar 25 ha · tolak `||` dirilis v1.3.0; D direvisi: nomor surat berdaftar ditolak & ditahan). #334 menunggu jawaban tim lapangan; cek silang 82 kode ganda #395 (pecahan #373, ditutup 2026-09-30).
+- **Evidence:** Temuan DA-02: tanggal lahir tertukar hari/bulan ±5.400 petani (#354); import surat/STDB/luas Detail Lahan Siak (#366). **2026-10-07:** #366 terterapkan di prod untuk 9 Lembaga Siak — 2.675 dokumen, 1.536 STDB, 2.229 tautan (audit `import:detail-lahan-siak-366`, dump `scripts/dump-prod/2026-10-07/`, gladi + dry-run ulang idempoten).
+- **Next step:** v1.4.0: skrip idempoten #354 (dry-run per Lembaga di local → staging-local → dump prod → dry-run prod → approval → `--write`); #366 sisa: APKASDU 1.360 baris (perlu berkas ber-ID baru pasca upload ulang 10-02) + surat `||` 579 baris/137 petani dari tim lapangan. #334 menunggu jawaban tim lapangan; cek silang 82 kode ganda #395 (pecahan #373, ditutup 2026-09-30).
 - **Selesai bila:** #354 dan #366 terterapkan di prod dengan backup + laporan jumlah; skor Ketersediaan Data terkait naik.
 
 </details>

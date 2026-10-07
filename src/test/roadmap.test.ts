@@ -34,12 +34,12 @@ describe("parseRoadmapPhases — file roadmap.md nyata", () => {
     expect(phases.length).toBeGreaterThanOrEqual(14);
     expect(phases[0]).toMatchObject({ key: "PLATFORM-08", stream: "PLATFORM", status: "Partial", weight: "inti" });
     expect(phases.find((p) => p.key === "DQ-01")).toMatchObject({
-      status: "Not Started",
+      status: "Partial",
       horizon: "Now",
       weight: "inti",
-      score: 0,
+      score: 0.5,
       maxPoints: 2,
-      points: 0,
+      points: 1,
     });
     expect(phases.find((p) => p.key === "OPS-02")).toMatchObject({
       status: "Done",
