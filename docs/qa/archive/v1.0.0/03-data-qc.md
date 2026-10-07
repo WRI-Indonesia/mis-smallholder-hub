@@ -1,6 +1,6 @@
 # 03 · QC data & DB — vX.Y.Z
 
-> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../../README.md) · Paket: [README.md](README.md)
 
 Kueri hidup di **`scripts/qa/data-qc.ts`** (read-only, cetak DB efektif). Jalankan **sebelum & sesudah** migrasi di tiap env, tempel keluarannya ke lembar run:
 
