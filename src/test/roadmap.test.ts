@@ -42,10 +42,10 @@ describe("parseRoadmapPhases — file roadmap.md nyata", () => {
       points: 0,
     });
     expect(phases.find((p) => p.key === "OPS-02")).toMatchObject({
-      status: "Partial",
+      status: "Done",
       weight: "pendukung",
-      score: 0.5,
-      points: 0.5,
+      score: 1,
+      points: 1,
     });
   });
 

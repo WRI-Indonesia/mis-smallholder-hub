@@ -19,7 +19,7 @@
 
 _Semua Fail sudah merujuk issue._
 
-Run `2026-09-30-staging` (Claude, sesi SUPERADMIN + log/skrip; TC-342-01 dijalankan owner): **0 Fail**. "Belum diisi" = kasus _(sebagian)_ — langkah per peran (OPERATOR/ber-scope), layar sempit, dan Bulk Upload belum dijalankan; TC-232-01 Blocked (digeser ke v1.4.0); TC-394-01 = deploy prod rilis ini. Smoke per peran & regresi tidak dijalankan. Temuan: 1 minor (label grafik test terpotong pada rentang 1 Minggu, defer).
+Run `2026-09-30-staging` (Claude, sesi SUPERADMIN + log/skrip; TC-342-01 dijalankan owner): **0 Fail**. "Belum diisi" = kasus _(sebagian)_ — langkah per peran (OPERATOR/ber-scope), layar sempit, dan Bulk Upload belum dijalankan; TC-232-01 Blocked (digeser ke v1.4.0 → **Pass** di run `2026-10-07-staging`, 2 temuan masuk `rollback.md`); TC-394-01 = deploy prod rilis ini. Smoke per peran & regresi tidak dijalankan. Temuan: 1 minor (label grafik test terpotong pada rentang 1 Minggu, defer).
 
 ## Keputusan
 

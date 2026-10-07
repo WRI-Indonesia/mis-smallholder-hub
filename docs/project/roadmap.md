@@ -65,7 +65,7 @@ Bobot dipakai formula **Roadmap %** ([standards/versioning.md](../standards/vers
 
 Kolom ini adalah **satu-satunya sumber klasifikasi** (dibaca mesin oleh section Detail Roadmap di dashboard Metrik Rilis). Mengubah bobot sebuah fase = mengubah baseline → wajib dicatat di Decision Log.
 
-**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md).
+**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. **v1.4.0 (berjalan, 2026-10-07):** OPS-02 🟠 → ✅ (#232 TC-232-01) → pendukung 1,5/17 → **4,5/35 = 12,9%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md).
 
 </details>
 
@@ -113,7 +113,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | ----------- | ---------------------------------------------------------- | -------------- | ------- | --------- |
 | PLATFORM-08 | Pengerasan keamanan & RBAC pasca-MVP                       | 🟠 Partial     | Now     | inti      |
 | PLATFORM-09 | Performa sebelum data membesar                             | 🟠 Partial     | Now     | inti      |
-| OPS-02      | DevOps: jalur rilis, guard migrasi & rollback              | 🟠 Partial     | Now     | pendukung |
+| OPS-02      | DevOps: jalur rilis, guard migrasi & rollback              | ✅ Done        | Now     | pendukung |
 | DQ-01       | Perbaikan massal data prod                                 | 🔲 Not Started | Now     | inti      |
 | DA-09       | Tumpang tindih lahan: laporan lengkap, guard upload, layer peta | 🟠 Partial | Now     | pendukung |
 | SC-01       | Supply Chain: master Mill/Offtaker + import survei         | 🔲 Not Started | Now     | inti      |
@@ -161,10 +161,10 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 </details>
 
 <details>
-<summary><strong>OPS-02</strong> · 🟠 Partial — DevOps: jalur rilis, guard migrasi & rollback</summary>
+<summary><strong>OPS-02</strong> · ✅ Done — DevOps: jalur rilis, guard migrasi & rollback</summary>
 
-- **Evidence:** Dockerfile, 5 workflow (`gitleaks`, `semgrep`, `deploy-dev`, `deploy-staging`, `deploy-main`); alur `mvp → staging → main` aktif sejak v0.32.0; RAM staging 4 GB sehingga build tak lagi OOM (#363, 2026-09-30). Migrasi DB masih manual sebelum merge; `deploy-staging.yml` (#277, terbukti di run staging `36727665992`) dan `deploy-main.yml` (#394, bukti = deploy prod v1.3.0) berhenti di guard `prisma migrate status` sebelum build bila skema tertinggal. Prosedur rollback tertulis di `docs/standards/rollback.md` (#232); jalur migrasi digladi 2026-09-30 di `mis-staging-local`. Tooling internal pemantau pengembangan juga dicatat di fase ini: **Metrik Rilis** (`dashboard-metrics`, #227/#250; penyesuaian pasca-reset = #392) dan **Rencana Pengembangan** (`data-analyst-sprint`, #378/#389).
-- **Next step:** #277/#394 ditutup 2026-10-07 (TC-394-01 lolos di log deploy prod v1.3.0, retro di issue); v1.4.0: uji rollback aplikasi di staging (#232, TC-232-01) — prosedur sudah tertulis di `docs/standards/rollback.md` dan jalur migrasinya digladi 2026-09-30.
+- **Evidence:** Dockerfile, 5 workflow (`gitleaks`, `semgrep`, `deploy-dev`, `deploy-staging`, `deploy-main`); alur `mvp → staging → main` aktif sejak v0.32.0; RAM staging 4 GB sehingga build tak lagi OOM (#363, 2026-09-30). Migrasi DB masih manual sebelum merge; `deploy-staging.yml` (#277, terbukti di run staging `36727665992`) dan `deploy-main.yml` (#394, bukti = deploy prod v1.3.0) berhenti di guard `prisma migrate status` sebelum build bila skema tertinggal. Prosedur rollback tertulis di `docs/standards/rollback.md` (#232); jalur migrasi digladi 2026-09-30 di `mis-staging-local`; rollback aplikasi digladi di `staging` 2026-10-07 (TC-232-01: revert v1.3.0 → v1.2.0 → pulih, ±2,5 menit per deploy, `docs/qa/v1.3.0/runs/2026-10-07-staging.md`). Tooling internal pemantau pengembangan juga dicatat di fase ini: **Metrik Rilis** (`dashboard-metrics`, #227/#250; penyesuaian pasca-reset = #392) dan **Rencana Pengembangan** (`data-analyst-sprint`, #378/#389).
+- **Next step:** — (✅ 2026-10-07, Decision Log). #277/#394/#232 ditutup. Risiko diterima: perilaku `.next` saat build gagal di server belum diuji (`rollback.md` jalur A).
 - **Selesai bila:** #277 (✅ kode), #376 (✅ kode: `npm run migrations:release-gap`), #232 ditutup; satu rollback staging berhasil diuji dan dicatat.
 
 </details>
