@@ -6,7 +6,8 @@ Severity: **blocker** (rilis ditahan) · **major** (fitur salah, ada jalan lain)
 
 | # | Kasus | Halaman · langkah | Yang terjadi vs harapan | Severity | Env | Issue | Keputusan | Bukti |
 |---|---|---|---|---|---|---|---|---|
-| 1 | TC-… | | | | staging | #… | fix rilis ini / defer | `evidence/…` |
+| 1 | SM-04 · TC-403-03 | Dashboard › Pelatihan › vs Kontrak, tema gelap | label "+N di atas target"/"tertinggal N" hijau tua/amber di latar gelap — sulit dibaca | minor | staging | — | ✅ diperbaiki (`dark:fill-*-400`), diverifikasi lokal tema gelap — ulang di staging sesudah merge | screenshot run |
+| 2 | SM-35 | Dashboard Rantai Pasok · Peta Rantai Pasok | CSV prototipe belum ada di S3 env → keadaan kosong; pesan memuat path skrip internal & nama bucket untuk semua peran | minor | staging | — | keputusan owner (unggah CSV / tahan menu) | screenshot run |
 
 ## Membuka issue dari temuan
 

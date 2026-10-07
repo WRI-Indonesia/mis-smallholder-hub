@@ -177,7 +177,7 @@ function TrajectoryChart({ points, currentLabel, scaleMax }: { points: Trajector
           x={lay.gapLabel.x}
           y={lay.gapLabel.y}
           textAnchor={lay.gapLabel.anchor}
-          className={`text-[12.5px] font-semibold ${lay.gapLabel.tone === "behind" ? "fill-amber-600" : "fill-emerald-700"}`}
+          className={`text-[12.5px] font-semibold ${lay.gapLabel.tone === "behind" ? "fill-amber-600 dark:fill-amber-400" : "fill-emerald-700 dark:fill-emerald-400"}`}
         >
           {lay.gapLabel.text}
         </text>
