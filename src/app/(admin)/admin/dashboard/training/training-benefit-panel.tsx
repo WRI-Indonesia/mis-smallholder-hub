@@ -186,14 +186,18 @@ function ContractView({ targets, groups, filterActive }: { targets: ProgramTarge
           const pct = total > 0 ? Math.round((realized / total) * 100) : null;
           return (
             <div key={r.key} className="rounded-lg border p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 text-sm font-semibold leading-snug" title={r.label}>
-                  {r.label}
-                </div>
-                {pct != null && <div className="shrink-0 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{pct}%</div>}
+              {/* Judul kecil, angka capaian besar (owner 2026-10-07). */}
+              <div className="text-xs font-medium leading-snug text-muted-foreground" title={r.label}>
+                {r.label}
               </div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground tabular-nums">{formatNumber(realized)}</span> dari {formatNumber(total)} petani — total kontrak
+              <div className="mt-1 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="text-3xl font-bold tabular-nums leading-none">{formatNumber(realized)}</span>
+                  <span className="ml-1.5 text-sm text-muted-foreground">
+                    dari <span className="font-semibold tabular-nums text-foreground">{formatNumber(total)}</span> petani · total kontrak
+                  </span>
+                </div>
+                {pct != null && <div className="shrink-0 text-4xl font-bold tabular-nums leading-none text-emerald-700 dark:text-emerald-400">{pct}%</div>}
               </div>
               <div className="mt-2">
                 <TrajectoryChart points={pts} currentLabel={String(currentYear)} />
