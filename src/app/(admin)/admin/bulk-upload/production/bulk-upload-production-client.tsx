@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
 import { readSpreadsheetFile } from "@/lib/excel-sheet-reader";
+import { parseExcelDate } from "@/lib/excel-cell";
 import { bulkCreateProductionRecords } from "@/server/actions/bulk-upload-production";
 
 interface FarmerMapping {
@@ -156,38 +157,6 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Parse Excel Date
-  function parseExcelDate(val: Excel.CellValue): Date | null {
-    if (!val) return null;
-    if (val instanceof Date && !isNaN(val.getTime())) return val;
-    if (typeof val === "number") {
-      const utc_days = Math.floor(val - 25569);
-      const utc_value = utc_days * 86400;
-      const date_info = new Date(utc_value * 1000);
-      return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate());
-    }
-    if (typeof val === "string") {
-      const parsed = Date.parse(val);
-      if (!isNaN(parsed)) return new Date(parsed);
-      const parts = val.split(/[-/]/);
-      if (parts.length === 3) {
-        if (parts[0].length <= 2 && parts[2].length === 4) {
-          const d = parseInt(parts[0], 10);
-          const m = parseInt(parts[1], 10) - 1;
-          const y = parseInt(parts[2], 10);
-          return new Date(y, m, d);
-        }
-        if (parts[0].length === 4) {
-          const y = parseInt(parts[0], 10);
-          const m = parseInt(parts[1], 10) - 1;
-          const d = parseInt(parts[2], 10);
-          return new Date(y, m, d);
-        }
-      }
-    }
-    return null;
-  }
-
   function validateRow(
     row: RawRow,
     index: number,
@@ -213,7 +182,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       const raw = mappedCol ? row[mappedCol] : "";
       normalized._original[f.key] =
         raw instanceof Date
-          ? raw.toLocaleDateString("id-ID")
+          ? raw.toLocaleDateString("id-ID", { timeZone: "UTC" })
           : (raw as string | number | null | undefined);
     }
 
@@ -258,7 +227,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       errors.push("Tanggal Panen wajib diisi");
     } else {
       parsedHarvestDate = parseExcelDate(rawHarvestDate);
-      if (parsedHarvestDate && !isNaN(parsedHarvestDate.getTime())) {
+      if (parsedHarvestDate) {
         normalized.harvestDate = parsedHarvestDate;
       } else {
         errors.push(`Format tanggal tidak valid: "${rawHarvestDate}"`);
@@ -268,13 +237,12 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     // Cross validation: harvestDate must be within period
     if (isPeriodFormatValid && parsedHarvestDate && rawPeriod) {
       const [year, month] = rawPeriod.split("-").map(Number);
-      const harvestMonth = parsedHarvestDate.getMonth() + 1;
-      const harvestYear = parsedHarvestDate.getFullYear();
+      // parseExcelDate = tengah malam UTC → getter UTC (di server, getter lokal pada TZ server ≥ UTC memberi bulan yang sama).
+      const harvestMonth = parsedHarvestDate.getUTCMonth() + 1;
+      const harvestYear = parsedHarvestDate.getUTCFullYear();
       if (harvestYear !== year || harvestMonth !== month) {
         errors.push(
-          `Tanggal panen (${parsedHarvestDate.toLocaleDateString(
-            "id-ID",
-          )}) tidak sesuai dengan periode ${rawPeriod}`,
+          `Tanggal panen (${parsedHarvestDate.toLocaleDateString("id-ID", { timeZone: "UTC" })}) tidak sesuai dengan periode ${rawPeriod}`,
         );
       }
     }
@@ -463,7 +431,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
 
     targetList.forEach((row) => {
       const dateStr = row.harvestDate
-        ? new Date(row.harvestDate).toLocaleDateString("id-ID")
+        ? new Date(row.harvestDate).toLocaleDateString("id-ID", { timeZone: "UTC" })
         : row._original.harvestDate || "";
 
       sheet.addRow({
@@ -810,7 +778,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {row.harvestDate
-                          ? new Date(row.harvestDate).toLocaleDateString("id-ID")
+                          ? new Date(row.harvestDate).toLocaleDateString("id-ID", { timeZone: "UTC" })
                           : row._original.harvestDate || "—"}
                       </TableCell>
                       <TableCell className="font-mono">

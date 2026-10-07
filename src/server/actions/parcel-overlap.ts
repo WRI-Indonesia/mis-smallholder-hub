@@ -1,12 +1,12 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import type { Geometry, MultiPolygon, Polygon } from "geojson";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
-import { getAccessContext, rawFarmerGroupScope, type AccessContext } from "@/lib/access-context";
-import { OVERLAP_GEOMETRY_CHUNK, buildOverlapRows, type OverlapRaw, type ParcelOverlapRow } from "@/lib/parcel-overlap";
+import { getAccessContext } from "@/lib/access-context";
+import { groupScopeSql } from "@/lib/access-scope-sql";
+import { overlapGeometryInputSchema } from "@/validations/parcel-topology.schema";
+import { buildOverlapRows, type OverlapRaw, type ParcelOverlapRow } from "@/lib/parcel-overlap";
 import type { ActionResult } from "@/types/action-result";
 
 /**
@@ -28,14 +28,6 @@ import type { ActionResult } from "@/types/action-result";
  */
 const MENU_KEY = "data-analyst-parcel-overlap";
 
-/** Fragmen SQL "Lembaga alias `g` ada di scope"; `null` array = tanpa batas. */
-function groupInScope(alias: "ga" | "gb", access: AccessContext): Prisma.Sql {
-  const { groupIds, districtIds } = rawFarmerGroupScope(access);
-  const g = Prisma.raw(alias);
-  return Prisma.sql`((${groupIds ?? null}::text[] IS NULL OR ${g}.id = ANY(${groupIds ?? null}::text[]))
-    AND (${districtIds ?? null}::text[] IS NULL OR ${g}.district_id = ANY(${districtIds ?? null}::text[])))`;
-}
-
 interface OverlapQueryRow {
   intersectionM2: number;
   aInScope: boolean;
@@ -53,8 +45,8 @@ export async function getParcelOverlaps(): Promise<ParcelOverlapRow[]> {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
   const access = await getAccessContext();
-  const aIn = groupInScope("ga", access);
-  const bIn = groupInScope("gb", access);
+  const aIn = groupScopeSql("ga", access);
+  const bIn = groupScopeSql("gb", access);
 
   // Irisan & luas dihitung di SQL; ambang buang (<100 m² DAN <1%) diterapkan
   // di `buildOverlapRows` agar aturannya teruji tanpa DB.
@@ -117,16 +109,6 @@ export interface OverlapPairGeometry {
 }
 
 /**
- * Maksimum pasangan per permintaan geometri (ekspor semua temuan terukur 136).
- * Ekspor lebih besar dipecah per potongan di client (`OVERLAP_GEOMETRY_CHUNK`).
- */
-const MAX_GEOMETRY_PAIRS = OVERLAP_GEOMETRY_CHUNK;
-const pairKeysSchema = z
-  .array(z.string().max(130).regex(/^[a-z0-9]+\|[a-z0-9]+$/i))
-  .min(1)
-  .max(MAX_GEOMETRY_PAIRS);
-
-/**
  * Geometri pasangan (lahan A, lahan B, irisan) untuk preview peta (1 pasangan,
  * izin VIEW) atau ekspor SHP/GeoJSON (banyak pasangan, izin EXPORT). Pasangan
  * yang kedua sisinya di luar scope, atau yang ternyata tidak beririsan, dibuang —
@@ -136,31 +118,31 @@ export async function getParcelOverlapGeometries(
   keys: string[],
   purpose: "preview" | "export",
 ): Promise<ActionResult<OverlapPairGeometry[]>> {
-  const permission = purpose === "export" ? "EXPORT" : "VIEW";
-  if (!(await hasPermission(MENU_KEY, permission))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
-  }
-  const parsed = pairKeysSchema.safeParse(keys);
-  if (!parsed.success || (purpose === "preview" && parsed.data.length !== 1)) {
+  // `purpose` divalidasi DULU: izin EXPORT & batas satu pasangan bergantung padanya (review ef4ed79).
+  const parsed = overlapGeometryInputSchema.safeParse({ purpose, items: keys });
+  if (!parsed.success) {
     return { success: false, error: "Pasangan lahan tidak valid" };
+  }
+  if (!(await hasPermission(MENU_KEY, parsed.data.purpose === "export" ? "EXPORT" : "VIEW"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
   }
   const aIds: string[] = [];
   const bIds: string[] = [];
-  for (const k of parsed.data) {
+  for (const k of parsed.data.items) {
     const [x, y] = k.split("|");
     aIds.push(x);
     bIds.push(y);
   }
 
   const access = await getAccessContext();
-  const aIn = groupInScope("ga", access);
-  const bIn = groupInScope("gb", access);
+  const aIn = groupScopeSql("ga", access);
+  const bIn = groupScopeSql("gb", access);
   const rows = await prisma.$queryRaw<{ aId: string; bId: string; ga: Geometry | null; gb: Geometry | null; gi: Geometry | null }[]>`
     SELECT
       a.id AS "aId", b.id AS "bId",
       -- Ekspor hanya memakai irisan — poligon utuh kedua lahan tidak dikirim (review #317).
-      CASE WHEN ${purpose}::text = 'preview' THEN a.geometry END AS ga,
-      CASE WHEN ${purpose}::text = 'preview' THEN b.geometry END AS gb,
+      CASE WHEN ${parsed.data.purpose}::text = 'preview' THEN a.geometry END AS ga,
+      CASE WHEN ${parsed.data.purpose}::text = 'preview' THEN b.geometry END AS gb,
       ST_AsGeoJSON(ST_CollectionExtract(ST_Intersection(a.geom, b.geom), 3), 7)::json AS gi
     FROM unnest(${aIds}::text[], ${bIds}::text[]) AS k(a_id, b_id)
     JOIN tbl_land_parcel a ON a.id = k.a_id AND a.is_active AND a.geom IS NOT NULL
@@ -184,7 +166,7 @@ export async function getParcelOverlapGeometries(
   for (const r of rows) {
     const a = polygonal(r.ga);
     const b = polygonal(r.gb);
-    if (purpose === "preview" && (!a || !b)) continue;
+    if (parsed.data.purpose === "preview" && (!a || !b)) continue;
     const inter = polygonal(r.gi);
     // ST_CollectionExtract tanpa poligon menghasilkan MULTIPOLYGON EMPTY.
     data.push({ key: `${r.aId}|${r.bId}`, a, b, intersection: inter && inter.coordinates.length > 0 ? inter : null });

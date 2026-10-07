@@ -53,13 +53,14 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 ## Struktur Menu Sidebar
 
 <!-- GENERATED:menu-summary — npm run build:docs; jangan sunting tangan -->
-**9 menu top-level · 38 sub menu · 1 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
+**10 menu top-level · 41 sub menu · 1 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
 
-- **Dashboard** (`dashboard`, order 0) — 5 sub menu + Fire Alert (level 3)
+- **Dashboard** (`dashboard`, order 0) — 6 sub menu + Fire Alert (level 3)
 - **Report** (`report`, order 1) — 7 sub menu
-- **Map** (`map`, order 2) — 2 sub menu
-- **Master Data** (`master-data`, order 3) — 6 sub menu
-- **Data Analyst** (`data-analyst`, order 4) — 8 sub menu
+- **Map** (`map`, order 2) — 3 sub menu
+- **Master Data** (`master-data`, order 3) — 7 sub menu
+- **Data Analyst** (`data-analyst`, order 4) — 5 sub menu
+- **Platform Developer** (`platform-developer`, order 5) — 3 sub menu
 - **Tools** (`tools`, order 6) — 2 sub menu
 - **Bantuan** (`help`, order 9) — tanpa sub menu
 - **Bulk Upload** (`bulk-upload`, order 10) — 4 sub menu

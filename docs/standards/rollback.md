@@ -21,14 +21,21 @@ Cara memastikan "kompatibel mundur": cari pemakai objek lama di tag yang akan di
 
 **Produksi** (merge ke `main` = deploy otomatis `deploy-main.yml`):
 
-1. Dari `main`: `git switch -c revert/vX.Y.Z origin/main`, lalu `git revert -m 1 <merge-commit-rilis>` (merge commit PR `staging → main`).
+1. Dari `main`: `git switch -c revert/vX.Y.Z origin/main`, lalu `git revert -m 1 <merge-commit-rilis>` (merge commit PR `staging → main`). **Sebelum commit revert, kecualikan perbaikan yang tak boleh ikut mundur** (lihat [Yang tidak ikut di-revert](#yang-tidak-ikut-di-revert)).
 2. PR ke `main` → gate CI (`gitleaks`, `semgrep`) → merge → deploy otomatis.
 3. Rilis sebagai **PATCH hotfix** (`vX.Y.Z+1`): bump `package.json`, entri changelog, tag + GitHub Release (aturan maks. 1 rilis/hari dikecualikan untuk hotfix kritis, [versioning.md](./versioning.md)).
 4. Bawa revert yang sama ke `mvp` dan `staging` agar ketiga branch tidak menyimpang. Saat perbaikannya siap, revert itu dibatalkan dengan `git revert <commit-revert>` di `mvp`.
 
-**Staging** (push ke `staging` = deploy otomatis `deploy-staging.yml`): perbaiki maju di `mvp` lalu `mvp → staging` bila cukup cepat. Bila staging harus segera pulih, revert merge commit di `staging` lalu push. Jangan `push --force` ke `staging` (butuh persetujuan owner, dan riwayat rilis ikut hilang).
+**Staging** (push ke `staging` = deploy otomatis `deploy-staging.yml`): perbaiki maju di `mvp` lalu `mvp → staging` bila cukup cepat. Bila staging harus segera pulih, revert merge commit di `staging` lalu push. Satu rilis bisa masuk staging lewat **beberapa** merge (kandidat + `chore(release)`): revert semuanya dalam satu commit, `git revert --no-commit -m 1 <merge-terbaru>` lalu merge sebelumnya, dan pastikan `git diff --stat <merge-rilis-sebelumnya>` hanya menyisakan berkas yang sengaja dikecualikan. Kerjakan di worktree terpisah (`git worktree add -B <cabang> <path> origin/staging`), bukan checkout di worktree `mvp`. Jangan `push --force` ke `staging` (butuh persetujuan owner, dan riwayat rilis ikut hilang).
 
-**Yang perlu diketahui saat build gagal:** `pm2 reload` adalah langkah terakhir workflow, jadi job yang gagal di `npm ci`, guard migrasi (staging, #277), atau `npm run build` tidak me-reload proses. Namun `node_modules` sudah diganti oleh `npm ci`, dan `next build` yang gagal bisa meninggalkan `.next` setengah jadi. Proses lama masih jalan, tetapi **jangan di-restart** (restart akan membaca `.next` rusak). Segera deploy ulang commit yang sehat. *Belum diuji di server (TC-232-01, QA v1.3.0).*
+### Yang tidak ikut di-revert
+
+Revert merge rilis membatalkan **semua** isi rilis itu, termasuk perbaikan yang tak boleh mundur. Sesudah `git revert --no-commit`, kembalikan path ini ke versi rilis dengan `git checkout <merge-rilis> -- <path>` sebelum commit:
+
+- **Perbaikan keamanan/privasi di berkas data repo** — mis. `prisma/seeds/data/users.csv` + `prisma/seeds/seed-users.ts` (#390: email staf + password teks polos). Repo publik, jadi revert mentah menerbitkannya ulang di HEAD. Seed tidak jalan saat deploy, sehingga aplikasi tetap persis versi lama.
+- **`.github/workflows/`** bila rilis menambah guard deploy. Gladi TC-232-01 menunjukkan deploy rollback berjalan dengan workflow versi lama (guard #277 lahir di v1.3.0, jadi deploy rollback ke v1.2.0 berjalan **tanpa** guard). Aman bila skema tak berubah; bila ragu, pertahankan workflow versi rilis.
+
+**Yang perlu diketahui saat build gagal:** `pm2 reload` adalah langkah terakhir workflow, jadi job yang gagal di `npm ci`, guard migrasi (staging, #277), atau `npm run build` tidak me-reload proses. Namun `node_modules` sudah diganti oleh `npm ci`, dan `next build` yang gagal bisa meninggalkan `.next` setengah jadi. Proses lama masih jalan, tetapi **jangan di-restart** (restart akan membaca `.next` rusak). Segera deploy ulang commit yang sehat. *Belum diuji di server (gladi TC-232-01 hanya menguji jalur sukses); risiko diterima saat OPS-02 ditutup (Decision Log 2026-10-07).*
 
 ## B · Rollback migrasi yang sudah sukses
 
@@ -91,4 +98,13 @@ Dump sebelum gladi: `scripts/dump-prod/2026-09-30/mis-staging-local-before-rollb
 | B1: deploy ulang + migrasi pembalik | Objek terhapus, kedua migrasi tercatat applied, status up to date |
 | Pembersihan | 39 migrasi, 0 baris uji, kolom `tbl_farmer` = 15 (sama dengan dump sebelum gladi) |
 
-**Belum diuji:** rollback aplikasi lewat revert di staging/prod dan perilaku `.next` saat build gagal → kasus uji TC-232-01 pada deploy staging v1.3.0.
+### Rollback aplikasi di staging (2026-10-07, TC-232-01)
+
+v1.3.0 → v1.2.0 → v1.3.0 di `staging`, dua deploy disetujui owner, DB tak disentuh (migrasi v1.3.0 hanya indeks #251). Run: [`docs/qa/v1.3.0/runs/2026-10-07-staging.md`](../qa/v1.3.0/runs/2026-10-07-staging.md).
+
+| Langkah | Commit | Durasi run | Hasil |
+| --- | --- | --- | --- |
+| Revert dua merge rilis (`users.csv`/`seed-users.ts` dikecualikan) | `68212d4` | 2m34s (build 33,3 dtk) | `pm2 reload` ✓, gitleaks ✓, **tanpa guard** (workflow v1.2.0). Owner: tab Semua Issue (#396) hilang = v1.2.0 terlayani |
+| Batalkan revert (`git revert <commit-revert>`) | `73d13bc` (tree = `e2d866b`) | 2m31s (build 33,5 dtk) | Guard `up to date`, `pm2 reload` ✓. Owner: tab Semua Issue kembali |
+
+Total ±6 menit dari push revert sampai staging pulih ke v1.3.0, tanpa laporan halaman galat. **Belum diuji:** perilaku `.next` saat build gagal di server (lihat jalur A).

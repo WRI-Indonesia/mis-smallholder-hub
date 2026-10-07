@@ -8,8 +8,10 @@
 Menu: Map (/admin/map → redirect /admin/map/parcel)
 ├── Sub Menu: Peta Lahan (map-parcel)
 │   └── Page: Peta Lahan (/admin/map/parcel)
-└── Sub Menu: Peta BMP (map-bmp)
-    └── Page: Peta BMP (/admin/map/bmp)
+├── Sub Menu: Peta BMP (map-bmp)
+│   └── Page: Peta BMP (/admin/map/bmp)
+└── Sub Menu: Peta Rantai Pasok (map-supply-chain) — prototipe #379
+    └── Page: Peta Rantai Pasok (/admin/map/supply-chain)
 ```
 
 ## Atribut menu
@@ -19,13 +21,13 @@ Menu: Map (/admin/map → redirect /admin/map/parcel)
 | Menu key | `map` |
 | URL | `/admin/map` |
 | Icon | `Map` |
-| Sub menu | 2 — Peta Lahan (`map-parcel`), Peta BMP (`map-bmp`) |
+| Sub menu | 3 — Peta Lahan (`map-parcel`), Peta BMP (`map-bmp`), Peta Rantai Pasok (`map-supply-chain`, prototipe #379) |
 | Order | 2 |
 | Catatan | `src/app/(admin)/admin/map/page.tsx` hanya `redirect("/admin/map/parcel")` — tidak ada halaman induk. |
 
 Sumber metadata menu: `prisma/seeds/data/menu.csv`. Semua halaman berada di bawah guard NextAuth (`middleware.ts`) dan tiga lapis keamanan (menu permission, access context, soft delete).
 
-## Teknologi peta (dipakai kedua sub menu)
+## Teknologi peta (dipakai ketiga sub menu)
 
 | Aspek | Nilai |
 |---|---|
@@ -43,3 +45,4 @@ Sumber metadata menu: `prisma/seeds/data/menu.csv`. Semua halaman berada di bawa
 |---|---|---|---|---|---|---|
 | 1 | Peta Lahan | `map-parcel` | `/admin/map/parcel` | `MapPin` | 1 | [parcel.md](parcel.md) |
 | 2 | Peta BMP | `map-bmp` | `/admin/map/bmp` | `Sprout` | 2 | [bmp.md](bmp.md) |
+| 3 | Peta Rantai Pasok (prototipe) | `map-supply-chain` | `/admin/map/supply-chain` | `Navigation` | 3 | [supply-chain.md](supply-chain.md) |

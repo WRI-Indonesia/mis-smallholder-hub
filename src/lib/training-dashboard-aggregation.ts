@@ -475,3 +475,106 @@ export function trainingQualityStats(
     totalAttendance,
   };
 }
+
+/**
+ * Kartu "Training Benefit per year" (#402): paket yang dilaporkan + label tabel
+ * rujukan owner (bukan label pendek dashboard). `OTHER` tidak dilaporkan.
+ */
+export const TRAINING_BENEFIT_PACKAGES: TrainingPackageCode[] = [
+  "PAKET_1_BMP_PC_RSPO_NKT",
+  "PAKET_2_MK",
+  "PAKET_2_K3",
+  "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV",
+];
+export const TRAINING_BENEFIT_LABELS: Partial<Record<TrainingPackageCode, string>> = {
+  PAKET_1_BMP_PC_RSPO_NKT: "P1 | BMP, P&C RSPO, HCV",
+  PAKET_2_MK: "P2 | Group Dynamic",
+  PAKET_2_K3: "P2 | HSE",
+  PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: "P3 | GEDSI, Alternative Livelihood, Business Development",
+};
+
+/** Label baris total — petani yang mengikuti minimal satu pelatihan (paket apa pun). */
+export const TRAINING_BENEFIT_ANY_LABEL = "Petani pernah mengikuti pelatihan (minimal 1)";
+
+export interface TrainingBenefitYear {
+  year: number;
+  /** Kolom pertama mencakup tahun itu DAN sebelumnya ("≤ 2024"). */
+  upTo: boolean;
+}
+export interface TrainingBenefitRow {
+  /** `ANY` = baris "Petani pernah mengikuti pelatihan (minimal 1)" (semua paket, termasuk Lainnya). */
+  code: TrainingPackageCode | "ANY";
+  label: string;
+  /** Sejajar `years`: actual = penerima manfaat BARU di kolom itu; cumulative = s.d. akhir tahun kolom. */
+  cells: { actual: number; cumulative: number }[];
+}
+
+/** Kolom tahun bergeser otomatis (keputusan owner #402): ≤ (t−2) · t−1 · t. */
+export function trainingBenefitYears(currentYear: number): TrainingBenefitYear[] {
+  return [
+    { year: currentYear - 2, upTo: true },
+    { year: currentYear - 1, upTo: false },
+    { year: currentYear, upTo: false },
+  ];
+}
+
+/**
+ * Tahun pertama tiap petani dilatih, per paket + "ANY" (pelatihan APA PUN, termasuk
+ * Lainnya — padanan baris "Pernah Ikut Pelatihan"). Satu petani dihitung per Lembaga
+ * (kunci Lembaga+petani), sama dengan `trainingCoverageMatrix`. Kegiatan bertanggal
+ * setelah `upToYear` diabaikan. SATU definisi untuk Training Benefit per year (#402) dan
+ * vs Kontrak (#403) — temuan review: dua salinan sempat menyimpang (filter tahun depan).
+ */
+export function firstTrainingYears(groups: TrainingGroupEntry[], upToYear: number): Map<TrainingPackageCode | "ANY", number[]> {
+  const first = new Map<TrainingPackageCode | "ANY", Map<string, number>>();
+  const note = (code: TrainingPackageCode | "ANY", key: string, y: number) => {
+    let perFarmer = first.get(code);
+    if (!perFarmer) first.set(code, (perFarmer = new Map()));
+    const prev = perFarmer.get(key);
+    if (prev == null || y < prev) perFarmer.set(key, y);
+  };
+  for (const g of groups) {
+    for (const a of g.activities) {
+      const y = yearOf(a.date);
+      if (y > upToYear) continue;
+      for (const p of a.participants) {
+        const key = `${g.id}|${p.farmerId}`;
+        note(a.packageCode, key, y);
+        note("ANY", key, y);
+      }
+    }
+  }
+  return new Map([...first].map(([code, m]) => [code, [...m.values()]]));
+}
+
+/**
+ * Training Benefit per year (#402, keputusan owner 2026-10-07): petani UNIK per paket;
+ * Actual = penerima manfaat BARU (tahun pertama petani dilatih paket itu jatuh di kolom
+ * tsb), Kumulative = s.d. akhir tahun kolom → Kumulative(t) = Kumulative(t−1) + Actual(t).
+ *
+ * Satu petani dihitung per Lembaga (kunci Lembaga+petani), sama dengan
+ * `trainingCoverageMatrix`/Capaian Paket per Distrik — sehingga Kumulative tahun
+ * berjalan = angka "sudah dilatih" Total di kartu itu (tanpa filter tahun). Kegiatan
+ * bertanggal setelah tahun berjalan tidak dihitung. Filter Tahun dashboard diabaikan
+ * (pemanggil memberi `groups` tanpa saring tahun).
+ */
+export function trainingBenefitPerYear(
+  groups: TrainingGroupEntry[],
+  currentYear: number,
+): { years: TrainingBenefitYear[]; rows: TrainingBenefitRow[]; any: TrainingBenefitRow } {
+  const years = trainingBenefitYears(currentYear);
+  const first = firstTrainingYears(groups, currentYear);
+  const cellsOf = (first: Iterable<number>) => {
+    const counts = new Map<number, number>();
+    for (const y of first) counts.set(y, (counts.get(y) ?? 0) + 1);
+    const upTo = (limit: number) => [...counts].reduce((s, [y, n]) => (y <= limit ? s + n : s), 0);
+    return years.map((c) => ({ actual: c.upTo ? upTo(c.year) : (counts.get(c.year) ?? 0), cumulative: upTo(c.year) }));
+  };
+  const rows: TrainingBenefitRow[] = TRAINING_BENEFIT_PACKAGES.map((code) => ({
+    code,
+    label: TRAINING_BENEFIT_LABELS[code] ?? TRAINING_PACKAGE_LABELS[code],
+    cells: cellsOf(first.get(code) ?? []),
+  }));
+  const any: TrainingBenefitRow = { code: "ANY", label: TRAINING_BENEFIT_ANY_LABEL, cells: cellsOf(first.get("ANY") ?? []) };
+  return { years, rows, any };
+}

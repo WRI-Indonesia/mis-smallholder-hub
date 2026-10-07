@@ -1,36 +1,5 @@
 import { describe, it, expect } from "vitest";
-
-// 1. Helper function for Excel Date Parsing
-function parseExcelDate(val: unknown): Date | null {
-  if (!val) return null;
-  if (val instanceof Date && !isNaN(val.getTime())) return val;
-  if (typeof val === "number") {
-    const utc_days = Math.floor(val - 25569);
-    const utc_value = utc_days * 86400;
-    const date_info = new Date(utc_value * 1000);
-    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate());
-  }
-  if (typeof val === "string") {
-    const parsed = Date.parse(val);
-    if (!isNaN(parsed)) return new Date(parsed);
-    const parts = val.split(/[-/]/);
-    if (parts.length === 3) {
-      if (parts[0].length <= 2 && parts[2].length === 4) {
-        const d = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10) - 1;
-        const y = parseInt(parts[2], 10);
-        return new Date(y, m, d);
-      }
-      if (parts[0].length === 4) {
-        const y = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10) - 1;
-        const d = parseInt(parts[2], 10);
-        return new Date(y, m, d);
-      }
-    }
-  }
-  return null;
-}
+import { parseExcelDate } from "@/lib/excel-cell";
 
 // 2. Mock target fields and rules
 const TARGET_FIELDS = [
@@ -142,36 +111,30 @@ function validateRow(
   return { isValid: errors.length === 0, errors, data: normalized };
 }
 
+// Parser tanggal yang benar-benar dipakai klien (dulu salinan pribadi logika lama — #400).
 describe("Bulk Upload — Date Parsing Helpers", () => {
+  const parts = (d: Date | null) => (d ? [d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()] : null);
+
   it("parses valid Date object", () => {
-    const d = new Date("2026-06-09");
-    expect(parseExcelDate(d)).toEqual(d);
+    expect(parts(parseExcelDate(new Date("2026-06-09")))).toEqual([2026, 5, 9]);
   });
 
   it("parses Excel serial number date", () => {
-    const serial = 43831; // Jan 1st 2020
-    const d = parseExcelDate(serial);
-    expect(d?.getFullYear()).toBe(2020);
-    expect(d?.getMonth()).toBe(0); // January
-    expect(d?.getDate()).toBe(1);
+    expect(parts(parseExcelDate(43831))).toEqual([2020, 0, 1]); // 1 Jan 2020
   });
 
   it("parses format YYYY-MM-DD", () => {
-    const d = parseExcelDate("1995-12-31");
-    expect(d?.getFullYear()).toBe(1995);
-    expect(d?.getMonth()).toBe(11);
-    expect(d?.getDate()).toBe(31);
+    expect(parts(parseExcelDate("1995-12-31"))).toEqual([1995, 11, 31]);
   });
 
-  it("parses format DD/MM/YYYY", () => {
-    const d = parseExcelDate("15/05/1990");
-    expect(d?.getFullYear()).toBe(1990);
-    expect(d?.getMonth()).toBe(4);
-    expect(d?.getDate()).toBe(15);
+  it("parses format DD/MM/YYYY — termasuk hari ≤ 12", () => {
+    expect(parts(parseExcelDate("15/05/1990"))).toEqual([1990, 4, 15]);
+    expect(parts(parseExcelDate("05/12/1990"))).toEqual([1990, 11, 5]);
   });
 
   it("returns null for invalid values", () => {
     expect(parseExcelDate("invalid date")).toBeNull();
+    expect(parseExcelDate("Panen 1")).toBeNull();
     expect(parseExcelDate("")).toBeNull();
   });
 });

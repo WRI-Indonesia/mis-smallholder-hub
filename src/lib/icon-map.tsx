@@ -30,6 +30,7 @@ import {
   Gauge,
   Layers,
   CalendarRange,
+  Code2,
   GitCompare,
   // Agriculture & Nature
   Leaf,
@@ -56,6 +57,7 @@ import {
   Briefcase,
   Building2,
   Network,
+  Target,
   // Maps & Location
   Map,
   MapPin,
@@ -140,6 +142,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Layers: Layers,
   // Data Analyst › Rencana Pengembangan (#378): rentang tanggal rilis (mulai → target).
   CalendarRange: CalendarRange,
+  Code2: Code2,
   BookOpen: BookOpen,
   BookMarked: BookMarked,
   Library: Library,
@@ -152,6 +155,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Briefcase: Briefcase,
   Building2: Building2,
   Network: Network,
+  Target: Target,
   // Maps & Location
   Map: Map,
   MapPin: MapPin,

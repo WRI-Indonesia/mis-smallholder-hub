@@ -21,6 +21,12 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Total Sesi
 │   ├── Partisipasi Perempuan
 │   └── Petani Lulus Post-Test (≥ 60, #214)
+├── Card Training Benefit per year (full row, collapsible, #402; selalu tampil; tepat di bawah kartu KPI — owner 2026-10-07)
+│   ├── Subjudul berganti per tampilan (definisi Tabel · cara baca Grafis · cara baca vs Kontrak)
+│   ├── Toggle: Capaian [Tabel · Grafis] | vs Kontrak (state lokal, bawaan Tabel; tab (B) progres dihapus — owner 2026-10-07 memilih (A) trayektori) · ⓘ popover "Cara menghitung" (Tabel/Grafis: aturan hitung, padanan Capaian Paket per Distrik, chip filter) · tombol "Excel" (izin EXPORT; 2 sheet Capaian · Kontrak apa pun tab aktif — lihat baris Ekspor)
+│   ├── Grafis: bar bertumpuk per baris — panjang = kumulatif t, segmen ≤ t−2 (gelap) · baru t−1 · baru t (terang), angka di segmen bila ≥ 9% trek; trek abu netral; **trek penuh = total petani aktif** (Σ petani Lembaga tersaring) → sisa abu = belum dilatih, tanpa label angka (owner 2026-10-07; jumlahnya di tooltip) (garis acuan putus-putus + ruang 5% dihapus owner 2026-10-07: ruang di kanan garis tak bermakna)
+│   ├── Tabel (format donor; header netral — tahun teks biasa, sub-kolom abu; kolom proporsional, rata tengah, Package 34%) paket (P1 · P2 Group Dynamic · P2 HSE · P3) + baris total "Petani pernah mengikuti pelatihan (minimal 1)" × kolom tahun ≤ t−2 · t−1 · t (masing-masing Actual · Kumulative); Kumulative t ditebalkan + latar netral; Actual kolom ≤ t−2 tanpa "+"
+│   └── vs Kontrak: 5 grafik kecil trayektori per paket; "≈ sesuai target" bila |selisih| < 1% target; titik target berimpit → cincin di sekeliling titik realisasi
 ├── Card Capaian Paket per Distrik (full row, collapsible, #198; tersembunyi saat filter Lembaga aktif)
 │   ├── Legend Sudah/Belum
 │   ├── Tabel paket × distrik (baris = paket + Pernah Ikut Pelatihan; kolom = Total (Riau) lalu distrik, header memuat total petani; lebar kolom seragam)
@@ -117,6 +123,33 @@ Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmp
 | Empty state | Teks | "Tidak ada distrik pada filter ini." |
 
 Label tahun: "semua tahun" atau "{YYYY}".
+
+## Card Training Benefit per year (`TrainingBenefitPanel`, #402)
+
+| Hal | Aturan (keputusan owner 2026-10-07) |
+|---|---|
+| Satuan | Petani **unik** per paket, dihitung per Lembaga (kunci Lembaga+petani) — sama dengan matriks cakupan |
+| Actual | Penerima manfaat **baru**: tahun pertama petani dilatih paket itu jatuh di kolom tsb |
+| Kumulative | Petani yang tahun pertamanya ≤ tahun kolom → Kumulative(t) = Kumulative(t−1) + Actual(t) |
+| Kolom tahun | Bergeser otomatis: ≤ (t−2) · t−1 · t, t = tahun berjalan (2026: ≤2024 · 2025 · 2026); kegiatan bertanggal > t diabaikan |
+| Paket & label | 4 paket, label tabel rujukan owner: P1 \| BMP, P&C RSPO, HCV · P2 \| Group Dynamic (MK) · P2 \| HSE · P3 \| GEDSI, Alternative Livelihood, Business Development (Paket 3 & 4); `OTHER` tidak dilaporkan |
+| Filter | Distrik & Lembaga; filter Tahun diabaikan |
+| Baris total | "Petani pernah mengikuti pelatihan (minimal 1)" (permintaan owner 2026-10-07; label diganti owner hari yang sama, semula "Petani mengikuti ≥ 1 pelatihan"): tahun pertama petani ikut pelatihan **apa pun, termasuk Lainnya** — padanan baris "Pernah Ikut Pelatihan" |
+| Konsistensi | Kumulative t = Σ "sudah dilatih" per paket di Capaian Paket per Distrik tanpa filter tahun; baris total = "Pernah Ikut Pelatihan" (dikunci test) |
+| Ekspor | Berkas `training-benefit-per-year_<Lembaga\|Distrik\|semua>_<t>.xlsx`, **2 sheet** (owner 2026-10-07; sempat 3 sheet Tabel · Grafis · vs Kontrak hari yang sama): **Capaian** (tabel format donor, header dua tingkat ber-merge, + gambar Grafis di bawahnya) · **Kontrak** (Package × Start/tahun [Target · Realisasi · %] + Total kontrak [Target · Realisasi s.d. t · % capaian], tahun mendatang tanpa realisasi, catatan definisi/filter + gambar 5 grafik; tanpa target → pesan). Tabel mulai baris 1, gambar di bawah tabel. exceljs tak bisa membuat grafik Excel asli → PNG 2× dari SVG ekspor (`src/lib/training-benefit-chart.ts`, geometri trayektori = layar via `trajectoryLayout`); builder `src/lib/training-benefit-xlsx.ts` |
+| Fungsi | `trainingBenefitPerYear(groups, t)` · `trainingBenefitYears(t)` — `src/lib/training-dashboard-aggregation.ts` |
+
+Terverifikasi 2026-10-07 (mis-dev): Kumulative 2026 P1 8.279 · MK 7.769 · HSE 8.076 · P3 3.756 · ≥ 1 pelatihan 8.401 = Total Capaian Paket per Distrik.
+
+### Tampilan vs Kontrak (#403)
+
+Target kontrak dari Master Data › Target Program ([program-target.md](../master-data/program-target.md)) vs realisasi penerima manfaat baru, **per paket** (owner 2026-10-07): P1 · P2 Group Dynamic · P2 HSE · P3 · Petani pernah mengikuti pelatihan (pelatihan apa pun, = baris total kartu); Start ↔ kumulatif s.d. tahun baseline; hanya tahun bertarget; realisasi ikut filter Distrik/Lembaga dengan catatan amber. Fungsi data: `programContractRows` (`src/lib/program-target.ts`).
+
+| Tab | Isi |
+|---|---|
+| vs Kontrak (trayektori) | 5 grafik kecil (grid 1/2/3 kolom), **skala sumbu Y sama** agar tinggi garis antarpaket bisa dibandingkan; kotak "pernah mengikuti" ditonjolkan (bingkai hijau). Tiap kotak: judul kecil, angka besar "realisasi dari total kontrak" + % besar (target kosong → "target belum diisi"); grafik SVG — garis putus-putus = target kumulatif (Start → tahun), garis tegas = realisasi kumulatif s.d. tahun berjalan (tahun mendatang tanpa titik realisasi), pita tahun berjalan, label "tertinggal N" / "+N di atas target" / "≈ sesuai target". Legenda; tanpa baris total hitungan (menjumlah paket menghitung petani berkali-kali) |
+
+Popover ⓘ "Cara menghitung" disembunyikan di tab ini. Tab (B) progres (bar menuju total kontrak + chip per periode) sempat dibuat berdampingan untuk dibandingkan, lalu dihapus — owner 2026-10-07 memilih trayektori. Target gagal dimuat → pesan di tab ini saja; belum ada target → arahan ke Master Data › Target Program.
 
 ## Matriks cakupan (`TrainingCoverageMatrix`)
 
