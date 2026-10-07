@@ -18,7 +18,7 @@ Angka di halaman ini bersifat **nasional**, tidak disaring per wilayah atau per 
 
 ## Langkah
 
-1. Buka menu **Data Analyst → Peta Data & Skema**.
+1. Buka menu **Platform Developer → Peta Data & Skema**.
 2. Tab **ERD** memperlihatkan seluruh entitas beserta hubungannya. Kolom-kolomnya dikelompokkan per domain — petani, wilayah, pelatihan, hak akses, dan seterusnya.
 + Klik satu entitas untuk menyorot tetangganya; sisanya diredupkan supaya jalur hubungannya terlihat. Klik lagi entitas yang sama, atau klik area kosong, untuk melepas sorotan. Gunakan roda mouse untuk memperbesar dan geser dengan menyeret latar.
 3. Baca label pada garis penghubung: **1:n** berarti satu induk punya banyak anak (satu Lembaga punya banyak petani), **1:1** satu lawan satu, **n:n** banyak lawan banyak. Arah panah selalu dari induk ke anak.

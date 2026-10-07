@@ -26,6 +26,7 @@ Kolom di Excel Anda **tidak harus bernama persis** seperti di sistem — nanti a
 3. Pada **Langkah 2**, pilih berkas `.xlsx` atau `.csv`. Sistem akan memberi tahu jumlah baris yang terbaca.
 4. Di bagian **Petakan Kolom Data**, cocokkan tiap kolom sistem dengan kolom di berkas Anda. Sebagian sudah tercocokkan otomatis — periksa tetap.
 + Pencocokan otomatis menebak dari nama kolom yang umum, dan bisa salah bila Anda punya dua kolom bernama mirip seperti "Nama" dan "Nama KK". Karena itu selalu tinjau ulang sebelum melanjutkan.
++ **Tanggal Lahir** boleh berupa sel tanggal Excel, atau teks `dd/mm/yyyy` (mis. `12/03/1971` = 12 Maret) atau `yyyy-mm-dd`. Tahun dua digit (`12/03/71`), tahun di luar 1900–2100, tanggal yang tidak ada (`31/02/1971`), tanggal bernama bulan (`12 Maret 1971`), dan tahun saja (`1971`) ditolak sebagai error — ubah dulu ke `dd/mm/yyyy`, atau kosongkan bila tanggal lengkapnya tidak diketahui.
 5. Kolom bertanda **Wajib** harus terisi. Yang tidak dipakai, pilih **-- Kosongkan --**.
 6. Klik **Validasi Data**.
 7. Periksa ringkasan hasil validasi. Setiap baris berstatus salah satu dari tiga: **Valid** (semua terisi), **Tidak Lengkap** (boleh disimpan, tapi ada kolom opsional yang kosong — NIK, tempat/tanggal lahir, alamat, atau tahun bergabung), atau **Error** (tidak bisa disimpan). Klik filter status untuk melihat kelompok tertentu saja.

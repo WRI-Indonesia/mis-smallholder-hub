@@ -154,15 +154,29 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "dashboard-supply-chain",
+    "route": "(admin)/admin/dashboard/supply-chain",
+    "models": {
+      "farmerGroup": "R"
+    },
+    "modules": [
+      "src/server/actions/supply-chain-prototype.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "dashboard-training",
     "route": "(admin)/admin/dashboard/training",
     "models": {
       "farmer": "R",
       "farmerGroup": "R",
-      "trainingParticipant": "R"
+      "programTarget": "R",
+      "trainingParticipant": "R",
+      "user": "R"
     },
     "modules": [
-      "src/server/actions/dashboard-training.ts"
+      "src/server/actions/dashboard-training.ts",
+      "src/server/actions/program-target.ts"
     ],
     "dynamicAccess": null
   },
@@ -331,6 +345,17 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "map-supply-chain",
+    "route": "(admin)/admin/map/supply-chain",
+    "models": {
+      "farmerGroup": "R"
+    },
+    "modules": [
+      "src/server/actions/supply-chain-prototype.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "master-data-bmp-monev",
     "route": "(admin)/admin/master-data/bmp-monev",
     "models": {
@@ -454,6 +479,18 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
       "src/server/actions/production.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
+    "menuKey": "master-data-program-target",
+    "route": "(admin)/admin/master-data/program-target",
+    "models": {
+      "programTarget": "RW",
+      "user": "R"
+    },
+    "modules": [
+      "src/server/actions/program-target.ts"
     ],
     "dynamicAccess": null
   },
@@ -671,6 +708,10 @@ export const UNMAPPED_ROUTES: UnmappedRoute[] = [
   },
   {
     "route": "(admin)/admin/master-data",
+    "reason": "tanpa-requirePermission"
+  },
+  {
+    "route": "(admin)/admin/platform-developer",
     "reason": "tanpa-requirePermission"
   },
   {

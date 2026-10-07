@@ -17,9 +17,11 @@ Menu: Dashboard (/admin/dashboard)
 │   └── Page: /admin/dashboard/bmp-monev
 ├── Sub Menu: Dashboard Pelatihan (dashboard-training)
 │   └── Page: /admin/dashboard/training
-└── Sub Menu: Risk Management (dashboard-risk) — grup level-3 pertama
-    └── Sub Menu: Fire Alert (dashboard-risk-fire)
-        └── Page: /admin/dashboard/risk/fire
+├── Sub Menu: Risk Management (dashboard-risk) — grup level-3 pertama
+│   └── Sub Menu: Fire Alert (dashboard-risk-fire)
+│       └── Page: /admin/dashboard/risk/fire
+└── Sub Menu: Dashboard Rantai Pasok (dashboard-supply-chain) — prototipe #379
+    └── Page: /admin/dashboard/supply-chain
 ```
 
 > **Metrik Rilis tidak lagi di sini.** Menu `dashboard-metrics` route-nya memang `/admin/dashboard/metrics`, tetapi di database ia bertengger di bawah **Data Analyst** — dokumennya pindah ke [../data-analyst/metrics.md](../data-analyst/metrics.md). Perbedaan ini ditemukan saat mendaftarkan menu DA-07 (#256) dan diselesaikan dengan menjadikan keadaan produksi sebagai acuan.
@@ -32,7 +34,7 @@ Menu: Dashboard (/admin/dashboard)
 | URL | `/admin/dashboard` |
 | Icon | `LayoutDashboard` |
 | Order | `0` |
-| Sub menu | 5 — Main Dashboard (`dashboard-main`), Dashboard Pelatihan (`dashboard-training`, order 2), BMP Dashboard (Produksi) (`dashboard-bmp`, order 3), Monev BMP (`dashboard-bmp-monev`, order 4 — #344), Risk Management (`dashboard-risk`, order 5, grup level-3 berisi `dashboard-risk-fire`) |
+| Sub menu | 6 — Main Dashboard (`dashboard-main`), Dashboard Pelatihan (`dashboard-training`, order 2), BMP Dashboard (Produksi) (`dashboard-bmp`, order 3), Monev BMP (`dashboard-bmp-monev`, order 4 — #344), Risk Management (`dashboard-risk`, order 5, grup level-3 berisi `dashboard-risk-fire`), Dashboard Rantai Pasok (`dashboard-supply-chain`, order 6 — prototipe #379) |
 | Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT (untuk `dashboard` dan sub menunya); DONOR hanya sub menu, tanpa baris induk `dashboard` — induk tetap tampil sebagai wadah. Grup `dashboard-risk` hanya punya baris seed untuk DONOR (VIEW, PRINT); role lain hanya punya baris `dashboard-risk-fire` (VIEW, PRINT) (`prisma/seeds/data/role-permissions.csv`) |
 
 Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
@@ -46,6 +48,7 @@ Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
 | 3 | BMP Dashboard (Produksi) | `dashboard-bmp` | `/admin/dashboard/bmp` | 1 | [bmp.md](bmp.md) |
 | 4 | Monev BMP | `dashboard-bmp-monev` | `/admin/dashboard/bmp-monev` | 1 | [bmp-monev.md](bmp-monev.md) |
 | 5 | Risk Management → Fire Alert | `dashboard-risk` → `dashboard-risk-fire` | `/admin/dashboard/risk/fire` | 1 | [risk/fire.md](risk/fire.md) |
+| 6 | Dashboard Rantai Pasok (prototipe) | `dashboard-supply-chain` | `/admin/dashboard/supply-chain` | 1 | [supply-chain.md](supply-chain.md) |
 
 ## Redirect
 

@@ -1,0 +1,47 @@
+# Target Program
+
+[← Menu Master Data](README.md) · [← Katalog halaman](../README.md)
+
+> #403 — angka kontrak / trayektori program (keputusan owner 2026-10-07, ditanya bertahap). Dipakai tampilan **vs Kontrak** di kartu Training Benefit per year ([dashboard/training.md](../dashboard/training.md)).
+
+## Diagram objek
+
+```text
+Halaman: Target Program (/admin/master-data/program-target)
+├── Header — judul + HelpHint (t-9) + deskripsi
+└── Card grid
+    ├── Tabel: baris = 5 indikator per paket (label = kartu Training Benefit per year); baris terakhir "Petani pernah mengikuti pelatihan (minimal 1)" ditonjolkan sebagai total program
+    │   kolom = Start of the Program (s.d. <tahun>, tahun bisa diubah) · tahun target (× hapus kolom) · Total (dihitung)
+    ├── Sel: input angka (izin EDIT) / angka saja (tanpa EDIT); bingkai merah bila bukan bilangan bulat
+    ├── Tombol: Tambah tahun · Simpan target (seluruh grid sekali simpan)
+    └── Catatan: definisi + "Terakhir diubah <waktu> oleh <nama>"
+```
+
+## Atribut halaman
+
+| Atribut | Nilai |
+|---|---|
+| Sub menu | Target Program (`master-data-program-target`, ikon `Target`, order 7) |
+| Route | `/admin/master-data/program-target` |
+| File | `page.tsx` + `program-target-client.tsx` |
+| Guard | `requirePermission("master-data-program-target")` |
+| Server action | `getProgramTargets()` (VIEW menu ini **atau** `dashboard-training`) · `saveProgramTargets(cells)` (EDIT; sel baru CREATE; mengosongkan DELETE) — `src/server/actions/program-target.ts` |
+| Validasi | `src/validations/program-target.schema.ts` (tahun 2015–2050, nilai bulat ≥ 0, satu tahun Start untuk semua baris, tanpa sel ganda) |
+| Helper murni | `src/lib/program-target.ts` (label, pemetaan indikator → paket, grid, total, perbandingan vs Kontrak) |
+| Model | `ProgramTarget` → `tbl_program_target` (UNIQUE `indicator, period_type, year`) |
+| Izin seed | VIEW/CREATE/EDIT/DELETE untuk SUPERADMIN & ADMIN. MANAGEMENT & OPERATOR **mewarisi VIEW** dari induk `master-data` (kaskade union) → bisa melihat, tak bisa mengubah. DONOR tidak |
+| Scope | Tanpa scope akses — angka seluruh program ([access-context.md](../../access-context.md) §Pengecualian) |
+
+## Aturan
+
+| Hal | Aturan |
+|---|---|
+| Indikator | Target dipisah **per paket** (owner 2026-10-07, menggantikan 2 baris kontrak donor sebelum rilis): `TRAINING_P1_BMP` ↔ Paket 1 · `TRAINING_P2_GROUP_DYNAMIC` ↔ Paket 2 MK · `TRAINING_P2_HSE` ↔ Paket 2 K3 · `TRAINING_P3_GEDSI_LIVELIHOOD` ↔ Paket 3 & 4 · `TRAINING_ANY` ↔ pelatihan apa pun termasuk Lainnya (petani dihitung sekali) |
+| Start of the Program | `BASELINE` — kumulatif s.d. akhir tahun yang dipilih; satu tahun untuk semua baris (mengganti tahun menonaktifkan baseline tahun lain) |
+| Tahunan | `ANNUAL` — target penerima manfaat baru pada tahun itu |
+| Bentuk rencana (review #403) | Atas **hasil akhir** simpan (baris aktif lama ditimpa isian): kolom tahun berurutan tanpa celah dan, bila ada Start, dimulai tepat Start + 1 — tahun ≤ Start menghitung petani & target dua kali, celah tahun membuang penerima manfaat tahun itu. Aturan sama di klien (pesan merah + tombol Simpan nonaktif) & server — `programTargetPlanError` |
+| Total | Kolom Total per baris = Start + Σ tahunan — dihitung, tidak disimpan. **Tak ada baris total hitungan**: menjumlah paket menghitung petani yang sama berkali-kali; total program = baris `TRAINING_ANY` yang diisi sendiri |
+| Simpan | Sel berisi → upsert (baris nonaktif diaktifkan lagi, `modifiedBy`); sel kosong → soft delete; kolom tahun yang dihapus → target lamanya dikosongkan |
+| Izin ganti tahun Start | Mengganti tahun Start menonaktifkan baseline tahun lain = menghapus → butuh **DELETE**; tanpa itu ditolak (dulu dilewati diam-diam lalu sukses → dua tahun Start aktif). Sel yang nilainya tak berubah tidak ditulis ulang ("Terakhir diubah oleh" akurat) |
+| Format isian | Bilangan bulat polos (`1500`) atau ribuan bertitik (`1.500`) — `parseTargetInput`; `1.5`, `2.50`, `1e3` ditolak (bingkai merah), tidak lagi tersimpan 15/250/1000 diam-diam |
+| Repo publik | Angka kontrak tidak ditulis di repo/issue — hanya di DB lewat halaman ini |

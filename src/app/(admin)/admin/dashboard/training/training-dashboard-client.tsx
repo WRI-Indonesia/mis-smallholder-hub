@@ -34,19 +34,24 @@ import {
 import { TrainingScoreCards } from "./training-score-cards";
 import { TrainingCoverageMatrix } from "./training-coverage-matrix";
 import { TrainingDistrictPanel } from "./training-district-panel";
+import { TrainingBenefitPanel } from "./training-benefit-panel";
 import { TrainingTrendChart } from "./training-trend-chart";
 import { TrainingEffectivenessPanel } from "./training-effectiveness-panel";
 import { TrainingPassPanel } from "./training-pass-panel";
 import { TrainingQualityPanel } from "./training-quality-panel";
 import type { TrainingDashboardView } from "@/types/dashboard";
+import type { ProgramTargetRecord } from "@/lib/program-target";
 import { formatGeneratedAt } from "@/lib/format";
 
 export function TrainingDashboardClient({
   view,
   helpSlot,
   canExport,
+  programTargets,
 }: {
   view: TrainingDashboardView;
+  /** Target kontrak (#403); null = gagal dimuat. */
+  programTargets: ProgramTargetRecord[] | null;
   helpSlot?: React.ReactNode;
   canExport: boolean;
 }) {
@@ -265,6 +270,16 @@ export function TrainingDashboardClient({
       </div>
 
       <TrainingScoreCards totals={totals} yearLabel={yearLabel} />
+
+      {/* Penerima manfaat baru & kumulatif per tahun (#402) — tepat di bawah kartu skor
+          (keputusan owner 2026-10-07). Ikut filter Distrik/Lembaga, bukan filter Tahun. */}
+      <TrainingBenefitPanel
+        groups={groups}
+        canExport={canExport}
+        programTargets={programTargets}
+        filterActive={!!districtId || !!groupId}
+        scopeLabel={allGroups.find((g) => g.id === groupId)?.name ?? districtOptions.find((d) => d.id === districtId)?.name ?? null}
+      />
 
       {/* Roll-up cakupan ke level distrik dulu (gambaran besar), baru rincian
           per Lembaga — urutan revisi owner (#198). Disembunyikan saat filter

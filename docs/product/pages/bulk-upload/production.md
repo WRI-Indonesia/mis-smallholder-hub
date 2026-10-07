@@ -58,7 +58,7 @@ Halaman: Upload Data Produksi (/admin/bulk-upload/production)
 | "Unduh Template Excel" | Tombol (kanan atas kartu 1) | Membuat workbook sheet `Template Produksi` berisi header `ID Petani`, `Periode (YYYY-MM)`, `Tanggal Panen (DD/MM/YYYY)`, `Panen Ke- (1-4)`, `Hasil Panen (kg)`, `ID Lahan (Opsional)`, `Catatan (Opsional)` + 2 baris contoh (`FARMER-001` / `FARMER-002`) |
 | Info berkas | Teks | *"Tipe File: **XLSX/CSV** (N baris terdeteksi)"* |
 | "2. Petakan Atribut Kolom" | Card + grid Select | Subjudul *"Cocokkan kolom dari berkas yang diunggah dengan data target sistem produksi."* |
-| Target field | 7 field | `ID Petani`* (contoh FARMER-001), `Periode`* (YYYY-MM), `Tanggal Panen`* (harus sesuai bulan periode), `Panen Ke-`* (1 s/d 4), `Hasil Panen (kg)`* (> 0), `ID Lahan` (opsional, CUID sistem), `Catatan` (maks 500 karakter) |
+| Target field | 7 field | `ID Petani`* (contoh FARMER-001), `Periode`* (YYYY-MM), `Tanggal Panen`* (harus sesuai bulan periode; teks `DD/MM/YYYY` atau `YYYY-MM-DD` via `parseExcelDate`, #400), `Panen Ke-`* (1 s/d 4), `Hasil Panen (kg)`* (> 0), `ID Lahan` (opsional, CUID sistem), `Catatan` (maks 500 karakter) |
 | "Validasi Data Produksi" | Tombol | Loading *"Memproses..."*; sukses toast *"Validasi selesai"* |
 | "3. Hasil Validasi & Tinjauan" | Card | Subjudul *"Tinjau kembali hasil pemetaan dan kecocokan data sebelum menyimpan ke database."* |
 | Ringkasan hasil | Badge/pill | *"N Baris Valid"* / *"N Baris Error"* |

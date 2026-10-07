@@ -42,6 +42,7 @@ import bulkUpload from "@/content/help/2-mengelola-data/2-2-bulk-upload.md";
 import dashboard from "@/content/help/3-memantau/3-1-dashboard.md";
 import peta from "@/content/help/3-memantau/3-2-peta.md";
 import dataAnalyst from "@/content/help/3-memantau/3-3-data-analyst.md";
+import platformDeveloper from "@/content/help/3-memantau/3-4-platform-developer.md";
 import report from "@/content/help/4-laporan/4-1-report.md";
 import tools from "@/content/help/5-administrasi/5-1-tools.md";
 import kendala from "@/content/help/6-bantuan-lanjutan/6-1-kendala.md";
@@ -56,6 +57,7 @@ import tMencatatLegalitasLahan from "@/content/help/tutorial/t-5-mencatat-legali
 import tMengelolaPatokLahan from "@/content/help/tutorial/t-6-mengelola-patok-lahan.md";
 import tMencatatMonevBmp from "@/content/help/tutorial/t-7-mencatat-monev-bmp.md";
 import tRincianIndikatorMonevBmp from "@/content/help/tutorial/t-8-rincian-indikator-monev-bmp.md";
+import tMengisiTargetProgram from "@/content/help/tutorial/t-9-mengisi-target-program.md";
 import uUnggahPetani from "@/content/help/tutorial/u-1-unggah-petani.md";
 import uUnggahProduksi from "@/content/help/tutorial/u-2-unggah-produksi.md";
 import uUnggahLahan from "@/content/help/tutorial/u-3-unggah-lahan.md";
@@ -86,6 +88,8 @@ import pPetaDataSkema from "@/content/help/tutorial/p-10-peta-data-skema.md";
 import pFireAlert from "@/content/help/tutorial/p-11-fire-alert.md";
 import pUnduhSpasialLahan from "@/content/help/tutorial/p-12-unduh-spasial-lahan.md";
 import pDashboardMonevBmp from "@/content/help/tutorial/p-13-dashboard-monev-bmp.md";
+import pDashboardRantaiPasok from "@/content/help/tutorial/p-16-dashboard-rantai-pasok.md";
+import pPetaRantaiPasok from "@/content/help/tutorial/p-17-peta-rantai-pasok.md";
 import pTumpangTindihLahan from "@/content/help/tutorial/p-14-tumpang-tindih-lahan.md";
 import pSprintMingguan from "@/content/help/tutorial/p-15-sprint-mingguan.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
@@ -195,6 +199,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "mengelola-patok-lahan", source: tMengelolaPatokLahan },
       { id: "mencatat-monev-bmp", source: tMencatatMonevBmp },
       { id: "rincian-indikator-monev-bmp", source: tRincianIndikatorMonevBmp },
+      { id: "mengisi-target-program", source: tMengisiTargetProgram },
     ],
   },
   {
@@ -226,9 +231,11 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "membaca-peta", source: pMembacaPeta },
       { id: "dashboard-bmp", source: pDashboardBmp },
       { id: "dashboard-monev-bmp", source: pDashboardMonevBmp },
+      { id: "dashboard-rantai-pasok", source: pDashboardRantaiPasok },
       { id: "peta-lahan", source: pPetaLahan },
       { id: "unduh-spasial-lahan", source: pUnduhSpasialLahan },
       { id: "fire-alert", source: pFireAlert },
+      { id: "peta-rantai-pasok", source: pPetaRantaiPasok },
       { id: "ketersediaan-data", source: pKetersediaanData },
       { id: "ringkasan-petani", source: pRingkasanPetani },
       { id: "komparasi-data-acuan", source: pKomparasiDataAcuan },
@@ -325,6 +332,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "dashboard", source: dashboard },
       { id: "peta", source: peta },
       { id: "data-analyst", source: dataAnalyst },
+      { id: "platform-developer", source: platformDeveloper },
     ],
   },
   {
