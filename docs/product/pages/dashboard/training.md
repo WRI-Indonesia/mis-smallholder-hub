@@ -26,6 +26,10 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Tabel paket × distrik (baris = paket + Pernah Ikut Pelatihan; kolom = Total (Riau) lalu distrik, header memuat total petani; lebar kolom seragam)
 │   ├── Sel: % di kiri + stacked bar tebal (sudah di segmen hijau, belum di segmen abu)
 │   └── Empty state
+├── Card Training Benefit per year (full row, collapsible, #402; selalu tampil)
+│   ├── Tombol Excel (izin EXPORT; header dua tingkat tahun → Actual/Kumulative)
+│   ├── Tabel paket (P1 · P2 Group Dynamic · P2 HSE · P3) × kolom tahun ≤ t−2 · t−1 · t (masing-masing Actual · Kumulative)
+│   └── Catatan kaki: definisi, kesetaraan dengan Capaian Paket per Distrik, filter Tahun tak berlaku
 ├── Matriks Capaian Paket per Lembaga (collapsible)
 │   ├── Kolom Lembaga Petani
 │   ├── Kolom Petani
@@ -117,6 +121,22 @@ Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmp
 | Empty state | Teks | "Tidak ada distrik pada filter ini." |
 
 Label tahun: "semua tahun" atau "{YYYY}".
+
+## Card Training Benefit per year (`TrainingBenefitPanel`, #402)
+
+| Hal | Aturan (keputusan owner 2026-10-07) |
+|---|---|
+| Satuan | Petani **unik** per paket, dihitung per Lembaga (kunci Lembaga+petani) — sama dengan matriks cakupan |
+| Actual | Penerima manfaat **baru**: tahun pertama petani dilatih paket itu jatuh di kolom tsb |
+| Kumulative | Petani yang tahun pertamanya ≤ tahun kolom → Kumulative(t) = Kumulative(t−1) + Actual(t) |
+| Kolom tahun | Bergeser otomatis: ≤ (t−2) · t−1 · t, t = tahun berjalan (2026: ≤2024 · 2025 · 2026); kegiatan bertanggal > t diabaikan |
+| Paket & label | 4 paket, label tabel rujukan owner: P1 \| BMP, P&C RSPO, HCV · P2 \| Group Dynamic (MK) · P2 \| HSE · P3 \| GEDSI, Alternative Livelihood, Business Development (Paket 3 & 4); `OTHER` tidak dilaporkan |
+| Filter | Distrik & Lembaga; filter Tahun diabaikan |
+| Konsistensi | Kumulative t = Σ "sudah dilatih" per paket di Capaian Paket per Distrik tanpa filter tahun (dikunci test) |
+| Ekspor | Excel sheet "Training Benefit", header dua tingkat ber-merge, berkas `training-benefit-per-year_<Lembaga\|Distrik\|semua>_<t>.xlsx` |
+| Fungsi | `trainingBenefitPerYear(groups, t)` · `trainingBenefitYears(t)` — `src/lib/training-dashboard-aggregation.ts` |
+
+Terverifikasi 2026-10-07 (mis-dev): Kumulative 2026 P1 8.279 · MK 7.769 · HSE 8.076 · P3 3.756 = Total Capaian Paket per Distrik.
 
 ## Matriks cakupan (`TrainingCoverageMatrix`)
 

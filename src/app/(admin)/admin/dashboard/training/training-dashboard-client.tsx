@@ -34,6 +34,7 @@ import {
 import { TrainingScoreCards } from "./training-score-cards";
 import { TrainingCoverageMatrix } from "./training-coverage-matrix";
 import { TrainingDistrictPanel } from "./training-district-panel";
+import { TrainingBenefitPanel } from "./training-benefit-panel";
 import { TrainingTrendChart } from "./training-trend-chart";
 import { TrainingEffectivenessPanel } from "./training-effectiveness-panel";
 import { TrainingPassPanel } from "./training-pass-panel";
@@ -270,6 +271,14 @@ export function TrainingDashboardClient({
           per Lembaga — urutan revisi owner (#198). Disembunyikan saat filter
           Lembaga aktif: roll-up distrik atas satu Lembaga tidak bermakna. */}
       {!groupId && <TrainingDistrictPanel rows={coverage} packages={packages} year={year} />}
+
+      {/* Penerima manfaat baru & kumulatif per tahun (#402) — di bawah Capaian Paket per
+          Distrik (keputusan owner). Ikut filter Distrik/Lembaga, bukan filter Tahun. */}
+      <TrainingBenefitPanel
+        groups={groups}
+        canExport={canExport}
+        scopeLabel={allGroups.find((g) => g.id === groupId)?.name ?? districtOptions.find((d) => d.id === districtId)?.name ?? null}
+      />
 
       <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} canExport={canExport} />
 

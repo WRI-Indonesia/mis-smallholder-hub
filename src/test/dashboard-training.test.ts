@@ -13,6 +13,9 @@ import {
   trainingTotals,
   trainingTrendSeries,
   trainingDistrictCoverage,
+  trainingBenefitPerYear,
+  trainingBenefitYears,
+  TRAINING_BENEFIT_PACKAGES,
 } from "@/lib/training-dashboard-aggregation";
 import type {
   TrainingActivityEntry,
@@ -409,5 +412,66 @@ describe("trainingDistrictCoverage (#198)", () => {
     expect(siak.anyPackageOtherYears).toBe(1);
     const pelalawan = d.find((x) => x.districtName === "Pelalawan")!;
     expect(pelalawan.anyPackageOtherYears).toBe(0);
+  });
+});
+
+describe("trainingBenefitPerYear — Training Benefit per year (#402)", () => {
+  const P1: TrainingPackageCode = "PAKET_1_BMP_PC_RSPO_NKT";
+  const MK: TrainingPackageCode = "PAKET_2_MK";
+  const groups = [
+    group("g1", {
+      activities: [
+        act("a1", P1, "2023-05-01", [p("f1"), p("f2")]),
+        act("a2", P1, "2025-03-01", [p("f2"), p("f3")]), // f2 sudah dilatih 2023 → bukan penerima baru 2025
+        act("a3", P1, "2026-02-01", [p("f4")]),
+        act("a4", MK, "2026-01-10", [p("f1")]),
+        act("a5", P1, "2027-01-01", [p("f9")]), // setelah tahun berjalan → diabaikan
+        act("a6", "OTHER", "2026-01-01", [p("f5")]), // OTHER tak dilaporkan
+      ],
+    }),
+    // Petani yang sama di Lembaga lain dihitung terpisah — sama dengan matriks cakupan.
+    group("g2", { activities: [act("b1", P1, "2025-06-01", [p("f1")])] }),
+  ];
+
+  it("kolom tahun bergeser otomatis: ≤ t−2 · t−1 · t", () => {
+    expect(trainingBenefitYears(2026)).toEqual([
+      { year: 2024, upTo: true },
+      { year: 2025, upTo: false },
+      { year: 2026, upTo: false },
+    ]);
+    expect(trainingBenefitYears(2027)[0]).toEqual({ year: 2025, upTo: true });
+  });
+
+  it("Actual = penerima manfaat baru; Kumulative = s.d. akhir tahun; Kum(t) = Kum(t−1) + Actual(t)", () => {
+    const { rows } = trainingBenefitPerYear(groups, 2026);
+    const p1 = rows.find((r) => r.code === P1)!;
+    expect(p1.label).toBe("P1 | BMP, P&C RSPO, HCV");
+    expect(p1.cells).toEqual([
+      { actual: 2, cumulative: 2 }, // ≤2024: g1 f1, f2
+      { actual: 2, cumulative: 4 }, // 2025: g1 f3 (f2 tidak baru) + g2 f1
+      { actual: 1, cumulative: 5 }, // 2026: g1 f4; 2027 diabaikan
+    ]);
+    for (const r of rows) {
+      for (let i = 1; i < r.cells.length; i++) {
+        expect(r.cells[i].cumulative).toBe(r.cells[i - 1].cumulative + r.cells[i].actual);
+      }
+    }
+    expect(rows.find((r) => r.code === MK)!.cells.map((c) => c.cumulative)).toEqual([0, 0, 1]);
+  });
+
+  it("hanya 4 paket laporan (tanpa Lainnya), urutan tetap", () => {
+    const { rows } = trainingBenefitPerYear(groups, 2026);
+    expect(rows.map((r) => r.code)).toEqual(TRAINING_BENEFIT_PACKAGES);
+    expect(rows.map((r) => r.code)).not.toContain("OTHER");
+  });
+
+  it("Kumulative tahun berjalan = petani dilatih di matriks cakupan (tanpa filter tahun) — Capaian Paket per Distrik", () => {
+    const current = [group("g1", { activities: groups[0].activities.filter((a) => a.date < "2027") }), groups[1]];
+    const { rows } = trainingBenefitPerYear(current, 2026);
+    const matrix = trainingCoverageMatrix(current, null);
+    for (const r of rows) {
+      const fromMatrix = matrix.reduce((s, m) => s + (m.byPackage[r.code] ?? 0), 0);
+      expect(r.cells[2].cumulative).toBe(fromMatrix);
+    }
   });
 });

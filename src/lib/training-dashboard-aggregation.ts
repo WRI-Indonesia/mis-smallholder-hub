@@ -475,3 +475,88 @@ export function trainingQualityStats(
     totalAttendance,
   };
 }
+
+/**
+ * Kartu "Training Benefit per year" (#402): paket yang dilaporkan + label tabel
+ * rujukan owner (bukan label pendek dashboard). `OTHER` tidak dilaporkan.
+ */
+export const TRAINING_BENEFIT_PACKAGES: TrainingPackageCode[] = [
+  "PAKET_1_BMP_PC_RSPO_NKT",
+  "PAKET_2_MK",
+  "PAKET_2_K3",
+  "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV",
+];
+export const TRAINING_BENEFIT_LABELS: Partial<Record<TrainingPackageCode, string>> = {
+  PAKET_1_BMP_PC_RSPO_NKT: "P1 | BMP, P&C RSPO, HCV",
+  PAKET_2_MK: "P2 | Group Dynamic",
+  PAKET_2_K3: "P2 | HSE",
+  PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: "P3 | GEDSI, Alternative Livelihood, Business Development",
+};
+
+export interface TrainingBenefitYear {
+  year: number;
+  /** Kolom pertama mencakup tahun itu DAN sebelumnya ("≤ 2024"). */
+  upTo: boolean;
+}
+export interface TrainingBenefitRow {
+  code: TrainingPackageCode;
+  label: string;
+  /** Sejajar `years`: actual = penerima manfaat BARU di kolom itu; cumulative = s.d. akhir tahun kolom. */
+  cells: { actual: number; cumulative: number }[];
+}
+
+/** Kolom tahun bergeser otomatis (keputusan owner #402): ≤ (t−2) · t−1 · t. */
+export function trainingBenefitYears(currentYear: number): TrainingBenefitYear[] {
+  return [
+    { year: currentYear - 2, upTo: true },
+    { year: currentYear - 1, upTo: false },
+    { year: currentYear, upTo: false },
+  ];
+}
+
+/**
+ * Training Benefit per year (#402, keputusan owner 2026-10-07): petani UNIK per paket;
+ * Actual = penerima manfaat BARU (tahun pertama petani dilatih paket itu jatuh di kolom
+ * tsb), Kumulative = s.d. akhir tahun kolom → Kumulative(t) = Kumulative(t−1) + Actual(t).
+ *
+ * Satu petani dihitung per Lembaga (kunci Lembaga+petani), sama dengan
+ * `trainingCoverageMatrix`/Capaian Paket per Distrik — sehingga Kumulative tahun
+ * berjalan = angka "sudah dilatih" Total di kartu itu (tanpa filter tahun). Kegiatan
+ * bertanggal setelah tahun berjalan tidak dihitung. Filter Tahun dashboard diabaikan
+ * (pemanggil memberi `groups` tanpa saring tahun).
+ */
+export function trainingBenefitPerYear(
+  groups: TrainingGroupEntry[],
+  currentYear: number,
+): { years: TrainingBenefitYear[]; rows: TrainingBenefitRow[] } {
+  const years = trainingBenefitYears(currentYear);
+  const firstYear = new Map<TrainingPackageCode, Map<string, number>>();
+  for (const code of TRAINING_BENEFIT_PACKAGES) firstYear.set(code, new Map());
+  for (const g of groups) {
+    for (const a of g.activities) {
+      const perFarmer = firstYear.get(a.packageCode);
+      if (!perFarmer) continue;
+      const y = yearOf(a.date);
+      if (y > currentYear) continue;
+      for (const p of a.participants) {
+        const key = `${g.id}|${p.farmerId}`;
+        const prev = perFarmer.get(key);
+        if (prev == null || y < prev) perFarmer.set(key, y);
+      }
+    }
+  }
+  const rows = TRAINING_BENEFIT_PACKAGES.map((code) => {
+    const counts = new Map<number, number>();
+    for (const y of firstYear.get(code)!.values()) counts.set(y, (counts.get(y) ?? 0) + 1);
+    const upTo = (limit: number) => [...counts].reduce((s, [y, n]) => (y <= limit ? s + n : s), 0);
+    return {
+      code,
+      label: TRAINING_BENEFIT_LABELS[code] ?? TRAINING_PACKAGE_LABELS[code],
+      cells: years.map((c) => ({
+        actual: c.upTo ? upTo(c.year) : (counts.get(c.year) ?? 0),
+        cumulative: upTo(c.year),
+      })),
+    };
+  });
+  return { years, rows };
+}
