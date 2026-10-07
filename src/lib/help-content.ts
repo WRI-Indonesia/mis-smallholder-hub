@@ -57,6 +57,7 @@ import tMencatatLegalitasLahan from "@/content/help/tutorial/t-5-mencatat-legali
 import tMengelolaPatokLahan from "@/content/help/tutorial/t-6-mengelola-patok-lahan.md";
 import tMencatatMonevBmp from "@/content/help/tutorial/t-7-mencatat-monev-bmp.md";
 import tRincianIndikatorMonevBmp from "@/content/help/tutorial/t-8-rincian-indikator-monev-bmp.md";
+import tMengisiTargetProgram from "@/content/help/tutorial/t-9-mengisi-target-program.md";
 import uUnggahPetani from "@/content/help/tutorial/u-1-unggah-petani.md";
 import uUnggahProduksi from "@/content/help/tutorial/u-2-unggah-produksi.md";
 import uUnggahLahan from "@/content/help/tutorial/u-3-unggah-lahan.md";
@@ -198,6 +199,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "mengelola-patok-lahan", source: tMengelolaPatokLahan },
       { id: "mencatat-monev-bmp", source: tMencatatMonevBmp },
       { id: "rincian-indikator-monev-bmp", source: tRincianIndikatorMonevBmp },
+      { id: "mengisi-target-program", source: tMengisiTargetProgram },
     ],
   },
   {

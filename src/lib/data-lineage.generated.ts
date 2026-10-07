@@ -170,10 +170,13 @@ export const DATA_LINEAGE: DataLineage = [
     "models": {
       "farmer": "R",
       "farmerGroup": "R",
-      "trainingParticipant": "R"
+      "programTarget": "R",
+      "trainingParticipant": "R",
+      "user": "R"
     },
     "modules": [
-      "src/server/actions/dashboard-training.ts"
+      "src/server/actions/dashboard-training.ts",
+      "src/server/actions/program-target.ts"
     ],
     "dynamicAccess": null
   },
@@ -476,6 +479,18 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
       "src/server/actions/production.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
+    "menuKey": "master-data-program-target",
+    "route": "(admin)/admin/master-data/program-target",
+    "models": {
+      "programTarget": "RW",
+      "user": "R"
+    },
+    "modules": [
+      "src/server/actions/program-target.ts"
     ],
     "dynamicAccess": null
   },

@@ -32,6 +32,9 @@
 | ReferenceBenchmark | PK | `id` (CUID) | Primary key |
 | ReferenceBenchmark | UNIQUE | `farmerGroupId` | Satu baris acuan per Lembaga |
 | ReferenceBenchmark | INDEX | `isActive` | Filter acuan aktif |
+| ProgramTarget | PK | `id` (CUID) | Primary key |
+| ProgramTarget | UNIQUE | `(indicator, periodType, year)` | Satu nilai per sel grid (isi ulang sel = aktifkan baris lama) |
+| ProgramTarget | INDEX | `isActive` | Filter target aktif |
 | **Farmer Group Boundary** | | | |
 | FarmerGroupBoundary | PK | `id` (CUID) | Primary key |
 | FarmerGroupBoundary | INDEX | `farmerGroupId` | Boundary per Lembaga |

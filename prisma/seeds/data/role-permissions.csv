@@ -549,3 +549,11 @@ OPERATOR,map-supply-chain,VIEW
 SUPERADMIN,map-supply-chain,EXPORT
 SUPERADMIN,map-supply-chain,PRINT
 SUPERADMIN,map-supply-chain,VIEW
+ADMIN,master-data-program-target,VIEW
+ADMIN,master-data-program-target,CREATE
+ADMIN,master-data-program-target,EDIT
+ADMIN,master-data-program-target,DELETE
+SUPERADMIN,master-data-program-target,VIEW
+SUPERADMIN,master-data-program-target,CREATE
+SUPERADMIN,master-data-program-target,EDIT
+SUPERADMIN,master-data-program-target,DELETE

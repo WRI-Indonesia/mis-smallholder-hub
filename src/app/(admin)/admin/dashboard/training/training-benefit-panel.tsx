@@ -12,6 +12,13 @@ import {
 } from "@/lib/training-dashboard-aggregation";
 import type { TrainingGroupEntry } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
+import {
+  buildProgramTargetGrid,
+  programContractRows,
+  type ContractCell,
+  type ContractRow,
+  type ProgramTargetRecord,
+} from "@/lib/program-target";
 
 const yearLabel = (y: TrainingBenefitYear) => (y.upTo ? `≤ ${y.year}` : String(y.year));
 const segmentLabel = (y: TrainingBenefitYear) => (y.upTo ? `s.d. ${y.year}` : `baru ${y.year}`);
@@ -58,6 +65,101 @@ function BenefitBar({ r, years, max, strong = false }: { r: TrainingBenefitRow; 
   );
 }
 
+function ContractCellView({ c }: { c: ContractCell }) {
+  const pct = c.pct;
+  const bar = pct == null ? 0 : Math.min(pct, 100);
+  const tone = pct == null ? "bg-muted-foreground/30" : pct >= 100 ? "bg-emerald-600" : pct >= 50 ? "bg-emerald-400" : "bg-amber-400";
+  return (
+    <div className="min-w-[7.5rem] space-y-1 text-right">
+      <div className="tabular-nums">
+        <span className="font-semibold">{formatNumber(c.actual)}</span>
+        <span className="text-muted-foreground"> / {c.target == null ? "—" : formatNumber(c.target)}</span>
+      </div>
+      <div className="flex items-center justify-end gap-1.5">
+        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className={`h-full rounded-full ${tone}`} style={{ width: `${bar}%` }} />
+        </div>
+        <span className="w-12 text-xs tabular-nums text-muted-foreground">{pct == null ? "—" : `${pct.toLocaleString("id-ID", { maximumFractionDigits: 0 })}%`}</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Tampilan vs Kontrak (#403): target kontrak (seluruh program) vs realisasi penerima manfaat
+ * baru — baris 1 ↔ Paket 1, baris 2 ↔ Paket 3 & 4; Start ↔ kumulatif s.d. tahun baseline;
+ * hanya tahun bertarget. Realisasi ikut filter Distrik/Lembaga → catatan bila filter aktif.
+ */
+function ContractView({ targets, groups, filterActive }: { targets: ProgramTargetRecord[] | null; groups: TrainingGroupEntry[]; filterActive: boolean }) {
+  const grid = useMemo(() => (targets ? buildProgramTargetGrid(targets) : null), [targets]);
+  const rows: ContractRow[] = useMemo(() => (grid ? programContractRows(grid, groups) : []), [grid, groups]);
+  if (targets == null) {
+    return <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Target kontrak gagal dimuat. Muat ulang halaman.</div>;
+  }
+  if (!grid || (grid.years.length === 0 && grid.baselineYear == null)) {
+    return (
+      <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+        Belum ada target kontrak. Isi lewat menu <b>Master Data › Target Program</b>.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      {filterActive && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+          Filter Distrik/Lembaga aktif: <b>realisasi</b> hanya untuk wilayah terpilih, sedangkan <b>target</b> berlaku untuk seluruh program — % capaian
+          di sini bukan capaian program.
+        </p>
+      )}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <th className="py-2 pr-4 text-left">Kontrak</th>
+              {grid.baselineYear != null && (
+                <th className="px-2 py-2 text-right" title={`Start of the Program — kumulatif s.d. ${grid.baselineYear}`}>
+                  Start · s.d. {grid.baselineYear}
+                </th>
+              )}
+              {grid.years.map((y) => (
+                <th key={y} className="px-2 py-2 text-right">
+                  {y}
+                </th>
+              ))}
+            </tr>
+            <tr className="text-[10px] text-muted-foreground">
+              <th />
+              {grid.baselineYear != null && <th className="px-2 pb-2 text-right font-normal">realisasi / target</th>}
+              {grid.years.map((y) => (
+                <th key={y} className="px-2 pb-2 text-right font-normal">
+                  baru / target
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.key} className={r.key === "TOTAL" ? "border-t-2 border-border font-semibold" : "border-b border-border/40"}>
+                <td className={`max-w-[22rem] py-2.5 pr-4 ${r.key === "TOTAL" ? "italic" : "font-medium"}`}>{r.label}</td>
+                {grid.baselineYear != null && <td className="px-2 py-2.5">{r.start ? <ContractCellView c={r.start} /> : null}</td>}
+                {r.years.map((c, i) => (
+                  <td key={grid.years[i]} className="px-2 py-2.5">
+                    <ContractCellView c={c} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Realisasi = penerima manfaat baru (pertama kali dilatih paket itu) — baris pertama dari Paket 1, baris kedua dari Paket 3 &amp; 4;
+        Start = kumulatif s.d. tahun baseline. Baris total menjumlahkan kedua baris, sama seperti target kontrak.
+      </p>
+    </div>
+  );
+}
+
 /**
  * Tampilan Grafis (#402, pilihan owner 2026-10-07: toggle Tabel | Grafis dalam satu kartu) —
  * paket yang tumbuh pesat tahun ini terlihat dari lebar segmen terangnya.
@@ -95,15 +197,20 @@ export function TrainingBenefitPanel({
   groups,
   canExport,
   scopeLabel,
+  programTargets,
+  filterActive,
 }: {
   /** Lembaga hasil filter Distrik/Lembaga — TANPA saring tahun. */
   groups: TrainingGroupEntry[];
   canExport: boolean;
   /** Nama Distrik/Lembaga aktif untuk nama berkas ekspor (null = semua). */
   scopeLabel: string | null;
+  /** Target kontrak (#403); null = gagal dimuat. */
+  programTargets: ProgramTargetRecord[] | null;
+  filterActive: boolean;
 }) {
   const [open, setOpen] = useState(true);
-  const [view, setView] = useState<"tabel" | "grafis">("tabel");
+  const [view, setView] = useState<"tabel" | "grafis" | "kontrak">("tabel");
   const currentYear = new Date().getFullYear();
   const { years, rows, any } = useMemo(() => trainingBenefitPerYear(groups, currentYear), [groups, currentYear]);
   const lastIdx = years.length - 1;
@@ -166,7 +273,7 @@ export function TrainingBenefitPanel({
           {open && (
             <div className="flex shrink-0 items-center gap-2">
               <div className="flex rounded-md border bg-muted/40 p-0.5" role="group" aria-label="Tampilan">
-                {(["tabel", "grafis"] as const).map((v) => (
+                {(["tabel", "grafis", "kontrak"] as const).map((v) => (
                   <button
                     key={v}
                     type="button"
@@ -176,7 +283,7 @@ export function TrainingBenefitPanel({
                       view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {v === "tabel" ? "Tabel" : "Grafis"}
+                    {v === "tabel" ? "Tabel" : v === "grafis" ? "Grafis" : "vs Kontrak"}
                   </button>
                 ))}
               </div>
@@ -191,7 +298,9 @@ export function TrainingBenefitPanel({
         </div>
         <CollapsibleContent>
           <CardContent className="border-t pt-4">
-            {view === "grafis" ? (
+            {view === "kontrak" ? (
+              <ContractView targets={programTargets} groups={groups} filterActive={filterActive} />
+            ) : view === "grafis" ? (
               <BenefitChart years={years} rows={rows} any={any} />
             ) : (
               <div className="overflow-x-auto">

@@ -40,14 +40,18 @@ import { TrainingEffectivenessPanel } from "./training-effectiveness-panel";
 import { TrainingPassPanel } from "./training-pass-panel";
 import { TrainingQualityPanel } from "./training-quality-panel";
 import type { TrainingDashboardView } from "@/types/dashboard";
+import type { ProgramTargetRecord } from "@/lib/program-target";
 import { formatGeneratedAt } from "@/lib/format";
 
 export function TrainingDashboardClient({
   view,
   helpSlot,
   canExport,
+  programTargets,
 }: {
   view: TrainingDashboardView;
+  /** Target kontrak (#403); null = gagal dimuat. */
+  programTargets: ProgramTargetRecord[] | null;
   helpSlot?: React.ReactNode;
   canExport: boolean;
 }) {
@@ -277,6 +281,8 @@ export function TrainingDashboardClient({
       <TrainingBenefitPanel
         groups={groups}
         canExport={canExport}
+        programTargets={programTargets}
+        filterActive={!!districtId || !!groupId}
         scopeLabel={allGroups.find((g) => g.id === groupId)?.name ?? districtOptions.find((d) => d.id === districtId)?.name ?? null}
       />
 

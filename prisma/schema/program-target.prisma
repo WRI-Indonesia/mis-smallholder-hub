@@ -1,0 +1,43 @@
+// program-target.prisma — Target kontrak / trayektori program (#403)
+
+// Indikator yang punya target kontrak. Baris kontrak pelatihan memetakan ke paket:
+// TRAINING_BMP_GROUP_MANAGEMENT ↔ Paket 1 (BMP & Reg. Ag., P&C RSPO, HCV, HSE, Group
+// Management), TRAINING_GEDSI_LIVELIHOOD ↔ Paket 3 & 4 (GEDSI, Financial Literacy,
+// Business Development, Alternative Livelihood). Tambah nilai enum bila target modul
+// lain (produksi, sertifikasi) ikut dicatat.
+enum ProgramTargetIndicator {
+  TRAINING_BMP_GROUP_MANAGEMENT
+  TRAINING_GEDSI_LIVELIHOOD
+}
+
+// BASELINE = "Start of the Program" (kumulatif s.d. akhir `year`, mis. 2025);
+// ANNUAL = target penerima manfaat baru pada `year`.
+enum ProgramTargetPeriod {
+  BASELINE
+  ANNUAL
+}
+
+// Satu baris per indikator × periode × tahun, nilai terkini saja: edit menimpa nilai
+// lama (audit fields mencatat siapa & kapan); hapus = isActive false, mengisi ulang
+// sel yang sama mengaktifkan baris itu lagi. Total kolom & baris "Total farmers
+// trained in the year" DIHITUNG di aplikasi, tidak disimpan. Angka berlaku untuk
+// seluruh program (bukan per Lembaga) — tanpa scope akses. Diisi lewat Master Data ›
+// Target Program, dipakai tampilan "vs Kontrak" kartu Training Benefit per year.
+model ProgramTarget {
+  id         String                 @id @default(cuid())
+  indicator  ProgramTargetIndicator
+  periodType ProgramTargetPeriod    @map("period_type")
+  year       Int
+  value      Int
+  notes      String?
+
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  @@unique([indicator, periodType, year])
+  @@index([isActive])
+  @@map("tbl_program_target")
+}

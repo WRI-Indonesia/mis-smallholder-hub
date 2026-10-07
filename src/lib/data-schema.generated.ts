@@ -5428,6 +5428,159 @@ export const DATA_SCHEMA: SchemaMap = {
       ]
     },
     {
+      "name": "ProgramTarget",
+      "clientName": "programTarget",
+      "tableName": "tbl_program_target",
+      "domain": "program-target",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "indicator",
+          "type": "ProgramTargetIndicator",
+          "kind": "enum",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "periodType",
+          "type": "ProgramTargetPeriod",
+          "kind": "enum",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "period_type",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "year",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "value",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "notes",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 11,
+      "compoundUnique": [
+        [
+          "indicator",
+          "periodType",
+          "year"
+        ]
+      ],
+      "indexes": [
+        [
+          "isActive"
+        ]
+      ]
+    },
+    {
       "name": "Province",
       "clientName": "province",
       "tableName": "reg_province",
@@ -8326,6 +8479,22 @@ export const DATA_SCHEMA: SchemaMap = {
         "PRINT"
       ],
       "domain": "config"
+    },
+    {
+      "name": "ProgramTargetIndicator",
+      "values": [
+        "TRAINING_BMP_GROUP_MANAGEMENT",
+        "TRAINING_GEDSI_LIVELIHOOD"
+      ],
+      "domain": "program-target"
+    },
+    {
+      "name": "ProgramTargetPeriod",
+      "values": [
+        "BASELINE",
+        "ANNUAL"
+      ],
+      "domain": "program-target"
     },
     {
       "name": "Role",

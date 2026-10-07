@@ -21,7 +21,7 @@
 ## Enum
 
 <!-- GENERATED:enums — npm run build:docs; jangan sunting tangan -->
-19 enum di `prisma/schema/`.
+21 enum di `prisma/schema/`.
 
 | Enum | Nilai | Berkas |
 |---|---|---|
@@ -41,6 +41,8 @@
 | `LandStdbStage` | PERSIAPAN_DATA · PENGAJUAN · REVISI · TERBIT · DITOLAK | `land-stdb.prisma` |
 | `NktCategory` | NKT_1 · NKT_2 · NKT_3 · NKT_4 · NKT_5 · NKT_6 | `land-parcel-nkt.prisma` |
 | `PermissionLevel` | CREATE · VIEW · EDIT · DELETE · EXPORT · PRINT | `_config.prisma` |
+| `ProgramTargetIndicator` | TRAINING_BMP_GROUP_MANAGEMENT · TRAINING_GEDSI_LIVELIHOOD | `program-target.prisma` |
+| `ProgramTargetPeriod` | BASELINE · ANNUAL | `program-target.prisma` |
 | `Role` | SUPERADMIN · ADMIN · OPERATOR · MANAGEMENT · DONOR | `_config.prisma` |
 | `RspoCertStatus` | CERTIFIED · PLANNED | `_config.prisma` |
 | `TrainingCategory` | PAKET_1_BMP_PC_RSPO_NKT · PAKET_2_MK · PAKET_2_K3 · PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV · OTHER | `_config.prisma` |
@@ -312,6 +314,7 @@ prisma/schema/
 ├── land-marker.prisma    # LandMarker (patok fisik, code unik, geom Point generated) + LandParcelMarker (M:N bernomor per lahan, #329) + LandMarkerCounter (deret kode per Lembaga, #331)
 ├── tree.prisma           # Tree (titik pohon sawit per lahan, #238)
 ├── reference-benchmark.prisma # ReferenceBenchmark (angka acuan manual per lembaga, #243)
+├── program-target.prisma # ProgramTarget + enum ProgramTargetIndicator/ProgramTargetPeriod (target kontrak program, #403)
 ├── production.prisma     # ProductionRecord
 ├── training.prisma       # TrainingPackage, TrainingActivity, TrainingParticipant
 ├── bmp-assessment.prisma # BmpAssessment (Monev BMP, #344)

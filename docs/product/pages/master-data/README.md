@@ -23,10 +23,12 @@ Menu: Master Data (/admin/master-data)
 │   ├── Page: Tambah Data Produksi
 │   ├── Page: Detail Produksi
 │   └── Page: Edit Data Produksi
-└── Sub Menu: Monev BMP (/admin/master-data/bmp-monev) — #344/#346
-    ├── Page: Monev BMP (daftar) + dialog Tambah/Ubah + dialog Import (rekap · form survei)
-    ├── Page: Detail Penilaian ([id])
-    └── Page: Penilaian Lembaga (/lembaga)
+├── Sub Menu: Monev BMP (/admin/master-data/bmp-monev) — #344/#346
+│   ├── Page: Monev BMP (daftar) + dialog Tambah/Ubah + dialog Import (rekap · form survei)
+│   ├── Page: Detail Penilaian ([id])
+│   └── Page: Penilaian Lembaga (/lembaga)
+└── Sub Menu: Target Program (/admin/master-data/program-target) — #403
+    └── Page: grid target kontrak (indikator × Start + tahun, Total dihitung) — edit SUPERADMIN/ADMIN
 ```
 
 | Atribut | Nilai |
@@ -34,7 +36,7 @@ Menu: Master Data (/admin/master-data)
 | Menu key | `master-data` |
 | URL | `/admin/master-data` |
 | Icon | `Database` |
-| Sub menu | 6 — Lembaga Petani (`master-data-groups`), Petani (`master-data-farmers`), Pelatihan (`master-data-training`), Lahan (`master-data-parcels`), Produksi (`master-data-production`), Monev BMP (`master-data-bmp-monev`, #344) |
+| Sub menu | 7 — Lembaga Petani (`master-data-groups`), Petani (`master-data-farmers`), Pelatihan (`master-data-training`), Lahan (`master-data-parcels`), Produksi (`master-data-production`), Monev BMP (`master-data-bmp-monev`, #344), Target Program (`master-data-program-target`, #403 — [program-target.md](program-target.md)) |
 | File | `src/app/(admin)/admin/master-data/page.tsx` — `redirect("/admin/master-data/farmers")` (tidak ada halaman index sendiri) |
 
 ## Daftar sub menu

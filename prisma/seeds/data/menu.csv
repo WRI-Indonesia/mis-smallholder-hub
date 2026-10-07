@@ -48,5 +48,6 @@ bulk-upload-trees,bulk-upload,Pohon Sawit,/admin/bulk-upload/trees,TreePine,4,TR
 dashboard-risk,dashboard,Risk Management,/admin/dashboard/risk,ShieldAlert,5,TRUE,TRUE
 dashboard-risk-fire,dashboard-risk,Fire Alert,/admin/dashboard/risk/fire,Flame,1,TRUE,TRUE
 master-data-bmp-monev,master-data,Monev BMP,/admin/master-data/bmp-monev,ClipboardCheck,6,TRUE,TRUE
+master-data-program-target,master-data,Target Program,/admin/master-data/program-target,Target,7,TRUE,TRUE
 dashboard-bmp-monev,dashboard,Monev BMP,/admin/dashboard/bmp-monev,ClipboardCheck,4,TRUE,TRUE
 dashboard-supply-chain,dashboard,Dashboard Rantai Pasok,/admin/dashboard/supply-chain,Network,6,TRUE,TRUE

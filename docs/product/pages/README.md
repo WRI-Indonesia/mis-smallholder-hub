@@ -52,7 +52,7 @@ Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, 
 | 0 | Dashboard | `dashboard` | `/admin/dashboard` | 6 | [dashboard/](./dashboard/README.md) |
 | 1 | Report | `report` | `/admin/report` | 7 | [report/](./report/README.md) |
 | 2 | Map | `map` | `/admin/map` | 3 | [map/](./map/README.md) |
-| 3 | Master Data | `master-data` | `/admin/master-data` | 6 | [master-data/](./master-data/README.md) |
+| 3 | Master Data | `master-data` | `/admin/master-data` | 7 | [master-data/](./master-data/README.md) |
 | 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 5 | [data-analyst/](./data-analyst/README.md) |
 | 5 | Platform Developer | `platform-developer` | `/admin/platform-developer` | 3 | — |
 | 6 | Tools | `tools` | `/admin/tools` | 2 | [tools/](./tools/README.md) |
