@@ -15,7 +15,6 @@ import { formatNumber } from "@/lib/format";
 import {
   buildProgramTargetGrid,
   programContractRows,
-  type ContractCell,
   type ContractRow,
   type ProgramTargetRecord,
 } from "@/lib/program-target";
@@ -65,34 +64,99 @@ function BenefitBar({ r, years, max, strong = false }: { r: TrainingBenefitRow; 
   );
 }
 
-function ContractCellView({ c }: { c: ContractCell }) {
-  const pct = c.pct;
-  const bar = pct == null ? 0 : Math.min(pct, 100);
-  const tone = pct == null ? "bg-muted-foreground/30" : pct >= 100 ? "bg-emerald-600" : pct >= 50 ? "bg-emerald-400" : "bg-amber-400";
+interface TrajectoryPoint {
+  label: string;
+  target: number;
+  actual: number | null; // null = tahun belum berjalan
+}
+
+/** Titik kumulatif target & realisasi: Start lalu tiap tahun bertarget; realisasi berhenti di tahun berjalan. */
+function trajectory(row: ContractRow, baselineYear: number | null, years: number[], currentYear: number): TrajectoryPoint[] {
+  const pts: TrajectoryPoint[] = [];
+  let t = row.start?.target ?? 0;
+  let a = row.start?.actual ?? 0;
+  if (baselineYear != null) pts.push({ label: `s.d. ${baselineYear}`, target: t, actual: a });
+  years.forEach((y, i) => {
+    t += row.years[i].target ?? 0;
+    a += row.years[i].actual;
+    pts.push({ label: String(y), target: t, actual: y <= currentYear ? a : null });
+  });
+  return pts;
+}
+
+const fmtK = (n: number) => (n >= 1000 ? `${(n / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}k` : String(n));
+
+/**
+ * Grafik trayektori satu baris kontrak (#403, pilihan owner 2026-10-07): garis putus-putus =
+ * target kumulatif kontrak, garis tegas = realisasi kumulatif s.d. tahun berjalan. Jarak
+ * keduanya di tahun berjalan diberi label tertinggal / di atas target.
+ */
+function TrajectoryChart({ points, currentLabel }: { points: TrajectoryPoint[]; currentLabel: string }) {
+  const W = 380, H = 190, L = 44, R = 16, T = 16, B = 28;
+  const max = Math.max(1, ...points.map((p) => Math.max(p.target, p.actual ?? 0))) * 1.08;
+  const x = (i: number) => L + (points.length === 1 ? (W - L - R) / 2 : (i * (W - L - R)) / (points.length - 1));
+  const y = (v: number) => T + (H - T - B) * (1 - v / max);
+  const path = (vals: (number | null)[]) =>
+    vals.map((v, i) => (v == null ? null : `${x(i)},${y(v)}`)).filter(Boolean).join(" ");
+  const real = points.map((p) => p.actual);
+  const lastReal = real.reduce<number>((acc, v, i) => (v != null ? i : acc), -1);
+  const curIdx = points.findIndex((p) => p.label === currentLabel);
+  const gapIdx = curIdx >= 0 && points[curIdx].actual != null ? curIdx : lastReal;
+  const gap = gapIdx >= 0 ? (points[gapIdx].actual ?? 0) - points[gapIdx].target : 0;
+  const ticks = [0, 0.5, 1].map((f) => Math.round((max / 1.08) * f));
   return (
-    <div className="min-w-[7.5rem] space-y-1 text-right">
-      <div className="tabular-nums">
-        <span className="font-semibold">{formatNumber(c.actual)}</span>
-        <span className="text-muted-foreground"> / {c.target == null ? "—" : formatNumber(c.target)}</span>
-      </div>
-      <div className="flex items-center justify-end gap-1.5">
-        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-          <div className={`h-full rounded-full ${tone}`} style={{ width: `${bar}%` }} />
-        </div>
-        <span className="w-12 text-xs tabular-nums text-muted-foreground">{pct == null ? "—" : `${pct.toLocaleString("id-ID", { maximumFractionDigits: 0 })}%`}</span>
-      </div>
-    </div>
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Trayektori target kontrak vs realisasi">
+      {ticks.map((v) => (
+        <g key={v}>
+          <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="stroke-border" strokeDasharray="2 3" />
+          <text x={L - 6} y={y(v) + 3} textAnchor="end" className="fill-muted-foreground text-[9px] tabular-nums">
+            {fmtK(v)}
+          </text>
+        </g>
+      ))}
+      {curIdx >= 0 && <rect x={x(curIdx) - 14} y={T} width={28} height={H - T - B} className="fill-emerald-500/10" rx={4} />}
+      {points.map((p, i) => (
+        <text key={p.label} x={x(i)} y={H - 10} textAnchor="middle" className={`text-[9.5px] ${i === curIdx ? "fill-foreground font-semibold" : "fill-muted-foreground"}`}>
+          {p.label}
+        </text>
+      ))}
+      <polyline points={path(points.map((p) => p.target))} fill="none" className="stroke-slate-400" strokeWidth={2} strokeDasharray="5 4" />
+      {points.map((p, i) => (
+        <circle key={`t${i}`} cx={x(i)} cy={y(p.target)} r={3.5} className="fill-background stroke-slate-400" strokeWidth={1.5}>
+          <title>{`Target kumulatif ${p.label}: ${formatNumber(p.target)}`}</title>
+        </circle>
+      ))}
+      <polyline points={path(real)} fill="none" className="stroke-emerald-600" strokeWidth={2.75} />
+      {points.map((p, i) =>
+        p.actual == null ? null : (
+          <circle key={`a${i}`} cx={x(i)} cy={y(p.actual)} r={4} className="fill-emerald-600">
+            <title>{`Realisasi kumulatif ${p.label}: ${formatNumber(p.actual)}`}</title>
+          </circle>
+        ),
+      )}
+      {gapIdx >= 0 && gap !== 0 && (
+        <text
+          x={Math.min(x(gapIdx) + 8, W - R)}
+          y={(y(points[gapIdx].target) + y(points[gapIdx].actual ?? 0)) / 2 + 3}
+          textAnchor={x(gapIdx) + 8 > W - R - 60 ? "end" : "start"}
+          className={`text-[10px] font-semibold ${gap < 0 ? "fill-amber-600" : "fill-emerald-700"}`}
+        >
+          {gap < 0 ? `tertinggal ${formatNumber(-gap)}` : `+${formatNumber(gap)} di atas target`}
+        </text>
+      )}
+    </svg>
   );
 }
 
 /**
- * Tampilan vs Kontrak (#403): target kontrak (seluruh program) vs realisasi penerima manfaat
- * baru — baris 1 ↔ Paket 1, baris 2 ↔ Paket 3 & 4; Start ↔ kumulatif s.d. tahun baseline;
- * hanya tahun bertarget. Realisasi ikut filter Distrik/Lembaga → catatan bila filter aktif.
+ * Tampilan vs Kontrak (#403): satu grafik trayektori per baris kontrak (target seluruh program)
+ * + capaian terhadap total kontrak. Baris 1 ↔ Paket 1, baris 2 ↔ Paket 3 & 4. Realisasi ikut
+ * filter Distrik/Lembaga → catatan bila filter aktif.
  */
 function ContractView({ targets, groups, filterActive }: { targets: ProgramTargetRecord[] | null; groups: TrainingGroupEntry[]; filterActive: boolean }) {
   const grid = useMemo(() => (targets ? buildProgramTargetGrid(targets) : null), [targets]);
   const rows: ContractRow[] = useMemo(() => (grid ? programContractRows(grid, groups) : []), [grid, groups]);
+  const currentYear = new Date().getFullYear();
   if (targets == null) {
     return <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Target kontrak gagal dimuat. Muat ulang halaman.</div>;
   }
@@ -103,59 +167,153 @@ function ContractView({ targets, groups, filterActive }: { targets: ProgramTarge
       </div>
     );
   }
+  const contractRows = rows.filter((r) => r.key !== "TOTAL");
+  const totalRow = rows.find((r) => r.key === "TOTAL");
+  const curIdx = grid.years.indexOf(currentYear);
+  const totalNow = totalRow && curIdx >= 0 ? totalRow.years[curIdx] : null;
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {filterActive && (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-          Filter Distrik/Lembaga aktif: <b>realisasi</b> hanya untuk wilayah terpilih, sedangkan <b>target</b> berlaku untuk seluruh program — % capaian
-          di sini bukan capaian program.
+          Filter Distrik/Lembaga aktif: <b>realisasi</b> hanya untuk wilayah terpilih, sedangkan <b>target</b> berlaku untuk seluruh program.
         </p>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              <th className="py-2 pr-4 text-left">Kontrak</th>
-              {grid.baselineYear != null && (
-                <th className="px-2 py-2 text-right" title={`Start of the Program — kumulatif s.d. ${grid.baselineYear}`}>
-                  Start · s.d. {grid.baselineYear}
-                </th>
-              )}
-              {grid.years.map((y) => (
-                <th key={y} className="px-2 py-2 text-right">
-                  {y}
-                </th>
-              ))}
-            </tr>
-            <tr className="text-[10px] text-muted-foreground">
-              <th />
-              {grid.baselineYear != null && <th className="px-2 pb-2 text-right font-normal">realisasi / target</th>}
-              {grid.years.map((y) => (
-                <th key={y} className="px-2 pb-2 text-right font-normal">
-                  baru / target
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.key} className={r.key === "TOTAL" ? "border-t-2 border-border font-semibold" : "border-b border-border/40"}>
-                <td className={`max-w-[22rem] py-2.5 pr-4 ${r.key === "TOTAL" ? "italic" : "font-medium"}`}>{r.label}</td>
-                {grid.baselineYear != null && <td className="px-2 py-2.5">{r.start ? <ContractCellView c={r.start} /> : null}</td>}
-                {r.years.map((c, i) => (
-                  <td key={grid.years[i]} className="px-2 py-2.5">
-                    <ContractCellView c={c} />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {contractRows.map((r) => {
+          const pts = trajectory(r, grid.baselineYear, grid.years, currentYear);
+          const total = pts.at(-1)?.target ?? 0;
+          const realized = [...pts].reverse().find((p) => p.actual != null)?.actual ?? 0;
+          const pct = total > 0 ? Math.round((realized / total) * 100) : null;
+          return (
+            <div key={r.key} className="rounded-lg border p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 text-sm font-semibold leading-snug" title={r.label}>
+                  {r.label}
+                </div>
+                {pct != null && <div className="shrink-0 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{pct}%</div>}
+              </div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground tabular-nums">{formatNumber(realized)}</span> dari {formatNumber(total)} petani — total kontrak
+              </div>
+              <div className="mt-2">
+                <TrajectoryChart points={pts} currentLabel={String(currentYear)} />
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Realisasi = penerima manfaat baru (pertama kali dilatih paket itu) — baris pertama dari Paket 1, baris kedua dari Paket 3 &amp; 4;
-        Start = kumulatif s.d. tahun baseline. Baris total menjumlahkan kedua baris, sama seperti target kontrak.
-      </p>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-0.5 w-5 bg-emerald-600" /> realisasi kumulatif
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-5 border-t-2 border-dashed border-slate-400" /> target kontrak kumulatif
+        </span>
+        {totalNow && totalNow.target != null && (
+          <span className="ml-auto">
+            {totalRow!.label} {currentYear}:{" "}
+            <b className="text-foreground tabular-nums">{formatNumber(totalNow.actual)}</b> / {formatNumber(totalNow.target)}
+            {totalNow.pct != null && ` (${Math.round(totalNow.pct)}%)`}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * SEMENTARA (owner 2026-10-07, untuk dibandingkan dengan trayektori): progres menuju TOTAL
+ * kontrak — bar kumulatif realisasi vs total, penanda target s.d. tahun berjalan, chip status
+ * per periode (tahun mendatang = "belum mulai", bukan 0%). Hapus salah satu setelah owner memilih.
+ */
+function ContractProgressView({ targets, groups, filterActive }: { targets: ProgramTargetRecord[] | null; groups: TrainingGroupEntry[]; filterActive: boolean }) {
+  const grid = useMemo(() => (targets ? buildProgramTargetGrid(targets) : null), [targets]);
+  const rows: ContractRow[] = useMemo(() => (grid ? programContractRows(grid, groups) : []), [grid, groups]);
+  const currentYear = new Date().getFullYear();
+  if (!grid || targets == null || (grid.years.length === 0 && grid.baselineYear == null)) {
+    return <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Belum ada target kontrak.</div>;
+  }
+  const totalRow = rows.find((r) => r.key === "TOTAL");
+  const curIdx = grid.years.indexOf(currentYear);
+  return (
+    <div className="space-y-5">
+      {filterActive && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+          Filter Distrik/Lembaga aktif: <b>realisasi</b> hanya untuk wilayah terpilih, sedangkan <b>target</b> berlaku untuk seluruh program.
+        </p>
+      )}
+      {rows
+        .filter((r) => r.key !== "TOTAL")
+        .map((r) => {
+          const pts = trajectory(r, grid.baselineYear, grid.years, currentYear);
+          const total = pts.at(-1)?.target ?? 0;
+          const realized = [...pts].reverse().find((p) => p.actual != null)?.actual ?? 0;
+          const toDate = [...pts].reverse().find((p) => p.actual != null)?.target ?? 0;
+          const pct = total > 0 ? Math.round((realized / total) * 100) : 0;
+          const gap = realized - toDate;
+          const chips = [
+            ...(r.start && grid.baselineYear != null ? [{ label: `Start s.d. ${grid.baselineYear}`, c: r.start, future: false }] : []),
+            ...grid.years.map((y, i) => ({ label: String(y), c: r.years[i], future: y > currentYear })),
+          ];
+          return (
+            <div key={r.key} className="space-y-2">
+              <div className="flex items-baseline justify-between gap-3">
+                <div className="min-w-0 text-sm font-semibold">{r.label}</div>
+                <div className="shrink-0 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{pct}%</div>
+              </div>
+              <div className="relative h-4 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div className="h-full rounded-full bg-emerald-600" style={{ width: `${Math.min(100, total > 0 ? (realized / total) * 100 : 0)}%` }} />
+                {total > 0 && (
+                  <div
+                    className="absolute inset-y-0 w-0.5 bg-slate-700 dark:bg-slate-200"
+                    style={{ left: `${Math.min(100, (toDate / total) * 100)}%` }}
+                    title={`Target s.d. ${currentYear}: ${formatNumber(toDate)}`}
+                  />
+                )}
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>
+                  <b className="text-foreground tabular-nums">{formatNumber(realized)}</b> dari {formatNumber(total)} petani (total kontrak) · ▏target s.d. {currentYear}:{" "}
+                  {formatNumber(toDate)}
+                </span>
+                {gap < 0 ? (
+                  <span className="font-semibold text-amber-600">⚠ tertinggal {formatNumber(-gap)}</span>
+                ) : (
+                  <span className="font-semibold text-emerald-700">✓ sesuai target</span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {chips.map(({ label, c, future }) => {
+                  const ok = c.pct != null && c.pct >= 100;
+                  return (
+                    <span
+                      key={label}
+                      className={`rounded-md border px-2 py-1 text-xs tabular-nums ${
+                        future ? "border-dashed text-muted-foreground" : ok ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30" : "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
+                      }`}
+                    >
+                      <span className="font-semibold">{label}</span>{" "}
+                      {future ? (
+                        <>— target {c.target == null ? "—" : formatNumber(c.target)}, belum mulai</>
+                      ) : (
+                        <>
+                          {ok ? "✓" : "▲"} {formatNumber(c.actual)} / {c.target == null ? "—" : formatNumber(c.target)}
+                          {c.pct != null && ` (${Math.round(c.pct)}%)`}
+                        </>
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      {totalRow && curIdx >= 0 && totalRow.years[curIdx].target != null && (
+        <p className="border-t pt-3 text-xs text-muted-foreground">
+          {totalRow.label} {currentYear}: <b className="text-foreground tabular-nums">{formatNumber(totalRow.years[curIdx].actual)}</b> /{" "}
+          {formatNumber(totalRow.years[curIdx].target!)} ({Math.round(totalRow.years[curIdx].pct ?? 0)}%)
+        </p>
+      )}
     </div>
   );
 }
@@ -210,7 +368,7 @@ export function TrainingBenefitPanel({
   filterActive: boolean;
 }) {
   const [open, setOpen] = useState(true);
-  const [view, setView] = useState<"tabel" | "grafis" | "kontrak">("tabel");
+  const [view, setView] = useState<"tabel" | "grafis" | "kontrak" | "progres">("tabel");
   const currentYear = new Date().getFullYear();
   const { years, rows, any } = useMemo(() => trainingBenefitPerYear(groups, currentYear), [groups, currentYear]);
   const lastIdx = years.length - 1;
@@ -273,7 +431,7 @@ export function TrainingBenefitPanel({
           {open && (
             <div className="flex shrink-0 items-center gap-2">
               <div className="flex rounded-md border bg-muted/40 p-0.5" role="group" aria-label="Tampilan">
-                {(["tabel", "grafis", "kontrak"] as const).map((v) => (
+                {(["tabel", "grafis", "kontrak", "progres"] as const).map((v) => (
                   <button
                     key={v}
                     type="button"
@@ -283,7 +441,7 @@ export function TrainingBenefitPanel({
                       view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {v === "tabel" ? "Tabel" : v === "grafis" ? "Grafis" : "vs Kontrak"}
+                    {v === "tabel" ? "Tabel" : v === "grafis" ? "Grafis" : v === "kontrak" ? "vs Kontrak" : "Progres (uji)"}
                   </button>
                 ))}
               </div>
@@ -298,7 +456,9 @@ export function TrainingBenefitPanel({
         </div>
         <CollapsibleContent>
           <CardContent className="border-t pt-4">
-            {view === "kontrak" ? (
+            {view === "progres" ? (
+              <ContractProgressView targets={programTargets} groups={groups} filterActive={filterActive} />
+            ) : view === "kontrak" ? (
               <ContractView targets={programTargets} groups={groups} filterActive={filterActive} />
             ) : view === "grafis" ? (
               <BenefitChart years={years} rows={rows} any={any} />
@@ -369,12 +529,14 @@ export function TrainingBenefitPanel({
                 </table>
               </div>
             )}
-            <p className="mt-3 text-xs text-muted-foreground">
+            {view !== "kontrak" && view !== "progres" && (
+              <p className="mt-3 text-xs text-muted-foreground">
               Satu petani dihitung sekali per paket; baris terakhir menghitung petani yang mengikuti minimal satu pelatihan
               (paket apa pun, termasuk Lainnya) pada tahun pertama ia ikut. Kumulative tahun {currentYear} sama dengan jumlah
               petani sudah dilatih di kartu Capaian Paket per Distrik (tanpa filter tahun). Mengikuti filter Distrik & Lembaga; filter Tahun tidak
               berlaku untuk kartu ini.
             </p>
+            )}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
