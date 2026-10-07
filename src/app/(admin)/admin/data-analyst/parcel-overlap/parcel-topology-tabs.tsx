@@ -11,9 +11,19 @@ import { AreaMismatchTab } from "./area-mismatch-tab";
 
 interface Props {
   overlaps: ParcelOverlapRow[];
-  outside: OutsideBoundaryRow[];
-  areaMismatch: AreaMismatchRow[];
+  /** `null` = tab gagal dimuat (galat ditampilkan di tab itu saja). */
+  outside: OutsideBoundaryRow[] | null;
+  areaMismatch: AreaMismatchRow[] | null;
   canExport: boolean;
+}
+
+function TabError() {
+  return (
+    <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+      Tab ini gagal dihitung (galat geometri di server). Tab lain tetap bisa dipakai — muat ulang halaman, dan bila
+      berulang, laporkan ke admin aplikasi.
+    </div>
+  );
 }
 
 /**
@@ -27,7 +37,7 @@ interface Props {
 export function ParcelTopologyTabs({ overlaps, outside, areaMismatch, canExport }: Props) {
   const searchParams = useSearchParams();
   const tab = parseTopologyTab(searchParams.get("tab"));
-  const outsideFull = outside.filter((r) => r.kind === "FULL").length;
+  const outsideFull = outside?.filter((r) => r.kind === "FULL").length;
 
   const changeTab = (next: TopologyTab) => {
     const qs = next === "tumpang-tindih" ? "" : `?tab=${next}`;
@@ -41,15 +51,15 @@ export function ParcelTopologyTabs({ overlaps, outside, areaMismatch, canExport 
           Tumpang Tindih <span className="ml-1 tabular-nums text-muted-foreground">{formatNumber(overlaps.length)}</span>
         </TabsTrigger>
         <TabsTrigger value="luar-boundary">
-          Luar Boundary <span className="ml-1 tabular-nums text-muted-foreground">{formatNumber(outsideFull)}</span>
+          Luar Boundary <span className="ml-1 tabular-nums text-muted-foreground">{outsideFull == null ? "!" : formatNumber(outsideFull)}</span>
         </TabsTrigger>
         <TabsTrigger value="selisih-luas">
-          Selisih Luas <span className="ml-1 tabular-nums text-muted-foreground">{formatNumber(areaMismatch.length)}</span>
+          Selisih Luas <span className="ml-1 tabular-nums text-muted-foreground">{areaMismatch == null ? "!" : formatNumber(areaMismatch.length)}</span>
         </TabsTrigger>
       </TabsList>
       <TabsContent value="tumpang-tindih">{tab === "tumpang-tindih" && <ParcelOverlapClient rows={overlaps} canExport={canExport} />}</TabsContent>
-      <TabsContent value="luar-boundary">{tab === "luar-boundary" && <OutsideBoundaryTab rows={outside} canExport={canExport} />}</TabsContent>
-      <TabsContent value="selisih-luas">{tab === "selisih-luas" && <AreaMismatchTab rows={areaMismatch} canExport={canExport} />}</TabsContent>
+      <TabsContent value="luar-boundary">{tab === "luar-boundary" && (outside ? <OutsideBoundaryTab rows={outside} canExport={canExport} /> : <TabError />)}</TabsContent>
+      <TabsContent value="selisih-luas">{tab === "selisih-luas" && (areaMismatch ? <AreaMismatchTab rows={areaMismatch} canExport={canExport} /> : <TabError />)}</TabsContent>
     </Tabs>
   );
 }

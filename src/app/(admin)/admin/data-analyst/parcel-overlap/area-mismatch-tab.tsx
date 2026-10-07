@@ -126,7 +126,7 @@ export function AreaMismatchTab({ rows, canExport }: { rows: AreaMismatchRow[]; 
           <FilterCombobox
             options={options.districts}
             value={districtId}
-            onSelect={(id) => setMany({ distrik: id })}
+            onSelect={(id) => setMany({ distrik: id, lembaga: null })}
             allLabel="Semua Distrik"
             searchPlaceholder="Cari distrik..."
             emptyLabel="Distrik tidak ditemukan."

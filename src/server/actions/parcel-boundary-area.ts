@@ -2,10 +2,11 @@
 
 import { Prisma } from "@prisma/client";
 import type { Geometry, MultiPolygon, Polygon } from "geojson";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
-import { getAccessContext, rawFarmerGroupScope, type AccessContext } from "@/lib/access-context";
+import { getAccessContext } from "@/lib/access-context";
+import { groupScopeSql } from "@/lib/access-scope-sql";
+import { findingGeometryInputSchema } from "@/validations/parcel-topology.schema";
 import {
   PARCEL_AREA_MISMATCH_RATIO,
   buildAreaMismatchRows,
@@ -13,7 +14,6 @@ import {
   type AreaMismatchRow,
   type OutsideBoundaryRow,
 } from "@/lib/parcel-boundary-area";
-import { OVERLAP_GEOMETRY_CHUNK } from "@/lib/parcel-overlap";
 import type { ActionResult } from "@/types/action-result";
 
 /**
@@ -25,13 +25,6 @@ import type { ActionResult } from "@/types/action-result";
  * Lembaga dalam jangkauan user. Kolom `geom` generated + GiST (#317 Fase 1).
  */
 const MENU_KEY = "data-analyst-parcel-overlap";
-
-/** Fragmen SQL "Lembaga alias `g` ada di scope" (aturan dari `rawFarmerGroupScope`). */
-function groupScope(access: AccessContext): Prisma.Sql {
-  const { groupIds, districtIds } = rawFarmerGroupScope(access);
-  return Prisma.sql`((${groupIds ?? null}::text[] IS NULL OR g.id = ANY(${groupIds ?? null}::text[]))
-    AND (${districtIds ?? null}::text[] IS NULL OR g.district_id = ANY(${districtIds ?? null}::text[])))`;
-}
 
 interface ParcelBaseRow {
   id: string; parcelId: string; kelompokTani: string | null;
@@ -63,27 +56,27 @@ export async function getParcelOutsideBoundary(): Promise<OutsideBoundaryRow[]> 
   const access = await getAccessContext();
   const rows = await prisma.$queryRaw<(ParcelBaseRow & { polygonM2: number; intersects: boolean; outsideM2: number; distanceM: number | null })[]>`
     WITH gb AS (
-      SELECT b.farmer_group_id, ST_Union(b.geom) AS g
+      -- Hanya Lembaga dalam scope; ST_MakeValid menjaga union dari boundary yang
+      -- self-intersect (GEOS TopologyException menjatuhkan seluruh halaman — review ef4ed79).
+      SELECT b.farmer_group_id, ST_MakeValid(ST_Union(b.geom)) AS g
       FROM tbl_farmer_group_boundary b
-      WHERE b.is_active AND b.geom IS NOT NULL
+      JOIN tbl_farmer_group g ON g.id = b.farmer_group_id AND g.is_active
+      WHERE b.is_active AND b.geom IS NOT NULL AND ${groupScopeSql("g", access)}
       GROUP BY b.farmer_group_id
     )
     SELECT ${BASE_COLUMNS},
-      ST_Area(p.geom::geography) AS "polygonM2",
-      ST_Intersects(gb.g, p.geom) AS "intersects",
-      CASE WHEN ST_Intersects(gb.g, p.geom)
-        THEN ST_Area(ST_Difference(p.geom, gb.g)::geography)
-        ELSE ST_Area(p.geom::geography) END AS "outsideM2",
-      CASE WHEN ST_Intersects(gb.g, p.geom) THEN NULL
-        ELSE ST_Distance(p.geom::geography, gb.g::geography) END AS "distanceM"
+      x.area AS "polygonM2",
+      x.hit AS "intersects",
+      CASE WHEN x.hit THEN ST_Area(ST_Difference(p.geom, gb.g)::geography) ELSE x.area END AS "outsideM2",
+      CASE WHEN x.hit THEN NULL ELSE ST_Distance(p.geom::geography, gb.g::geography) END AS "distanceM"
     FROM tbl_land_parcel p
     JOIN tbl_farmer f ON f.id = p.farmer_id AND f.is_active
     JOIN tbl_farmer_group g ON g.id = f.farmer_group_id AND g.is_active
     JOIN reg_district d ON d.id = g.district_id
     JOIN gb ON gb.farmer_group_id = g.id
+    CROSS JOIN LATERAL (SELECT ST_Intersects(gb.g, p.geom) AS hit, ST_Area(p.geom::geography) AS area) x
     WHERE p.is_active AND p.geom IS NOT NULL
       AND NOT ST_CoveredBy(p.geom, gb.g)
-      AND ${groupScope(access)}
   `;
   return buildOutsideBoundaryRows(
     rows.map((r) => ({
@@ -114,7 +107,7 @@ export async function getParcelAreaMismatch(): Promise<AreaMismatchRow[]> {
     CROSS JOIN LATERAL (SELECT ST_Area(p.geom::geography) AS m2) x
     WHERE p.is_active AND p.geom IS NOT NULL AND p.area > 0 AND x.m2 > 0
       AND abs(p.area - x.m2 / 10000) / greatest(p.area, x.m2 / 10000) > ${PARCEL_AREA_MISMATCH_RATIO}
-      AND ${groupScope(access)}
+      AND ${groupScopeSql("g", access)}
   `;
   return buildAreaMismatchRows(
     rows.map((r) => ({ ...base(r), recordedHa: Number(r.recordedHa), polygonM2: Number(r.polygonM2) }))
@@ -128,8 +121,6 @@ export interface ParcelFindingGeometry {
   boundary: Polygon | MultiPolygon | null;
 }
 
-const idsSchema = z.array(z.string().min(1).max(40).regex(/^[a-z0-9]+$/i)).min(1).max(OVERLAP_GEOMETRY_CHUNK);
-
 /**
  * Geometri lahan temuan untuk preview peta (1 lahan, izin VIEW, opsional boundary
  * Lembaganya) atau ekspor SHP/GeoJSON (banyak lahan, izin EXPORT). Lahan di luar
@@ -140,15 +131,15 @@ export async function getParcelFindingGeometries(
   purpose: "preview" | "export",
   withBoundary = false,
 ): Promise<ActionResult<ParcelFindingGeometry[]>> {
-  const permission = purpose === "export" ? "EXPORT" : "VIEW";
-  if (!(await hasPermission(MENU_KEY, permission))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
-  }
-  const parsed = idsSchema.safeParse(ids);
-  if (!parsed.success || (purpose === "preview" && parsed.data.length !== 1)) {
+  // `purpose` divalidasi DULU: izin EXPORT & batas satu lahan bergantung padanya (review ef4ed79).
+  const parsed = findingGeometryInputSchema.safeParse({ purpose, items: ids, withBoundary });
+  if (!parsed.success) {
     return { success: false, error: "Lahan tidak valid" };
   }
-  const boundary = purpose === "preview" && withBoundary;
+  if (!(await hasPermission(MENU_KEY, parsed.data.purpose === "export" ? "EXPORT" : "VIEW"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  }
+  const boundary = parsed.data.purpose === "preview" && parsed.data.withBoundary;
   const access = await getAccessContext();
   const rows = await prisma.$queryRaw<{ id: string; gp: Geometry | string | null; gb: Geometry | string | null }[]>`
     SELECT p.id,
@@ -161,8 +152,8 @@ export async function getParcelFindingGeometries(
     FROM tbl_land_parcel p
     JOIN tbl_farmer f ON f.id = p.farmer_id AND f.is_active
     JOIN tbl_farmer_group g ON g.id = f.farmer_group_id AND g.is_active
-    WHERE p.id = ANY(${parsed.data}::text[]) AND p.is_active AND p.geom IS NOT NULL
-      AND ${groupScope(access)}
+    WHERE p.id = ANY(${parsed.data.items}::text[]) AND p.is_active AND p.geom IS NOT NULL
+      AND ${groupScopeSql("g", access)}
   `;
   const polygonal = (g: Geometry | string | null): Polygon | MultiPolygon | null => {
     const v = typeof g === "string" ? (JSON.parse(g) as Geometry) : g;

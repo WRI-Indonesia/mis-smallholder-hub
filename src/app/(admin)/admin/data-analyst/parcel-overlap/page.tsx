@@ -7,12 +7,20 @@ import { ParcelTopologyTabs } from "./parcel-topology-tabs";
 export default async function ParcelOverlapPage() {
   await requirePermission("data-analyst-parcel-overlap");
 
-  const [overlaps, outside, areaMismatch, permissions] = await Promise.all([
+  // Tab baru dimuat terpisah (allSettled): galat PostGIS di salah satunya tak boleh
+  // menjatuhkan tab Tumpang Tindih yang sudah ada (review ef4ed79).
+  const [overlaps, permissions, outsideRes, areaRes] = await Promise.all([
     getParcelOverlaps(),
-    getParcelOutsideBoundary(),
-    getParcelAreaMismatch(),
     getUserPermissionsForMenu("data-analyst-parcel-overlap"),
+    ...([getParcelOutsideBoundary(), getParcelAreaMismatch()] as const).map((p) =>
+      p.then((data) => ({ ok: true as const, data })).catch((e: unknown) => {
+        console.error("Tumpang Tindih Lahan — tab gagal dimuat:", e);
+        return { ok: false as const };
+      })
+    ),
   ]);
+  const outside = outsideRes.ok ? (outsideRes.data as Awaited<ReturnType<typeof getParcelOutsideBoundary>>) : null;
+  const areaMismatch = areaRes.ok ? (areaRes.data as Awaited<ReturnType<typeof getParcelAreaMismatch>>) : null;
 
   return (
     <div className="p-6 space-y-6">

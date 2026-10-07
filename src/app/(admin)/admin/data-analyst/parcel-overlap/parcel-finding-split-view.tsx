@@ -75,6 +75,8 @@ export function ParcelFindingSplitView<T extends ParcelFindingBase>({
   const [visibleRows, setVisibleRows] = useState<T[]>(rows);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [geoms, setGeoms] = useState<Record<string, ParcelFindingGeometry>>({});
+  // Boundary per Lembaga diambil SEKALI — baris lain di Lembaga yang sama memakai ulang (review ef4ed79).
+  const [boundaries, setBoundaries] = useState<Record<string, ParcelFindingGeometry["boundary"]>>({});
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -88,9 +90,11 @@ export function ParcelFindingSplitView<T extends ParcelFindingBase>({
   useEffect(() => {
     if (!effectiveKey || geoms[effectiveKey] || requested.current.has(effectiveKey)) return;
     const key = effectiveKey;
+    const groupId = rows.find((r) => r.id === key)?.groupId;
+    const needBoundary = withBoundary && !!groupId && !(groupId in boundaries);
     requested.current.add(key);
     setLoadingKey(key);
-    getParcelFindingGeometries([key], "preview", withBoundary)
+    getParcelFindingGeometries([key], "preview", needBoundary)
       .then((res) => {
         if (!res.success) {
           requested.current.delete(key);
@@ -103,13 +107,14 @@ export function ParcelFindingSplitView<T extends ParcelFindingBase>({
           return;
         }
         setGeoms((prev) => ({ ...prev, [key]: g }));
+        if (needBoundary && groupId) setBoundaries((prev) => ({ ...prev, [groupId]: g.boundary }));
       })
       .catch(() => {
         requested.current.delete(key);
         toast.error("Gagal memuat peta lahan ini. Coba pilih lagi.");
       })
       .finally(() => setLoadingKey((k) => (k === key ? null : k)));
-  }, [effectiveKey, geoms, withBoundary]);
+  }, [effectiveKey, geoms, withBoundary, boundaries, rows]);
 
   // Pilihan yang hilang dari hasil dilepas (pola review #317 tab Tumpang Tindih).
   useEffect(() => {
@@ -248,7 +253,7 @@ export function ParcelFindingSplitView<T extends ParcelFindingBase>({
               </div>
             ) : shownGeom?.parcel ? (
               <div className="relative">
-                <ParcelFindingMap parcel={shownGeom.parcel} boundary={withBoundary ? shownGeom.boundary : null} />
+                <ParcelFindingMap parcel={shownGeom.parcel} boundary={withBoundary ? (boundaries[selected.groupId] ?? null) : null} />
                 {!selectedGeom && (
                   <div className="absolute inset-0 z-20 flex items-center justify-center rounded-md bg-background/40">
                     {loadingKey === selected.id ? <Loader2 className="h-6 w-6 animate-spin" /> : null}
