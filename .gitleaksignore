@@ -1,0 +1,12 @@
+# Positif palsu gitleaks yang sudah diperiksa manual — satu fingerprint per baris
+# (<commit>:<berkas>:<aturan>:<baris>). Aturan lain tetap aktif; tambahkan baris HANYA
+# sesudah memastikan isinya bukan rahasia, dengan alasan di komentar.
+
+# PR #404 (rilis v1.4.0, 2026-10-07): `Key: SUPPLY_CHAIN_S3_PREFIX + …` = nama parameter
+# S3 GetObject/HeadObject + konstanta prefix, bukan kunci API.
+f24f90712c3ea32d75536a5d82f44d4436809d6a:src/lib/supply-chain-tables.ts:generic-api-key:103
+f24f90712c3ea32d75536a5d82f44d4436809d6a:src/lib/supply-chain-tables.ts:generic-api-key:108
+
+# PR #404: teks docs "Kartu Sankey: Lembaga/Distrik → …" ("…key:" + teks), bukan kunci API.
+7185ef8e15daf8c1b282e207c68f267abd819756:docs/product/pages/dashboard/supply-chain.md:generic-api-key:18
+b9d20e94fcbc183e1e37d39317df6140188e6f8f:docs/product/pages/dashboard/supply-chain.md:generic-api-key:18
