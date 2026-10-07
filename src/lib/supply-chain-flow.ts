@@ -95,8 +95,11 @@ export interface SupplyChainData {
 /** Payload halaman prototipe (Dashboard & Peta). `available=false` bila folder tabel tidak ada. */
 export interface SupplyChainView {
   available: boolean;
-  /** Lokasi sumber tabel (folder lokal / S3) — ditampilkan di keadaan kosong. */
-  tablesDir: string;
+  /**
+   * Lokasi sumber tabel (folder lokal / bucket S3) untuk keadaan kosong — HANYA untuk
+   * SUPERADMIN; peran lain `null` (path skrip & nama bucket bukan untuk pengguna, temuan QA v1.4.0).
+   */
+  tablesDir: string | null;
   data: SupplyChainData;
   years: number[];
 }

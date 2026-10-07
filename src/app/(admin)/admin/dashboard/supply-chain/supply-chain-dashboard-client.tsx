@@ -42,16 +42,23 @@ const MILL_ROWS_COLLAPSED = 10;
 /** Mode Ringkas hanya melipat kolom Mill — kolom tengah sudah ≤ 3 node, jadi ada ruang untuk lebih banyak Mill. */
 const RINGKAS_MILLS = 15;
 
-/** Keadaan kosong bila folder tabel CSV tidak ada di server ini. */
-export function SupplyChainUnavailable({ tablesDir }: { tablesDir: string }) {
+/**
+ * Keadaan kosong bila tabel CSV tidak ada di server ini. Detail teknis (path, bucket, skrip)
+ * hanya bila `tablesDir` dikirim — server mengirimnya untuk SUPERADMIN saja.
+ */
+export function SupplyChainUnavailable({ tablesDir }: { tablesDir: string | null }) {
   return (
     <Card className="border-dashed">
       <CardContent className="py-10 text-center text-sm text-muted-foreground space-y-2">
         <p className="font-medium text-foreground">Data prototipe rantai pasok belum tersedia di server ini.</p>
-        <p>
-          Halaman ini membaca tabel CSV dari <code className="rounded bg-muted px-1">{tablesDir}</code> — sengaja tidak ikut repo (berisi
-          nama orang). Unggah dengan skrip <code className="rounded bg-muted px-1">scripts/seed/upload-supply-chain-tables.mjs</code>.
-        </p>
+        {tablesDir ? (
+          <p>
+            Halaman ini membaca tabel CSV dari <code className="rounded bg-muted px-1">{tablesDir}</code> — sengaja tidak ikut repo (berisi
+            nama orang). Unggah dengan skrip <code className="rounded bg-muted px-1">scripts/seed/upload-supply-chain-tables.mjs</code>.
+          </p>
+        ) : (
+          <p>Hubungi admin aplikasi bila data ini dibutuhkan.</p>
+        )}
       </CardContent>
     </Card>
   );
