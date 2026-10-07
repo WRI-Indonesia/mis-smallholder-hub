@@ -33,8 +33,6 @@ const SEGMENT_CLASS = [
 ];
 /** Angka ditulis di dalam segmen bila segmen ≥ porsi ini dari lebar trek (sisanya di tooltip). */
 const MIN_LABEL_SHARE = 0.09;
-/** Sisa "belum dilatih" yang sempit tetap diberi angka saja (tanpa kata "belum") sampai porsi ini. */
-const MIN_UNTRAINED_SHARE = 0.035;
 
 /** Satu bar bertumpuk tampilan Grafis: panjang = kumulatif t, segmen = kapan petani pertama dilatih. */
 function BenefitBar({
@@ -61,7 +59,12 @@ function BenefitBar({
       </div>
       <div className="flex items-center gap-2">
         {/* Trek abu netral — bg-muted tema berwarna hijau muda, tak terbedakan dari segmen terang. */}
-        <div className="relative h-7 flex-1 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800">
+        {/* Trek penuh = petani aktif; sisa abu = belum dilatih — tanpa label angka (owner
+            2026-10-07), jumlahnya hanya di tooltip. Garis acuan + ruang 5% dihapus. */}
+        <div
+          className="relative h-7 flex-1 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800"
+          title={untrained > 0 ? `${formatNumber(untrained)} petani aktif belum dilatih` : undefined}
+        >
           <div className="flex h-full" style={{ width: `${(total / max) * 100}%` }}>
             {r.cells.map((c, i) =>
               c.actual > 0 ? (
@@ -76,16 +79,6 @@ function BenefitBar({
               ) : null,
             )}
           </div>
-          {/* Sisa trek = belum dilatih (trek penuh = petani aktif). Garis acuan putus-putus +
-              ruang 5% dihapus — owner 2026-10-07: ruang kosong di kanan garis tak bermakna. */}
-          {untrained / max >= MIN_UNTRAINED_SHARE && (
-            <span
-              className="absolute inset-y-0 right-2 flex items-center text-[11px] tabular-nums text-slate-500 dark:text-slate-400"
-              title={`${formatNumber(untrained)} petani aktif belum dilatih`}
-            >
-              {untrained / max >= MIN_LABEL_SHARE ? `belum ${formatNumber(untrained)}` : formatNumber(untrained)}
-            </span>
-          )}
         </div>
         <span className={`w-14 shrink-0 text-right tabular-nums ${strong ? "font-bold" : "font-semibold"}`}>{formatNumber(total)}</span>
       </div>
