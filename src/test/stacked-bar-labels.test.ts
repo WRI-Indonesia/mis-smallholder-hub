@@ -23,7 +23,8 @@ describe("stackedBarLabelLayout — angka Capaian Paket per Distrik", () => {
   });
 
   it("dilatih 0% dan tak ada angka dilatih → hanya angka belum", () => {
-    expect(layout(100, 0, "", "417")).toMatchObject({ belum: true });
+    // Regresi: teks kosong dulu dianggap "tak muat" lalu "0" muncul di luar segmen (Pelalawan).
+    expect(layout(100, 0, "", "417")).toEqual({ trained: "hidden", other: false, belum: true });
   });
 
   it("angka belum disembunyikan bila tak muat di sisa bar", () => {

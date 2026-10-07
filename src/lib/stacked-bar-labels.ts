@@ -30,6 +30,7 @@ export function stackedBarLabelLayout(input: {
   widthPx: number;
   trainedPct: number;
   otherPct: number;
+  /** "" = 0 dilatih → tak ada angka dilatih yang ditampilkan. */
   trainedText: string;
   otherText: string | null;
   belumText: string | null;
@@ -42,8 +43,8 @@ export function stackedBarLabelLayout(input: {
   const wTrained = barLabelWidth(trainedText);
 
   let trained: StackedBarLabelLayout["trained"] = "hidden";
-  if (greenPx >= wTrained) trained = "inside";
-  else if (otherPx + belumPx >= wTrained) trained = "outside";
+  if (trainedText && greenPx >= wTrained) trained = "inside";
+  else if (trainedText && otherPx + belumPx >= wTrained) trained = "outside";
 
   // Ruang yang dipakai angka dilatih di luar segmennya, dihitung dari batas hijau.
   const outsideUsed = trained === "outside" ? wTrained + GAP : 0;
