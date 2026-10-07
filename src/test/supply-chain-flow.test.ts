@@ -58,6 +58,9 @@ describe("buildSupplyChainSankey", () => {
     expect(g.links).toContainEqual({ source: "L:G2", target: "O:RMP-1", channel: "RAMP", value: 20 });
     expect(g.links).toContainEqual({ source: "L:G1", target: "M:M1", channel: "LANGSUNG", value: 5 });
     expect(parseChainNodeId("C:AGN-1>RMP-1")).toEqual({ collectorId: "AGN-1", rampId: "RMP-1" });
+    expect(parseChainNodeId("C:AGN-1")).toBeNull();
+    expect(parseChainNodeId("C:A>B>C")).toBeNull();
+    expect(parseChainNodeId("O:RMP-1")).toBeNull();
     expect(g.totalTon).toBe(55);
   });
 
@@ -74,6 +77,7 @@ describe("buildSupplyChainSankey", () => {
     const g = buildSupplyChainSankey(d, records, { mode: "RINCI", maxPerColumn: 2 });
     const other = g.nodes.find((n) => n.id === "X:1");
     expect(other?.folded).toBe(3);
+    expect(other?.label).toBe("Offtaker lain");
     expect(other?.value).toBe(10 + 11 + 12);
     expect(g.nodes.filter((n) => n.column === 1)).toHaveLength(3);
   });
@@ -91,6 +95,14 @@ describe("Sankey mode Ringkas & jalur sorotan", () => {
     expect(g.nodes.map((n) => n.id).sort()).toEqual(["G:AGEN_RAMP", "G:KTKOP", "G:RAMP", "L:G1", "L:G2", "M:M1"]);
     expect(g.nodes.find((n) => n.id === "G:RAMP")).toMatchObject({ column: 1, value: 20, sub: "1 RAMP" });
     expect(g.nodes.find((n) => n.id === "G:AGEN_RAMP")).toMatchObject({ column: 1, label: "Agen → RAMP", value: 30, sub: "1 rantai" });
+  });
+
+  it("rantai KT/Koperasi → RAMP masuk node gabungan G:KTKOP_RAMP, bukan rantai agen", () => {
+    const g = buildSupplyChainSankey(data, [rec({ id: "k", groupCode: "G1", offtakerId: "KOP-1", nextOfftakerId: "RMP-1", supplyTon: 7 })]);
+    expect(g.nodes.find((n) => n.id === "G:KTKOP_RAMP")).toMatchObject({ column: 1, label: "KT/Koperasi → RAMP", value: 7, sub: "1 rantai" });
+    expect(g.nodes.some((n) => n.id === "G:AGEN_RAMP")).toBe(false);
+    const rinci = buildSupplyChainSankey(data, [rec({ id: "k", groupCode: "G1", offtakerId: "KOP-1", nextOfftakerId: "RMP-1", supplyTon: 7 })], { mode: "RINCI" });
+    expect(rinci.nodes.find((n) => n.id === "C:KOP-1>RMP-1")).toMatchObject({ column: 1, label: "L1 → RAMP B" });
   });
 
   it("menyimpan jalur utuh sehingga sorotan bisa menelusuri hulu sampai hilir", () => {

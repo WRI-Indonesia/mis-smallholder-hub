@@ -28,7 +28,7 @@ Dashboard ini masih **prototipe** untuk bahan diskusi. Datanya berasal dari **fo
    - **Mill | UL / Non-UL**: tujuan per Mill, atau digabung jadi Ke Mill UL dan Bukan ke Mill UL.
    - **Ton | %**: satuan label. Persen dihitung dari total pada filter aktif.
    - **Ringkas | Detail**: offtaker digabung per tipe (Agen, RAMP, KT/Koperasi, Agen → RAMP), atau tampil satu per satu.
-+ Klik node gabungan (Agen, RAMP, Agen → RAMP, Distrik, Ke Mill UL) untuk langsung turun ke rinciannya. Di mode Detail, klik node rantai Agen → RAMP untuk memfilter agen dan RAMP itu sekaligus. Tombol **Reset** di kartu diagram mengembalikan semua filter dan tombol tampilan ke bawaan.
++ Klik node gabungan (Agen, RAMP, Agen → RAMP, Distrik, Ke Mill UL) untuk langsung turun ke rinciannya. Di mode Detail, klik node rantai Agen → RAMP untuk memfilter agen dan RAMP itu sekaligus. Klik satu agen atau RAMP memfilter **semua** aliran lewat offtaker itu, termasuk rantainya, jadi angkanya bisa lebih besar dari node yang diklik. Tombol **Reset** di kartu diagram mengembalikan semua filter dan tombol tampilan ke bawaan.
 7. Gunakan tabel **Volume per Mill** untuk angka pastinya. Batang hijau adalah porsi ke UL. Klik sebuah baris untuk memfilter Mill itu.
 8. Tekan **Lihat di Peta** untuk membuka Peta Rantai Pasok dengan filter yang sama.
 

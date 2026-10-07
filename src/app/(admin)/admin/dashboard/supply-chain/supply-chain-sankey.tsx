@@ -44,7 +44,7 @@ export const isFilterableNode = (n: SankeyNode) =>
 /** Node gabungan mode Ringkas — klik = buka mode Detail. */
 export const isGroupNode = (n: SankeyNode) => n.id.startsWith("G:");
 const NODE_KIND = ["Lembaga", "offtaker", "RAMP", "Mill"] as const;
-const nodeKind = (n: SankeyNode) => (n.id.startsWith("D:") ? "Distrik" : n.id.startsWith("U:") ? "kelompok Mill" : NODE_KIND[n.column]);
+const nodeKind = (n: SankeyNode) => (n.id.startsWith("D:") ? "Distrik" : n.id.startsWith("U:") ? "kelompok Mill" : n.id.startsWith("C:") ? "rantai" : NODE_KIND[n.column]);
 
 const LABEL_GAP = 6;
 const LEFT_MARGIN = 130;
@@ -259,8 +259,12 @@ export function SupplyChainSankey({
               </div>
               {hover.node.isUl && <div className="mt-0.5 text-primary">Mill pemasok program UL</div>}
               {hover.node.millStatus === "PKS_BELUM_PASTI" && <div className="mt-0.5 text-muted-foreground">Survei hanya menyebut nama PT — PKS dipilih dari Universal Mill List</div>}
-              {onSelectNode && isGroupNode(hover.node) && <div className="mt-1 text-primary">Klik untuk melihat per {NODE_KIND[hover.node.column]} (Detail)</div>}
-              {onSelectNode && isFilterableNode(hover.node) && <div className="mt-1 text-muted-foreground">Klik untuk memfilter {nodeKind(hover.node)} ini</div>}
+              {onSelectNode && isGroupNode(hover.node) && <div className="mt-1 text-primary">Klik untuk melihat rinciannya (Detail)</div>}
+              {onSelectNode && isFilterableNode(hover.node) && (
+                <div className="mt-1 text-muted-foreground">
+                  {hover.node.id.startsWith("O:") ? "Klik untuk memfilter semua aliran lewat offtaker ini (termasuk rantai ke/dari RAMP)" : `Klik untuk memfilter ${nodeKind(hover.node)} ini`}
+                </div>
+              )}
             </>
           )}
           {lit && litTon > 0 && hover.kind === "node" && hover.node.column !== 3 && (

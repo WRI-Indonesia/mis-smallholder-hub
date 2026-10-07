@@ -113,14 +113,14 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
   const summary = useMemo(() => summarizeSupplyChain(records, offtakers), [records, offtakers]);
 
   // Reset di kartu diagram: bar filter sudah di luar layar saat diagram dibaca.
+  const chipMill = f.filter.millId ? millsById.get(f.filter.millId) : undefined;
   const activeFilters = [
     f.district && `Distrik: ${f.district}`,
     f.category && `Kategori: ${GROUP_CATEGORY_LABEL[f.category]}`,
     f.filter.groupCode && `Lembaga: ${view.data.groups.find((g) => g.code === f.filter.groupCode)?.abrv ?? f.filter.groupCode}`,
     f.filter.collectorId && `Agen: ${offtakers.get(f.filter.collectorId)?.name ?? f.filter.collectorId}`,
     f.filter.rampId && `RAMP: ${offtakers.get(f.filter.rampId)?.name ?? f.filter.rampId}`,
-    f.filter.millId &&
-      `Mill: ${f.filter.millId === UNKNOWN_MILL_FILTER ? "tidak diketahui" : (millsById.get(f.filter.millId) ? millLabel(millsById.get(f.filter.millId)!) : f.filter.millId)}`,
+    f.filter.millId && (f.filter.millId === UNKNOWN_MILL_FILTER ? "Mill tidak diketahui" : `Mill: ${chipMill ? millLabel(chipMill) : f.filter.millId}`),
     f.filter.ul && UL_FILTER_LABEL[f.filter.ul],
   ].filter((x): x is string => !!x);
   const viewChanged = mode !== "RINGKAS" || origin !== "LEMBAGA" || destination !== "MILL" || unit !== "TON";

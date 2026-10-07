@@ -154,7 +154,8 @@ export function recordChannel(r: ScRecord, offtakers: Map<string, ScOfftaker>): 
 }
 
 /**
- * Pengumpul pertama (kolom Sankey "Agen · KT/Koperasi") dan RAMP sebuah record.
+ * Pengumpul pertama (Agen · KT/Koperasi) dan RAMP sebuah record — di Sankey
+ * keduanya satu bagian Offtaker, rantai pengumpul → RAMP = satu node.
  * Satu definisi untuk Sankey, filter, dan peta — offtaker pertama bertipe RAMP
  * berarti petani langsung ke RAMP (tanpa pengumpul).
  */
@@ -453,8 +454,8 @@ const GROUP_NODE: Record<string, { label: string; unit: string }> = {
 const chainNodeId = (collector: string, ramp: string) => `C:${collector}>${ramp}`;
 export const parseChainNodeId = (id: string): { collectorId: string; rampId: string } | null => {
   if (!id.startsWith("C:")) return null;
-  const [collectorId, rampId] = id.slice(2).split(">");
-  return { collectorId, rampId };
+  const parts = id.slice(2).split(">");
+  return parts.length === 2 && parts[0] && parts[1] ? { collectorId: parts[0], rampId: parts[1] } : null;
 };
 
 interface PathStep {
