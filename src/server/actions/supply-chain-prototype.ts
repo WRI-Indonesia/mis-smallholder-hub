@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { hasPermission } from "@/lib/rbac";
+import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 import { loadSupplyChainTables, supplyChainTablesLocation, type SupplyChainTables } from "@/lib/supply-chain-tables";
 import type { ScGroup, ScParcelPoint, SupplyChainMapView, SupplyChainView } from "@/lib/supply-chain-flow";
@@ -13,7 +13,8 @@ import type { ScGroup, ScParcelPoint, SupplyChainMapView, SupplyChainView } from
  * Master Mill/offtaker global (K6), dikirim sebatas yang dirujuk record terlihat.
  */
 async function scopedView(tables: SupplyChainTables | null): Promise<{ view: SupplyChainView; groups: ScGroup[] }> {
-  const tablesDir = supplyChainTablesLocation();
+  // Path & nama bucket hanya untuk SUPERADMIN (temuan QA v1.4.0 #2).
+  const tablesDir = (await isSuperAdmin()) ? supplyChainTablesLocation() : null;
   const access = await getAccessContext();
   const rows = await prisma.farmerGroup.findMany({
     where: { isActive: true, ...farmerGroupAccessFilter(access) },

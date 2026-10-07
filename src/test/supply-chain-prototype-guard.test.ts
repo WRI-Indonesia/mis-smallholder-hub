@@ -8,7 +8,8 @@ import type { SupplyChainTables } from "@/lib/supply-chain-tables";
  * sebatas yang dirujuk record terlihat. Pembaca tabel CSV dimock.
  */
 const hasPermission = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/rbac", () => ({ hasPermission }));
+const isSuperAdmin = vi.hoisted(() => vi.fn(async () => true));
+vi.mock("@/lib/rbac", () => ({ hasPermission, isSuperAdmin }));
 
 const getAccessContext = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/access-context", async () => ({
@@ -97,6 +98,14 @@ describe("scope", () => {
     const view = await actions.getSupplyChainDashboardView();
     expect(view.available).toBe(false);
     expect(view.tablesDir).toBe("lokasi-uji");
+  });
+
+  it("path/bucket keadaan kosong hanya untuk SUPERADMIN (temuan QA v1.4.0 #2)", async () => {
+    tables.loadSupplyChainTables.mockResolvedValue(null);
+    isSuperAdmin.mockResolvedValueOnce(false);
+    expect((await actions.getSupplyChainDashboardView()).tablesDir).toBeNull();
+    isSuperAdmin.mockResolvedValueOnce(false);
+    expect((await actions.getSupplyChainMapView()).tablesDir).toBeNull();
   });
 });
 
