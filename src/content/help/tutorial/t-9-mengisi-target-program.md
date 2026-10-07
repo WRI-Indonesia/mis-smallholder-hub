@@ -18,15 +18,16 @@ Halaman ini menyimpan angka **kontrak** program — bukan data petani. Angkanya 
 ## Langkah
 
 1. Buka menu **Master Data → Target Program**.
-2. Isi kolom **Start of the Program** untuk kedua baris kontrak, lalu pilih tahunnya di header kolom (mis. `s.d. 2025`).
+2. Isi kolom **Start of the Program** untuk tiap baris paket, lalu pilih tahunnya di header kolom (mis. `s.d. 2025`).
++ Ada lima baris — sama dengan baris kartu *Training Benefit per year*: P1, P2 Group Dynamic, P2 HSE, P3, dan **Petani pernah mengikuti pelatihan (minimal 1)**. Isi target tiap paket terpisah. Baris terakhir adalah target total program (petani yang ikut pelatihan apa pun, dihitung sekali) — isi sendiri, jangan menjumlahkan baris paket, karena satu petani bisa ikut beberapa paket.
 + Start of the Program = jumlah petani yang sudah dilatih **sampai akhir** tahun itu. Di dashboard, angka ini dibandingkan dengan kumulatif penerima manfaat s.d. tahun yang sama.
 3. Isi target per tahun (mis. 2026, 2027, 2028). Klik **Tambah tahun** untuk menambah kolom, atau tanda **×** di header tahun untuk menghapus kolom.
 + Target tahunan = jumlah petani **baru** yang ditargetkan dilatih pada tahun itu.
-+ Kolom **Total** dan baris **Total Farmers trained in the year** dihitung otomatis — tidak perlu diisi.
++ Kolom **Total** (Start + semua tahun) dihitung otomatis — tidak perlu diisi.
 4. Klik **Simpan target**.
 + Mengosongkan sel lalu menyimpan berarti target sel itu dihapus. Waktu dan nama pengubah terakhir tercatat di bawah tabel.
-5. Buka **Dashboard → Dashboard Pelatihan**, kartu *Training Benefit per year*, lalu pilih **vs Kontrak** untuk melihat target, realisasi, dan % capaiannya.
-+ Baris pertama kontrak dibandingkan dengan penerima manfaat baru **Paket 1**, baris kedua dengan **Paket 3 & 4**. Bila filter Distrik/Lembaga aktif, realisasi hanya untuk wilayah itu sedangkan target tetap seluruh program — muncul catatan agar % tidak disalahbaca.
+5. Buka **Dashboard → Dashboard Pelatihan**, kartu *Training Benefit per year*, lalu pilih **vs Kontrak A** atau **B** untuk melihat target, realisasi, dan % capaiannya.
++ Tiap baris dibandingkan dengan penerima manfaat baru paketnya; baris "pernah mengikuti" dengan petani yang pertama kali ikut pelatihan apa pun. Paket yang targetnya belum diisi tetap tampil dengan tulisan "target belum diisi". Bila filter Distrik/Lembaga aktif, realisasi hanya untuk wilayah itu sedangkan target tetap seluruh program — muncul catatan agar % tidak disalahbaca.
 
 ## Kalau bermasalah
 

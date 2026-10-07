@@ -11,7 +11,6 @@ import { formatNumber } from "@/lib/format";
 import {
   PROGRAM_TARGET_INDICATORS,
   PROGRAM_TARGET_LABELS,
-  PROGRAM_TARGET_TOTAL_LABEL,
   PROGRAM_TARGET_YEAR_MAX,
   PROGRAM_TARGET_YEAR_MIN,
   buildProgramTargetGrid,
@@ -31,9 +30,9 @@ const toNumber = (s: string | undefined): number | null => {
 };
 
 /**
- * Grid isian Target Program (#403): baris = indikator kontrak, kolom = Start of the Program
- * (kumulatif s.d. tahun baseline) + tahun target; Total & baris "Total farmers trained"
- * dihitung. Seluruh grid disimpan sekali; sel dikosongkan = target dihapus (soft delete).
+ * Grid isian Target Program (#403): baris = paket (target per paket, owner 2026-10-07) +
+ * petani pernah ikut pelatihan sebagai baris total; kolom = Start of the Program (kumulatif
+ * s.d. tahun baseline) + tahun target; kolom Total dihitung. Seluruh grid disimpan sekali; sel dikosongkan = target dihapus (soft delete).
  */
 export function ProgramTargetClient({ view, canEdit }: { view: ProgramTargetView; canEdit: boolean }) {
   const router = useRouter();
@@ -57,7 +56,6 @@ export function ProgramTargetClient({ view, canEdit }: { view: ProgramTargetView
   };
   const invalid = Object.values(draft).some((v) => Number.isNaN(toNumber(v)));
   const rowTotal = (ind: ProgramTargetIndicatorCode) => num(baseKey(ind)) + years.reduce((s, y) => s + num(yearKey(ind, y)), 0);
-  const yearTotal = (y: number) => PROGRAM_TARGET_INDICATORS.reduce((s, ind) => s + num(yearKey(ind, y)), 0);
 
   const addYear = () => setYears((ys) => [...ys, (ys.length ? Math.max(...ys) : thisYear - 1) + 1].filter((y) => y <= PROGRAM_TARGET_YEAR_MAX));
   const removeYear = (y: number) => {
@@ -152,8 +150,9 @@ export function ProgramTargetClient({ view, canEdit }: { view: ProgramTargetView
             </thead>
             <tbody>
               {PROGRAM_TARGET_INDICATORS.map((ind) => (
-                <tr key={ind} className="border-b border-border/40">
-                  <td className="max-w-[22rem] py-2 pr-4 font-medium">{PROGRAM_TARGET_LABELS[ind]}</td>
+                // Baris "pernah ikut" = total program (menjumlah paket menghitung petani berkali-kali).
+                <tr key={ind} className={ind === "TRAINING_ANY" ? "border-t-2 border-border bg-muted/40 font-semibold" : "border-b border-border/40"}>
+                  <td className={`max-w-[22rem] py-2 pr-4 ${ind === "TRAINING_ANY" ? "font-semibold" : "font-medium"}`}>{PROGRAM_TARGET_LABELS[ind]}</td>
                   <td className="px-2 py-2 text-right">
                     {numberCell(baseKey(ind))}
                   </td>
@@ -165,16 +164,6 @@ export function ProgramTargetClient({ view, canEdit }: { view: ProgramTargetView
                   <td className="px-2 py-2 text-right font-semibold tabular-nums">{formatNumber(rowTotal(ind))}</td>
                 </tr>
               ))}
-              <tr className="bg-muted/40 font-semibold">
-                <td className="py-2 pr-4 italic">{PROGRAM_TARGET_TOTAL_LABEL}</td>
-                <td className="px-2 py-2" />
-                {years.map((y) => (
-                  <td key={y} className="px-2 py-2 text-right tabular-nums">
-                    {formatNumber(yearTotal(y))}
-                  </td>
-                ))}
-                <td className="px-2 py-2" />
-              </tr>
             </tbody>
           </table>
         </div>
@@ -193,7 +182,8 @@ export function ProgramTargetClient({ view, canEdit }: { view: ProgramTargetView
         )}
         <p className="text-xs text-muted-foreground">
           Start of the Program = jumlah penerima manfaat s.d. akhir tahun yang dipilih; kolom tahun = target penerima manfaat
-          baru pada tahun itu. Total dan baris {PROGRAM_TARGET_TOTAL_LABEL} dihitung otomatis. Kosongkan sel untuk menghapus
+          baru pada tahun itu. Isi target tiap paket secara terpisah; baris terakhir adalah target petani yang pernah ikut
+          pelatihan apa pun (total program, bukan jumlah paket). Kolom Total dihitung otomatis. Kosongkan sel untuk menghapus
           targetnya.
           {view.lastModified &&
             ` Terakhir diubah ${new Date(view.lastModified.at).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}${view.lastModified.by ? ` oleh ${view.lastModified.by}` : ""}.`}

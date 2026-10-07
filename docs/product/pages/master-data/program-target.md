@@ -10,7 +10,7 @@
 Halaman: Target Program (/admin/master-data/program-target)
 ├── Header — judul + HelpHint (t-9) + deskripsi
 └── Card grid
-    ├── Tabel: baris = indikator kontrak (2) + baris "Total Farmers trained in the year" (dihitung)
+    ├── Tabel: baris = 5 indikator per paket (label = kartu Training Benefit per year); baris terakhir "Petani pernah mengikuti pelatihan (minimal 1)" ditonjolkan sebagai total program
     │   kolom = Start of the Program (s.d. <tahun>, tahun bisa diubah) · tahun target (× hapus kolom) · Total (dihitung)
     ├── Sel: input angka (izin EDIT) / angka saja (tanpa EDIT); bingkai merah bila bukan bilangan bulat
     ├── Tombol: Tambah tahun · Simpan target (seluruh grid sekali simpan)
@@ -36,9 +36,9 @@ Halaman: Target Program (/admin/master-data/program-target)
 
 | Hal | Aturan |
 |---|---|
-| Indikator | `TRAINING_BMP_GROUP_MANAGEMENT` (BMP & Reg. Ag., P&C RSPO, HCV, HSE, Group Management ↔ Paket 1) · `TRAINING_GEDSI_LIVELIHOOD` (GEDSI, Financial Literacy, BusDev, Alt. Livelihood ↔ Paket 3 & 4) |
+| Indikator | Target dipisah **per paket** (owner 2026-10-07, menggantikan 2 baris kontrak donor sebelum rilis): `TRAINING_P1_BMP` ↔ Paket 1 · `TRAINING_P2_GROUP_DYNAMIC` ↔ Paket 2 MK · `TRAINING_P2_HSE` ↔ Paket 2 K3 · `TRAINING_P3_GEDSI_LIVELIHOOD` ↔ Paket 3 & 4 · `TRAINING_ANY` ↔ pelatihan apa pun termasuk Lainnya (petani dihitung sekali) |
 | Start of the Program | `BASELINE` — kumulatif s.d. akhir tahun yang dipilih; satu tahun untuk semua baris (mengganti tahun menonaktifkan baseline tahun lain) |
 | Tahunan | `ANNUAL` — target penerima manfaat baru pada tahun itu |
-| Total | Baris: Start + Σ tahunan · Kolom tahun: Σ kedua baris — dihitung, tidak disimpan |
+| Total | Kolom Total per baris = Start + Σ tahunan — dihitung, tidak disimpan. **Tak ada baris total hitungan**: menjumlah paket menghitung petani yang sama berkali-kali; total program = baris `TRAINING_ANY` yang diisi sendiri |
 | Simpan | Sel berisi → upsert (baris nonaktif diaktifkan lagi, `modifiedBy`); sel kosong → soft delete; kolom tahun yang dihapus → target lamanya dikosongkan |
 | Repo publik | Angka kontrak tidak ditulis di repo/issue — hanya di DB lewat halaman ini |

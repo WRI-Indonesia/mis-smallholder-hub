@@ -2,10 +2,12 @@
 -- Usulan Prisma DROP INDEX *_geom_idx & ALTER COLUMN geom DROP DEFAULT DIBUANG (GiST & kolom
 -- generated sengaja di luar pengetahuan Prisma — dijaga migration-guards.test.ts).
 -- Kompatibel mundur: kode v1.3.0 tidak menyentuh tabel ini.
+-- Enum indikator ditulis ulang 2026-10-07 (target per paket) SEBELUM migrasi ini sampai ke
+-- staging/prod — hanya DB lokal yang pernah menerapkan versi lama.
 -- ROLLBACK: DROP TABLE "tbl_program_target"; DROP TYPE "ProgramTargetPeriod"; DROP TYPE "ProgramTargetIndicator";
 
 -- CreateEnum
-CREATE TYPE "ProgramTargetIndicator" AS ENUM ('TRAINING_BMP_GROUP_MANAGEMENT', 'TRAINING_GEDSI_LIVELIHOOD');
+CREATE TYPE "ProgramTargetIndicator" AS ENUM ('TRAINING_P1_BMP', 'TRAINING_P2_GROUP_DYNAMIC', 'TRAINING_P2_HSE', 'TRAINING_P3_GEDSI_LIVELIHOOD', 'TRAINING_ANY');
 
 -- CreateEnum
 CREATE TYPE "ProgramTargetPeriod" AS ENUM ('BASELINE', 'ANNUAL');

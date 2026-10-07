@@ -144,12 +144,12 @@ Terverifikasi 2026-10-07 (mis-dev): Kumulative 2026 P1 8.279 · MK 7.769 · HSE 
 
 ### Tampilan vs Kontrak (A) & (B) (#403)
 
-Target kontrak dari Master Data › Target Program ([program-target.md](../master-data/program-target.md)) vs realisasi penerima manfaat baru: baris 1 ↔ Paket 1, baris 2 ↔ Paket 3 & 4; Start ↔ kumulatif s.d. tahun baseline; hanya tahun bertarget; realisasi ikut filter Distrik/Lembaga dengan catatan amber. Fungsi data: `programContractRows` (`src/lib/program-target.ts`).
+Target kontrak dari Master Data › Target Program ([program-target.md](../master-data/program-target.md)) vs realisasi penerima manfaat baru, **per paket** (owner 2026-10-07): P1 · P2 Group Dynamic · P2 HSE · P3 · Petani pernah mengikuti pelatihan (pelatihan apa pun, = baris total kartu); Start ↔ kumulatif s.d. tahun baseline; hanya tahun bertarget; realisasi ikut filter Distrik/Lembaga dengan catatan amber. Fungsi data: `programContractRows` (`src/lib/program-target.ts`).
 
 | Tab | Isi |
 |---|---|
-| **(A)** trayektori | Satu kotak per baris kontrak: judul kecil, angka besar "realisasi dari total kontrak" + % besar; grafik SVG — garis putus-putus = target kumulatif (Start → tahun), garis tegas = realisasi kumulatif s.d. tahun berjalan (tahun mendatang tanpa titik realisasi), pita tahun berjalan, label "tertinggal N" / "+N di atas target". Legenda + baris Total farmers trained tahun berjalan |
-| **(B)** progres | Per baris kontrak: % besar, bar realisasi vs total kontrak + garis penanda target s.d. tahun berjalan, status tertinggal / sesuai, chip per periode (✓ tercapai / ▲ di bawah; tahun mendatang "belum mulai"). Dibiarkan berdampingan dengan (A) sampai manajemen memilih |
+| **(A)** trayektori | 5 grafik kecil (grid 1/2/3 kolom), **skala sumbu Y sama** agar tinggi garis antarpaket bisa dibandingkan; kotak "pernah mengikuti" ditonjolkan (bingkai hijau). Tiap kotak: judul kecil, angka besar "realisasi dari total kontrak" + % besar (target kosong → "target belum diisi"); grafik SVG — garis putus-putus = target kumulatif (Start → tahun), garis tegas = realisasi kumulatif s.d. tahun berjalan (tahun mendatang tanpa titik realisasi), pita tahun berjalan, label "tertinggal N" / "+N di atas target" / "≈ sesuai target". Legenda; tanpa baris total hitungan (menjumlah paket menghitung petani berkali-kali) |
+| **(B)** progres | Per paket (baris "pernah mengikuti" dipisah garis di bawah): % besar, bar realisasi vs total kontrak + garis penanda target s.d. tahun berjalan, status ≈ / ⚠ tertinggal / ✓, chip per periode ber-titik hijau (tercapai) / amber (di bawah) + "% dari target"; tahun mendatang "belum mulai". Dibiarkan berdampingan dengan (A) sampai manajemen memilih |
 
 Catatan kaki definisi kartu disembunyikan di kedua tab ini. Target gagal dimuat → pesan di tab ini saja; belum ada target → arahan ke Master Data › Target Program.
 

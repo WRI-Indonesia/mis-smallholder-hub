@@ -3,28 +3,43 @@
  * label indikator, pemetaan ke paket pelatihan, grid isian, dan perbandingan target vs
  * realisasi untuk tampilan "vs Kontrak" kartu Training Benefit per year.
  *
- * Keputusan owner 2026-10-07: baris 1 ↔ Paket 1, baris 2 ↔ Paket 3 & 4; realisasi =
- * penerima manfaat BARU (tahun pertama dilatih paket itu) — definisi yang sama dengan
- * Training Benefit per year (#402); kolom Start ↔ kumulatif s.d. tahun baseline; baris
- * total = jumlah kedua baris (target pun dijumlah); hanya tahun bertarget yang tampil.
+ * Keputusan owner 2026-10-07: target dipisah PER PAKET — satu baris per baris kartu Training
+ * Benefit per year (P1 · P2 Group Dynamic · P2 HSE · P3 · petani pernah ikut ≥ 1), label
+ * sama dengan kartu itu. Realisasi = penerima manfaat BARU (tahun pertama dilatih paket itu)
+ * — definisi yang sama dengan Training Benefit per year (#402); baris "pernah ikut" = tahun
+ * pertama ikut pelatihan APA PUN (termasuk Lainnya) dan menggantikan baris total hitungan
+ * (menjumlah paket menghitung petani yang sama berkali-kali). Kolom Start ↔ kumulatif s.d.
+ * tahun baseline; hanya tahun bertarget yang tampil.
  */
 import type { TrainingGroupEntry, TrainingPackageCode } from "@/types/dashboard";
+import { TRAINING_BENEFIT_ANY_LABEL, TRAINING_BENEFIT_LABELS } from "@/lib/training-dashboard-aggregation";
 
-export const PROGRAM_TARGET_INDICATORS = ["TRAINING_BMP_GROUP_MANAGEMENT", "TRAINING_GEDSI_LIVELIHOOD"] as const;
+export const PROGRAM_TARGET_INDICATORS = [
+  "TRAINING_P1_BMP",
+  "TRAINING_P2_GROUP_DYNAMIC",
+  "TRAINING_P2_HSE",
+  "TRAINING_P3_GEDSI_LIVELIHOOD",
+  "TRAINING_ANY",
+] as const;
 export type ProgramTargetIndicatorCode = (typeof PROGRAM_TARGET_INDICATORS)[number];
 export type ProgramTargetPeriodCode = "BASELINE" | "ANNUAL";
 
-/** Label baris kontrak (bahasa dokumen kontrak donor). */
+/** Paket yang menjadi realisasi tiap baris; "ANY" = pelatihan apa pun (termasuk Lainnya). */
+export const PROGRAM_TARGET_PACKAGE: Record<ProgramTargetIndicatorCode, TrainingPackageCode | "ANY"> = {
+  TRAINING_P1_BMP: "PAKET_1_BMP_PC_RSPO_NKT",
+  TRAINING_P2_GROUP_DYNAMIC: "PAKET_2_MK",
+  TRAINING_P2_HSE: "PAKET_2_K3",
+  TRAINING_P3_GEDSI_LIVELIHOOD: "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV",
+  TRAINING_ANY: "ANY",
+};
+/** Label baris = label kartu Training Benefit per year. */
 export const PROGRAM_TARGET_LABELS: Record<ProgramTargetIndicatorCode, string> = {
-  TRAINING_BMP_GROUP_MANAGEMENT: "Training on BMP and Reg. Ag., P&C RSPO, HCV, HSE, Group Management",
-  TRAINING_GEDSI_LIVELIHOOD: "Training on GEDSI, Financial Literacy, Business Development and Alternative Livelihood",
+  TRAINING_P1_BMP: TRAINING_BENEFIT_LABELS.PAKET_1_BMP_PC_RSPO_NKT!,
+  TRAINING_P2_GROUP_DYNAMIC: TRAINING_BENEFIT_LABELS.PAKET_2_MK!,
+  TRAINING_P2_HSE: TRAINING_BENEFIT_LABELS.PAKET_2_K3!,
+  TRAINING_P3_GEDSI_LIVELIHOOD: TRAINING_BENEFIT_LABELS.PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV!,
+  TRAINING_ANY: TRAINING_BENEFIT_ANY_LABEL,
 };
-/** Paket yang menjadi realisasi tiap baris kontrak. */
-export const PROGRAM_TARGET_PACKAGE: Record<ProgramTargetIndicatorCode, TrainingPackageCode> = {
-  TRAINING_BMP_GROUP_MANAGEMENT: "PAKET_1_BMP_PC_RSPO_NKT",
-  TRAINING_GEDSI_LIVELIHOOD: "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV",
-};
-export const PROGRAM_TARGET_TOTAL_LABEL = "Total Farmers trained in the year";
 /** Batas tahun yang masuk akal untuk isian target. */
 export const PROGRAM_TARGET_YEAR_MIN = 2015;
 export const PROGRAM_TARGET_YEAR_MAX = 2050;
@@ -67,26 +82,24 @@ export function programTargetRowTotal(grid: ProgramTargetGrid, indicator: Progra
   return (grid.baseline[indicator] ?? 0) + grid.years.reduce((s, y) => s + (annual[y] ?? 0), 0);
 }
 
-/** Baris "Total Farmers trained in the year" = jumlah target kedua baris per tahun. */
-export function programTargetYearTotal(grid: ProgramTargetGrid, year: number): number {
-  return PROGRAM_TARGET_INDICATORS.reduce((s, ind) => s + (grid.annual[ind]?.[year] ?? 0), 0);
-}
-
 /**
- * Tahun pertama tiap petani dilatih sebuah paket, dihitung per Lembaga (kunci
- * Lembaga+petani) — sama dengan Training Benefit per year & matriks cakupan.
+ * Tahun pertama tiap petani dilatih tiap paket (+ "ANY" = pelatihan apa pun), dihitung per
+ * Lembaga (kunci Lembaga+petani) — sama dengan Training Benefit per year & matriks cakupan.
  */
-function firstYearsByPackage(groups: TrainingGroupEntry[], codes: TrainingPackageCode[]): Map<TrainingPackageCode, number[]> {
-  const first = new Map<TrainingPackageCode, Map<string, number>>(codes.map((c) => [c, new Map()]));
+function firstYearsByPackage(groups: TrainingGroupEntry[]): Map<TrainingPackageCode | "ANY", number[]> {
+  const first = new Map<TrainingPackageCode | "ANY", Map<string, number>>();
+  const note = (code: TrainingPackageCode | "ANY", key: string, y: number) => {
+    const perFarmer = first.get(code) ?? first.set(code, new Map()).get(code)!;
+    const prev = perFarmer.get(key);
+    if (prev == null || y < prev) perFarmer.set(key, y);
+  };
   for (const g of groups) {
     for (const a of g.activities) {
-      const perFarmer = first.get(a.packageCode);
-      if (!perFarmer) continue;
       const y = Number(a.date.slice(0, 4));
       for (const p of a.participants) {
         const key = `${g.id}|${p.farmerId}`;
-        const prev = perFarmer.get(key);
-        if (prev == null || y < prev) perFarmer.set(key, y);
+        note(a.packageCode, key, y);
+        note("ANY", key, y);
       }
     }
   }
@@ -100,9 +113,9 @@ export interface ContractCell {
   pct: number | null;
 }
 export interface ContractRow {
-  key: ProgramTargetIndicatorCode | "TOTAL";
+  key: ProgramTargetIndicatorCode;
   label: string;
-  /** Start: target baseline vs kumulatif realisasi s.d. tahun baseline (null pada baris total). */
+  /** Start: target baseline vs kumulatif realisasi s.d. tahun baseline (null bila belum ada tahun baseline). */
   start: ContractCell | null;
   years: ContractCell[];
 }
@@ -118,10 +131,10 @@ const cell = (target: number | null, actual: number): ContractCell => ({
  * Distrik/Lembaga — pemanggil wajib memberi catatan bila filter aktif).
  */
 export function programContractRows(grid: ProgramTargetGrid, groups: TrainingGroupEntry[]): ContractRow[] {
-  const first = firstYearsByPackage(groups, PROGRAM_TARGET_INDICATORS.map((i) => PROGRAM_TARGET_PACKAGE[i]));
+  const first = firstYearsByPackage(groups);
   const countIn = (ind: ProgramTargetIndicatorCode, pred: (y: number) => boolean) =>
     (first.get(PROGRAM_TARGET_PACKAGE[ind]) ?? []).filter(pred).length;
-  const rows: ContractRow[] = PROGRAM_TARGET_INDICATORS.map((ind) => ({
+  return PROGRAM_TARGET_INDICATORS.map((ind) => ({
     key: ind,
     label: PROGRAM_TARGET_LABELS[ind],
     start:
@@ -130,14 +143,4 @@ export function programContractRows(grid: ProgramTargetGrid, groups: TrainingGro
         : cell(grid.baseline[ind] ?? null, countIn(ind, (y) => y <= grid.baselineYear!)),
     years: grid.years.map((year) => cell(grid.annual[ind]?.[year] ?? null, countIn(ind, (y) => y === year))),
   }));
-  rows.push({
-    key: "TOTAL",
-    label: PROGRAM_TARGET_TOTAL_LABEL,
-    start: null,
-    years: grid.years.map((year, i) => {
-      const anyTarget = PROGRAM_TARGET_INDICATORS.some((ind) => grid.annual[ind]?.[year] != null);
-      return cell(anyTarget ? programTargetYearTotal(grid, year) : null, rows.reduce((s, r) => s + r.years[i].actual, 0));
-    }),
-  });
-  return rows;
 }

@@ -117,9 +117,10 @@ const fmtK = (n: number) => (n >= 1000 ? `${(n / 1000).toLocaleString("id-ID", {
  * target kumulatif kontrak, garis tegas = realisasi kumulatif s.d. tahun berjalan. Jarak
  * keduanya di tahun berjalan diberi label tertinggal / di atas target.
  */
-function TrajectoryChart({ points, currentLabel }: { points: TrajectoryPoint[]; currentLabel: string }) {
+function TrajectoryChart({ points, currentLabel, scaleMax }: { points: TrajectoryPoint[]; currentLabel: string; scaleMax: number }) {
   const W = 380, H = 190, L = 44, R = 16, T = 16, B = 28;
-  const max = Math.max(1, ...points.map((p) => Math.max(p.target, p.actual ?? 0))) * 1.08;
+  // Skala Y sama untuk semua grafik kecil agar tinggi garis antarpaket bisa dibandingkan.
+  const max = Math.max(1, scaleMax) * 1.08;
   const x = (i: number) => L + (points.length === 1 ? (W - L - R) / 2 : (i * (W - L - R)) / (points.length - 1));
   const y = (v: number) => T + (H - T - B) * (1 - v / max);
   const path = (vals: (number | null)[]) =>
@@ -198,9 +199,9 @@ function TrajectoryChart({ points, currentLabel }: { points: TrajectoryPoint[]; 
 }
 
 /**
- * Tampilan vs Kontrak (#403): satu grafik trayektori per baris kontrak (target seluruh program)
- * + capaian terhadap total kontrak. Baris 1 ↔ Paket 1, baris 2 ↔ Paket 3 & 4. Realisasi ikut
- * filter Distrik/Lembaga → catatan bila filter aktif.
+ * Tampilan vs Kontrak (A) (#403): grafik kecil trayektori per paket (target per paket, owner
+ * 2026-10-07) dengan skala Y bersama + capaian terhadap total kontrak; kartu "pernah ikut"
+ * ditonjolkan sebagai totalnya. Realisasi ikut filter Distrik/Lembaga → catatan bila aktif.
  */
 function ContractView({ targets, groups, filterActive }: { targets: ProgramTargetRecord[] | null; groups: TrainingGroupEntry[]; filterActive: boolean }) {
   const grid = useMemo(() => (targets ? buildProgramTargetGrid(targets) : null), [targets]);
@@ -216,10 +217,8 @@ function ContractView({ targets, groups, filterActive }: { targets: ProgramTarge
       </div>
     );
   }
-  const contractRows = rows.filter((r) => r.key !== "TOTAL");
-  const totalRow = rows.find((r) => r.key === "TOTAL");
-  const curIdx = grid.years.indexOf(currentYear);
-  const totalNow = totalRow && curIdx >= 0 ? totalRow.years[curIdx] : null;
+  const series = rows.map((r) => ({ r, pts: trajectory(r, grid.baselineYear, grid.years, currentYear) }));
+  const scaleMax = Math.max(...series.flatMap(({ pts }) => pts.map((p) => Math.max(p.target, p.actual ?? 0))));
   return (
     <div className="space-y-4">
       {filterActive && (
@@ -227,29 +226,35 @@ function ContractView({ targets, groups, filterActive }: { targets: ProgramTarge
           Filter Distrik/Lembaga aktif: <b>realisasi</b> hanya untuk wilayah terpilih, sedangkan <b>target</b> berlaku untuk seluruh program.
         </p>
       )}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {contractRows.map((r) => {
-          const pts = trajectory(r, grid.baselineYear, grid.years, currentYear);
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {series.map(({ r, pts }) => {
           const total = pts.at(-1)?.target ?? 0;
           const realized = [...pts].reverse().find((p) => p.actual != null)?.actual ?? 0;
           const pct = total > 0 ? Math.round((realized / total) * 100) : null;
+          const isAny = r.key === "TRAINING_ANY";
           return (
-            <div key={r.key} className="rounded-lg border p-4">
+            <div key={r.key} className={`rounded-lg border p-3 ${isAny ? "border-emerald-300 bg-emerald-50/40 dark:border-emerald-800 dark:bg-emerald-950/20" : ""}`}>
               {/* Judul kecil, angka capaian besar (owner 2026-10-07). */}
-              <div className="text-xs font-medium leading-snug text-muted-foreground" title={r.label}>
+              <div className={`truncate text-xs leading-snug ${isAny ? "font-semibold text-foreground" : "font-medium text-muted-foreground"}`} title={r.label}>
                 {r.label}
               </div>
-              <div className="mt-1 flex items-end justify-between gap-3">
+              <div className="mt-1 flex items-end justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="text-3xl font-bold tabular-nums leading-none">{formatNumber(realized)}</span>
-                  <span className="ml-1.5 text-sm text-muted-foreground">
-                    dari <span className="font-semibold tabular-nums text-foreground">{formatNumber(total)}</span> petani · total kontrak
+                  <span className="text-2xl font-bold tabular-nums leading-none">{formatNumber(realized)}</span>
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    {total > 0 ? (
+                      <>
+                        dari <span className="font-semibold tabular-nums text-foreground">{formatNumber(total)}</span>
+                      </>
+                    ) : (
+                      "target belum diisi"
+                    )}
                   </span>
                 </div>
-                {pct != null && <div className="shrink-0 text-4xl font-bold tabular-nums leading-none text-emerald-700 dark:text-emerald-400">{pct}%</div>}
+                {pct != null && <div className="shrink-0 text-3xl font-bold tabular-nums leading-none text-emerald-700 dark:text-emerald-400">{pct}%</div>}
               </div>
-              <div className="mt-2">
-                <TrajectoryChart points={pts} currentLabel={String(currentYear)} />
+              <div className="mt-1">
+                <TrajectoryChart points={pts} currentLabel={String(currentYear)} scaleMax={scaleMax} />
               </div>
             </div>
           );
@@ -262,13 +267,7 @@ function ContractView({ targets, groups, filterActive }: { targets: ProgramTarge
         <span className="inline-flex items-center gap-1.5">
           <span className="w-5 border-t-2 border-dashed border-slate-400" /> target kontrak kumulatif
         </span>
-        {totalNow && totalNow.target != null && (
-          <span className="ml-auto">
-            {totalRow!.label} {currentYear}:{" "}
-            <b className="text-foreground tabular-nums">{formatNumber(totalNow.actual)}</b> / {formatNumber(totalNow.target)}
-            {totalNow.pct != null && ` (${Math.round(totalNow.pct)}%)`}
-          </span>
-        )}
+        <span className="ml-auto">Persen = realisasi ÷ total kontrak paket itu · skala sumbu sama di semua grafik</span>
       </div>
     </div>
   );
@@ -287,8 +286,6 @@ function ContractProgressView({ targets, groups, filterActive }: { targets: Prog
   if (!grid || targets == null || (grid.years.length === 0 && grid.baselineYear == null)) {
     return <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Belum ada target kontrak.</div>;
   }
-  const totalRow = rows.find((r) => r.key === "TOTAL");
-  const curIdx = grid.years.indexOf(currentYear);
   return (
     <div className="space-y-5">
       {filterActive && (
@@ -296,9 +293,7 @@ function ContractProgressView({ targets, groups, filterActive }: { targets: Prog
           Filter Distrik/Lembaga aktif: <b>realisasi</b> hanya untuk wilayah terpilih, sedangkan <b>target</b> berlaku untuk seluruh program.
         </p>
       )}
-      {rows
-        .filter((r) => r.key !== "TOTAL")
-        .map((r) => {
+      {rows.map((r) => {
           const pts = trajectory(r, grid.baselineYear, grid.years, currentYear);
           const total = pts.at(-1)?.target ?? 0;
           const realized = [...pts].reverse().find((p) => p.actual != null)?.actual ?? 0;
@@ -310,7 +305,7 @@ function ContractProgressView({ targets, groups, filterActive }: { targets: Prog
             ...grid.years.map((y, i) => ({ label: String(y), c: r.years[i], future: y > currentYear })),
           ];
           return (
-            <div key={r.key} className="space-y-2">
+            <div key={r.key} className={`space-y-2 ${r.key === "TRAINING_ANY" ? "border-t pt-4" : ""}`}>
               <div className="flex items-baseline justify-between gap-3">
                 <div className="min-w-0 text-sm font-semibold">{r.label}</div>
                 <div className="shrink-0 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{pct}%</div>
@@ -371,12 +366,6 @@ function ContractProgressView({ targets, groups, filterActive }: { targets: Prog
             </div>
           );
         })}
-      {totalRow && curIdx >= 0 && totalRow.years[curIdx].target != null && (
-        <p className="border-t pt-3 text-xs text-muted-foreground">
-          {totalRow.label} {currentYear}: <b className="text-foreground tabular-nums">{formatNumber(totalRow.years[curIdx].actual)}</b> /{" "}
-          {formatNumber(totalRow.years[curIdx].target!)} ({Math.round(totalRow.years[curIdx].pct ?? 0)}%)
-        </p>
-      )}
     </div>
   );
 }
@@ -516,7 +505,7 @@ export function TrainingBenefitPanel({
         <div className="flex flex-wrap items-start justify-between gap-3 px-6 py-4">
           <CollapsibleTrigger
             render={
-              <button type="button" className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left">
+              <button type="button" className="min-w-0 flex-1 text-left">
                 <span className="min-w-0">
                   <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                     <TrendingUp className="h-4 w-4 text-primary" /> Training Benefit per year
@@ -527,7 +516,6 @@ export function TrainingBenefitPanel({
                       : `${formatNumber(totalNew)} petani baru dilatih ${currentYear} · ${formatNumber(totalCumulative)} petani pernah mengikuti pelatihan`}
                   </span>
                 </span>
-                <ChevronDown className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
               </button>
             }
           />
@@ -585,6 +573,16 @@ export function TrainingBenefitPanel({
               )}
             </div>
           )}
+          {/* Chevron di ujung kanan seperti kartu lain (owner 2026-10-07) — judul tetap bisa diklik. */}
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            aria-label={open ? "Ciutkan kartu" : "Bentangkan kartu"}
+            className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+          </button>
         </div>
         <CollapsibleContent>
           <CardContent className="border-t pt-4">

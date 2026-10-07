@@ -21,7 +21,7 @@ vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
 const actions = await import("@/server/actions/program-target");
 
-const cell = (o: Record<string, unknown> = {}) => ({ indicator: "TRAINING_GEDSI_LIVELIHOOD" as const, periodType: "ANNUAL" as const, year: 2026, value: 10, ...o });
+const cell = (o: Record<string, unknown> = {}) => ({ indicator: "TRAINING_P3_GEDSI_LIVELIHOOD" as const, periodType: "ANNUAL" as const, year: 2026, value: 10, ...o });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -44,14 +44,14 @@ describe("guard Target Program", () => {
     expect(await actions.saveProgramTargets([cell()])).toMatchObject({ success: false });
     hasPermission.mockImplementation(async (_k: string, p: string) => p !== "CREATE");
     expect(await actions.saveProgramTargets([cell()])).toMatchObject({ success: false, error: expect.stringMatching(/menambah/) });
-    db.programTarget.findMany.mockResolvedValue([{ indicator: "TRAINING_GEDSI_LIVELIHOOD", periodType: "ANNUAL", year: 2026, isActive: true }]);
+    db.programTarget.findMany.mockResolvedValue([{ indicator: "TRAINING_P3_GEDSI_LIVELIHOOD", periodType: "ANNUAL", year: 2026, isActive: true }]);
     hasPermission.mockImplementation(async (_k: string, p: string) => p !== "DELETE");
     expect(await actions.saveProgramTargets([cell({ value: null })])).toMatchObject({ success: false, error: expect.stringMatching(/mengosongkan/) });
     expect(tx.programTarget.upsert).not.toHaveBeenCalled();
   });
 
   it("upsert mengaktifkan ulang + audit; kosong = soft delete (bukan hapus); revalidasi halaman & dashboard", async () => {
-    db.programTarget.findMany.mockResolvedValue([{ indicator: "TRAINING_GEDSI_LIVELIHOOD", periodType: "ANNUAL", year: 2027, isActive: true }]);
+    db.programTarget.findMany.mockResolvedValue([{ indicator: "TRAINING_P3_GEDSI_LIVELIHOOD", periodType: "ANNUAL", year: 2027, isActive: true }]);
     const res = await actions.saveProgramTargets([cell(), cell({ year: 2027, value: null })]);
     expect(res).toEqual({ success: true, data: { saved: 1, cleared: 1 } });
     expect(tx.programTarget.upsert).toHaveBeenCalledWith(expect.objectContaining({

@@ -41,7 +41,7 @@
 | `LandStdbStage` | PERSIAPAN_DATA · PENGAJUAN · REVISI · TERBIT · DITOLAK | `land-stdb.prisma` |
 | `NktCategory` | NKT_1 · NKT_2 · NKT_3 · NKT_4 · NKT_5 · NKT_6 | `land-parcel-nkt.prisma` |
 | `PermissionLevel` | CREATE · VIEW · EDIT · DELETE · EXPORT · PRINT | `_config.prisma` |
-| `ProgramTargetIndicator` | TRAINING_BMP_GROUP_MANAGEMENT · TRAINING_GEDSI_LIVELIHOOD | `program-target.prisma` |
+| `ProgramTargetIndicator` | TRAINING_P1_BMP · TRAINING_P2_GROUP_DYNAMIC · TRAINING_P2_HSE · TRAINING_P3_GEDSI_LIVELIHOOD · TRAINING_ANY | `program-target.prisma` |
 | `ProgramTargetPeriod` | BASELINE · ANNUAL | `program-target.prisma` |
 | `Role` | SUPERADMIN · ADMIN · OPERATOR · MANAGEMENT · DONOR | `_config.prisma` |
 | `RspoCertStatus` | CERTIFIED · PLANNED | `_config.prisma` |

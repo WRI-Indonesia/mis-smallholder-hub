@@ -8483,8 +8483,11 @@ export const DATA_SCHEMA: SchemaMap = {
     {
       "name": "ProgramTargetIndicator",
       "values": [
-        "TRAINING_BMP_GROUP_MANAGEMENT",
-        "TRAINING_GEDSI_LIVELIHOOD"
+        "TRAINING_P1_BMP",
+        "TRAINING_P2_GROUP_DYNAMIC",
+        "TRAINING_P2_HSE",
+        "TRAINING_P3_GEDSI_LIVELIHOOD",
+        "TRAINING_ANY"
       ],
       "domain": "program-target"
     },
