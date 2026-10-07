@@ -237,13 +237,12 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     // Cross validation: harvestDate must be within period
     if (isPeriodFormatValid && parsedHarvestDate && rawPeriod) {
       const [year, month] = rawPeriod.split("-").map(Number);
-      const harvestMonth = parsedHarvestDate.getMonth() + 1;
-      const harvestYear = parsedHarvestDate.getFullYear();
+      // parseExcelDate = tengah malam UTC → getter UTC, sama dengan productionSchema di server.
+      const harvestMonth = parsedHarvestDate.getUTCMonth() + 1;
+      const harvestYear = parsedHarvestDate.getUTCFullYear();
       if (harvestYear !== year || harvestMonth !== month) {
         errors.push(
-          `Tanggal panen (${parsedHarvestDate.toLocaleDateString(
-            "id-ID",
-          )}) tidak sesuai dengan periode ${rawPeriod}`,
+          `Tanggal panen (${parsedHarvestDate.toLocaleDateString("id-ID", { timeZone: "UTC" })}) tidak sesuai dengan periode ${rawPeriod}`,
         );
       }
     }

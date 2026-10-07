@@ -64,8 +64,9 @@ describe("cellValueToPrimitive", () => {
 });
 
 describe("parseExcelDate — tanggal sel upload (#400, akar #354)", () => {
-  const ymd = (d: Date | null) =>
-    d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : null;
+  // Getter UTC → test tak bergantung zona waktu mesin (TZ apa pun).
+  const ymd = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
+  const iso = (d: Date | null) => (d ? d.toISOString() : null);
 
   it("teks DD/MM/YYYY dengan hari ≤ 12 dibaca hari/bulan, bukan format AS Date.parse", () => {
     // Logika lama: Date.parse("12/03/1971") → 3 Desember 1971.
@@ -75,28 +76,36 @@ describe("parseExcelDate — tanggal sel upload (#400, akar #354)", () => {
     expect(ymd(parseExcelDate(" 25/03/1971 "))).toBe("1971-03-25");
   });
 
-  it("teks YYYY-MM-DD → tengah malam lokal", () => {
-    const d = parseExcelDate("1971-03-12");
-    expect(ymd(d)).toBe("1971-03-12");
-    expect(d!.getHours()).toBe(0);
+  it("teks berekor jam (ekspor CSV/DB) tetap DD/MM — tak jatuh ke Date.parse", () => {
+    expect(ymd(parseExcelDate("12/03/1971 00:00"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("05/08/1966 0:00:00"))).toBe("1966-08-05");
+    expect(ymd(parseExcelDate("1971-03-12T00:00:00"))).toBe("1971-03-12");
   });
 
-  it("sel Date dan serial Excel tetap seperti sebelumnya", () => {
-    const date = new Date(1971, 2, 12);
-    expect(parseExcelDate(date)).toBe(date);
-    expect(ymd(parseExcelDate(26004))).toBe("1971-03-12"); // serial Excel 1971-03-12
+  it("semua jalur → tengah malam UTC (sama dengan form manual & parseDateCell)", () => {
+    expect(iso(parseExcelDate("12/03/1971"))).toBe("1971-03-12T00:00:00.000Z");
+    expect(iso(parseExcelDate("1971-03-12"))).toBe("1971-03-12T00:00:00.000Z");
+    expect(iso(parseExcelDate(26004))).toBe("1971-03-12T00:00:00.000Z"); // serial Excel
+    expect(iso(parseExcelDate(26004.75))).toBe("1971-03-12T00:00:00.000Z"); // pecahan jam dibuang
+    expect(iso(parseExcelDate(new Date(Date.UTC(1971, 2, 12))))).toBe("1971-03-12T00:00:00.000Z"); // sel tanggal exceljs
+    expect(ymd(parseExcelDate("12 March 1971"))).toBe("1971-03-12");
   });
 
-  it("tanggal kalender tak valid & angka berpola lain ditolak, bukan digeser/ditebak", () => {
+  it("tanggal 1 sebuah bulan tetap di bulan itu (validasi periode Produksi)", () => {
+    const d = parseExcelDate("01/06/2026")!;
+    expect([d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]).toEqual([2026, 6, 1]);
+  });
+
+  it("tanggal tak valid, tahun 2 digit, dan tahun di luar 1900–2100 ditolak — tidak digeser/ditebak", () => {
     expect(parseExcelDate("31/02/1971")).toBeNull();
     expect(parseExcelDate("12/13/1971")).toBeNull();
     expect(parseExcelDate("12/03/71")).toBeNull();
+    expect(parseExcelDate("12/03/71 10:00")).toBeNull();
+    expect(parseExcelDate("12/03/2971")).toBeNull();
+    expect(parseExcelDate("12/03/1871")).toBeNull();
     expect(parseExcelDate("")).toBeNull();
     expect(parseExcelDate(null)).toBeNull();
+    expect(parseExcelDate("bukan tanggal")).toBeNull();
     expect(parseExcelDate(new Date(Number.NaN))).toBeNull();
-  });
-
-  it("teks tanggal non-angka masih dibaca Date.parse", () => {
-    expect(ymd(parseExcelDate("12 March 1971"))).toBe("1971-03-12");
   });
 });
