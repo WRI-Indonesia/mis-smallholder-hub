@@ -63,8 +63,44 @@ describe("guard Target Program", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/admin/dashboard/training");
   });
 
-  it("isian tak valid ditolak sebelum menyentuh DB", async () => {
-    expect(await actions.saveProgramTargets([cell({ value: -5 })])).toMatchObject({ success: false });
+  it("isian tak valid ditolak sebelum menyentuh DB, dengan pesan spesifik", async () => {
+    expect(await actions.saveProgramTargets([cell({ value: -5 })])).toEqual({ success: false, error: "Target tidak boleh negatif" });
+    expect(await actions.saveProgramTargets([cell({ year: 0 })])).toEqual({ success: false, error: "Tahun minimal 2015" });
     expect(db.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("temuan review #403 — bentuk rencana & izin ganti tahun Start", () => {
+  const active = (o: Record<string, unknown>) => ({ indicator: "TRAINING_P3_GEDSI_LIVELIHOOD", periodType: "ANNUAL", year: 2026, value: 10, isActive: true, ...o });
+
+  it("mengganti tahun Start tanpa DELETE ditolak (dulu sukses diam-diam, dua Start aktif); dengan DELETE baseline lama dinonaktifkan", async () => {
+    db.programTarget.findMany.mockResolvedValue([active({ periodType: "BASELINE", year: 2025, value: 50 })]);
+    hasPermission.mockImplementation(async (_k: string, p: string) => p !== "DELETE");
+    expect(await actions.saveProgramTargets([cell({ periodType: "BASELINE", year: 2024, value: 50 })])).toMatchObject({
+      success: false,
+      error: expect.stringMatching(/tahun Start/),
+    });
+    expect(db.$transaction).not.toHaveBeenCalled();
+
+    hasPermission.mockResolvedValue(true);
+    const res = await actions.saveProgramTargets([cell({ periodType: "BASELINE", year: 2024, value: 50 })]);
+    expect(res.success).toBe(true);
+    expect(tx.programTarget.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { periodType: "BASELINE", isActive: true, year: { not: 2024 } } }));
+  });
+
+  it("hasil akhir divalidasi: tahun ≤ Start dan celah tahun ditolak (menghitung dua kali / membuang realisasi)", async () => {
+    db.programTarget.findMany.mockResolvedValue([active({ year: 2026 })]);
+    expect(await actions.saveProgramTargets([cell({ periodType: "BASELINE", year: 2026, value: 5 })])).toMatchObject({
+      success: false,
+      error: expect.stringMatching(/sebelum tahun Start/),
+    });
+    expect(await actions.saveProgramTargets([cell({ year: 2028 })])).toMatchObject({ success: false, error: expect.stringMatching(/berurutan/) });
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("sel yang nilainya tak berubah tidak ditulis ulang (\"Terakhir diubah oleh\" tetap akurat)", async () => {
+    db.programTarget.findMany.mockResolvedValue([active({})]);
+    expect(await actions.saveProgramTargets([cell({ value: 10 })])).toEqual({ success: true, data: { saved: 0, cleared: 0 } });
+    expect(tx.programTarget.upsert).not.toHaveBeenCalled();
   });
 });

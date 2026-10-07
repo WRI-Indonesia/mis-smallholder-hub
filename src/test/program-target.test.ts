@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  parseTargetInput,
+  programTargetPlanError,
   PROGRAM_TARGET_LABELS,
   PROGRAM_TARGET_PACKAGE,
   buildProgramTargetGrid,
@@ -61,9 +63,10 @@ describe("vs Kontrak — target vs realisasi penerima manfaat baru", () => {
       act("PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV", "2026-05-01", ["a"]),
       act("PAKET_2_MK", "2026-01-01", ["z"]), // baris MK; di baris ANY: z baru 2026
       act("OTHER", "2023-06-01", ["y"]), // Lainnya: hanya baris ANY (s.d. baseline)
+      act("PAKET_1_BMP_PC_RSPO_NKT", "2027-01-15", ["e"]), // sesudah tahun berjalan → diabaikan
     ]),
   ];
-  const rows = programContractRows(buildProgramTargetGrid(records), groups);
+  const rows = programContractRows(buildProgramTargetGrid(records), groups, 2026);
 
   it("Start = kumulatif s.d. baseline; tahun = penerima baru; % = realisasi/target", () => {
     expect(rows.map((r) => r.key)).toEqual(["TRAINING_P1_BMP", "TRAINING_P2_GROUP_DYNAMIC", "TRAINING_P2_HSE", "TRAINING_P3_GEDSI_LIVELIHOOD", "TRAINING_ANY"]);
@@ -100,5 +103,45 @@ describe("programTargetSaveSchema", () => {
     expect(programTargetSaveSchema.safeParse([cell({ indicator: "X" })]).success).toBe(false);
     expect(programTargetSaveSchema.safeParse([cell({ indicator: "TRAINING_BMP_GROUP_MANAGEMENT" })]).success).toBe(false); // indikator lama
     expect(programTargetSaveSchema.safeParse([cell({ indicator: "TRAINING_ANY" })]).success).toBe(true);
+  });
+});
+
+describe("temuan review #403", () => {
+  it("parseTargetInput: angka polos / ribuan bertitik saja — '1.5' tak lagi jadi 15", () => {
+    expect(parseTargetInput("")).toBeNull();
+    expect(parseTargetInput(" 1500 ")).toBe(1500);
+    expect(parseTargetInput("1.500")).toBe(1500);
+    expect(parseTargetInput("11.172")).toBe(11172);
+    expect(parseTargetInput("1.234.567")).toBe(1234567);
+    for (const bad of ["1.5", "2.50", "1e3", "0x10", "-3", "1,5", "12.34.5"]) expect(parseTargetInput(bad)).toBeNaN();
+  });
+
+  const rec = (periodType: "BASELINE" | "ANNUAL", year: number): ProgramTargetRecord => ({ indicator: "TRAINING_P1_BMP", periodType, year, value: 1 });
+  it("programTargetPlanError: tahun berurutan tepat sesudah Start", () => {
+    expect(programTargetPlanError([rec("BASELINE", 2025), rec("ANNUAL", 2026), rec("ANNUAL", 2027)])).toBeNull();
+    expect(programTargetPlanError([rec("ANNUAL", 2026), rec("ANNUAL", 2027)])).toBeNull(); // tanpa Start
+    expect(programTargetPlanError([rec("BASELINE", 2025)])).toBeNull();
+    expect(programTargetPlanError([rec("BASELINE", 2026), rec("ANNUAL", 2026)])).toMatch(/sebelum tahun Start/);
+    expect(programTargetPlanError([rec("BASELINE", 2024), rec("ANNUAL", 2026)])).toMatch(/harus 2025/);
+    expect(programTargetPlanError([rec("BASELINE", 2025), rec("ANNUAL", 2026), rec("ANNUAL", 2028)])).toMatch(/2027 belum ada/);
+    expect(programTargetPlanError([rec("BASELINE", 2024), rec("BASELINE", 2025)])).toMatch(/sama untuk semua baris/);
+  });
+
+  it("vs Kontrak & Training Benefit per year satu definisi: kumulatif 'pernah mengikuti' sama, kegiatan tahun depan diabaikan", async () => {
+    const { trainingBenefitPerYear } = await import("@/lib/training-dashboard-aggregation");
+    const groups = [
+      group("g1", [
+        act("PAKET_1_BMP_PC_RSPO_NKT", "2024-03-01", ["a", "b"]),
+        act("PAKET_2_K3", "2025-03-01", ["c"]),
+        act("OTHER", "2026-02-01", ["d"]),
+        act("PAKET_1_BMP_PC_RSPO_NKT", "2027-01-01", ["z"]),
+      ]),
+    ];
+    const rows = programContractRows(buildProgramTargetGrid(records), groups, 2026);
+    const any = rows.find((r) => r.key === "TRAINING_ANY")!;
+    const realized = (any.start?.actual ?? 0) + any.years.reduce((s, c) => s + c.actual, 0);
+    const benefit = trainingBenefitPerYear(groups, 2026);
+    expect(realized).toBe(benefit.any.cells.at(-1)!.cumulative);
+    expect(realized).toBe(4); // a, b, c, d — z (2027) tidak
   });
 });

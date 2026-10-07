@@ -14,6 +14,9 @@ import {
   PROGRAM_TARGET_YEAR_MAX,
   PROGRAM_TARGET_YEAR_MIN,
   buildProgramTargetGrid,
+  parseTargetInput,
+  programTargetPlanError,
+  type ProgramTargetRecord,
   type ProgramTargetIndicatorCode,
 } from "@/lib/program-target";
 import { saveProgramTargets, type ProgramTargetView } from "@/server/actions/program-target";
@@ -22,12 +25,7 @@ import type { ProgramTargetCellInput } from "@/validations/program-target.schema
 type Draft = Record<string, string>; // kunci "indikator|BASELINE" / "indikator|tahun" → isian teks
 const baseKey = (ind: ProgramTargetIndicatorCode) => `${ind}|BASELINE`;
 const yearKey = (ind: ProgramTargetIndicatorCode, y: number) => `${ind}|${y}`;
-const toNumber = (s: string | undefined): number | null => {
-  const t = (s ?? "").replace(/\./g, "").trim();
-  if (t === "") return null;
-  const n = Number(t);
-  return Number.isInteger(n) && n >= 0 ? n : NaN;
-};
+const toNumber = parseTargetInput;
 
 /**
  * Grid isian Target Program (#403): baris = paket (target per paket, owner 2026-10-07) +
@@ -55,6 +53,19 @@ export function ProgramTargetClient({ view, canEdit }: { view: ProgramTargetView
     return n == null || Number.isNaN(n) ? 0 : n;
   };
   const invalid = Object.values(draft).some((v) => Number.isNaN(toNumber(v)));
+  // Aturan bentuk rencana yang SAMA dengan server (tahun berurutan tepat sesudah Start).
+  const planError = useMemo(() => {
+    const recs: ProgramTargetRecord[] = [];
+    for (const ind of PROGRAM_TARGET_INDICATORS) {
+      const b = toNumber(draft[baseKey(ind)]);
+      if (b != null && !Number.isNaN(b)) recs.push({ indicator: ind, periodType: "BASELINE", year: baselineYear, value: b });
+      for (const y of years) {
+        const v = toNumber(draft[yearKey(ind, y)]);
+        if (v != null && !Number.isNaN(v)) recs.push({ indicator: ind, periodType: "ANNUAL", year: y, value: v });
+      }
+    }
+    return programTargetPlanError(recs);
+  }, [draft, baselineYear, years]);
   const rowTotal = (ind: ProgramTargetIndicatorCode) => num(baseKey(ind)) + years.reduce((s, y) => s + num(yearKey(ind, y)), 0);
 
   const addYear = () => setYears((ys) => [...ys, (ys.length ? Math.max(...ys) : thisYear - 1) + 1].filter((y) => y <= PROGRAM_TARGET_YEAR_MAX));
@@ -84,7 +95,8 @@ export function ProgramTargetClient({ view, canEdit }: { view: ProgramTargetView
         toast.error(typeof res.error === "string" ? res.error : "Gagal menyimpan target");
         return;
       }
-      toast.success(`Target disimpan (${formatNumber(res.data?.saved ?? 0)} sel terisi)`);
+      const changed = (res.data?.saved ?? 0) + (res.data?.cleared ?? 0);
+      toast.success(changed === 0 ? "Tidak ada perubahan" : `Target disimpan (${formatNumber(changed)} sel berubah)`);
       router.refresh();
     } finally {
       setSaving(false);
@@ -174,7 +186,8 @@ export function ProgramTargetClient({ view, canEdit }: { view: ProgramTargetView
               <Plus className="h-4 w-4" />
               Tambah tahun
             </Button>
-            <Button size="sm" className="ml-auto gap-2" onClick={save} disabled={saving || invalid}>
+            {planError && <span className="text-xs font-medium text-destructive">{planError}</span>}
+            <Button size="sm" className="ml-auto gap-2" onClick={save} disabled={saving || invalid || planError != null}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Simpan target
             </Button>

@@ -23,9 +23,11 @@ Halaman ini menyimpan angka **kontrak** program — bukan data petani. Angkanya 
 + Start of the Program = jumlah petani yang sudah dilatih **sampai akhir** tahun itu. Di dashboard, angka ini dibandingkan dengan kumulatif penerima manfaat s.d. tahun yang sama.
 3. Isi target per tahun (mis. 2026, 2027, 2028). Klik **Tambah tahun** untuk menambah kolom, atau tanda **×** di header tahun untuk menghapus kolom.
 + Target tahunan = jumlah petani **baru** yang ditargetkan dilatih pada tahun itu.
++ Kolom tahun harus berurutan dan dimulai tepat setahun sesudah tahun Start (Start s.d. 2025 → kolom 2026, 2027, …). Bila tidak, muncul pesan merah di samping tombol dan **Simpan target** tidak bisa diklik — misalnya kolom yang sama dengan tahun Start, atau kolom di tengah yang terhapus. Angka ditulis bulat, boleh dengan titik ribuan (`1.500`); angka berkoma/desimal seperti `1.5` ditandai merah.
 + Kolom **Total** (Start + semua tahun) dihitung otomatis — tidak perlu diisi.
 4. Klik **Simpan target**.
 + Mengosongkan sel lalu menyimpan berarti target sel itu dihapus. Waktu dan nama pengubah terakhir tercatat di bawah tabel.
++ Mengganti tahun Start juga menghapus angka Start tahun lama, jadi butuh izin hapus; tanpa izin itu penyimpanan ditolak dengan pesan.
 5. Buka **Dashboard → Dashboard Pelatihan**, kartu *Training Benefit per year*, lalu pilih **vs Kontrak** untuk melihat target, realisasi, dan % capaiannya.
 + Tiap baris dibandingkan dengan penerima manfaat baru paketnya; baris "pernah mengikuti" dengan petani yang pertama kali ikut pelatihan apa pun. Paket yang targetnya belum diisi tetap tampil dengan tulisan "target belum diisi". Bila filter Distrik/Lembaga aktif, realisasi hanya untuk wilayah itu sedangkan target tetap seluruh program — muncul catatan agar % tidak disalahbaca.
 

@@ -519,6 +519,35 @@ export function trainingBenefitYears(currentYear: number): TrainingBenefitYear[]
 }
 
 /**
+ * Tahun pertama tiap petani dilatih, per paket + "ANY" (pelatihan APA PUN, termasuk
+ * Lainnya — padanan baris "Pernah Ikut Pelatihan"). Satu petani dihitung per Lembaga
+ * (kunci Lembaga+petani), sama dengan `trainingCoverageMatrix`. Kegiatan bertanggal
+ * setelah `upToYear` diabaikan. SATU definisi untuk Training Benefit per year (#402) dan
+ * vs Kontrak (#403) — temuan review: dua salinan sempat menyimpang (filter tahun depan).
+ */
+export function firstTrainingYears(groups: TrainingGroupEntry[], upToYear: number): Map<TrainingPackageCode | "ANY", number[]> {
+  const first = new Map<TrainingPackageCode | "ANY", Map<string, number>>();
+  const note = (code: TrainingPackageCode | "ANY", key: string, y: number) => {
+    let perFarmer = first.get(code);
+    if (!perFarmer) first.set(code, (perFarmer = new Map()));
+    const prev = perFarmer.get(key);
+    if (prev == null || y < prev) perFarmer.set(key, y);
+  };
+  for (const g of groups) {
+    for (const a of g.activities) {
+      const y = yearOf(a.date);
+      if (y > upToYear) continue;
+      for (const p of a.participants) {
+        const key = `${g.id}|${p.farmerId}`;
+        note(a.packageCode, key, y);
+        note("ANY", key, y);
+      }
+    }
+  }
+  return new Map([...first].map(([code, m]) => [code, [...m.values()]]));
+}
+
+/**
  * Training Benefit per year (#402, keputusan owner 2026-10-07): petani UNIK per paket;
  * Actual = penerima manfaat BARU (tahun pertama petani dilatih paket itu jatuh di kolom
  * tsb), Kumulative = s.d. akhir tahun kolom → Kumulative(t) = Kumulative(t−1) + Actual(t).
@@ -534,26 +563,7 @@ export function trainingBenefitPerYear(
   currentYear: number,
 ): { years: TrainingBenefitYear[]; rows: TrainingBenefitRow[]; any: TrainingBenefitRow } {
   const years = trainingBenefitYears(currentYear);
-  const firstYear = new Map<TrainingPackageCode, Map<string, number>>();
-  for (const code of TRAINING_BENEFIT_PACKAGES) firstYear.set(code, new Map());
-  // Baris total: tahun pertama petani ikut pelatihan APA PUN (termasuk Lainnya) — padanan
-  // baris "Pernah Ikut Pelatihan" di Capaian Paket per Distrik.
-  const firstYearAny = new Map<string, number>();
-  for (const g of groups) {
-    for (const a of g.activities) {
-      const y = yearOf(a.date);
-      if (y > currentYear) continue;
-      const perFarmer = firstYear.get(a.packageCode);
-      for (const p of a.participants) {
-        const key = `${g.id}|${p.farmerId}`;
-        const prevAny = firstYearAny.get(key);
-        if (prevAny == null || y < prevAny) firstYearAny.set(key, y);
-        if (!perFarmer) continue;
-        const prev = perFarmer.get(key);
-        if (prev == null || y < prev) perFarmer.set(key, y);
-      }
-    }
-  }
+  const first = firstTrainingYears(groups, currentYear);
   const cellsOf = (first: Iterable<number>) => {
     const counts = new Map<number, number>();
     for (const y of first) counts.set(y, (counts.get(y) ?? 0) + 1);
@@ -563,8 +573,8 @@ export function trainingBenefitPerYear(
   const rows: TrainingBenefitRow[] = TRAINING_BENEFIT_PACKAGES.map((code) => ({
     code,
     label: TRAINING_BENEFIT_LABELS[code] ?? TRAINING_PACKAGE_LABELS[code],
-    cells: cellsOf(firstYear.get(code)!.values()),
+    cells: cellsOf(first.get(code) ?? []),
   }));
-  const any: TrainingBenefitRow = { code: "ANY", label: TRAINING_BENEFIT_ANY_LABEL, cells: cellsOf(firstYearAny.values()) };
+  const any: TrainingBenefitRow = { code: "ANY", label: TRAINING_BENEFIT_ANY_LABEL, cells: cellsOf(first.get("ANY") ?? []) };
   return { years, rows, any };
 }

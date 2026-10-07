@@ -32,6 +32,13 @@ import {
 
 type BenefitView = "tabel" | "grafis" | "kontrak";
 
+/** Data vs Kontrak: satu sumber untuk layar & ekspor Excel (temuan review — dulu dihitung dua kali). */
+interface ContractData {
+  baselineYear: number | null;
+  years: number[];
+  rows: ContractRow[];
+}
+
 /** SVG ekspor → PNG 2× (tajam di Excel), ditampilkan pada ukuran aslinya. */
 async function svgToPng({ svg, width, height }: { svg: string; width: number; height: number }) {
   const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
@@ -184,21 +191,29 @@ function TrajectoryChart({ points, currentLabel, scaleMax }: { points: Trajector
  * 2026-10-07) dengan skala Y bersama + capaian terhadap total kontrak; kartu "pernah ikut"
  * ditonjolkan sebagai totalnya. Realisasi ikut filter Distrik/Lembaga → catatan bila aktif.
  */
-function ContractView({ targets, groups, filterActive }: { targets: ProgramTargetRecord[] | null; groups: TrainingGroupEntry[]; filterActive: boolean }) {
-  const grid = useMemo(() => (targets ? buildProgramTargetGrid(targets) : null), [targets]);
-  const rows: ContractRow[] = useMemo(() => (grid ? programContractRows(grid, groups) : []), [grid, groups]);
-  const currentYear = new Date().getFullYear();
-  if (targets == null) {
+function ContractView({
+  loadFailed,
+  contract,
+  currentYear,
+  filterActive,
+}: {
+  loadFailed: boolean;
+  /** Sumber yang SAMA dengan ekspor Excel (dihitung sekali di panel); null = belum ada target. */
+  contract: ContractData | null;
+  currentYear: number;
+  filterActive: boolean;
+}) {
+  if (loadFailed) {
     return <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Target kontrak gagal dimuat. Muat ulang halaman.</div>;
   }
-  if (!grid || (grid.years.length === 0 && grid.baselineYear == null)) {
+  if (!contract) {
     return (
       <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
         Belum ada target kontrak. Isi lewat menu <b>Master Data › Target Program</b>.
       </div>
     );
   }
-  const series = rows.map((r) => ({ r, pts: contractTrajectory(r, grid.baselineYear, grid.years, currentYear) }));
+  const series = contract.rows.map((r) => ({ r, pts: contractTrajectory(r, contract.baselineYear, contract.years, currentYear) }));
   const scaleMax = Math.max(...series.flatMap(({ pts }) => pts.map((p) => Math.max(p.target, p.actual ?? 0))));
   return (
     <div className="space-y-4">
@@ -349,12 +364,12 @@ export function TrainingBenefitPanel({
   );
 
   // Data vs Kontrak untuk ekspor — dihitung sekali; tak bergantung tab yang sedang aktif.
-  const contract = useMemo(() => {
+  const contract = useMemo((): ContractData | null => {
     if (!programTargets) return null;
     const grid = buildProgramTargetGrid(programTargets);
     if (grid.years.length === 0 && grid.baselineYear == null) return null;
-    return { baselineYear: grid.baselineYear, years: grid.years, rows: programContractRows(grid, groups) };
-  }, [programTargets, groups]);
+    return { baselineYear: grid.baselineYear, years: grid.years, rows: programContractRows(grid, groups, currentYear) };
+  }, [programTargets, groups, currentYear]);
   const [exporting, setExporting] = useState(false);
 
   /** Excel 3 sheet (Tabel · Grafis · vs Kontrak), grafik sebagai gambar PNG dari SVG ekspor. */
@@ -487,7 +502,7 @@ export function TrainingBenefitPanel({
         <CollapsibleContent>
           <CardContent className="border-t pt-4">
             {view === "kontrak" ? (
-              <ContractView targets={programTargets} groups={groups} filterActive={filterActive} />
+              <ContractView loadFailed={programTargets == null} contract={contract} currentYear={currentYear} filterActive={filterActive} />
             ) : view === "grafis" ? (
               <BenefitChart years={years} rows={rows} any={any} activeFarmers={activeFarmers} />
             ) : (

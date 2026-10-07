@@ -88,7 +88,8 @@ function sheetGrafis(wb: ExcelJS.Workbook, input: BenefitExcelInput) {
 function sheetKontrak(wb: ExcelJS.Workbook, input: BenefitExcelInput) {
   const { contract, currentYear, filterActive, images } = input;
   const ws = wb.addWorksheet("vs Kontrak");
-  if (!contract || (contract.years.length === 0 && contract.baselineYear == null)) {
+  // Grid kosong sudah dijadikan null oleh pemanggil (satu sumber dengan layar).
+  if (!contract) {
     ws.addRow(["Belum ada target kontrak (atau gagal dimuat). Isi lewat Master Data › Target Program."]);
     ws.getColumn(1).width = 90;
     return;

@@ -44,7 +44,7 @@ const groups: TrainingGroupEntry[] = [
   },
 ];
 const grid = buildProgramTargetGrid(records);
-const contractRows = programContractRows(grid, groups);
+const contractRows = programContractRows(grid, groups, 2026);
 
 describe("trayektori vs Kontrak", () => {
   const p1 = contractTrajectory(contractRows[0], grid.baselineYear, grid.years, 2026);
@@ -66,6 +66,9 @@ describe("trayektori vs Kontrak", () => {
     expect(lay.gapLabel!.y).toBeGreaterThan(Math.max(lay.yTarget[1], lay.yActual[1]!));
     // ±1% dari target = sesuai
     expect(trajectoryLayout([{ label: "2026", target: 1000, actual: 995 }], "2026", 1000).gapLabel?.text).toBe("≈ sesuai target");
+    // Skala ≤ 1 (target 0, tanpa pelatihan): tick unik — dulu 0, 1, 1 (kunci React & label ganda)
+    const ticks = trajectoryLayout([{ label: "2026", target: 0, actual: 0 }], "2026", 0).ticks.map((t) => t.value);
+    expect(new Set(ticks).size).toBe(ticks.length);
   });
 });
 

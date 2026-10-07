@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
-import type { ProgramTargetRecord } from "@/lib/program-target";
+import { programTargetPlanError, type ProgramTargetRecord } from "@/lib/program-target";
 import { programTargetSaveSchema, type ProgramTargetCellInput } from "@/validations/program-target.schema";
 import type { ActionResult } from "@/types/action-result";
 
@@ -31,15 +31,18 @@ export async function getProgramTargets(): Promise<ProgramTargetView> {
   if (!canMenu && !canDashboard) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
-  const rows = await prisma.programTarget.findMany({
-    where: { isActive: true },
-    select: { indicator: true, periodType: true, year: true, value: true },
-    orderBy: [{ indicator: "asc" }, { year: "asc" }],
-  });
-  const last = await prisma.programTarget.findFirst({
-    orderBy: { modifiedAt: "desc" },
-    select: { modifiedAt: true, modifiedBy: true, createdBy: true },
-  });
+  // Dua query independen → paralel (temuan review: 3 round-trip berurutan).
+  const [rows, last] = await Promise.all([
+    prisma.programTarget.findMany({
+      where: { isActive: true },
+      select: { indicator: true, periodType: true, year: true, value: true },
+      orderBy: [{ indicator: "asc" }, { year: "asc" }],
+    }),
+    prisma.programTarget.findFirst({
+      orderBy: { modifiedAt: "desc" },
+      select: { modifiedAt: true, modifiedBy: true, createdBy: true },
+    }),
+  ]);
   let by: string | null = null;
   const byId = last?.modifiedBy ?? last?.createdBy ?? null;
   if (byId) {
@@ -66,18 +69,20 @@ export async function saveProgramTargets(input: ProgramTargetCellInput[]): Promi
 
   const parsed = programTargetSaveSchema.safeParse(input);
   if (!parsed.success) {
-    const flat = parsed.error.flatten();
-    return { success: false, error: flat.formErrors[0] ?? "Isian target tidak valid" };
+    // Skema berupa array sel → `fieldErrors` tak bermakna; pesan isu pertama sudah spesifik
+    // ("Tahun minimal 2015", "Target tidak boleh negatif", …) — temuan review.
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Isian target tidak valid" };
   }
   const cells = parsed.data;
   const session = await auth();
   const userId = session?.user?.id ?? null;
 
   const existing = await prisma.programTarget.findMany({
-    select: { indicator: true, periodType: true, year: true, isActive: true },
+    select: { indicator: true, periodType: true, year: true, value: true, isActive: true },
   });
   const key = (c: { indicator: string; periodType: string; year: number }) => `${c.indicator}|${c.periodType}|${c.year}`;
   const existingKeys = new Map(existing.map((e) => [key(e), e.isActive]));
+  const activeValue = new Map(existing.filter((e) => e.isActive).map((e) => [key(e), e.value]));
   if (!canCreate && cells.some((c) => c.value != null && !existingKeys.get(key(c)))) {
     return { success: false, error: "Tidak memiliki izin untuk menambah target baru" };
   }
@@ -85,6 +90,24 @@ export async function saveProgramTargets(input: ProgramTargetCellInput[]): Promi
     return { success: false, error: "Tidak memiliki izin untuk mengosongkan target" };
   }
   const baselineYear = cells.find((c) => c.periodType === "BASELINE" && c.value != null)?.year ?? null;
+  // Mengganti tahun Start menonaktifkan baseline tahun lain = menghapus → butuh DELETE.
+  // Dulu dilewati diam-diam lalu sukses, sehingga dua tahun Start aktif bercampur (review).
+  const staleBaseline = existing.filter((e) => e.isActive && e.periodType === "BASELINE" && baselineYear != null && e.year !== baselineYear);
+  if (staleBaseline.length > 0 && !canDelete) {
+    return { success: false, error: "Tidak memiliki izin untuk mengganti tahun Start (perlu izin hapus)" };
+  }
+
+  // Validasi bentuk rencana atas HASIL AKHIR (baris aktif lama ditimpa isian), bukan isian saja.
+  const finalState = new Map<string, ProgramTargetRecord>(
+    existing.filter((e) => e.isActive).map((e) => [key(e), { indicator: e.indicator, periodType: e.periodType, year: e.year, value: e.value }]),
+  );
+  for (const c of cells) {
+    if (c.value == null) finalState.delete(key(c));
+    else finalState.set(key(c), { indicator: c.indicator, periodType: c.periodType, year: c.year, value: c.value });
+  }
+  for (const e of staleBaseline) finalState.delete(key(e));
+  const planError = programTargetPlanError([...finalState.values()]);
+  if (planError) return { success: false, error: planError };
 
   let saved = 0;
   let cleared = 0;
@@ -98,6 +121,8 @@ export async function saveProgramTargets(input: ProgramTargetCellInput[]): Promi
         }
         continue;
       }
+      // Sel tak berubah tidak ditulis ulang — "Terakhir diubah oleh" tetap akurat (review).
+      if (activeValue.get(key(c)) === c.value) continue;
       await tx.programTarget.upsert({
         where,
         create: { indicator: c.indicator, periodType: c.periodType, year: c.year, value: c.value, createdBy: userId },
@@ -105,9 +130,9 @@ export async function saveProgramTargets(input: ProgramTargetCellInput[]): Promi
       });
       saved += 1;
     }
-    if (baselineYear != null && canDelete) {
+    if (staleBaseline.length > 0) {
       const res = await tx.programTarget.updateMany({
-        where: { periodType: "BASELINE", isActive: true, year: { not: baselineYear } },
+        where: { periodType: "BASELINE", isActive: true, year: { not: baselineYear! } },
         data: { isActive: false, modifiedBy: userId },
       });
       cleared += res.count;

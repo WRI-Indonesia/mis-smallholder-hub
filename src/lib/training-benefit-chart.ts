@@ -97,10 +97,8 @@ export function trajectoryLayout(points: TrajectoryPoint[], currentLabel: string
     xs,
     yTarget,
     yActual,
-    ticks: [0, 0.5, 1].map((f) => {
-      const value = Math.round((max / 1.08) * f);
-      return { value, y: y(value), label: fmtK(value) };
-    }),
+    // Nilai tick unik: skala ≤ 1 (target 0, tanpa pelatihan) membulatkan 0,5 → 1 → kunci & label ganda (review).
+    ticks: [...new Set([0, 0.5, 1].map((f) => Math.round((max / 1.08) * f)))].map((value) => ({ value, y: y(value), label: fmtK(value) })),
     curIdx,
     targetPath: path(yTarget),
     actualPath: path(yActual),

@@ -12,7 +12,7 @@
  * tahun baseline; hanya tahun bertarget yang tampil.
  */
 import type { TrainingGroupEntry, TrainingPackageCode } from "@/types/dashboard";
-import { TRAINING_BENEFIT_ANY_LABEL, TRAINING_BENEFIT_LABELS } from "@/lib/training-dashboard-aggregation";
+import { TRAINING_BENEFIT_ANY_LABEL, TRAINING_BENEFIT_LABELS, firstTrainingYears } from "@/lib/training-dashboard-aggregation";
 
 export const PROGRAM_TARGET_INDICATORS = [
   "TRAINING_P1_BMP",
@@ -77,33 +77,40 @@ export function buildProgramTargetGrid(records: ProgramTargetRecord[]): ProgramT
 }
 
 /** Total per baris kontrak = baseline + Σ target tahunan (kolom "Total" kontrak). */
-export function programTargetRowTotal(grid: ProgramTargetGrid, indicator: ProgramTargetIndicatorCode): number {
-  const annual = grid.annual[indicator] ?? {};
-  return (grid.baseline[indicator] ?? 0) + grid.years.reduce((s, y) => s + (annual[y] ?? 0), 0);
+/**
+ * Isian sel grid → bilangan bulat ≥ 0; `null` = kosong, `NaN` = tidak sah. Hanya angka polos
+ * ("1500") atau ribuan bertitik ("1.500"); "1.5", "2.50", "1e3", "0x10" ditolak — dulu semua
+ * titik dibuang sehingga "1.5" tersimpan 15 diam-diam (temuan review #403).
+ */
+export function parseTargetInput(s: string | undefined): number | null {
+  const t = (s ?? "").trim();
+  if (t === "") return null;
+  if (!/^\d+$/.test(t) && !/^\d{1,3}(\.\d{3})+$/.test(t)) return NaN;
+  return Number(t.replace(/\./g, ""));
 }
 
 /**
- * Tahun pertama tiap petani dilatih tiap paket (+ "ANY" = pelatihan apa pun), dihitung per
- * Lembaga (kunci Lembaga+petani) — sama dengan Training Benefit per year & matriks cakupan.
+ * Aturan bentuk rencana target (temuan review #403) atas baris AKTIF hasil akhir simpan:
+ * kolom tahun harus berurutan tanpa celah dan, bila ada Start, dimulai tepat setahun
+ * sesudahnya. Tahun ≤ Start menghitung petani & target dua kali; celah tahun membuang
+ * penerima manfaat tahun itu dari realisasi. `null` = sah.
  */
-function firstYearsByPackage(groups: TrainingGroupEntry[]): Map<TrainingPackageCode | "ANY", number[]> {
-  const first = new Map<TrainingPackageCode | "ANY", Map<string, number>>();
-  const note = (code: TrainingPackageCode | "ANY", key: string, y: number) => {
-    const perFarmer = first.get(code) ?? first.set(code, new Map()).get(code)!;
-    const prev = perFarmer.get(key);
-    if (prev == null || y < prev) perFarmer.set(key, y);
-  };
-  for (const g of groups) {
-    for (const a of g.activities) {
-      const y = Number(a.date.slice(0, 4));
-      for (const p of a.participants) {
-        const key = `${g.id}|${p.farmerId}`;
-        note(a.packageCode, key, y);
-        note("ANY", key, y);
-      }
-    }
-  }
-  return new Map([...first].map(([c, m]) => [c, [...m.values()]]));
+export function programTargetPlanError(records: ProgramTargetRecord[]): string | null {
+  const baselineYears = [...new Set(records.filter((r) => r.periodType === "BASELINE").map((r) => r.year))];
+  if (baselineYears.length > 1) return "Tahun Start of the Program harus sama untuk semua baris";
+  const baseline = baselineYears[0] ?? null;
+  const years = [...new Set(records.filter((r) => r.periodType === "ANNUAL").map((r) => r.year))].sort((a, b) => a - b);
+  if (years.length === 0) return null;
+  if (baseline != null && years[0] <= baseline) return `Kolom tahun ${years[0]} tidak boleh sama dengan atau sebelum tahun Start (${baseline})`;
+  if (baseline != null && years[0] !== baseline + 1) return `Kolom tahun pertama harus ${baseline + 1} (tepat sesudah tahun Start ${baseline})`;
+  const gap = years.find((y, i) => i > 0 && y !== years[i - 1] + 1);
+  if (gap != null) return `Kolom tahun harus berurutan — tahun ${gap - 1} belum ada kolomnya`;
+  return null;
+}
+
+export function programTargetRowTotal(grid: ProgramTargetGrid, indicator: ProgramTargetIndicatorCode): number {
+  const annual = grid.annual[indicator] ?? {};
+  return (grid.baseline[indicator] ?? 0) + grid.years.reduce((s, y) => s + (annual[y] ?? 0), 0);
 }
 
 export interface ContractCell {
@@ -128,10 +135,12 @@ const cell = (target: number | null, actual: number): ContractCell => ({
 
 /**
  * Tabel vs Kontrak: target (program-wide) vs realisasi dari `groups` (mengikuti filter
- * Distrik/Lembaga — pemanggil wajib memberi catatan bila filter aktif).
+ * Distrik/Lembaga — pemanggil wajib memberi catatan bila filter aktif). Tahun pertama
+ * dilatih dari `firstTrainingYears` — definisi yang sama dengan Training Benefit per year,
+ * termasuk mengabaikan kegiatan setelah `currentYear`.
  */
-export function programContractRows(grid: ProgramTargetGrid, groups: TrainingGroupEntry[]): ContractRow[] {
-  const first = firstYearsByPackage(groups);
+export function programContractRows(grid: ProgramTargetGrid, groups: TrainingGroupEntry[], currentYear: number): ContractRow[] {
+  const first = firstTrainingYears(groups, currentYear);
   const countIn = (ind: ProgramTargetIndicatorCode, pred: (y: number) => boolean) =>
     (first.get(PROGRAM_TARGET_PACKAGE[ind]) ?? []).filter(pred).length;
   return PROGRAM_TARGET_INDICATORS.map((ind) => ({
