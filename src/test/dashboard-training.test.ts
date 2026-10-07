@@ -470,8 +470,22 @@ describe("trainingBenefitPerYear — Training Benefit per year (#402)", () => {
     const { rows } = trainingBenefitPerYear(current, 2026);
     const matrix = trainingCoverageMatrix(current, null);
     for (const r of rows) {
-      const fromMatrix = matrix.reduce((s, m) => s + (m.byPackage[r.code] ?? 0), 0);
+      const fromMatrix = matrix.reduce((s, m) => s + (m.byPackage[r.code as TrainingPackageCode] ?? 0), 0);
       expect(r.cells[2].cumulative).toBe(fromMatrix);
     }
+  });
+
+  it("baris ≥ 1 pelatihan: paket apa pun (termasuk Lainnya), petani dihitung sekali pada tahun pertamanya; = Pernah Ikut Pelatihan", () => {
+    const current = [group("g1", { activities: groups[0].activities.filter((a) => a.date < "2027") }), groups[1]];
+    const { any } = trainingBenefitPerYear(current, 2026);
+    expect(any.label).toBe("Petani mengikuti ≥ 1 pelatihan");
+    // g1: f1,f2 (2023) · f3 (2025) · f4, f5 (2026; f5 hanya Lainnya; f1 MK 2026 bukan baru) · g2: f1 (2025)
+    expect(any.cells).toEqual([
+      { actual: 2, cumulative: 2 },
+      { actual: 2, cumulative: 4 },
+      { actual: 2, cumulative: 6 },
+    ]);
+    const matrix = trainingCoverageMatrix(current, null);
+    expect(any.cells[2].cumulative).toBe(matrix.reduce((s, m) => s + m.anyPackage, 0));
   });
 });

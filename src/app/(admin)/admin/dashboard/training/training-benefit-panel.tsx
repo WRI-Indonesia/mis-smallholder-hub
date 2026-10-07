@@ -29,10 +29,10 @@ export function TrainingBenefitPanel({
 }) {
   const [open, setOpen] = useState(true);
   const currentYear = new Date().getFullYear();
-  const { years, rows } = useMemo(() => trainingBenefitPerYear(groups, currentYear), [groups, currentYear]);
+  const { years, rows, any } = useMemo(() => trainingBenefitPerYear(groups, currentYear), [groups, currentYear]);
   const lastIdx = years.length - 1;
-  const totalCumulative = rows.reduce((s, r) => s + r.cells[lastIdx].cumulative, 0);
-  const totalNew = rows.reduce((s, r) => s + r.cells[lastIdx].actual, 0);
+  const totalCumulative = any.cells[lastIdx].cumulative;
+  const totalNew = any.cells[lastIdx].actual;
 
   const exportExcel = async () => {
     const ExcelJS = (await import("exceljs")).default;
@@ -42,7 +42,8 @@ export function TrainingBenefitPanel({
     ws.addRow(["", ...years.flatMap(() => ["Actual", "Kumulative"])]);
     ws.mergeCells(1, 1, 2, 1);
     years.forEach((_, i) => ws.mergeCells(1, 2 + i * 2, 1, 3 + i * 2));
-    for (const r of rows) ws.addRow([r.label, ...r.cells.flatMap((c) => [c.actual, c.cumulative])]);
+    for (const r of [...rows, any]) ws.addRow([r.label, ...r.cells.flatMap((c) => [c.actual, c.cumulative])]);
+    ws.getRow(ws.rowCount).font = { bold: true };
     const last = 1 + years.length * 2;
     for (let rowNo = 1; rowNo <= 2; rowNo++) {
       const row = ws.getRow(rowNo);
@@ -79,7 +80,7 @@ export function TrainingBenefitPanel({
                   <span className="mt-1 block text-xs text-muted-foreground">
                     {open
                       ? "Petani unik per paket. Actual = penerima manfaat baru (pertama kali dilatih paket itu) pada tahun tersebut; Kumulative = total s.d. akhir tahun."
-                      : `${formatNumber(totalNew)} penerima manfaat baru ${currentYear} · ${formatNumber(totalCumulative)} kumulatif (semua paket)`}
+                      : `${formatNumber(totalNew)} petani baru dilatih ${currentYear} · ${formatNumber(totalCumulative)} petani mengikuti ≥ 1 pelatihan`}
                   </span>
                 </span>
                 <ChevronDown className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
@@ -125,9 +126,17 @@ export function TrainingBenefitPanel({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.code} className="border-b border-border/40 last:border-0">
-                      <td className="py-2.5 pr-4 font-medium">{r.label}</td>
+                  {[...rows, any].map((r) => (
+                    <tr
+                      key={r.code}
+                      className={
+                        r.code === "ANY"
+                          ? "border-t-2 border-border bg-emerald-50/60 font-semibold dark:bg-emerald-950/20"
+                          : "border-b border-border/40"
+                      }
+                      title={r.code === "ANY" ? "Petani yang mengikuti minimal satu pelatihan (paket apa pun, termasuk Lainnya) — sama dengan baris Pernah Ikut Pelatihan di Capaian Paket per Distrik" : undefined}
+                    >
+                      <td className={`py-2.5 pr-4 ${r.code === "ANY" ? "font-semibold" : "font-medium"}`}>{r.label}</td>
                       {r.cells.flatMap((c, i) => [
                         <td key={`${i}-a`} className="px-2 py-2.5 text-right tabular-nums">
                           {c.actual > 0 ? <span className="font-semibold text-emerald-700 dark:text-emerald-400">+{formatNumber(c.actual)}</span> : <span className="text-muted-foreground">0</span>}
@@ -142,8 +151,9 @@ export function TrainingBenefitPanel({
               </table>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              Satu petani dihitung sekali per paket. Kumulative tahun {currentYear} sama dengan jumlah petani sudah dilatih di
-              kartu Capaian Paket per Distrik (tanpa filter tahun). Mengikuti filter Distrik & Lembaga; filter Tahun tidak
+              Satu petani dihitung sekali per paket; baris terakhir menghitung petani yang mengikuti minimal satu pelatihan
+              (paket apa pun, termasuk Lainnya) pada tahun pertama ia ikut. Kumulative tahun {currentYear} sama dengan jumlah
+              petani sudah dilatih di kartu Capaian Paket per Distrik (tanpa filter tahun). Mengikuti filter Distrik & Lembaga; filter Tahun tidak
               berlaku untuk kartu ini.
             </p>
           </CardContent>

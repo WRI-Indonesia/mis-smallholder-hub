@@ -493,13 +493,17 @@ export const TRAINING_BENEFIT_LABELS: Partial<Record<TrainingPackageCode, string
   PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: "P3 | GEDSI, Alternative Livelihood, Business Development",
 };
 
+/** Label baris total — petani yang mengikuti minimal satu pelatihan (paket apa pun). */
+export const TRAINING_BENEFIT_ANY_LABEL = "Petani mengikuti ≥ 1 pelatihan";
+
 export interface TrainingBenefitYear {
   year: number;
   /** Kolom pertama mencakup tahun itu DAN sebelumnya ("≤ 2024"). */
   upTo: boolean;
 }
 export interface TrainingBenefitRow {
-  code: TrainingPackageCode;
+  /** `ANY` = baris "petani mengikuti ≥ 1 pelatihan" (semua paket, termasuk Lainnya). */
+  code: TrainingPackageCode | "ANY";
   label: string;
   /** Sejajar `years`: actual = penerima manfaat BARU di kolom itu; cumulative = s.d. akhir tahun kolom. */
   cells: { actual: number; cumulative: number }[];
@@ -528,35 +532,39 @@ export function trainingBenefitYears(currentYear: number): TrainingBenefitYear[]
 export function trainingBenefitPerYear(
   groups: TrainingGroupEntry[],
   currentYear: number,
-): { years: TrainingBenefitYear[]; rows: TrainingBenefitRow[] } {
+): { years: TrainingBenefitYear[]; rows: TrainingBenefitRow[]; any: TrainingBenefitRow } {
   const years = trainingBenefitYears(currentYear);
   const firstYear = new Map<TrainingPackageCode, Map<string, number>>();
   for (const code of TRAINING_BENEFIT_PACKAGES) firstYear.set(code, new Map());
+  // Baris total: tahun pertama petani ikut pelatihan APA PUN (termasuk Lainnya) — padanan
+  // baris "Pernah Ikut Pelatihan" di Capaian Paket per Distrik.
+  const firstYearAny = new Map<string, number>();
   for (const g of groups) {
     for (const a of g.activities) {
-      const perFarmer = firstYear.get(a.packageCode);
-      if (!perFarmer) continue;
       const y = yearOf(a.date);
       if (y > currentYear) continue;
+      const perFarmer = firstYear.get(a.packageCode);
       for (const p of a.participants) {
         const key = `${g.id}|${p.farmerId}`;
+        const prevAny = firstYearAny.get(key);
+        if (prevAny == null || y < prevAny) firstYearAny.set(key, y);
+        if (!perFarmer) continue;
         const prev = perFarmer.get(key);
         if (prev == null || y < prev) perFarmer.set(key, y);
       }
     }
   }
-  const rows = TRAINING_BENEFIT_PACKAGES.map((code) => {
+  const cellsOf = (first: Iterable<number>) => {
     const counts = new Map<number, number>();
-    for (const y of firstYear.get(code)!.values()) counts.set(y, (counts.get(y) ?? 0) + 1);
+    for (const y of first) counts.set(y, (counts.get(y) ?? 0) + 1);
     const upTo = (limit: number) => [...counts].reduce((s, [y, n]) => (y <= limit ? s + n : s), 0);
-    return {
-      code,
-      label: TRAINING_BENEFIT_LABELS[code] ?? TRAINING_PACKAGE_LABELS[code],
-      cells: years.map((c) => ({
-        actual: c.upTo ? upTo(c.year) : (counts.get(c.year) ?? 0),
-        cumulative: upTo(c.year),
-      })),
-    };
-  });
-  return { years, rows };
+    return years.map((c) => ({ actual: c.upTo ? upTo(c.year) : (counts.get(c.year) ?? 0), cumulative: upTo(c.year) }));
+  };
+  const rows: TrainingBenefitRow[] = TRAINING_BENEFIT_PACKAGES.map((code) => ({
+    code,
+    label: TRAINING_BENEFIT_LABELS[code] ?? TRAINING_PACKAGE_LABELS[code],
+    cells: cellsOf(firstYear.get(code)!.values()),
+  }));
+  const any: TrainingBenefitRow = { code: "ANY", label: TRAINING_BENEFIT_ANY_LABEL, cells: cellsOf(firstYearAny.values()) };
+  return { years, rows, any };
 }
