@@ -6,8 +6,8 @@ Severity: **blocker** (rilis ditahan) · **major** (fitur salah, ada jalan lain)
 
 | # | Kasus | Halaman · langkah | Yang terjadi vs harapan | Severity | Env | Issue | Keputusan | Bukti |
 |---|---|---|---|---|---|---|---|---|
-| 1 | SM-04 · TC-403-03 | Dashboard › Pelatihan › vs Kontrak, tema gelap | label "+N di atas target"/"tertinggal N" hijau tua/amber di latar gelap — sulit dibaca | minor | staging | — | ✅ diperbaiki (`dark:fill-*-400`), diverifikasi lokal tema gelap — ulang di staging sesudah merge | screenshot run |
-| 2 | SM-35 | Dashboard Rantai Pasok · Peta Rantai Pasok | CSV prototipe belum ada di S3 env → keadaan kosong; pesan memuat path skrip internal & nama bucket untuk semua peran | minor | staging | — | ✅ pesan: path/bucket hanya untuk SUPERADMIN (server tak mengirimnya ke peran lain). Data: owner pilih unggah CSV ke S3 staging — **ditahan**: skrip lewat `.env.staging` menulis ke bucket `mis-dev`, server staging membaca `mis-staging` (env server ≠ `.env.staging` lokal; `.env.staging` juga tanpa `S3_ENDPOINT`) | screenshot run |
+| 1 | SM-04 · TC-403-03 | Dashboard › Pelatihan › vs Kontrak, tema gelap | label "+N di atas target"/"tertinggal N" hijau tua/amber di latar gelap — sulit dibaca | minor | staging | — | ✅ diperbaiki (`dark:fill-*-400`) — terverifikasi di staging (deploy `37641547337`, tema gelap: emerald-400/amber-400) | screenshot run |
+| 2 | SM-35 | Dashboard Rantai Pasok · Peta Rantai Pasok | CSV prototipe belum ada di S3 env → keadaan kosong; pesan memuat path skrip internal & nama bucket untuk semua peran | minor | staging | — | ✅ pesan: path/bucket hanya untuk SUPERADMIN (server tak mengirimnya ke peran lain) — staging SUPERADMIN tetap melihat detail (sesuai rancangan); peran lain dicakup unit test (akun tak tersedia). Data: owner pilih unggah CSV ke S3 staging — **ditahan**: skrip lewat `.env.staging` menulis ke bucket `mis-dev`, server staging membaca `mis-staging` (env server ≠ `.env.staging` lokal; `.env.staging` juga tanpa `S3_ENDPOINT`) | screenshot run |
 
 ## Membuka issue dari temuan
 

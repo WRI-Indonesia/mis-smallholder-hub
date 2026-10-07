@@ -11,11 +11,17 @@
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v1.4.0`)
 
-_(belum ada run)_
+| Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
+|---|---|---:|---:|---:|---:|---:|
+| 2026-10-07-staging.md | Smoke | 5 | 1 | 0 | 0 | 29 |
+| 2026-10-07-staging.md | Kasus uji | 9 | 0 | 0 | 3 | 0 |
+| 2026-10-07-staging.md | Regresi | 0 | 0 | 0 | 0 | 9 |
+
+Smoke Fail (SM-35) = temuan #2 minor: CSV prototipe belum di S3 staging (bucket server `mis-staging` ≠ `.env.staging` lokal `mis-dev`); pesan kosong diperbaiki. Smoke menu lama, peran OPERATOR/DONOR, dan regresi **tidak dijalankan**.
 
 ## Keputusan
 
-**Go / No-go:** … (tanggal, oleh siapa) — syarat: semua P0 Pass di staging; migrasi prod applied + checksum; seed menu prod (H4–H6 ✓).
+**Go — terbatas** (2026-10-07, owner): rilis v1.4.0 sekarang untuk diskusi manajemen; migrasi prod applied + checksum disegarkan; syarat sesudah deploy: seed menu prod (H4–H6 ✓) dan run prod `--only P0`.
 
 ## Known issues yang dibawa
 
@@ -23,3 +29,4 @@ _(belum ada run)_
 |---|---|---|
 | #366 | Detail Lahan APKASDU belum terisi | berkas sumber masih memakai ID lahan lama |
 | #317 | Belum ada peringatan tumpang tindih saat upload shapefile (Fase 3) | digeser ke v1.5.0 |
+| — | Prototipe Rantai Pasok kosong di staging/prod sampai CSV diunggah ke bucket env | bucket server staging perlu dicek owner |
