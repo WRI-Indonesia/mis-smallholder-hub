@@ -146,7 +146,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>PLATFORM-08</strong> · 🟠 Partial — Pengerasan keamanan & RBAC pasca-MVP</summary>
 
 - **Evidence:** v1.2.0 (2026-09-29): struktur menu dikunci dari UI (#364), reaktivasi menu (#237), kunci berkas bukti pelatihan & path unggahan S3 divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). v1.3.0 (2026-09-30): role/`isActive` di JWT dibaca ulang dari DB ≤ 1 menit, memo dibuang saat sign-in (#342, `src/lib/auth-role-refresh.ts` + test; TC-342-01 lulus di staging), akun seed fiktif + password dari `SEED_USER_PASSWORD` (#390, `5028ffd` + `seed-data-privacy.test.ts`).
-- **Next step:** retro + tutup #342. v1.4.0: rotasi akun staging/prod yang memakai password seed lama (#390, owner/DevOps). #286 butir 2 (key FIRMS di log) risiko diterima tanpa rotasi (Decision Log 2026-09-30). v1.6.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
+- **Next step:** #342 ditutup 2026-10-07 (retro di issue). v1.4.0: rotasi akun staging/prod yang memakai password seed lama (#390, owner/DevOps). #286 butir 2 (key FIRMS di log) risiko diterima tanpa rotasi (Decision Log 2026-09-30). v1.6.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
 - **Selesai bila:** #342, #390, #386, #384 ditutup; tidak ada temuan keamanan P1 terbuka.
 
 </details>
@@ -164,7 +164,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>OPS-02</strong> · 🟠 Partial — DevOps: jalur rilis, guard migrasi & rollback</summary>
 
 - **Evidence:** Dockerfile, 5 workflow (`gitleaks`, `semgrep`, `deploy-dev`, `deploy-staging`, `deploy-main`); alur `mvp → staging → main` aktif sejak v0.32.0; RAM staging 4 GB sehingga build tak lagi OOM (#363, 2026-09-30). Migrasi DB masih manual sebelum merge; `deploy-staging.yml` (#277, terbukti di run staging `36727665992`) dan `deploy-main.yml` (#394, bukti = deploy prod v1.3.0) berhenti di guard `prisma migrate status` sebelum build bila skema tertinggal. Prosedur rollback tertulis di `docs/standards/rollback.md` (#232); jalur migrasi digladi 2026-09-30 di `mis-staging-local`. Tooling internal pemantau pengembangan juga dicatat di fase ini: **Metrik Rilis** (`dashboard-metrics`, #227/#250; penyesuaian pasca-reset = #392) dan **Rencana Pengembangan** (`data-analyst-sprint`, #378/#389).
-- **Next step:** retro + tutup #277/#394 sesudah deploy prod v1.3.0; v1.4.0: uji rollback aplikasi di staging (#232, TC-232-01) — prosedur sudah tertulis di `docs/standards/rollback.md` dan jalur migrasinya digladi 2026-09-30.
+- **Next step:** #277/#394 ditutup 2026-10-07 (TC-394-01 lolos di log deploy prod v1.3.0, retro di issue); v1.4.0: uji rollback aplikasi di staging (#232, TC-232-01) — prosedur sudah tertulis di `docs/standards/rollback.md` dan jalur migrasinya digladi 2026-09-30.
 - **Selesai bila:** #277 (✅ kode), #376 (✅ kode: `npm run migrations:release-gap`), #232 ditutup; satu rollback staging berhasil diuji dan dicatat.
 
 </details>
