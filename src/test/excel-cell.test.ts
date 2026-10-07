@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cellValueToPrimitive } from "@/lib/excel-cell";
+import { cellValueToPrimitive, parseExcelDate } from "@/lib/excel-cell";
 import type { CellValue } from "exceljs";
 
 /**
@@ -60,5 +60,43 @@ describe("cellValueToPrimitive", () => {
     expect(
       cellValueToPrimitive({ sharedFormula: "A1", formula: "A1&B1", result: "X" } as CellValue),
     ).toBe("X");
+  });
+});
+
+describe("parseExcelDate — tanggal sel upload (#400, akar #354)", () => {
+  const ymd = (d: Date | null) =>
+    d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : null;
+
+  it("teks DD/MM/YYYY dengan hari ≤ 12 dibaca hari/bulan, bukan format AS Date.parse", () => {
+    // Logika lama: Date.parse("12/03/1971") → 3 Desember 1971.
+    expect(ymd(parseExcelDate("12/03/1971"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("05-08-1966"))).toBe("1966-08-05");
+    expect(ymd(parseExcelDate("1.2.1980"))).toBe("1980-02-01");
+    expect(ymd(parseExcelDate(" 25/03/1971 "))).toBe("1971-03-25");
+  });
+
+  it("teks YYYY-MM-DD → tengah malam lokal", () => {
+    const d = parseExcelDate("1971-03-12");
+    expect(ymd(d)).toBe("1971-03-12");
+    expect(d!.getHours()).toBe(0);
+  });
+
+  it("sel Date dan serial Excel tetap seperti sebelumnya", () => {
+    const date = new Date(1971, 2, 12);
+    expect(parseExcelDate(date)).toBe(date);
+    expect(ymd(parseExcelDate(26004))).toBe("1971-03-12"); // serial Excel 1971-03-12
+  });
+
+  it("tanggal kalender tak valid & angka berpola lain ditolak, bukan digeser/ditebak", () => {
+    expect(parseExcelDate("31/02/1971")).toBeNull();
+    expect(parseExcelDate("12/13/1971")).toBeNull();
+    expect(parseExcelDate("12/03/71")).toBeNull();
+    expect(parseExcelDate("")).toBeNull();
+    expect(parseExcelDate(null)).toBeNull();
+    expect(parseExcelDate(new Date(Number.NaN))).toBeNull();
+  });
+
+  it("teks tanggal non-angka masih dibaca Date.parse", () => {
+    expect(ymd(parseExcelDate("12 March 1971"))).toBe("1971-03-12");
   });
 });

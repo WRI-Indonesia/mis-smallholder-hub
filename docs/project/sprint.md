@@ -72,7 +72,8 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 7 | **#319** Report: default `coverage` ≠ `landParcelLegalWhere` | Kerapian | S | Dari v1.3.0. `coverage` wajib diisi, tanpa default | 🔲 Todo | — |
 | 8 | **#315** Dua salinan `FilterCombobox` di panel peta | Kerapian | S | Dari v1.3.0. Pakai satu primitif `shared/filter-combobox.tsx` | 🔲 Todo | — |
 | 9 | **#310** Bantuan `t-3` tak menyinggung Upload List Peserta | Kerapian | S | Dari v1.3.0. Tambah langkah tab Upload List Peserta (#301) | 🔲 Todo | — |
-| 10 | **Rilis v1.4.0** | Rilis | M | Semua butir di atas (tanpa migrasi terencana) → staging → prod | 🔲 Todo | Go rilis |
+| 10 | **#400** Tanggal teks DD/MM terbaca MM/DD di upload Petani & Produksi | Data | S | Temuan retro #354 (akar masalahnya). `parseExcelDate` bersama di `src/lib/excel-cell.ts` (DD/MM & YYYY-MM-DD sebelum `Date.parse`, tanggal tak valid ditolak) menggantikan dua salinan klien; test regresi; Bantuan u-1/u-2 | 🟡 Dikerjakan | — |
+| 11 | **Rilis v1.4.0** | Rilis | M | Semua butir di atas (tanpa migrasi terencana) → staging → prod | 🔲 Todo | Go rilis |
 
 #### Rilis v1.5.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
 

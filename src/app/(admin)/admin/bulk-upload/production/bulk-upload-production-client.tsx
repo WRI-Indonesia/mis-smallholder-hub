@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
 import { readSpreadsheetFile } from "@/lib/excel-sheet-reader";
+import { parseExcelDate } from "@/lib/excel-cell";
 import { bulkCreateProductionRecords } from "@/server/actions/bulk-upload-production";
 
 interface FarmerMapping {
@@ -155,38 +156,6 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
   const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Parse Excel Date
-  function parseExcelDate(val: Excel.CellValue): Date | null {
-    if (!val) return null;
-    if (val instanceof Date && !isNaN(val.getTime())) return val;
-    if (typeof val === "number") {
-      const utc_days = Math.floor(val - 25569);
-      const utc_value = utc_days * 86400;
-      const date_info = new Date(utc_value * 1000);
-      return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate());
-    }
-    if (typeof val === "string") {
-      const parsed = Date.parse(val);
-      if (!isNaN(parsed)) return new Date(parsed);
-      const parts = val.split(/[-/]/);
-      if (parts.length === 3) {
-        if (parts[0].length <= 2 && parts[2].length === 4) {
-          const d = parseInt(parts[0], 10);
-          const m = parseInt(parts[1], 10) - 1;
-          const y = parseInt(parts[2], 10);
-          return new Date(y, m, d);
-        }
-        if (parts[0].length === 4) {
-          const y = parseInt(parts[0], 10);
-          const m = parseInt(parts[1], 10) - 1;
-          const d = parseInt(parts[2], 10);
-          return new Date(y, m, d);
-        }
-      }
-    }
-    return null;
-  }
 
   function validateRow(
     row: RawRow,

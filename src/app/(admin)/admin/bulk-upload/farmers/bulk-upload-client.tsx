@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { readSpreadsheetFile } from "@/lib/excel-sheet-reader";
+import { parseExcelDate } from "@/lib/excel-cell";
 import { missingOptionalFields, farmerRowStatus } from "@/lib/farmer-upload-status";
 import { toast } from "sonner";
 import {
@@ -147,42 +148,6 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
   const [isProcessing, setIsProcessing] = useState(false);
   // Cakupan yang sedang disimpan — null berarti tidak sedang menyimpan.
   const [savingScope, setSavingScope] = useState<"all" | "completeOnly" | null>(null);
-
-  // Parse Excel Date
-  function parseExcelDate(val: Excel.CellValue): Date | null {
-    if (!val) return null;
-    if (val instanceof Date && !isNaN(val.getTime())) return val;
-    if (typeof val === "number") {
-      // Excel serial date format
-      const utc_days = Math.floor(val - 25569);
-      const utc_value = utc_days * 86400;
-      const date_info = new Date(utc_value * 1000);
-      return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate());
-    }
-    if (typeof val === "string") {
-      const parsed = Date.parse(val);
-      if (!isNaN(parsed)) return new Date(parsed);
-      // Try common formats like DD/MM/YYYY
-      const parts = val.split(/[-/]/);
-      if (parts.length === 3) {
-        // Assume DD/MM/YYYY
-        if (parts[0].length <= 2 && parts[2].length === 4) {
-          const d = parseInt(parts[0], 10);
-          const m = parseInt(parts[1], 10) - 1;
-          const y = parseInt(parts[2], 10);
-          return new Date(y, m, d);
-        }
-        // Assume YYYY/MM/DD
-        if (parts[0].length === 4) {
-          const y = parseInt(parts[0], 10);
-          const m = parseInt(parts[1], 10) - 1;
-          const d = parseInt(parts[2], 10);
-          return new Date(y, m, d);
-        }
-      }
-    }
-    return null;
-  }
 
   // Smart validation and normalization
   function validateRow(

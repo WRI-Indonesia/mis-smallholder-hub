@@ -71,7 +71,7 @@ Halaman: Upload Data Petani (/admin/bulk-upload/farmers)
 | "2. Pilih File Data Petani" | Card + Input `type="file"` | Disabled selama lembaga belum dipilih; peringatan merah *"* Harap pilih Lembaga Petani di atas terlebih dahulu."* |
 | Info berkas | Teks | *"Tipe file terdeteksi: **XLSX/CSV** (N baris data)"* |
 | "Petakan Kolom Data" | Card + grid Select per field | Subjudul *"Cocokkan kolom dari file unggahan Anda dengan data target sistem."*; tiap field punya badge `Wajib`/`Opsional`, placeholder *"Pilih kolom..."*, opsi *"-- Kosongkan --"*, dan teks bantuan |
-| Target field | 8 field | `ID Petani`* (min 2 karakter), `Nama Petani`* (min 2 karakter), `Jenis Kelamin`* (L/P atau Laki-laki/Perempuan), `NIK` (16 digit angka), `Tempat Lahir`, `Tanggal Lahir`, `Alamat`, `Tahun Bergabung` (1900-2100) |
+| Target field | 8 field | `ID Petani`* (min 2 karakter), `Nama Petani`* (min 2 karakter), `Jenis Kelamin`* (L/P atau Laki-laki/Perempuan), `NIK` (16 digit angka), `Tempat Lahir`, `Tanggal Lahir` (sel tanggal / serial Excel, teks `DD/MM/YYYY` atau `YYYY-MM-DD` — `parseExcelDate` di `src/lib/excel-cell.ts`, #400), `Alamat`, `Tahun Bergabung` (1900-2100) |
 | Auto-match kolom | Otomatis | `AUTO_MATCH_RULES` mencocokkan header file (lowercase, trim) ke target field saat berkas dibaca |
 | "Validasi Data" | Tombol | Disabled saat memproses, belum ada baris, atau daftar ID existing masih dimuat (`loadingExistingIds` — cegah race validasi sebelum `existingFarmerIds` siap); loading state *"Memproses..."*; jika ada kolom wajib belum dipetakan → toast *"Kolom wajib berikut belum dipetakan: …"*; sukses → toast *"Validasi selesai"* |
 | "Hasil Validasi & Tinjauan" | Card | Subjudul *"Tinjau kembali data sebelum menyimpannya ke database."* |
