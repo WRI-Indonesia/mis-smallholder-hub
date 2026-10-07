@@ -376,10 +376,12 @@ export function millLabel(m: Pick<ScMill, "name" | "company">): string {
 }
 
 // ---------------------------------------------------------------------------
-// Sankey — 4 kolom tetap: Lembaga → Agen/KT/Koperasi → RAMP → Mill
+// Sankey — 3 bagian: Lembaga → Offtaker (Agen · RAMP · KT/Koperasi) → Mill.
+// Kolom indeks 2 sengaja tak dipakai lagi (owner 2026-10-06: agen, RAMP, KT
+// satu bagian); rantai Agen → RAMP tampil sebagai SATU node gabungan.
 // ---------------------------------------------------------------------------
 
-export const SANKEY_COLUMNS = ["Lembaga", "Agen · KT/Koperasi", "RAMP", "Mill"] as const;
+export const SANKEY_COLUMNS = ["Lembaga", "Offtaker · Agen · RAMP · KT/Koperasi", "RAMP", "Mill"] as const;
 
 export interface SankeyNode {
   id: string;
@@ -443,6 +445,16 @@ const GROUP_NODE: Record<string, { label: string; unit: string }> = {
   "G:AGEN": { label: "Agen", unit: "agen" },
   "G:KTKOP": { label: "KT/Koperasi", unit: "KT/koperasi" },
   "G:RAMP": { label: "RAMP", unit: "RAMP" },
+  "G:AGEN_RAMP": { label: "Agen → RAMP", unit: "rantai" },
+  "G:KTKOP_RAMP": { label: "KT/Koperasi → RAMP", unit: "rantai" },
+};
+
+/** Node rantai mode Detail: `C:<pengumpul>><RAMP>`. */
+const chainNodeId = (collector: string, ramp: string) => `C:${collector}>${ramp}`;
+export const parseChainNodeId = (id: string): { collectorId: string; rampId: string } | null => {
+  if (!id.startsWith("C:")) return null;
+  const [collectorId, rampId] = id.slice(2).split(">");
+  return { collectorId, rampId };
 };
 
 interface PathStep {
@@ -477,11 +489,13 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
     const ramp = recordRampId(r, offtakers);
     const district = groups.get(r.groupCode)?.districtName ?? "?";
     const steps: PathStep[] = [{ id: byDistrict ? member(`D:${district}`, r.groupCode) : `L:${r.groupCode}`, column: 0 }];
-    if (collector) {
-      const type = offtakers.get(collector)?.type;
-      steps.push({ id: ringkas ? member(type === "AGEN" ? "G:AGEN" : "G:KTKOP", collector) : `O:${collector}`, column: 1 });
-    }
-    if (ramp) steps.push({ id: ringkas ? member("G:RAMP", ramp) : `O:${ramp}`, column: 2 });
+    // Satu bagian offtaker: pengumpul saja, RAMP saja, atau rantai pengumpul → RAMP sebagai satu node.
+    const viaAgen = collector ? offtakers.get(collector)?.type === "AGEN" : false;
+    let mid: string | null = null;
+    if (collector && ramp) mid = ringkas ? member(viaAgen ? "G:AGEN_RAMP" : "G:KTKOP_RAMP", `${collector}>${ramp}`) : chainNodeId(collector, ramp);
+    else if (collector) mid = ringkas ? member(viaAgen ? "G:AGEN" : "G:KTKOP", collector) : `O:${collector}`;
+    else if (ramp) mid = ringkas ? member("G:RAMP", ramp) : `O:${ramp}`;
+    if (mid) steps.push({ id: mid, column: 1 });
     // Mode UL: tujuan = status "Supply to UL" (definisi yang sama dengan filter UL); Mill kosong tetap terpisah.
     const dest = !r.millId ? UNKNOWN_MILL : byUl ? member(r.toUl ? "U:UL" : "U:NON_UL", r.millId) : `M:${r.millId}`;
     steps.push({ id: dest, column: 3 });
@@ -516,7 +530,7 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
     let n = nodes.get(id);
     if (n) return n;
     if (id.startsWith("X:")) {
-      n = { id, column, label: `${column === 1 ? "Pengumpul" : column === 2 ? "RAMP" : "Mill"} lain`, sub: `${foldedCount.get(id)} entitas`, value: 0, folded: foldedCount.get(id) ?? 0, isUl: false, millStatus: null, groupCode: null };
+      n = { id, column, label: `${column === 1 ? "Offtaker" : "Mill"} lain`, sub: `${foldedCount.get(id)} entitas`, value: 0, folded: foldedCount.get(id) ?? 0, isUl: false, millStatus: null, groupCode: null };
     } else if (id.startsWith("U:")) {
       const n0 = groupMembers.get(id)?.size ?? 0;
       n = { id, column, label: UL_FILTER_LABEL[id.slice(2) as UlFilter], sub: `${n0} Mill`, value: 0, folded: n0, isUl: false, millStatus: null, groupCode: null };
@@ -531,6 +545,12 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
     } else if (id.startsWith("L:")) {
       const g = groups.get(id.slice(2));
       n = { id, column, label: g?.abrv ?? id.slice(2), sub: g?.districtName ?? "", value: 0, folded: 0, isUl: false, millStatus: null, groupCode: id.slice(2) };
+    } else if (id.startsWith("C:")) {
+      const { collectorId, rampId } = parseChainNodeId(id)!;
+      const a = offtakers.get(collectorId);
+      const b = offtakers.get(rampId);
+      const label = `${a?.name ?? collectorId} → ${b?.name ?? rampId}`;
+      n = { id, column, label, sub: `${a ? OFFTAKER_TYPE_LABEL[a.type] : "?"} → RAMP · ${a?.district ?? ""}`, value: 0, folded: 0, isUl: false, millStatus: null, groupCode: null };
     } else if (id.startsWith("O:")) {
       const o = offtakers.get(id.slice(2));
       const sub = o ? `${OFFTAKER_TYPE_LABEL[o.type]} · ${o.district}` : "";

@@ -38,10 +38,12 @@ export function channelColor(channel: SupplyChannel, dark: boolean) {
 
 /** Node yang bisa dipilih sebagai filter: semua kecuali node lipatan "… lain" dan node gabungan Ringkas. */
 export const isFilterableNode = (n: SankeyNode) =>
-  (n.column === 0 && (!!n.groupCode || n.id.startsWith("D:"))) || ((n.column === 1 || n.column === 2) && n.id.startsWith("O:")) || (n.column === 3 && (n.id.startsWith("M:") || n.id.startsWith("U:")));
+  (n.column === 0 && (!!n.groupCode || n.id.startsWith("D:"))) ||
+  (n.column === 1 && (n.id.startsWith("O:") || n.id.startsWith("C:"))) ||
+  (n.column === 3 && (n.id.startsWith("M:") || n.id.startsWith("U:")));
 /** Node gabungan mode Ringkas — klik = buka mode Detail. */
 export const isGroupNode = (n: SankeyNode) => n.id.startsWith("G:");
-const NODE_KIND = ["Lembaga", "Agen", "RAMP", "Mill"] as const;
+const NODE_KIND = ["Lembaga", "offtaker", "RAMP", "Mill"] as const;
 const nodeKind = (n: SankeyNode) => (n.id.startsWith("D:") ? "Distrik" : n.id.startsWith("U:") ? "kelompok Mill" : NODE_KIND[n.column]);
 
 const LABEL_GAP = 6;
@@ -153,7 +155,7 @@ export function SupplyChainSankey({
           </span>
         ))}
       </div>
-      <svg width={width} height={height + 12} className="block overflow-visible" role="img" aria-label="Diagram Sankey aliran TBS Lembaga ke Agen, RAMP, dan Mill">
+      <svg width={width} height={height + 12} className="block overflow-visible" role="img" aria-label="Diagram Sankey aliran TBS Lembaga ke offtaker dan Mill">
         <g transform={`translate(${LEFT_MARGIN},6)`}>
           <g>
             {layout.links.map((l) => {
@@ -257,7 +259,7 @@ export function SupplyChainSankey({
               </div>
               {hover.node.isUl && <div className="mt-0.5 text-primary">Mill pemasok program UL</div>}
               {hover.node.millStatus === "PKS_BELUM_PASTI" && <div className="mt-0.5 text-muted-foreground">Survei hanya menyebut nama PT — PKS dipilih dari Universal Mill List</div>}
-              {onSelectNode && isGroupNode(hover.node) && <div className="mt-1 text-primary">Klik untuk melihat per {NODE_KIND[hover.node.column].toLowerCase()} (Detail)</div>}
+              {onSelectNode && isGroupNode(hover.node) && <div className="mt-1 text-primary">Klik untuk melihat per {NODE_KIND[hover.node.column]} (Detail)</div>}
               {onSelectNode && isFilterableNode(hover.node) && <div className="mt-1 text-muted-foreground">Klik untuk memfilter {nodeKind(hover.node)} ini</div>}
             </>
           )}

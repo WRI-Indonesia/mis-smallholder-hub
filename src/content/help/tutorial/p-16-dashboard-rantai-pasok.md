@@ -22,13 +22,13 @@ Dashboard ini masih **prototipe** untuk bahan diskusi. Datanya berasal dari **fo
 + Pilihan tiap dropdown menyesuaikan filter lain. Setelah satu Lembaga dipilih, misalnya, daftar Agen, RAMP, dan Mill hanya berisi yang terhubung dengannya. Filter tersimpan di alamat halaman, jadi tampilan bisa di-bookmark atau dikirim ke rekan.
 3. Baca empat kartu ringkasan: **TBS Dideklarasikan**, **Ke Mill Pemasok UL**, **Sampai PKS Pasti** (berapa yang PKS-nya jelas), dan **Offtaker** (jumlah agen, RAMP, dan KT/koperasi).
 4. Baca batang **Jalur TBS dari petani**: porsi lewat Agen, langsung ke RAMP, lewat KT/Koperasi, dan langsung ke Mill. Warnanya dipakai juga di diagram dan peta.
-5. Baca diagram **Aliran TBS**. Tebal pita sebanding dengan tonase. **Arahkan kursor** ke sebuah Lembaga atau Mill untuk menyalakan seluruh jalurnya, dari hulu sampai hilir. **Klik node** untuk menjadikannya filter.
+5. Baca diagram **Aliran TBS**: Lembaga → Offtaker → Mill. Agen, RAMP, dan KT/koperasi berada di satu bagian **Offtaker**; TBS yang lewat agen lalu RAMP tampil sebagai satu node rantai "Agen → RAMP". Tebal pita sebanding dengan tonase. **Arahkan kursor** ke sebuah Lembaga atau Mill untuk menyalakan seluruh jalurnya, dari hulu sampai hilir. **Klik node** untuk menjadikannya filter.
 6. Atur tampilan diagram dengan empat tombol di kanan atasnya:
    - **Lembaga | Distrik**: asal per Lembaga, atau digabung per kabupaten.
    - **Mill | UL / Non-UL**: tujuan per Mill, atau digabung jadi Ke Mill UL dan Bukan ke Mill UL.
    - **Ton | %**: satuan label. Persen dihitung dari total pada filter aktif.
-   - **Ringkas | Detail**: agen dan RAMP digabung per tipe, atau tampil satu per satu.
-+ Klik node gabungan (Agen, RAMP, Distrik, Ke Mill UL) untuk langsung turun ke rinciannya. Tombol **Reset** di kartu diagram mengembalikan semua filter dan tombol tampilan ke bawaan.
+   - **Ringkas | Detail**: offtaker digabung per tipe (Agen, RAMP, KT/Koperasi, Agen → RAMP), atau tampil satu per satu.
++ Klik node gabungan (Agen, RAMP, Agen → RAMP, Distrik, Ke Mill UL) untuk langsung turun ke rinciannya. Di mode Detail, klik node rantai Agen → RAMP untuk memfilter agen dan RAMP itu sekaligus. Tombol **Reset** di kartu diagram mengembalikan semua filter dan tombol tampilan ke bawaan.
 7. Gunakan tabel **Volume per Mill** untuk angka pastinya. Batang hijau adalah porsi ke UL. Klik sebuah baris untuk memfilter Mill itu.
 8. Tekan **Lihat di Peta** untuk membuka Peta Rantai Pasok dengan filter yang sama.
 

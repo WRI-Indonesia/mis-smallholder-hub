@@ -19,7 +19,9 @@ import {
   UL_FILTER_LABEL,
   UNKNOWN_MILL_FILTER,
   buildSupplyChainSankey,
+  millLabel,
   millVolumes,
+  parseChainNodeId,
   summarizeSupplyChain,
   type MillStatus,
   type MillVolumeRow,
@@ -114,10 +116,11 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
   const activeFilters = [
     f.district && `Distrik: ${f.district}`,
     f.category && `Kategori: ${GROUP_CATEGORY_LABEL[f.category]}`,
-    f.filter.groupCode && `Lembaga: ${f.options.groupCode.find((o) => o.id === f.filter.groupCode)?.name ?? f.filter.groupCode}`,
+    f.filter.groupCode && `Lembaga: ${view.data.groups.find((g) => g.code === f.filter.groupCode)?.abrv ?? f.filter.groupCode}`,
     f.filter.collectorId && `Agen: ${offtakers.get(f.filter.collectorId)?.name ?? f.filter.collectorId}`,
     f.filter.rampId && `RAMP: ${offtakers.get(f.filter.rampId)?.name ?? f.filter.rampId}`,
-    f.filter.millId && `Mill: ${f.options.millId.find((o) => o.id === f.filter.millId)?.name ?? f.filter.millId}`,
+    f.filter.millId &&
+      `Mill: ${f.filter.millId === UNKNOWN_MILL_FILTER ? "tidak diketahui" : (millsById.get(f.filter.millId) ? millLabel(millsById.get(f.filter.millId)!) : f.filter.millId)}`,
     f.filter.ul && UL_FILTER_LABEL[f.filter.ul],
   ].filter((x): x is string => !!x);
   const viewChanged = mode !== "RINGKAS" || origin !== "LEMBAGA" || destination !== "MILL" || unit !== "TON";
@@ -226,10 +229,10 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
         <CardHeader className="pb-2">
           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Aliran TBS: Lembaga → Agen → RAMP → Mill</CardTitle>
+              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Aliran TBS: Lembaga → Offtaker → Mill</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
                 Arahkan kursor ke {origin === "DISTRIK" ? "Distrik" : "Lembaga"} atau Mill untuk menyalakan seluruh jalurnya. Klik node untuk memfilter
-                {mode === "RINGKAS" ? "; klik Agen / KT/Koperasi / RAMP untuk melihat per orang." : "."}
+                {mode === "RINGKAS" ? "; klik Agen / RAMP / KT/Koperasi untuk melihat per offtaker." : "."} Rantai Agen → RAMP tampil sebagai satu node.
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
@@ -295,8 +298,13 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
                 setOrigin("LEMBAGA");
               }
               else if (n.column === 0 && n.groupCode) f.update({ lembaga: n.groupCode });
-              else if (n.column === 1) f.update({ agen: n.id.slice(2) });
-              else if (n.column === 2) f.update({ ramp: n.id.slice(2) });
+              else if (n.column === 1) {
+                // Satu bagian offtaker: rantai → filter Agen + RAMP; tunggal → sesuai tipenya.
+                const chain = parseChainNodeId(n.id);
+                if (chain) f.update({ agen: chain.collectorId, ramp: chain.rampId });
+                else if (offtakers.get(n.id.slice(2))?.type === "RAMP") f.update({ ramp: n.id.slice(2) });
+                else f.update({ agen: n.id.slice(2) });
+              }
               else f.update({ mill: n.id === "M:?" ? UNKNOWN_MILL_FILTER : n.id.slice(2) });
             }}
           />

@@ -7,6 +7,7 @@ import {
   matchesSupplyChainFilter,
   millLabel,
   millVolumes,
+  parseChainNodeId,
   recordCollectorId,
   recordRampId,
   summarizeSupplyChain,
@@ -40,23 +41,23 @@ const data: SupplyChainData = {
 };
 
 describe("buildSupplyChainSankey", () => {
-  it("menempatkan Agen di kolom 1, RAMP di kolom 2, Mill di kolom 3 dan melompati kolom kosong", () => {
+  it("Agen, RAMP, KT dalam SATU bagian (kolom 1); rantai Agen → RAMP jadi satu node; tanpa offtaker langsung ke Mill", () => {
     const records = [
       rec({ id: "a", groupCode: "G2", offtakerId: "AGN-1", nextOfftakerId: "RMP-1", supplyTon: 30 }),
       rec({ id: "b", groupCode: "G2", offtakerId: "RMP-1", supplyTon: 20 }),
       rec({ id: "c", groupCode: "G1", supplyTon: 5 }),
     ];
     const g = buildSupplyChainSankey(data, records, { mode: "RINCI" });
-    const col = (id: string) => g.nodes.find((n) => n.id === id)?.column;
-    expect(col("L:G2")).toBe(0);
-    expect(col("O:AGN-1")).toBe(1);
-    expect(col("O:RMP-1")).toBe(2);
-    expect(col("M:M1")).toBe(3);
-    // Rantai Agen → RAMP tercatat sebagai pita, RAMP langsung = pita Lembaga → RAMP (lompat kolom 1).
-    expect(g.links).toContainEqual({ source: "O:AGN-1", target: "O:RMP-1", channel: "AGEN", value: 30 });
+    const node = (id: string) => g.nodes.find((n) => n.id === id);
+    expect(node("L:G2")?.column).toBe(0);
+    expect(node("C:AGN-1>RMP-1")).toMatchObject({ column: 1, label: "Agen A → RAMP B", value: 30 });
+    expect(node("O:RMP-1")).toMatchObject({ column: 1, value: 20 });
+    expect(node("M:M1")?.column).toBe(3);
+    expect(g.nodes.some((n) => n.column === 2)).toBe(false);
+    expect(g.links).toContainEqual({ source: "L:G2", target: "C:AGN-1>RMP-1", channel: "AGEN", value: 30 });
     expect(g.links).toContainEqual({ source: "L:G2", target: "O:RMP-1", channel: "RAMP", value: 20 });
     expect(g.links).toContainEqual({ source: "L:G1", target: "M:M1", channel: "LANGSUNG", value: 5 });
-    expect(g.nodes.find((n) => n.id === "O:RMP-1")?.value).toBe(50);
+    expect(parseChainNodeId("C:AGN-1>RMP-1")).toEqual({ collectorId: "AGN-1", rampId: "RMP-1" });
     expect(g.totalTon).toBe(55);
   });
 
@@ -87,16 +88,16 @@ describe("Sankey mode Ringkas & jalur sorotan", () => {
 
   it("menggabungkan offtaker per tipe dan menghitung anggotanya", () => {
     const g = buildSupplyChainSankey(data, records);
-    expect(g.nodes.map((n) => n.id).sort()).toEqual(["G:AGEN", "G:KTKOP", "G:RAMP", "L:G1", "L:G2", "M:M1"]);
-    expect(g.nodes.find((n) => n.id === "G:RAMP")).toMatchObject({ column: 2, value: 50, sub: "1 RAMP" });
-    expect(g.links).toContainEqual({ source: "G:AGEN", target: "G:RAMP", channel: "AGEN", value: 30 });
+    expect(g.nodes.map((n) => n.id).sort()).toEqual(["G:AGEN_RAMP", "G:KTKOP", "G:RAMP", "L:G1", "L:G2", "M:M1"]);
+    expect(g.nodes.find((n) => n.id === "G:RAMP")).toMatchObject({ column: 1, value: 20, sub: "1 RAMP" });
+    expect(g.nodes.find((n) => n.id === "G:AGEN_RAMP")).toMatchObject({ column: 1, label: "Agen → RAMP", value: 30, sub: "1 rantai" });
   });
 
   it("menyimpan jalur utuh sehingga sorotan bisa menelusuri hulu sampai hilir", () => {
     const g = buildSupplyChainSankey(data, records);
-    const viaAgen = g.paths.find((p) => p.nodes.includes("G:AGEN"));
-    expect(viaAgen?.nodes).toEqual(["L:G2", "G:AGEN", "G:RAMP", "M:M1"]);
-    expect(viaAgen?.links).toHaveLength(3);
+    const viaAgen = g.paths.find((p) => p.nodes.includes("G:AGEN_RAMP"));
+    expect(viaAgen?.nodes).toEqual(["L:G2", "G:AGEN_RAMP", "M:M1"]);
+    expect(viaAgen?.links).toHaveLength(2);
     expect(g.paths).toHaveLength(3);
   });
 });

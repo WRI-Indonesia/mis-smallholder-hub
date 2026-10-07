@@ -15,7 +15,7 @@ Halaman: Dashboard Rantai Pasok (/admin/dashboard/supply-chain)
 ├── Kartu KPI: TBS Dideklarasikan · Ke Mill Pemasok UL · Sampai PKS Pasti · Offtaker
 ├── Batang komposisi "Jalur TBS dari petani" (= legenda warna)
 ├── Banner "Catatan data" (bisa dilipat)
-├── Kartu Sankey: Lembaga/Distrik → Agen·KT/Koperasi → RAMP → Mill/UL-Non-UL
+├── Kartu Sankey: Lembaga/Distrik → Offtaker (Agen · RAMP · KT/Koperasi · rantai Agen → RAMP satu node) → Mill/UL-Non-UL
 │   ├── Toggle: Lembaga|Distrik · Mill|UL/Non-UL · Ton|% · Ringkas|Detail · Reset
 │   ├── Hover = sorot jalur penuh · klik node = filter / turun ke rincian
 └── Tabel Volume per Mill (batang tonase + porsi UL, top 10 + tampilkan semua)
