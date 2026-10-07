@@ -27,7 +27,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Sel: % di kiri + stacked bar tebal (sudah di segmen hijau, belum di segmen abu)
 │   └── Empty state
 ├── Card Training Benefit per year (full row, collapsible, #402; selalu tampil)
-│   ├── Toggle Tabel | Grafis | vs Kontrak (state lokal, bawaan Tabel) · tombol Excel (izin EXPORT; selalu format tabel, header dua tingkat)
+│   ├── Toggle Tabel | Grafis | vs Kontrak (A) | vs Kontrak (B) (state lokal, bawaan Tabel; A & B berdampingan untuk diskusi manajemen 2026-10-08) · tombol Excel (izin EXPORT; selalu format tabel, header dua tingkat)
 │   ├── Grafis: bar bertumpuk per baris — panjang = kumulatif t, segmen ≤ t−2 (gelap) · baru t−1 · baru t (terang), angka di segmen bila ≥ 9% trek; trek abu netral
 │   ├── Tabel (format donor; header netral — tahun teks biasa, sub-kolom abu; kolom proporsional, rata tengah, Package 34%) paket (P1 · P2 Group Dynamic · P2 HSE · P3) + baris total "Petani mengikuti ≥ 1 pelatihan" × kolom tahun ≤ t−2 · t−1 · t (masing-masing Actual · Kumulative)
 │   └── Catatan kaki: definisi, kesetaraan dengan Capaian Paket per Distrik, filter Tahun tak berlaku
@@ -140,9 +140,16 @@ Label tahun: "semua tahun" atau "{YYYY}".
 
 Terverifikasi 2026-10-07 (mis-dev): Kumulative 2026 P1 8.279 · MK 7.769 · HSE 8.076 · P3 3.756 · ≥ 1 pelatihan 8.401 = Total Capaian Paket per Distrik.
 
-### Tampilan vs Kontrak (#403)
+### Tampilan vs Kontrak (A) & (B) (#403)
 
-Target kontrak dari Master Data › Target Program ([program-target.md](../master-data/program-target.md)) vs realisasi penerima manfaat baru: baris 1 ↔ Paket 1, baris 2 ↔ Paket 3 & 4, baris total = jumlah keduanya (sama cara jumlahnya dengan target). Kolom: Start (kumulatif s.d. tahun baseline vs target Start) + **hanya tahun bertarget**; tiap sel "realisasi / target", bar progres (≥ 100% hijau tua, ≥ 50% hijau, sisanya amber) + %. Realisasi ikut filter Distrik/Lembaga dengan catatan amber "realisasi terfilter vs target seluruh program". Target gagal dimuat → pesan di tampilan ini saja (halaman tetap tampil); belum ada target → arahan ke Master Data › Target Program. Fungsi: `programContractRows` (`src/lib/program-target.ts`).
+Target kontrak dari Master Data › Target Program ([program-target.md](../master-data/program-target.md)) vs realisasi penerima manfaat baru: baris 1 ↔ Paket 1, baris 2 ↔ Paket 3 & 4; Start ↔ kumulatif s.d. tahun baseline; hanya tahun bertarget; realisasi ikut filter Distrik/Lembaga dengan catatan amber. Fungsi data: `programContractRows` (`src/lib/program-target.ts`).
+
+| Tab | Isi |
+|---|---|
+| **(A)** trayektori | Satu kotak per baris kontrak: judul kecil, angka besar "realisasi dari total kontrak" + % besar; grafik SVG — garis putus-putus = target kumulatif (Start → tahun), garis tegas = realisasi kumulatif s.d. tahun berjalan (tahun mendatang tanpa titik realisasi), pita tahun berjalan, label "tertinggal N" / "+N di atas target". Legenda + baris Total farmers trained tahun berjalan |
+| **(B)** progres | Per baris kontrak: % besar, bar realisasi vs total kontrak + garis penanda target s.d. tahun berjalan, status tertinggal / sesuai, chip per periode (✓ tercapai / ▲ di bawah; tahun mendatang "belum mulai"). Dibiarkan berdampingan dengan (A) sampai manajemen memilih |
+
+Catatan kaki definisi kartu disembunyikan di kedua tab ini. Target gagal dimuat → pesan di tab ini saja; belum ada target → arahan ke Master Data › Target Program.
 
 ## Matriks cakupan (`TrainingCoverageMatrix`)
 

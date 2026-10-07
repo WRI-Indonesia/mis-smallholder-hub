@@ -226,9 +226,10 @@ function ContractView({ targets, groups, filterActive }: { targets: ProgramTarge
 }
 
 /**
- * SEMENTARA (owner 2026-10-07, untuk dibandingkan dengan trayektori): progres menuju TOTAL
+ * Tab "vs Kontrak (B)" — owner 2026-10-07: A (trayektori) & B tampil berdampingan untuk diskusi
+ * dengan manajemen (rilis v1.4.0); progres menuju TOTAL
  * kontrak — bar kumulatif realisasi vs total, penanda target s.d. tahun berjalan, chip status
- * per periode (tahun mendatang = "belum mulai", bukan 0%). Hapus salah satu setelah owner memilih.
+ * per periode (tahun mendatang = "belum mulai", bukan 0%). Hapus salah satu setelah manajemen memilih.
  */
 function ContractProgressView({ targets, groups, filterActive }: { targets: ProgramTargetRecord[] | null; groups: TrainingGroupEntry[]; filterActive: boolean }) {
   const grid = useMemo(() => (targets ? buildProgramTargetGrid(targets) : null), [targets]);
@@ -445,7 +446,7 @@ export function TrainingBenefitPanel({
                       view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {v === "tabel" ? "Tabel" : v === "grafis" ? "Grafis" : v === "kontrak" ? "vs Kontrak" : "Progres (uji)"}
+                    {v === "tabel" ? "Tabel" : v === "grafis" ? "Grafis" : v === "kontrak" ? "vs Kontrak (A)" : "vs Kontrak (B)"}
                   </button>
                 ))}
               </div>
