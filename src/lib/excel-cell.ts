@@ -32,11 +32,14 @@ const DATE_MIN_YEAR = 1900;
 const DATE_MAX_YEAR = 2100;
 /** Serial Excel 1910-01-01: angka lebih kecil hampir pasti tahun saja (`1971`) atau angka lain, bukan tanggal. */
 const SERIAL_MIN = 3654;
-// Ekor jam opsional: "00:00", "0:00:00", "12:00:00 PM", "T00:00:00.000Z", "T00:00:00+07:00".
-// Tanggal dibaca SEPERTI TERTULIS — zona/offset tidak menggeser harinya.
-const DATE_TIME_SUFFIX = String.raw`(?:[ T]\d{1,2}[:.]\d{2}(?:[:.]\d{2}(?:\.\d+)?)?(?:\s?[AaPp][Mm])?(?:Z|[+-]\d{2}:?\d{2})?)?`;
-const DMY = new RegExp(String.raw`^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})` + DATE_TIME_SUFFIX + "$");
-const YMD = new RegExp(String.raw`^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})` + DATE_TIME_SUFFIX + "$");
+// Ekor jam opsional ("00:00", "0:00:00", "12:00:00 PM", "10:00 a.m.", "T00:00:00.000") lalu zona
+// opsional ("Z", "UTC", "GMT", "+07:00", " +0700"). Grup: jam, menit, detik, a/p, zona.
+const TIME = String.raw`(?:[ T](\d{1,2})[:.](\d{2})(?:[:.](\d{2})(?:\.\d+)?)?(?: ?([ap])\.?m\.?)?)?`;
+const ZONE = String.raw`(?: ?(Z|UTC|GMT|[+-]\d{2}:?\d{2}))?`;
+const DMY = new RegExp(String.raw`^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})` + TIME + ZONE + "$", "i");
+const YMD = new RegExp(String.raw`^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})` + TIME + ZONE + "$", "i");
+/** Zona kerja aplikasi (WIB, tanpa DST) — hari kalender sebuah timestamp ber-zona dibaca di sini. */
+const WIB_OFFSET_MIN = 7 * 60;
 
 /** Tengah malam UTC y-m-d, atau `null` bila bukan tanggal kalender (31/02 tak digeser) / di luar 1900–2100. */
 function utcDate(y: number, m: number, d: number): Date | null {
@@ -52,7 +55,7 @@ function utcDate(y: number, m: number, d: number): Date | null {
  * malam lokal — belum diseragamkan.)
  *
  * Teks hanya diterima sebagai **`DD/MM/YYYY`** atau `YYYY-MM-DD` (pemisah `/ - .`, boleh
- * berekor jam/AM-PM/zona). `Date.parse` sengaja TIDAK dipakai: ia membaca "12/03/1971"
+ * berekor jam/AM-PM/zona; timestamp ber-zona dibaca hari WIB-nya). `Date.parse` sengaja TIDAK dipakai: ia membaca "12/03/1971"
  * sebagai format AS (3 Desember — akar 2.213 tanggal lahir tertukar di prod, #354/#400)
  * dan menebak tanggal dari teks apa pun ("Panen 1" → 2001-01-01). Teks lain = `null`
  * (jadi error di preview), bukan ditebak.
@@ -69,10 +72,28 @@ export function parseExcelDate(val: CellValue): Date | null {
     return utcDate(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
   }
   if (typeof val !== "string") return null;
-  const s = val.trim();
+  const s = val.replace(/\u00A0/g, " ").replace(/\s+/g, " ").trim();
   let m = s.match(DMY);
-  if (m) return utcDate(Number(m[3]), Number(m[2]), Number(m[1]));
+  if (m) return fromParts(Number(m[3]), Number(m[2]), Number(m[1]), m.slice(4));
   m = s.match(YMD);
-  if (m) return utcDate(Number(m[1]), Number(m[2]), Number(m[3]));
+  if (m) return fromParts(Number(m[1]), Number(m[2]), Number(m[3]), m.slice(4));
   return null;
+}
+
+/**
+ * Tanpa zona: tanggal SEPERTI TERTULIS (jam diabaikan). Dengan zona: hitung instannya lalu ambil
+ * hari kalendernya di WIB — "1971-03-11T17:00:00Z" (tengah malam WIB 12 Maret yang diekspor
+ * sebagai UTC) → 12 Maret, bukan 11.
+ */
+function fromParts(y: number, mo: number, d: number, [h, mi, sec, ap, zone]: (string | undefined)[]): Date | null {
+  const base = utcDate(y, mo, d);
+  if (!base || !zone) return base;
+  let hour = Number(h ?? 0);
+  if (ap) hour = (hour % 12) + (ap.toLowerCase() === "p" ? 12 : 0);
+  let offsetMin = 0;
+  const z = /^([+-])(\d{2}):?(\d{2})$/.exec(zone);
+  if (z) offsetMin = (z[1] === "-" ? -1 : 1) * (Number(z[2]) * 60 + Number(z[3]));
+  const instant = Date.UTC(y, mo - 1, d, hour, Number(mi ?? 0), Number(sec ?? 0)) - offsetMin * 60_000;
+  const wib = new Date(instant + WIB_OFFSET_MIN * 60_000);
+  return utcDate(wib.getUTCFullYear(), wib.getUTCMonth() + 1, wib.getUTCDate());
 }

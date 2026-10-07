@@ -84,10 +84,33 @@ describe("parseExcelDate — tanggal sel upload (#400, akar #354)", () => {
     expect(ymd(parseExcelDate("12/03/1971 10:00 AM"))).toBe("1971-03-12");
   });
 
-  it("timestamp ISO ber-Z/offset diterima; tanggal dibaca seperti tertulis, zona tak menggeser hari", () => {
+  it("timestamp ber-zona dibaca hari WIB-nya (ekspor UTC dari tengah malam WIB tak mundur sehari)", () => {
     expect(ymd(parseExcelDate("1971-03-12T00:00:00Z"))).toBe("1971-03-12");
     expect(ymd(parseExcelDate("1971-03-12T00:00:00.000Z"))).toBe("1971-03-12");
     expect(ymd(parseExcelDate("1971-03-12T00:00:00+07:00"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("1971-03-11T17:00:00.000Z"))).toBe("1971-03-12"); // toISOString tengah malam WIB
+    expect(ymd(parseExcelDate("1971-03-12 00:00:00 +0700"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("12/03/1971 00:00 UTC"))).toBe("1971-03-12");
+  });
+
+  it("variasi spasi & penanda jam yang lazim di ekspor", () => {
+    expect(ymd(parseExcelDate("12/03/1971  00:00"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("12/03/1971\u00A000:00"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("12/03/1971 10:00 a.m."))).toBe("1971-03-12");
+  });
+
+  it("hasil tidak bergantung TZ proses (getter UTC saja)", () => {
+    const prev = process.env.TZ;
+    try {
+      for (const tz of ["America/Los_Angeles", "Asia/Jakarta", "Pacific/Kiritimati"]) {
+        process.env.TZ = tz;
+        expect(iso(parseExcelDate("12/03/1971"))).toBe("1971-03-12T00:00:00.000Z");
+        expect(iso(parseExcelDate(26004))).toBe("1971-03-12T00:00:00.000Z");
+        expect(iso(parseExcelDate("1971-03-11T17:00:00Z"))).toBe("1971-03-12T00:00:00.000Z");
+      }
+    } finally {
+      process.env.TZ = prev;
+    }
   });
 
   it("semua jalur → tengah malam UTC (sama dengan form manual & parseDateCell)", () => {

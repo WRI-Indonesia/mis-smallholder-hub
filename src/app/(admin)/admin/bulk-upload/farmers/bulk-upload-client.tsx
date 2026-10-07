@@ -256,10 +256,12 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
     const rawBirthDate = row[mapping["birthDate"]];
     if (rawBirthDate) {
       const parsedDate = parseExcelDate(rawBirthDate);
-      if (parsedDate && !isNaN(parsedDate.getTime())) {
+      if (parsedDate) {
         normalized.birthDate = parsedDate;
+      } else if (/^\d{4}$/.test(String(rawBirthDate).trim())) {
+        errors.push(`Tanggal Lahir hanya berisi tahun ("${rawBirthDate}") — isi tanggal lengkap dd/mm/yyyy, atau kosongkan`);
       } else {
-        errors.push(`Format Tanggal Lahir tidak valid: "${rawBirthDate}"`);
+        errors.push(`Format Tanggal Lahir tidak valid: "${rawBirthDate}" (pakai dd/mm/yyyy)`);
       }
     } else {
       normalized.birthDate = null;

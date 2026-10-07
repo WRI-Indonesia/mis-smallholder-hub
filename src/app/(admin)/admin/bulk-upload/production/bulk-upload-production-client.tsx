@@ -227,7 +227,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       errors.push("Tanggal Panen wajib diisi");
     } else {
       parsedHarvestDate = parseExcelDate(rawHarvestDate);
-      if (parsedHarvestDate && !isNaN(parsedHarvestDate.getTime())) {
+      if (parsedHarvestDate) {
         normalized.harvestDate = parsedHarvestDate;
       } else {
         errors.push(`Format tanggal tidak valid: "${rawHarvestDate}"`);
