@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Download, Info, TrendingUp } from "lucide-react";
+import { ChevronDown, Download, Info, Loader2, TrendingUp } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -19,8 +20,39 @@ import {
   type ContractRow,
   type ProgramTargetRecord,
 } from "@/lib/program-target";
+import {
+  TRAJECTORY_BOX,
+  benefitBarsSvg,
+  contractGridSvg,
+  contractTrajectory,
+  trajectoryLayout,
+  trajectorySummary,
+  type TrajectoryPoint,
+} from "@/lib/training-benefit-chart";
 
 type BenefitView = "tabel" | "grafis" | "kontrak";
+
+/** SVG ekspor → PNG 2× (tajam di Excel), ditampilkan pada ukuran aslinya. */
+async function svgToPng({ svg, width, height }: { svg: string; width: number; height: number }) {
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(new Error("Gagal merender grafik ke gambar"));
+      im.src = url;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = width * 2;
+    canvas.height = height * 2;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas tidak tersedia");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return { base64: canvas.toDataURL("image/png").split(",")[1], widthPx: width, heightPx: height };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
 const yearLabel = (y: TrainingBenefitYear) => (y.upTo ? `≤ ${y.year}` : String(y.year));
 const segmentLabel = (y: TrainingBenefitYear) => (y.upTo ? `s.d. ${y.year}` : `baru ${y.year}`);
@@ -86,114 +118,61 @@ function BenefitBar({
   );
 }
 
-interface TrajectoryPoint {
-  label: string;
-  target: number;
-  actual: number | null; // null = tahun belum berjalan
-}
-
-/** Titik kumulatif target & realisasi: Start lalu tiap tahun bertarget; realisasi berhenti di tahun berjalan. */
-function trajectory(row: ContractRow, baselineYear: number | null, years: number[], currentYear: number): TrajectoryPoint[] {
-  const pts: TrajectoryPoint[] = [];
-  let t = row.start?.target ?? 0;
-  let a = row.start?.actual ?? 0;
-  if (baselineYear != null) pts.push({ label: `s.d. ${baselineYear}`, target: t, actual: a });
-  years.forEach((y, i) => {
-    t += row.years[i].target ?? 0;
-    a += row.years[i].actual;
-    pts.push({ label: String(y), target: t, actual: y <= currentYear ? a : null });
-  });
-  return pts;
-}
-
-/** Selisih realisasi − target dalam 1% target dianggap sesuai (angka kontrak dibulatkan). */
-const ON_TARGET_TOLERANCE = 0.01;
-const onTarget = (gap: number, target: number) => target > 0 && Math.abs(gap) < target * ON_TARGET_TOLERANCE;
-
-const fmtK = (n: number) => (n >= 1000 ? `${(n / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}k` : String(n));
-
 /**
- * Grafik trayektori satu baris kontrak (#403, pilihan owner 2026-10-07): garis putus-putus =
- * target kumulatif kontrak, garis tegas = realisasi kumulatif s.d. tahun berjalan. Jarak
- * keduanya di tahun berjalan diberi label tertinggal / di atas target.
+ * Grafik trayektori satu paket (#403, pilihan owner 2026-10-07): garis putus-putus = target
+ * kumulatif kontrak, garis tegas = realisasi kumulatif s.d. tahun berjalan; selisih di tahun
+ * berjalan diberi label. Geometri dari `trajectoryLayout` — sama dengan gambar ekspor Excel.
  */
 function TrajectoryChart({ points, currentLabel, scaleMax }: { points: TrajectoryPoint[]; currentLabel: string; scaleMax: number }) {
-  const W = 380, H = 190, L = 44, R = 16, T = 16, B = 28;
-  // Skala Y sama untuk semua grafik kecil agar tinggi garis antarpaket bisa dibandingkan.
-  const max = Math.max(1, scaleMax) * 1.08;
-  const x = (i: number) => L + (points.length === 1 ? (W - L - R) / 2 : (i * (W - L - R)) / (points.length - 1));
-  const y = (v: number) => T + (H - T - B) * (1 - v / max);
-  const path = (vals: (number | null)[]) =>
-    vals.map((v, i) => (v == null ? null : `${x(i)},${y(v)}`)).filter(Boolean).join(" ");
-  const real = points.map((p) => p.actual);
-  const lastReal = real.reduce<number>((acc, v, i) => (v != null ? i : acc), -1);
-  const curIdx = points.findIndex((p) => p.label === currentLabel);
-  const gapIdx = curIdx >= 0 && points[curIdx].actual != null ? curIdx : lastReal;
-  const gap = gapIdx >= 0 ? (points[gapIdx].actual ?? 0) - points[gapIdx].target : 0;
-  const near = gapIdx >= 0 && onTarget(gap, points[gapIdx].target);
-  const ticks = [0, 0.5, 1].map((f) => Math.round((max / 1.08) * f));
+  const { W, H, L, R, T, B } = TRAJECTORY_BOX;
+  const lay = trajectoryLayout(points, currentLabel, scaleMax);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Trayektori target kontrak vs realisasi">
-      {ticks.map((v) => (
-        <g key={v}>
-          <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="stroke-border" strokeDasharray="2 3" />
-          <text x={L - 6} y={y(v) + 3} textAnchor="end" className="fill-muted-foreground text-[11px] tabular-nums">
-            {fmtK(v)}
+      {lay.ticks.map((t) => (
+        <g key={t.value}>
+          <line x1={L} x2={W - R} y1={t.y} y2={t.y} className="stroke-border" strokeDasharray="2 3" />
+          <text x={L - 6} y={t.y + 3} textAnchor="end" className="fill-muted-foreground text-[11px] tabular-nums">
+            {t.label}
           </text>
         </g>
       ))}
-      {curIdx >= 0 && <rect x={x(curIdx) - 14} y={T} width={28} height={H - T - B} className="fill-emerald-500/10" rx={4} />}
+      {lay.curIdx >= 0 && <rect x={lay.xs[lay.curIdx] - 14} y={T} width={28} height={H - T - B} className="fill-emerald-500/10" rx={4} />}
       {points.map((p, i) => (
-        <text key={p.label} x={x(i)} y={H - 10} textAnchor="middle" className={`text-[11.5px] ${i === curIdx ? "fill-foreground font-semibold" : "fill-muted-foreground"}`}>
+        <text key={p.label} x={lay.xs[i]} y={H - 10} textAnchor="middle" className={`text-[11.5px] ${i === lay.curIdx ? "fill-foreground font-semibold" : "fill-muted-foreground"}`}>
           {p.label}
         </text>
       ))}
-      <polyline points={path(points.map((p) => p.target))} fill="none" className="stroke-slate-400" strokeWidth={2} strokeDasharray="5 4" />
-      <polyline points={path(real)} fill="none" className="stroke-emerald-600" strokeWidth={2.75} />
+      <polyline points={lay.targetPath} fill="none" className="stroke-slate-400" strokeWidth={2} strokeDasharray="5 4" />
+      <polyline points={lay.actualPath} fill="none" className="stroke-emerald-600" strokeWidth={2.75} />
       {points.map((p, i) =>
-        p.actual == null ? null : (
-          <circle key={`a${i}`} cx={x(i)} cy={y(p.actual)} r={4} className="fill-emerald-600">
-            <title>{`Realisasi kumulatif ${p.label}: ${formatNumber(p.actual)}`}</title>
+        lay.yActual[i] == null ? null : (
+          <circle key={`a${i}`} cx={lay.xs[i]} cy={lay.yActual[i]!} r={4} className="fill-emerald-600">
+            <title>{`Realisasi kumulatif ${p.label}: ${formatNumber(p.actual ?? 0)}`}</title>
           </circle>
         ),
       )}
       {/* Titik target digambar SETELAH realisasi: bila berimpit, jadi cincin di sekeliling
           titik realisasi agar target tetap terlihat. */}
-      {points.map((p, i) => {
-        const ring = p.actual != null && Math.abs(y(p.actual) - y(p.target)) < 7;
-        return (
-          <circle
-            key={`t${i}`}
-            cx={x(i)}
-            cy={y(p.target)}
-            r={ring ? 6.5 : 3.5}
-            className={`${ring ? "fill-none" : "fill-background"} stroke-slate-400`}
-            strokeWidth={1.5}
-          >
-            <title>{`Target kumulatif ${p.label}: ${formatNumber(p.target)}`}</title>
-          </circle>
-        );
-      })}
-      {gapIdx >= 0 && near && (
-        <text
-          x={Math.min(x(gapIdx) + 10, W - R)}
-          y={y(points[gapIdx].target) + 18}
-          textAnchor={x(gapIdx) + 10 > W - R - 80 ? "end" : "start"}
-          className="fill-emerald-700 text-[12.5px] font-semibold"
+      {points.map((p, i) => (
+        <circle
+          key={`t${i}`}
+          cx={lay.xs[i]}
+          cy={lay.yTarget[i]}
+          r={lay.ring[i] ? 6.5 : 3.5}
+          className={`${lay.ring[i] ? "fill-none" : "fill-background"} stroke-slate-400`}
+          strokeWidth={1.5}
         >
-          ≈ sesuai target
-        </text>
-      )}
-      {gapIdx >= 0 && !near && gap !== 0 && (
+          <title>{`Target kumulatif ${p.label}: ${formatNumber(p.target)}`}</title>
+        </circle>
+      ))}
+      {lay.gapLabel && (
         <text
-          x={Math.min(x(gapIdx) + 12, W - R)}
-          // Di bawah titik yang lebih rendah (realisasi bila tertinggal, target bila melampaui):
-          // ruang itu kosong — tak menabrak cincin target maupun garis target ke tahun berikutnya.
-          y={Math.max(y(points[gapIdx].target), y(points[gapIdx].actual ?? 0)) + 17}
-          textAnchor={x(gapIdx) + 12 > W - R - 80 ? "end" : "start"}
-          className={`text-[12.5px] font-semibold ${gap < 0 ? "fill-amber-600" : "fill-emerald-700"}`}
+          x={lay.gapLabel.x}
+          y={lay.gapLabel.y}
+          textAnchor={lay.gapLabel.anchor}
+          className={`text-[12.5px] font-semibold ${lay.gapLabel.tone === "behind" ? "fill-amber-600" : "fill-emerald-700"}`}
         >
-          {gap < 0 ? `tertinggal ${formatNumber(-gap)}` : `+${formatNumber(gap)} di atas target`}
+          {lay.gapLabel.text}
         </text>
       )}
     </svg>
@@ -219,7 +198,7 @@ function ContractView({ targets, groups, filterActive }: { targets: ProgramTarge
       </div>
     );
   }
-  const series = rows.map((r) => ({ r, pts: trajectory(r, grid.baselineYear, grid.years, currentYear) }));
+  const series = rows.map((r) => ({ r, pts: contractTrajectory(r, grid.baselineYear, grid.years, currentYear) }));
   const scaleMax = Math.max(...series.flatMap(({ pts }) => pts.map((p) => Math.max(p.target, p.actual ?? 0))));
   return (
     <div className="space-y-4">
@@ -230,9 +209,7 @@ function ContractView({ targets, groups, filterActive }: { targets: ProgramTarge
       )}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {series.map(({ r, pts }) => {
-          const total = pts.at(-1)?.target ?? 0;
-          const realized = [...pts].reverse().find((p) => p.actual != null)?.actual ?? 0;
-          const pct = total > 0 ? Math.round((realized / total) * 100) : null;
+          const { total, realized, pct } = trajectorySummary(pts);
           const isAny = r.key === "TRAINING_ANY";
           return (
             <div key={r.key} className={`rounded-lg border p-3 ${isAny ? "border-emerald-300 bg-emerald-50/40 dark:border-emerald-800 dark:bg-emerald-950/20" : ""}`}>
@@ -371,36 +348,45 @@ export function TrainingBenefitPanel({
     </button>
   );
 
+  // Data vs Kontrak untuk ekspor — dihitung sekali; tak bergantung tab yang sedang aktif.
+  const contract = useMemo(() => {
+    if (!programTargets) return null;
+    const grid = buildProgramTargetGrid(programTargets);
+    if (grid.years.length === 0 && grid.baselineYear == null) return null;
+    return { baselineYear: grid.baselineYear, years: grid.years, rows: programContractRows(grid, groups) };
+  }, [programTargets, groups]);
+  const [exporting, setExporting] = useState(false);
+
+  /** Excel 3 sheet (Tabel · Grafis · vs Kontrak), grafik sebagai gambar PNG dari SVG ekspor. */
   const exportExcel = async () => {
-    const ExcelJS = (await import("exceljs")).default;
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet("Training Benefit");
-    ws.addRow(["Package", ...years.flatMap((y) => [yearLabel(y), ""])]);
-    ws.addRow(["", ...years.flatMap(() => ["Actual", "Kumulative"])]);
-    ws.mergeCells(1, 1, 2, 1);
-    years.forEach((_, i) => ws.mergeCells(1, 2 + i * 2, 1, 3 + i * 2));
-    for (const r of [...rows, any]) ws.addRow([r.label, ...r.cells.flatMap((c) => [c.actual, c.cumulative])]);
-    ws.getRow(ws.rowCount).font = { bold: true };
-    const last = 1 + years.length * 2;
-    for (let rowNo = 1; rowNo <= 2; rowNo++) {
-      const row = ws.getRow(rowNo);
-      row.font = { bold: true };
-      row.alignment = { horizontal: "center", vertical: "middle" };
+    setExporting(true);
+    try {
+      const { buildTrainingBenefitWorkbook } = await import("@/lib/training-benefit-xlsx");
+      const bars = benefitBarsSvg(years, rows, any, activeFarmers);
+      const grid = contract
+        ? contractGridSvg(
+            contract.rows.map((r) => ({
+              label: r.label,
+              points: contractTrajectory(r, contract.baselineYear, contract.years, currentYear),
+              emphasis: r.key === "TRAINING_ANY",
+            })),
+            currentYear,
+          )
+        : null;
+      const [grafis, kontrak] = await Promise.all([svgToPng(bars), grid ? svgToPng(grid) : Promise.resolve(null)]);
+      const wb = buildTrainingBenefitWorkbook({ years, rows, any, activeFarmers, currentYear, contract, filterActive, images: { grafis, kontrak } });
+      const buffer = await wb.xlsx.writeBuffer();
+      const url = URL.createObjectURL(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `training-benefit-per-year_${scopeLabel ?? "semua"}_${currentYear}.xlsx`.replace(/\s+/g, "-");
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Gagal membuat berkas Excel");
+    } finally {
+      setExporting(false);
     }
-    ws.eachRow((row) => {
-      for (let c = 1; c <= last; c++) {
-        row.getCell(c).border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
-      }
-    });
-    ws.getColumn(1).width = 52;
-    for (let c = 2; c <= last; c++) ws.getColumn(c).width = 13;
-    const buffer = await wb.xlsx.writeBuffer();
-    const url = URL.createObjectURL(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `training-benefit-per-year_${scopeLabel ?? "semua"}_${currentYear}.xlsx`.replace(/\s+/g, "-");
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -473,9 +459,16 @@ export function TrainingBenefitPanel({
                 </Popover>
               )}
               {canExport && (
-                <Button variant="outline" size="sm" className="h-8 gap-2" onClick={exportExcel} title="Unduh format tabel donor (angka saja, apa pun tampilan yang aktif)">
-                  <Download className="h-4 w-4" />
-                  Excel (tabel)
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-2"
+                  onClick={exportExcel}
+                  disabled={exporting}
+                  title="Unduh 3 sheet: Tabel (format donor), Grafis, vs Kontrak — angka + gambar grafik"
+                >
+                  {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  Excel
                 </Button>
               )}
             </div>
