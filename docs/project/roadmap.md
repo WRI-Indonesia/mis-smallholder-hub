@@ -181,8 +181,8 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>DA-09</strong> · 🟠 Partial — Tumpang tindih lahan: laporan lengkap, guard upload, layer peta</summary>
 
-- **Evidence:** #317 Fase 1: `LandParcel.geom` GENERATED + GiST (v0.35.0). Fase 2 (sebagian): menu Data Analyst › Tumpang Tindih Lahan (`data-analyst-parcel-overlap`), self-join 256 ms / 14.174 lahan, dirilis v1.2.0.
-- **Next step:** v1.4.0: tab Luar Boundary & Selisih Luas (sisa Fase 2) — pakai ulang check DA-02 `persil-di-luar-boundary` & `luas-beda-geometri` (`src/lib/data-completeness-registry.ts`) agar satu definisi, Fase 3 guard saat upload shapefile bila waktu cukup. Fase 4 layer tumpang tindih di Peta Lahan → v1.6.0.
+- **Evidence:** #317 Fase 1: `LandParcel.geom` GENERATED + GiST (v0.35.0). Fase 2 (sebagian): menu Data Analyst › Tumpang Tindih Lahan (`data-analyst-parcel-overlap`), self-join 256 ms / 14.174 lahan, dirilis v1.2.0. **Fase 2 tuntas di `mvp` (2026-10-07):** tab Luar Boundary (130 sepenuhnya + 24 sebagian, ringkasan per Lembaga, peta lahan + boundary, 120 ms) & Selisih Luas (98) — satu definisi dengan check DA-02 (`src/lib/parcel-boundary-area.ts`).
+- **Next step:** v1.4.0: Fase 3 guard saat upload shapefile bila waktu cukup. Fase 4 layer tumpang tindih di Peta Lahan → v1.6.0.
 - **Selesai bila:** keempat fase #317 selesai dan #317 ditutup.
 
 </details>

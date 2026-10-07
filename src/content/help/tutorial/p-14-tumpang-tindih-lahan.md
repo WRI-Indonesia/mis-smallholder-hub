@@ -1,17 +1,19 @@
 ---
-title: Menemukan lahan yang tumpang tindih
+title: Menemukan lahan yang tumpang tindih, di luar boundary, atau beda luas
 icon: Layers
 menuKey: data-analyst-parcel-overlap
 permission: VIEW
-duration: 6
+duration: 8
 href: /admin/data-analyst/parcel-overlap
 hrefLabel: Buka Tumpang Tindih Lahan
-goal: Daftar pasangan lahan yang poligonnya saling menumpuk — dipilah Duplikat, Tercakup, atau Sebagian — lengkap dengan peta dan unduhan untuk ditindaklanjuti.
+goal: Tiga daftar pemeriksaan poligon lahan — pasangan yang saling menumpuk (Duplikat, Tercakup, Sebagian), lahan di luar boundary ICS Lembaganya, dan lahan yang luas tercatatnya beda dari poligonnya — lengkap dengan peta dan unduhan untuk ditindaklanjuti.
 ---
 
 ## Sebelum mulai
 
-Tumpang tindih hampir mustahil ditemukan lewat mata di peta. Halaman ini membandingkan seluruh poligon lahan aktif satu per satu dan menampilkan pasangan yang **bagian dalamnya** saling beririsan. Lahan bersebelahan yang hanya berbagi batas tidak dihitung.
+Halaman ini punya tiga tab: **Tumpang Tindih**, **Luar Boundary**, dan **Selisih Luas**. Angka di samping nama tab adalah jumlah temuannya. Langkah 1–6 di bawah untuk tab Tumpang Tindih; langkah 7 dan 8 untuk dua tab lainnya.
+
+Tumpang tindih hampir mustahil ditemukan lewat mata di peta. Tab Tumpang Tindih membandingkan seluruh poligon lahan aktif satu per satu dan menampilkan pasangan yang **bagian dalamnya** saling beririsan. Lahan bersebelahan yang hanya berbagi batas tidak dihitung.
 
 + Angkanya dihitung langsung dari data terkini setiap kali halaman dibuka, bukan dari snapshot. Luas lahan dan luas irisan dihitung dari **poligon**, bukan dari kolom luas yang tercatat saat upload, jadi angkanya bisa berbeda sedikit dari Detail Lahan.
 
@@ -40,6 +42,16 @@ Tumpang tindih hampir mustahil ditemukan lewat mata di peta. Halaman ini memband
 6. Unduh hasilnya lewat **Excel** (semua kolom kedua lahan) atau **Spasial** (Shapefile ZIP / GeoJSON berisi poligon irisan, siap dibuka di QGIS).
 + Unduhan mengikuti filter, pencarian, dan urutan yang sedang aktif. Tombolnya hanya tampil bila akun Anda punya izin **Export** pada menu ini.
 
+7. Buka tab **Luar Boundary** untuk melihat lahan yang poligonnya berada di luar boundary ICS Lembaga pemiliknya.
++ Kotak kuning di atas merangkum jumlah temuan per Lembaga. Bila sebagian besar temuan menumpuk di sedikit Lembaga, kemungkinan besar **boundary Lembaga itu yang perlu diperbarui**, bukan lahannya. Cek boundary-nya dulu sebelum memperbaiki lahan. Klik nama Lembaga di kotak itu untuk menyaring tabel; klik lagi untuk melepasnya.
++ Chip **Sepenuhnya di luar** (bawaan) berisi lahan yang sama sekali tidak menyentuh boundary — angkanya sama dengan check "Persil di luar boundary ICS" di **Ketersediaan Data**. Chip **Sebagian di luar** berisi lahan yang menyentuh boundary tetapi sebagiannya keluar (minimal 100 m² atau 1% luas lahan).
++ Di peta, lahan biru dan boundary ICS oranye putus-putus. Tombol **Lahan + boundary** memperkecil peta sampai keduanya terlihat; lahan yang jauh dari boundary tampil sebagai titik biru. Kolom **Jarak ke boundary** menunjukkan seberapa jauh lahan yang sepenuhnya di luar.
++ Boundary ICS sudah termasuk buffer 1,5 km. Lembaga yang belum punya boundary tidak dicek.
+8. Buka tab **Selisih Luas** untuk melihat lahan yang luas tercatatnya berbeda lebih dari 20% dari luas poligonnya.
++ Luas tercatat berasal dari kolom luas di shapefile saat upload; luas poligon dihitung dari bentuk poligonnya. Selisih dihitung terhadap yang lebih besar — sama dengan check "Luas kolom ≠ luas poligon" di **Ketersediaan Data**.
++ Chip **Kolom > poligon** biasanya berarti poligonnya terpotong atau luas tercatat mencakup lahan lain. **Kolom < poligon** biasanya berarti poligonnya melebar, atau angka luas salah ketik/salah satuan.
++ Unduhan Excel dan Spasial di kedua tab ini berisi poligon lahan utuh, bukan irisan.
+
 > [!penting] Pasangan tampil bila **minimal satu** lahannya ada di wilayah akses Anda. Lahan pasangannya ditampilkan lengkap (nama petani, Lembaga) walaupun di luar wilayah Anda, karena tanpa itu klaim ganda tidak bisa diverifikasi. Detail Lahan untuk lahan di luar wilayah Anda tetap tidak bisa dibuka.
 
 ## Kalau bermasalah
@@ -49,5 +61,7 @@ Tumpang tindih hampir mustahil ditemukan lewat mata di peta. Halaman ini memband
 **Tertulis "Di luar akses Anda — Detail Lahan tidak bisa dibuka"** — lahan itu milik wilayah atau Lembaga yang tidak ditugaskan ke akun Anda. Hubungi pengguna yang memegang wilayah tersebut, atau admin.
 
 **Tombol panah ↑/↓ tidak berpindah pasangan** — panah hanya bekerja saat fokus ada di tabel atau panel preview (bukan di kotak cari, pilihan filter, atau peta). Klik salah satu baris tabel dulu.
+
+**Tab Luar Boundary kosong untuk Lembaga saya** — Lembaga itu belum punya boundary ICS, sehingga lahannya tidak bisa dicek. Tab Luar Boundary dan Selisih Luas hanya menampilkan lahan di wilayah akses Anda (berbeda dengan tab Tumpang Tindih).
 
 **Setelah memperbaiki lahan, pasangannya masih ada** — muat ulang halaman. Daftar dihitung saat halaman dibuka, jadi perubahan baru terlihat setelah dimuat ulang.
