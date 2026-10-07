@@ -94,9 +94,9 @@ Satu baris per kuartal. Rilis K4 2026 mengikuti [sprint.md](./sprint.md). Rilis 
 
 | Kuartal | Tema | Fase | Rilis / tenggat |
 | ------- | ---- | ---- | --------------- |
-| **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 · GIS-01 (langkah awal #290) | **v1.3.0** dirilis 09-30 (jalur rilis, keamanan, performa) · **v1.4.0** 10-01 → 10-25 (kualitas data & limpahan) |
-| | Supply Chain | SC-01 · SC-02 · SC-03 | **v1.5.0** 10-26 → 11-08 (prasyarat: lisensi UML #379) |
-| | Penyangga akhir tahun | tuntaskan PLATFORM-08 & DA-09 + concept note GIS-02/MD-12 + limpahan | **v1.6.0** 11-09 → 12-20 |
+| **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 · GIS-01 (langkah awal #290) | **v1.3.0** dirilis 09-30 (jalur rilis, keamanan, performa) · **v1.4.0** 10-01 → 10-08 (kualitas data, Training Benefit & target kontrak) · **v1.5.0** 10-09 → 10-25 (limpahan v1.4.0: #317 Fase 3, #290, kerapian) |
+| | Supply Chain | SC-01 · SC-02 · SC-03 | **v1.6.0** 10-26 → 11-08 (prasyarat: lisensi UML #379; prototipe CSV ikut v1.4.0) |
+| | Penyangga akhir tahun | tuntaskan PLATFORM-08 & DA-09 + concept note GIS-02/MD-12 + limpahan | **v1.7.0** 11-09 → 12-20 |
 | **K1 2027** (Jan–Mar) | Siap musim kemarau 2027 | GIS-01 · DA-05 | Fire Alert tuntas sebelum musim kemarau 2027 (#286) |
 | **K2 2027** (Apr–Jun) | NKT, deforestasi & sertifikasi | MD-08 · GIS-02 · MD-12 · DA-08 · MAP-04 | **Review tengah tahun Juni 2027**; concept note modul S2 selesai |
 | **S2 2027** (Jul–Des) | Visi produk lingkar luar + skala data 2028 | PLATFORM-10 · FORM-01 · MD-11 · MD-07 · MD-10 · MD-13 · MD-14 · MD-15 · MD-16 · GIS-03 · GIS-04 | Dipilih di review Juni; **reset roadmap 2028 Desember 2027** |
@@ -182,7 +182,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>DA-09</strong> · 🟠 Partial — Tumpang tindih lahan: laporan lengkap, guard upload, layer peta</summary>
 
 - **Evidence:** #317 Fase 1: `LandParcel.geom` GENERATED + GiST (v0.35.0). Fase 2 (sebagian): menu Data Analyst › Tumpang Tindih Lahan (`data-analyst-parcel-overlap`), self-join 256 ms / 14.174 lahan, dirilis v1.2.0. **Fase 2 tuntas di `mvp` (2026-10-07):** tab Luar Boundary (130 sepenuhnya + 24 sebagian, ringkasan per Lembaga, peta lahan + boundary, 120 ms) & Selisih Luas (98) — satu definisi dengan check DA-02 (`src/lib/parcel-boundary-area.ts`).
-- **Next step:** v1.4.0: Fase 3 guard saat upload shapefile bila waktu cukup. Fase 4 layer tumpang tindih di Peta Lahan → v1.6.0.
+- **Next step:** Fase 2 ikut rilis v1.4.0. Fase 3 guard saat upload shapefile → v1.5.0 (keputusan owner 2026-10-07). Fase 4 layer tumpang tindih di Peta Lahan → v1.7.0.
 - **Selesai bila:** keempat fase #317 selesai dan #317 ditutup.
 
 </details>
@@ -191,7 +191,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>SC-01</strong> · 🔲 Not Started — Supply Chain: master Mill/Offtaker + import survei</summary>
 
 - **Evidence:** Belum ada model. Epic #379 dibuat 2026-09-29; prasyarat lisensi Universal Mill List & ketersediaan berkas survei 2025 per Lembaga masih ⚖️.
-- **Next step:** v1.5.0 (#380): migrasi `Mill`/`BuyerProgram`/`Offtaker`/`SupplyChainSurvey`/`SupplyChainRecord`, Master Data Mill/Offtaker/Rantai Pasok, Bulk Upload Rantai Pasok (cocok Parcel ID, review offtaker, cek silang produksi & luas), seed Mill dari UML sesuai keputusan lisensi.
+- **Next step:** v1.6.0 (#380): migrasi `Mill`/`BuyerProgram`/`Offtaker`/`SupplyChainSurvey`/`SupplyChainRecord`, Master Data Mill/Offtaker/Rantai Pasok, Bulk Upload Rantai Pasok (cocok Parcel ID, review offtaker, cek silang produksi & luas), seed Mill dari UML sesuai keputusan lisensi.
 - **Selesai bila:** survei minimal satu Lembaga terimport di prod dan terbaca di Master Data.
 
 </details>
@@ -200,7 +200,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>SC-02</strong> · 🔲 Not Started — Supply Chain: peta rantai pasok + report</summary>
 
 - **Evidence:** Belum ada versi final. **Prototipe** (2026-10-06, untuk diskusi): Dashboard Rantai Pasok (Sankey) + Peta Rantai Pasok membaca tabel CSV hasil konversi survei 2025 (lokal / S3 privat), **bukan** model DB — status fase tetap Not Started sampai #380 menyediakan model & import.
-- **Next step:** v1.5.0 (#381): garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel.
+- **Next step:** v1.6.0 (#381): garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel.
 - **Selesai bila:** #381 ditutup; Bantuan tutorial peta & report tersedia.
 
 </details>
@@ -209,7 +209,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>SC-03</strong> · 🔲 Not Started — Supply Chain: analisa volume, jarak & risiko Mill</summary>
 
 - **Evidence:** Belum ada.
-- **Next step:** v1.5.0 (#382): jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker (ambang ⚖️), risiko NKT & tumpang tindih per Mill (memakai MD-08 & DA-09).
+- **Next step:** v1.6.0 (#382): jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker (ambang ⚖️), risiko NKT & tumpang tindih per Mill (memakai MD-08 & DA-09).
 - **Selesai bila:** #382 ditutup.
 
 </details>
@@ -265,7 +265,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>GIS-02</strong> · 🔲 Planned — GIS Deforestation: deteksi deforestasi lahan & boundary</summary>
 
 - **Evidence:** Belum ada. Fondasi spasial siap: `LandParcel.geom` + GiST, boundary ICS (`FarmerGroupBoundary`), batas administrasi BIG, pola proxy peta ber-guard (`/api/map-*`).
-- **Next step:** concept note di v1.6.0; implementasi K2 2027 sesudah GIS-01: issue induk (sumber data tutupan hutan & lisensinya, tahun acuan *cut-off*, ambang luas), lalu overlay perubahan tutupan hutan vs poligon lahan/boundary, daftar lahan terindikasi, layer Peta Lahan. Hasilnya dipakai SC-03 (risiko per Mill).
+- **Next step:** concept note di v1.7.0; implementasi K2 2027 sesudah GIS-01: issue induk (sumber data tutupan hutan & lisensinya, tahun acuan *cut-off*, ambang luas), lalu overlay perubahan tutupan hutan vs poligon lahan/boundary, daftar lahan terindikasi, layer Peta Lahan. Hasilnya dipakai SC-03 (risiko per Mill).
 - **Selesai bila:** setiap lahan punya status indikasi deforestasi yang bisa difilter di Laporan Lahan dan tampil di peta.
 
 </details>
@@ -274,7 +274,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>MD-12</strong> · 🔲 Planned — Certification: modul sertifikasi RSPO/ISPO</summary>
 
 - **Evidence:** Sebagian data sudah ada: status & tahun RSPO/ISPO/SAP-MAP per Lembaga (#160/#169) + kartu sertifikasi Main Dashboard; legalitas lahan (surat, STDB, UL Parcel Code #296). Belum ada modul sertifikasi (siklus audit, temuan, ICS internal inspection).
-- **Next step:** concept note di v1.6.0; implementasi K2 2027: issue induk (skema yang dilayani, unit sertifikasi Lembaga vs petani, dokumen audit di S3), sebelumnya tuntaskan nilai `NONE` (#355, DA-08).
+- **Next step:** concept note di v1.7.0; implementasi K2 2027: issue induk (skema yang dilayani, unit sertifikasi Lembaga vs petani, dokumen audit di S3), sebelumnya tuntaskan nilai `NONE` (#355, DA-08).
 - **Selesai bila:** status, riwayat audit, dan temuan sertifikasi per Lembaga tercatat di aplikasi dan terbaca di dashboard.
 
 </details>
