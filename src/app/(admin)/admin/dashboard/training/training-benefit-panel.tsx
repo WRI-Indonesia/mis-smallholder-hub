@@ -33,6 +33,8 @@ const SEGMENT_CLASS = [
 ];
 /** Angka ditulis di dalam segmen bila segmen ≥ porsi ini dari lebar trek (sisanya di tooltip). */
 const MIN_LABEL_SHARE = 0.09;
+/** Sisa "belum dilatih" yang sempit tetap diberi angka saja (tanpa kata "belum") sampai porsi ini. */
+const MIN_UNTRAINED_SHARE = 0.035;
 
 /** Satu bar bertumpuk tampilan Grafis: panjang = kumulatif t, segmen = kapan petani pertama dilatih. */
 function BenefitBar({
@@ -45,12 +47,13 @@ function BenefitBar({
   r: TrainingBenefitRow;
   years: TrainingBenefitYear[];
   max: number;
-  /** Total petani aktif (penyebut cakupan) — garis acuan putus-putus di tiap trek. */
+  /** Total petani aktif (penyebut cakupan) = panjang trek penuh; sisa abu = belum dilatih. */
   activeFarmers: number;
   strong?: boolean;
 }) {
   const lastIdx = years.length - 1;
   const total = r.cells[lastIdx].cumulative;
+  const untrained = Math.max(0, activeFarmers - total);
   return (
     <div className="grid grid-cols-1 gap-1 sm:grid-cols-[minmax(0,20rem)_1fr] sm:items-center sm:gap-4">
       <div className={`truncate text-sm ${strong ? "font-semibold" : "font-medium"}`} title={r.label}>
@@ -73,11 +76,15 @@ function BenefitBar({
               ) : null,
             )}
           </div>
-          {activeFarmers > 0 && (
-            <div
-              className="pointer-events-none absolute inset-y-0 border-l-2 border-dashed border-slate-500 dark:border-slate-300"
-              style={{ left: `${Math.min(100, (activeFarmers / max) * 100)}%` }}
-            />
+          {/* Sisa trek = belum dilatih (trek penuh = petani aktif). Garis acuan putus-putus +
+              ruang 5% dihapus — owner 2026-10-07: ruang kosong di kanan garis tak bermakna. */}
+          {untrained / max >= MIN_UNTRAINED_SHARE && (
+            <span
+              className="absolute inset-y-0 right-2 flex items-center text-[11px] tabular-nums text-slate-500 dark:text-slate-400"
+              title={`${formatNumber(untrained)} petani aktif belum dilatih`}
+            >
+              {untrained / max >= MIN_LABEL_SHARE ? `belum ${formatNumber(untrained)}` : formatNumber(untrained)}
+            </span>
           )}
         </div>
         <span className={`w-14 shrink-0 text-right tabular-nums ${strong ? "font-bold" : "font-semibold"}`}>{formatNumber(total)}</span>
@@ -386,8 +393,8 @@ function BenefitChart({
   activeFarmers: number;
 }) {
   const lastIdx = years.length - 1;
-  // Skala memuat total petani aktif + ruang 5% agar garis acuan tak berimpit dengan ujung trek.
-  const max = Math.max(1, activeFarmers, ...[...rows, any].map((r) => r.cells[lastIdx].cumulative)) * 1.05;
+  // Trek penuh = total petani aktif (kumulatif tak pernah melebihinya kecuali data petani nonaktif).
+  const max = Math.max(1, activeFarmers, ...[...rows, any].map((r) => r.cells[lastIdx].cumulative));
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
@@ -399,8 +406,8 @@ function BenefitChart({
         ))}
         {activeFarmers > 0 && (
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 border-l-2 border-dashed border-slate-500 dark:border-slate-300" />
-            total petani aktif <b className="tabular-nums text-foreground">{formatNumber(activeFarmers)}</b>
+            <span className="h-2.5 w-2.5 rounded-sm bg-slate-200 dark:bg-slate-700" />
+            belum dilatih · trek penuh = <b className="tabular-nums text-foreground">{formatNumber(activeFarmers)}</b> petani aktif
           </span>
         )}
         <span className="ml-auto">Angka di ujung = kumulatif s.d. {years[lastIdx].year}</span>
@@ -446,7 +453,7 @@ export function TrainingBenefitPanel({
   const activeFarmers = useMemo(() => groups.reduce((sum, g) => sum + g.totalFarmers, 0), [groups]);
   const subtitle: Record<BenefitView, string> = {
     tabel: "Petani unik per paket. Actual = penerima manfaat baru (pertama kali dilatih paket itu) pada tahun tersebut; Kumulative = total s.d. akhir tahun.",
-    grafis: `Panjang bar = petani unik yang sudah dilatih s.d. ${currentYear}; warna segmen = tahun pertama dilatih. Garis putus-putus = total petani aktif.`,
+    grafis: `Panjang bar = petani unik yang sudah dilatih s.d. ${currentYear}; warna segmen = tahun pertama dilatih. Panjang trek penuh = total petani aktif; sisa abu = belum dilatih.`,
     kontrak: "Target kontrak kumulatif (garis putus-putus) dibanding realisasi penerima manfaat baru (garis tegas). Target diisi di Master Data › Target Program.",
     progres: `Realisasi menuju total kontrak; garis penanda di bar = target s.d. ${currentYear}, chip = capaian tiap periode.`,
   };
