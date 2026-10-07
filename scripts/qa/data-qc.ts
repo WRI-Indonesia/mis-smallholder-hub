@@ -20,7 +20,7 @@ type Row = Record<string, unknown>;
 type Expect = string | number | null | ((v: string, rows: Row[]) => boolean);
 interface Check {
   id: string;
-  section: "A" | "B" | "C" | "D" | "E" | "F" | "G";
+  section: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H";
   purpose: string;
   sql: string;
   /** Kolom yang ditampilkan sebagai "aktual" (bawaan: seluruh kolom baris pertama digabung " · "). */
@@ -33,7 +33,7 @@ interface Check {
 
 const args = process.argv.slice(2);
 const opt = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
-const sections = (opt("--section") ?? "A,B,C,D,E,F,G").split(",").map((s) => s.trim().toUpperCase());
+const sections = (opt("--section") ?? "A,B,C,D,E,F,G,H").split(",").map((s) => s.trim().toUpperCase());
 const parcelId = opt("--parcel") ?? null;
 
 function dbLabel(url: string | undefined): string {
@@ -58,6 +58,8 @@ const MENU_352 = [
   { key: "data-analyst-data-availability", title: "Data — All Lembaga", order: 2 },
   { key: "data-analyst-data-completeness", title: "Data — Per Lembaga", order: 3 },
 ];
+/** Subquery jumlah izin aktif satu menu (kunci literal dari daftar cek, bukan masukan pengguna). */
+const permCount = (menuKey: string) => `(select count(*) from rbac_role_permission where menu_key='${menuKey}' and is_active)::int`;
 const joinRow = (rows: Row[]) => (rows[0] ? Object.values(rows[0]).map((v) => String(v)).join(" · ") : "(tidak ada baris)");
 
 const CHECKS: Check[] = [
@@ -235,6 +237,40 @@ const CHECKS: Check[] = [
     id: "G4", section: "G", purpose: "user nonaktif — sejak #252 scope-nya BY_DISTRICT kosong walau sesi masih hidup (informatif)",
     sql: `select count(*) filter (where not is_active)::int as nonaktif, count(*)::int as total from tbl_user`,
     pick: (r) => `${r[0]?.nonaktif} nonaktif / ${r[0]?.total}`, expect: null, expectLabel: "informatif",
+  },
+  // ── H · v1.4.0: Target Program (#403) + menu Platform Developer + prototipe Supply Chain ──
+  {
+    id: "H1", section: "H", purpose: "migrasi 20261007125744_program_target applied",
+    sql: `select count(*)::int as n from _prisma_migrations where migration_name = '20261007125744_program_target' and finished_at is not null`,
+    expect: "1", expectLabel: "1 (sesudah) · 0 (sebelum)",
+  },
+  {
+    id: "H2", section: "H", purpose: "enum ProgramTargetIndicator = 5 nilai per paket (versi tulis-ulang, bukan 2 nilai lama)",
+    sql: `select array_to_string(enum_range(null::"ProgramTargetIndicator"), ',') as v`,
+    expect: "TRAINING_P1_BMP,TRAINING_P2_GROUP_DYNAMIC,TRAINING_P2_HSE,TRAINING_P3_GEDSI_LIVELIHOOD,TRAINING_ANY", expectLabel: "P1_BMP · P2_GROUP_DYNAMIC · P2_HSE · P3_GEDSI_LIVELIHOOD · ANY",
+  },
+  {
+    id: "H3", section: "H", purpose: "target aktif per indikator (informatif — prod kosong sampai owner mengisi lewat UI)",
+    sql: `select coalesce(string_agg(indicator::text || ':' || n, ' '), '(kosong)') as v from (select indicator, count(*)::int as n from tbl_program_target where is_active group by indicator order by indicator) x`,
+    expect: null, expectLabel: "informatif",
+  },
+  {
+    id: "H4", section: "H", purpose: "induk platform-developer + 3 anak pindah induk (✗ = seed-menu-only.ts belum --apply)",
+    sql: `select (select count(*) from tbl_menu_item where key='platform-developer' and is_active)::int as induk, (select count(*) from tbl_menu_item where key in ('dashboard-metrics','data-analyst-data-map','data-analyst-sprint') and parent_key='platform-developer' and is_active)::int as anak, ${permCount("platform-developer")} as perms`,
+    pick: (r) => `${r[0]?.induk} induk · ${r[0]?.anak}/3 anak · ${r[0]?.perms} izin induk`,
+    expect: (_v, rows) => Number(rows[0]?.induk) === 1 && Number(rows[0]?.anak) === 3 && Number(rows[0]?.perms) === 1, expectLabel: "1 induk · 3/3 anak · 1 izin (SUPERADMIN VIEW)",
+  },
+  {
+    id: "H5", section: "H", purpose: "menu master-data-program-target + izin (✗ = seed belum --apply)",
+    sql: `select (select count(*) from tbl_menu_item where key='master-data-program-target' and is_active)::int as menu, ${permCount("master-data-program-target")} as perms`,
+    pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin`,
+    expect: (_v, rows) => Number(rows[0]?.menu) === 1 && Number(rows[0]?.perms) === 8, expectLabel: "1 menu · 8 izin (ADMIN/SUPERADMIN: VIEW+CREATE+EDIT+DELETE)",
+  },
+  {
+    id: "H6", section: "H", purpose: "menu prototipe Supply Chain: dashboard-supply-chain + map-supply-chain + izin (keputusan owner: semua peran)",
+    sql: `select (select count(*) from tbl_menu_item where key in ('dashboard-supply-chain','map-supply-chain') and is_active)::int as menu, ${permCount("dashboard-supply-chain")} as dash, ${permCount("map-supply-chain")} as map`,
+    pick: (r) => `${r[0]?.menu} menu · ${r[0]?.dash} + ${r[0]?.map} izin`,
+    expect: (_v, rows) => Number(rows[0]?.menu) === 2 && Number(rows[0]?.dash) === 16 && Number(rows[0]?.map) === 16, expectLabel: "2 menu · 16 + 16 izin (ADMIN 5 · DONOR 2 · MANAGEMENT 3 · OPERATOR 3 · SUPERADMIN 3)",
   },
 ];
 
