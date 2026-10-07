@@ -172,8 +172,8 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>DQ-01</strong> · 🟠 Partial — Perbaikan massal data prod</summary>
 
-- **Evidence:** Temuan DA-02: tanggal lahir tertukar hari/bulan ±5.400 petani (#354); import surat/STDB/luas Detail Lahan Siak (#366). **2026-10-07:** #366 terterapkan di prod untuk 9 Lembaga Siak — 2.675 dokumen, 1.536 STDB, 2.229 tautan (audit `import:detail-lahan-siak-366`, dump `scripts/dump-prod/2026-10-07/`, gladi + dry-run ulang idempoten).
-- **Next step:** v1.4.0: skrip idempoten #354 (dry-run per Lembaga di local → staging-local → dump prod → dry-run prod → approval → `--write`); #366 sisa: APKASDU 1.360 baris (perlu berkas ber-ID baru pasca upload ulang 10-02) + surat `||` 579 baris/137 petani dari tim lapangan. #334 menunggu jawaban tim lapangan; cek silang 82 kode ganda #395 (pecahan #373, ditutup 2026-09-30).
+- **Evidence:** Temuan DA-02: tanggal lahir tertukar hari/bulan ±5.400 petani (#354); import surat/STDB/luas Detail Lahan Siak (#366). **2026-10-07:** #366 terterapkan di prod untuk 9 Lembaga Siak — 2.675 dokumen, 1.536 STDB, 2.229 tautan (audit `import:detail-lahan-siak-366`, dump `scripts/dump-prod/2026-10-07/`, gladi + dry-run ulang idempoten). #354 di prod 2026-10-07: 2.213 tanggal lahir hari↔bulan tertukar diperbaiki (audit `fix:birthdate-swap-354`, backup `tmp-backup/`), tak cocok NIK 2.711 → 498.
+- **Next step:** #354 sisa = daftar kerja manual DA-02 (498 tanggal lahir, 423 JK ≠ NIK, post < pre, persil di luar ICS, luas ≠ poligon) ke fasilitator; #366 sisa: APKASDU 1.360 baris (perlu berkas ber-ID baru pasca upload ulang 10-02) + surat `||` 579 baris/137 petani dari tim lapangan. #334 menunggu jawaban tim lapangan; cek silang 82 kode ganda #395 (pecahan #373, ditutup 2026-09-30).
 - **Selesai bila:** #354 dan #366 terterapkan di prod dengan backup + laporan jumlah; skor Ketersediaan Data terkait naik.
 
 </details>
