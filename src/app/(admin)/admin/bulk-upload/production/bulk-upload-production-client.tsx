@@ -182,7 +182,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       const raw = mappedCol ? row[mappedCol] : "";
       normalized._original[f.key] =
         raw instanceof Date
-          ? raw.toLocaleDateString("id-ID")
+          ? raw.toLocaleDateString("id-ID", { timeZone: "UTC" })
           : (raw as string | number | null | undefined);
     }
 
@@ -237,7 +237,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     // Cross validation: harvestDate must be within period
     if (isPeriodFormatValid && parsedHarvestDate && rawPeriod) {
       const [year, month] = rawPeriod.split("-").map(Number);
-      // parseExcelDate = tengah malam UTC → getter UTC, sama dengan productionSchema di server.
+      // parseExcelDate = tengah malam UTC → getter UTC (di server, getter lokal pada TZ server ≥ UTC memberi bulan yang sama).
       const harvestMonth = parsedHarvestDate.getUTCMonth() + 1;
       const harvestYear = parsedHarvestDate.getUTCFullYear();
       if (harvestYear !== year || harvestMonth !== month) {
@@ -431,7 +431,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
 
     targetList.forEach((row) => {
       const dateStr = row.harvestDate
-        ? new Date(row.harvestDate).toLocaleDateString("id-ID")
+        ? new Date(row.harvestDate).toLocaleDateString("id-ID", { timeZone: "UTC" })
         : row._original.harvestDate || "";
 
       sheet.addRow({
@@ -778,7 +778,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {row.harvestDate
-                          ? new Date(row.harvestDate).toLocaleDateString("id-ID")
+                          ? new Date(row.harvestDate).toLocaleDateString("id-ID", { timeZone: "UTC" })
                           : row._original.harvestDate || "—"}
                       </TableCell>
                       <TableCell className="font-mono">

@@ -30,7 +30,11 @@ export function cellValueToPrimitive(value: CellValue): PrimitiveCellValue {
 
 const DATE_MIN_YEAR = 1900;
 const DATE_MAX_YEAR = 2100;
-const DATE_TIME_SUFFIX = String.raw`(?:[ T]\d{1,2}[:.]\d{2}(?:[:.]\d{2}(?:\.\d+)?)?)?`;
+/** Serial Excel 1910-01-01: angka lebih kecil hampir pasti tahun saja (`1971`) atau angka lain, bukan tanggal. */
+const SERIAL_MIN = 3654;
+// Ekor jam opsional: "00:00", "0:00:00", "12:00:00 PM", "T00:00:00.000Z", "T00:00:00+07:00".
+// Tanggal dibaca SEPERTI TERTULIS — zona/offset tidak menggeser harinya.
+const DATE_TIME_SUFFIX = String.raw`(?:[ T]\d{1,2}[:.]\d{2}(?:[:.]\d{2}(?:\.\d+)?)?(?:\s?[AaPp][Mm])?(?:Z|[+-]\d{2}:?\d{2})?)?`;
 const DMY = new RegExp(String.raw`^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})` + DATE_TIME_SUFFIX + "$");
 const YMD = new RegExp(String.raw`^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})` + DATE_TIME_SUFFIX + "$");
 
@@ -43,15 +47,15 @@ function utcDate(y: number, m: number, d: number): Date | null {
 
 /**
  * Sel tanggal dari berkas upload (Petani, Produksi) → `Date` **tengah malam UTC**
- * — konvensi yang sama dengan form manual (`new Date("YYYY-MM-DD")`), `parseDateCell`,
- * dan sel tanggal exceljs, sehingga hari yang sama tersimpan sebagai instan yang sama
- * apa pun jalur & zona waktu browser/server-nya. Baca dengan getter UTC.
+ * — konvensi form Petani manual (`new Date("YYYY-MM-DD")`), `parseDateCell`, dan sel
+ * tanggal exceljs. Baca dengan getter UTC. (Form Produksi manual masih mengirim tengah
+ * malam lokal — belum diseragamkan.)
  *
- * Teks angka dibaca **`DD/MM/YYYY`** (atau `YYYY-MM-DD`, boleh berekor jam) SEBELUM
- * `Date.parse`: `Date.parse("12/03/1971")` memakai format AS (bulan/hari) → 3 Desember,
- * akar 2.213 tanggal lahir tertukar di prod (#354, #400). Teks berawalan angka yang tak
- * cocok kedua pola (mis. tahun 2 digit) ditolak, tidak ditebak; `Date.parse` hanya untuk
- * teks lain (mis. "12 March 1971").
+ * Teks hanya diterima sebagai **`DD/MM/YYYY`** atau `YYYY-MM-DD` (pemisah `/ - .`, boleh
+ * berekor jam/AM-PM/zona). `Date.parse` sengaja TIDAK dipakai: ia membaca "12/03/1971"
+ * sebagai format AS (3 Desember — akar 2.213 tanggal lahir tertukar di prod, #354/#400)
+ * dan menebak tanggal dari teks apa pun ("Panen 1" → 2001-01-01). Teks lain = `null`
+ * (jadi error di preview), bukan ditebak.
  */
 export function parseExcelDate(val: CellValue): Date | null {
   if (!val) return null;
@@ -59,6 +63,7 @@ export function parseExcelDate(val: CellValue): Date | null {
     return isNaN(val.getTime()) ? null : utcDate(val.getUTCFullYear(), val.getUTCMonth() + 1, val.getUTCDate());
   }
   if (typeof val === "number") {
+    if (val < SERIAL_MIN) return null;
     // Serial Excel (hari sejak 1899-12-30); pecahan jam dibuang.
     const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(val) * 86_400_000);
     return utcDate(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
@@ -69,7 +74,5 @@ export function parseExcelDate(val: CellValue): Date | null {
   if (m) return utcDate(Number(m[3]), Number(m[2]), Number(m[1]));
   m = s.match(YMD);
   if (m) return utcDate(Number(m[1]), Number(m[2]), Number(m[3]));
-  if (/^\d{1,4}[-/.]\d{1,2}[-/.]/.test(s) || /^[\d\s/.:-]+$/.test(s)) return null;
-  const parsed = new Date(Date.parse(s)); // teks non-angka → tanggal lokal hasil parse
-  return isNaN(parsed.getTime()) ? null : utcDate(parsed.getFullYear(), parsed.getMonth() + 1, parsed.getDate());
+  return null;
 }

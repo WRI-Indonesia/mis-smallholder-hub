@@ -64,7 +64,7 @@ describe("cellValueToPrimitive", () => {
 });
 
 describe("parseExcelDate — tanggal sel upload (#400, akar #354)", () => {
-  // Getter UTC → test tak bergantung zona waktu mesin (TZ apa pun).
+  // vitest.config mematok TZ=UTC; nilai diperiksa lewat ISO/getter UTC agar maksudnya eksplisit.
   const ymd = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
   const iso = (d: Date | null) => (d ? d.toISOString() : null);
 
@@ -80,6 +80,14 @@ describe("parseExcelDate — tanggal sel upload (#400, akar #354)", () => {
     expect(ymd(parseExcelDate("12/03/1971 00:00"))).toBe("1971-03-12");
     expect(ymd(parseExcelDate("05/08/1966 0:00:00"))).toBe("1966-08-05");
     expect(ymd(parseExcelDate("1971-03-12T00:00:00"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("12/3/1971 12:00:00 PM"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("12/03/1971 10:00 AM"))).toBe("1971-03-12");
+  });
+
+  it("timestamp ISO ber-Z/offset diterima; tanggal dibaca seperti tertulis, zona tak menggeser hari", () => {
+    expect(ymd(parseExcelDate("1971-03-12T00:00:00Z"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("1971-03-12T00:00:00.000Z"))).toBe("1971-03-12");
+    expect(ymd(parseExcelDate("1971-03-12T00:00:00+07:00"))).toBe("1971-03-12");
   });
 
   it("semua jalur → tengah malam UTC (sama dengan form manual & parseDateCell)", () => {
@@ -88,7 +96,19 @@ describe("parseExcelDate — tanggal sel upload (#400, akar #354)", () => {
     expect(iso(parseExcelDate(26004))).toBe("1971-03-12T00:00:00.000Z"); // serial Excel
     expect(iso(parseExcelDate(26004.75))).toBe("1971-03-12T00:00:00.000Z"); // pecahan jam dibuang
     expect(iso(parseExcelDate(new Date(Date.UTC(1971, 2, 12))))).toBe("1971-03-12T00:00:00.000Z"); // sel tanggal exceljs
-    expect(ymd(parseExcelDate("12 March 1971"))).toBe("1971-03-12");
+  });
+
+  it("teks non-pola tidak ditebak (dulu Date.parse: \"Panen 1\" → 2001-01-01)", () => {
+    for (const s of ["x 5", "Panen 1", "Juni 2026", "12 Mar 71", "12 March 1971", "Thu Mar 12 1971 00:00:00 GMT+0700"]) {
+      expect(parseExcelDate(s)).toBeNull();
+    }
+  });
+
+  it("angka kecil / tahun saja bukan serial tanggal", () => {
+    expect(parseExcelDate(1971)).toBeNull(); // dulu → 1905-05-24
+    expect(parseExcelDate(5)).toBeNull();
+    expect(parseExcelDate(3653)).toBeNull(); // 1909-12-31
+    expect(ymd(parseExcelDate(3654))).toBe("1910-01-01");
   });
 
   it("tanggal 1 sebuah bulan tetap di bulan itu (validasi periode Produksi)", () => {

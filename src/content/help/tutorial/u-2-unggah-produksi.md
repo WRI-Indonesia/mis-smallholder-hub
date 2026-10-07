@@ -23,7 +23,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di kanan atas Langkah 1.
 2. Klik **Unduh Template Excel** bila Anda ingin memakai format bawaan.
 3. Pada **Langkah 1**, pilih berkas `.xlsx` atau `.csv`.
 4. Pada **Langkah 2 — Petakan Atribut Kolom**, cocokkan kolom berkas dengan kolom sistem: ID Petani, Periode, Tanggal Panen, Panen Ke-, Hasil (kg), dan ID Lahan.
-+ **Tanggal Panen** boleh berupa sel tanggal Excel, atau teks `dd/mm/yyyy` (seperti di template) atau `yyyy-mm-dd`. Tahun dua digit, tahun di luar 1900–2100, dan tanggal yang tidak ada ditolak sebagai error.
++ **Tanggal Panen** boleh berupa sel tanggal Excel, atau teks `dd/mm/yyyy` (seperti di template) atau `yyyy-mm-dd`. Tahun dua digit, tahun di luar 1900–2100, tanggal yang tidak ada, dan tanggal bernama bulan ditolak sebagai error.
 + ID Lahan bersifat opsional di sini, tetapi sangat dianjurkan. Tanpa itu produksinya tidak bisa dikaitkan ke luas lahan, sehingga tak muncul pada perhitungan produktivitas per persil.
 5. Klik **Validasi Data Produksi**.
 6. Pada **Langkah 3**, periksa ringkasan dan tabel tinjauan. Kolom **Nama Petani (DB)** memperlihatkan nama yang berhasil dicocokkan sistem — gunakan itu untuk memastikan ID Petani menunjuk orang yang benar.

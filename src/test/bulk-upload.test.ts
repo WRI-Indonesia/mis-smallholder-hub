@@ -134,6 +134,7 @@ describe("Bulk Upload — Date Parsing Helpers", () => {
 
   it("returns null for invalid values", () => {
     expect(parseExcelDate("invalid date")).toBeNull();
+    expect(parseExcelDate("Panen 1")).toBeNull();
     expect(parseExcelDate("")).toBeNull();
   });
 });

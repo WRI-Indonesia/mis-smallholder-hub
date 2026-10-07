@@ -178,7 +178,7 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
       const raw = mappedCol ? row[mappedCol] : "";
       normalized._original[f.key] =
         raw instanceof Date
-          ? raw.toLocaleDateString("id-ID")
+          ? raw.toLocaleDateString("id-ID", { timeZone: "UTC" })
           : (raw as string | number | null | undefined);
     }
 
@@ -404,7 +404,7 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
 
     targetList.forEach((row) => {
       const birthDateStr = row.birthDate
-        ? new Date(row.birthDate).toLocaleDateString("id-ID")
+        ? new Date(row.birthDate).toLocaleDateString("id-ID", { timeZone: "UTC" })
         : row._original.birthDate || "";
       const status = farmerRowStatus(row);
 
@@ -855,7 +855,7 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {row.birthDate
-                          ? new Date(row.birthDate).toLocaleDateString("id-ID")
+                          ? new Date(row.birthDate).toLocaleDateString("id-ID", { timeZone: "UTC" })
                           : row._original.birthDate || "—"}
                       </TableCell>
                       <TableCell>
