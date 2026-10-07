@@ -48,13 +48,6 @@ function semverLt(a: string, b: string): boolean {
 }
 
 /**
- * Penanda baris yang membuka baseline roadmap baru (§Aturan pengisian
- * metrics.md). Dibaca dari catatan, bukan tanggal hardcode, agar reset
- * berikutnya (roadmap 2028) cukup ditulis di dokumen.
- */
-const ROADMAP_RESET = /roadmap direset/i;
-
-/**
  * Parse tabel §Tabel Metrik per Rilis. Kolom (urutan wajib):
  * Rilis | Tanggal | Roadmap % | KPI (payload · Bantuan · test · bug · TD) | RVS | Δ | Catatan
  */
@@ -122,8 +115,6 @@ export function parseReleaseMetrics(markdown: string): ReleaseMetric[] {
       notes: catatan.replace(/\*\*/g, ""),
       issueRefs: [...new Set(catatan.match(/#\d+/g) ?? [])],
       delta: null, // diisi di bawah (turunan §2.2)
-      roadmapReset: ROADMAP_RESET.test(catatan),
-      roadmapBaseline: 0, // diisi di bawah
     };
   });
 
@@ -136,7 +127,6 @@ export function parseReleaseMetrics(markdown: string): ReleaseMetric[] {
       throw new Error(`metrics.md: versi ${cur.version} tercatat dua kali`);
     }
     seen.add(cur.version);
-    cur.roadmapBaseline = (prev?.roadmapBaseline ?? 0) + (prev && cur.roadmapReset ? 1 : 0);
     if (prev) {
       cur.delta = cur.rvs - prev.rvs;
       if (cur.rvs < prev.rvs) {

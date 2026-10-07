@@ -94,5 +94,5 @@ export function windowSlice<T>(pts: T[], at: (p: T) => number, windowDays: numbe
   return kept.length >= 2 ? kept : pts.slice(-2);
 }
 
-/** Repo GitHub proyek — tautan versi & issue; sumbernya kini `src/lib/repo-links.ts` (dipakai juga Rencana Pengembangan). */
+/** Repo GitHub proyek — tautan versi & issue; sumbernya kini `src/lib/repo-links.ts` (dipakai juga Sprint Mingguan). */
 export { releaseUrl, issueUrl, docUrl } from "@/lib/repo-links";

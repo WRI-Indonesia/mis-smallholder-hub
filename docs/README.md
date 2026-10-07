@@ -12,7 +12,6 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [standards/workflow.md](./standards/workflow.md) | Branching, Issue Workflow, Safety & Approval |
 | [standards/environments.md](./standards/environments.md) | Skema file `.env` per environment (local/dev/staging/prod), aturan S3 dev vs prod, akses prod eksplisit |
 | [standards/versioning.md](./standards/versioning.md) | SemVer aplikasi, kriteria bump versi, alur rilis & tag/GitHub Release |
-| [standards/rollback.md](./standards/rollback.md) | Prosedur rollback deploy: aplikasi (revert), migrasi (roll-forward / darurat / restore), migrasi gagal, paritas workflow deploy |
 | [standards/code-standards.md](./standards/code-standards.md) | Code standards, Data Access & Soft Delete, Revision Tracking |
 | [standards/rbac.md](./standards/rbac.md) | RBAC data-access hierarchy, user assignment & menu-access UI, hierarchical menu |
 | [standards/ui-ux.md](./standards/ui-ux.md) | Prinsip UI/UX, tata letak, modal, sensor data pribadi + indeks sub-standar: [tabel](./standards/ui-ux-tables.md) · [peta](./standards/ui-ux-map.md) · [bulk upload](./standards/ui-ux-bulk-upload.md) · [konten Bantuan](./standards/ui-ux-help.md) |
@@ -49,9 +48,9 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [qa/README.md](./qa/README.md) | Proses QA/QC manual: kapan (setelah deploy staging, sebelum PR `staging → main`), siapa, aturan bukti (gitignored — repo publik) |
 | [qa/_template/](./qa/_template/) | Master per rilis: scope (akun & persiapan data) · smoke `SM-nn` · kasus uji `TC-<issue>-nn` ber-tag P0/P1/P2 · QC data · temuan · sign-off · template lembar run |
 | [qa/regression.md](./qa/regression.md) | Kasus `[regresi]` yang ikut setiap rilis (lahir dari temuan review/bug) |
-| [qa/v1.0.0/](./qa/v1.0.0/) · [v1.1.0](./qa/v1.1.0/) · [v1.2.0](./qa/v1.2.0/) | Paket QA tiga rilis terakhir (00–05 + `runs/`) |
-| [qa/archive/](./qa/archive/) | Paket QA rilis lebih lama (v0.35.0 — rilis pertama proses ini — s.d. v0.38.0) |
-| [qa/v1.3.0/](./qa/v1.3.0/) | Rilis berjalan — baru `02-test-cases.md` (kasus uji ditulis saat issue ditutup) |
+| [qa/v0.38.0/](./qa/v0.38.0/) · [v1.0.0](./qa/v1.0.0/) · [v1.1.0](./qa/v1.1.0/) | Paket QA tiga rilis terakhir (00–05 + `runs/`) |
+| [qa/archive/](./qa/archive/) | Paket QA rilis lebih lama (v0.35.0 — rilis pertama proses ini — s.d. v0.37.0) |
+| [qa/v1.2.0/](./qa/v1.2.0/) | Rilis berjalan — baru `02-test-cases.md` (kasus uji ditulis saat issue ditutup) |
 | `scripts/qa/` | `data-qc.ts` (cek DB read-only → tabel markdown) · `new-run.mjs` (lembar run dari spesifikasi) · `summary.mjs` (rekap Pass/Fail per run) |
 
 ## 🧭 Keputusan (`decisions/`) — catatan keputusan besar
@@ -65,8 +64,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | File | Isi |
 |------|-----|
 | [project/brief.md](./project/brief.md) | Biweekly management brief |
-| [project/roadmap.md](./project/roadmap.md) | **Source of truth** — Roadmap 2026–2027: linimasa per kuartal, Phase Status, Parkir |
-| [project/roadmap-mvp.md](./project/roadmap-mvp.md) | Arsip Phase Status baseline MVP (beku 2026-09-30, 88,5%) + evidence per fase |
+| [project/roadmap.md](./project/roadmap.md) | **Source of truth** — roadmap governance & Phase Status |
 | [project/sprint.md](./project/sprint.md) | Sprint focus & issue control |
 | [project/tech-debt.md](./project/tech-debt.md) | Technical debt & bug register |
 | [project/changelog.md](./project/changelog.md) | Indeks changelog & decision log per bulan (`changelog/YYYY-MM.md`, append-only) + ringkasan dua minggu terakhir |

@@ -2,20 +2,13 @@ import { Metadata } from "next";
 import { LoginForm } from "@/components/auth/login-form";
 import Link from "next/link";
 import { Leaf } from "lucide-react";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Login - Smallholder HUB",
   description: "Login untuk masuk ke sistem manajemen",
 };
 
-export default async function LoginPage() {
-  // Dipindah dari middleware (#342): di sini sesi diverifikasi ulang ke DB,
-  // jadi akun yang dinonaktifkan tetap bisa melihat form login.
-  const session = await auth();
-  if (session?.user) redirect("/admin");
-
+export default function LoginPage() {
   return (
     <div className="relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       {/* Left pane: branding */}

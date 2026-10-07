@@ -109,27 +109,3 @@ describe("fetchFarmerGroupMarkerPoints / fetchFarmerMarkerPoints", () => {
     expect(db.$queryRaw).toHaveBeenCalledTimes(2);
   });
 });
-
-describe("fetchFarmerGroupMarkerStats / fetchFarmerMarkerStats (#335)", () => {
-  it("count Postgres (bigint) dinormalkan ke number — KPI Patok tanpa memuat titik", async () => {
-    db.$queryRaw.mockResolvedValue([{ total: BigInt(1015), present: BigInt(953) }]);
-    expect(await q.fetchFarmerGroupMarkerStats("kt-1")).toEqual({ total: 1015, present: 953 });
-    db.$queryRaw.mockResolvedValue([{ total: 0, present: 0 }]);
-    expect(await q.fetchFarmerMarkerStats("f-1")).toEqual({ total: 0, present: 0 });
-  });
-
-  it("titik & hitungan memakai klausa scope yang SAMA (satu definisi 'patok milik Lembaga ini')", async () => {
-    db.$queryRaw.mockResolvedValue([]);
-    await q.fetchFarmerGroupMarkerPoints("kt-1");
-    db.$queryRaw.mockResolvedValue([{ total: 0, present: 0 }]);
-    await q.fetchFarmerGroupMarkerStats("kt-1");
-    const sqlOf = (call: unknown[]) => (call[0] as TemplateStringsArray).join("?");
-    const [pointsSql, statsSql] = db.$queryRaw.mock.calls.map(sqlOf);
-    // Kedua kueri menyisipkan fragmen Prisma.sql yang sama; nilai scope ikut sebagai parameter.
-    expect(pointsSql).toContain("FROM tbl_land_marker m");
-    expect(statsSql).toContain("FILTER (WHERE m.condition = 'PRESENT')");
-    const scopeValue = (call: unknown[]) => JSON.stringify(call.slice(1));
-    expect(scopeValue(db.$queryRaw.mock.calls[0])).toContain("kt-1");
-    expect(scopeValue(db.$queryRaw.mock.calls[1])).toContain("kt-1");
-  });
-});

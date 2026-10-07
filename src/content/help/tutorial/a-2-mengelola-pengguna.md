@@ -22,7 +22,7 @@ Menu ini hanya dipegang SUPERADMIN — peran lain, termasuk ADMIN, tidak punya i
 1. Buka menu **Settings → User Management**, lalu klik **Tambah User**.
 2. Isi **Nama**, **Email**, dan **Password**.
 3. Pilih **Role** sesuai tugasnya, lalu klik **Buat**.
-+ ADMIN untuk yang menginput dan mengunggah data (tanpa hak menghapus — hanya SUPERADMIN yang bisa menonaktifkan data); OPERATOR dan MANAGEMENT hanya membaca, mengunduh, dan mencetak (tanpa input, tanpa Bulk Upload); MANAGEMENT juga melihat Metrik Rilis, Peta Data & Skema, dan Rencana Pengembangan; DONOR untuk pihak donor/funder yang hanya melihat dan mencetak (read-only, tanpa unduh Excel): dashboard, peta, laporan Petani/Pelatihan/Produksi/Lahan, dan master data Lembaga, Petani, Pelatihan, Lahan, dan Monev BMP; SUPERADMIN hanya untuk pengelola sistem — peran ini melewati seluruh pembatasan.
++ ADMIN untuk yang menginput dan mengunggah data (tanpa hak menghapus — hanya SUPERADMIN yang bisa menonaktifkan data); OPERATOR dan MANAGEMENT hanya membaca, mengunduh, dan mencetak (tanpa input, tanpa Bulk Upload); MANAGEMENT juga melihat Metrik Rilis, Peta Data & Skema, dan Sprint Mingguan; DONOR untuk pihak donor/funder yang hanya melihat dan mencetak (read-only, tanpa unduh Excel): dashboard, peta, laporan Petani/Pelatihan/Produksi/Lahan, dan master data Lembaga, Petani, Pelatihan, Lahan, dan Monev BMP; SUPERADMIN hanya untuk pengelola sistem — peran ini melewati seluruh pembatasan.
 4. Klik ikon **Akses Data** pada baris pengguna itu, lalu tetapkan **cakupan data**: provinsi, distrik, atau Lembaga Petani tertentu.
 + Inilah yang membuat dua pengguna dengan peran sama melihat angka berbeda — dan itu memang dikehendaki. Bila cakupan dikosongkan, pengguna melihat seluruh data organisasi.
 + Perubahan di dialog ini langsung tersimpan; ringkasannya tampil di bagian **Ringkasan Akses** ("Belum dibatasi (akses semua data)" berarti cakupan masih kosong).
@@ -38,7 +38,5 @@ Menu ini hanya dipegang SUPERADMIN — peran lain, termasuk ADMIN, tidak punya i
 **Pengguna baru melihat menu kosong** — perannya belum diberi izin menu apa pun, atau izinnya dicabut lewat **Hak Akses Menu**.
 
 **Pengguna melihat lebih banyak data dari seharusnya** — cakupan datanya kosong. Isi distrik atau lembaga yang menjadi tanggung jawabnya.
-
-**Perubahan peran belum terasa, atau akun yang dinonaktifkan masih terbuka** — peran dan status aktif diperiksa ulang paling lama **1 menit** sekali. Setelah itu menu mengikuti peran baru saat halaman dimuat ulang, dan akun nonaktif otomatis keluar ke halaman login. Pengguna tidak perlu keluar lalu masuk lagi.
 
 **Angka dashboard pengguna berbeda dengan Anda** — normal. Setiap orang hanya melihat cakupannya sendiri.

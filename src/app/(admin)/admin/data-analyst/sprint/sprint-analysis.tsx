@@ -5,24 +5,24 @@ import { CalendarRange, ChevronRight, Gauge, Repeat2, Scale } from "lucide-react
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
-  PLAN_CATEGORIES,
-  PLAN_STACK_ORDER,
-  PLAN_STATUS_LABEL,
+  SPRINT_CATEGORIES,
+  SPRINT_STACK_ORDER,
+  SPRINT_STATUS_LABEL,
   carryOvers,
   pendingDecisions,
   planTotals,
-  releaseComposition,
-  releasePhase,
-  releaseProgress,
-  releaseStatusPoints,
-  releaseTimeline,
-  releaseVelocity,
+  sprintComposition,
+  sprintDay,
+  sprintPhase,
+  sprintProgress,
+  sprintStatusPoints,
+  sprintVelocity,
   type PendingDecision,
-  type PlanItemStatus,
-  type Release,
-  type ReleasePhase,
-  type ReleasePlan,
-} from "@/lib/release-plan";
+  type Sprint,
+  type SprintItemStatus,
+  type SprintPhase,
+  type SprintPlan,
+} from "@/lib/sprint-plan";
 import { CATEGORY_COLOR, Inline, fmtDate } from "./sprint-shared";
 
 const fmt1 = (n: number) => n.toFixed(1).replace(".", ",");
@@ -34,19 +34,19 @@ const fmt1 = (n: number) => n.toFixed(1).replace(".", ",");
  * Warna status = palet status dataviz (good/warning) + biru sekuensial untuk
  * "dikerjakan"; selalu berpasangan dengan label di legenda & tooltip.
  */
-const STACK: Record<PlanItemStatus, { label: string; swatch: string; fill: string }> = {
-  done: { label: PLAN_STATUS_LABEL.done, swatch: "bg-[#0ca30c]", fill: "bg-[#0ca30c]" },
-  progress: { label: PLAN_STATUS_LABEL.progress, swatch: "bg-[#3987e5]", fill: "bg-[#3987e5]" },
-  decision: { label: PLAN_STATUS_LABEL.decision, swatch: "bg-[#fab219]", fill: "bg-[#fab219]" },
-  todo: { label: PLAN_STATUS_LABEL.todo, swatch: "bg-muted-foreground/25", fill: "bg-muted-foreground/25" },
+const STACK: Record<SprintItemStatus, { label: string; swatch: string; fill: string }> = {
+  done: { label: SPRINT_STATUS_LABEL.done, swatch: "bg-[#0ca30c]", fill: "bg-[#0ca30c]" },
+  progress: { label: SPRINT_STATUS_LABEL.progress, swatch: "bg-[#3987e5]", fill: "bg-[#3987e5]" },
+  decision: { label: SPRINT_STATUS_LABEL.decision, swatch: "bg-[#fab219]", fill: "bg-[#fab219]" },
+  todo: { label: SPRINT_STATUS_LABEL.todo, swatch: "bg-muted-foreground/25", fill: "bg-muted-foreground/25" },
   moved: {
-    label: PLAN_STATUS_LABEL.moved,
+    label: SPRINT_STATUS_LABEL.moved,
     swatch: "border border-dashed border-muted-foreground/60",
     fill: "border border-dashed border-muted-foreground/60 bg-transparent",
   },
 };
 
-const PHASE_TAG: Record<ReleasePhase, string> = { active: "berjalan", upcoming: "rencana", past: "lewat target" };
+const PHASE_TAG: Record<SprintPhase, string> = { active: "minggu ini", upcoming: "rencana", past: "selesai" };
 
 function Stat({ icon, label, value, note, tone }: { icon: ReactNode; label: string; value: string; note: ReactNode; tone?: "warn" }) {
   return (
@@ -89,7 +89,7 @@ function Section({ title, subtitle, children, right }: { title: string; subtitle
 function Legend() {
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-      {PLAN_STACK_ORDER.map((s) => (
+      {SPRINT_STACK_ORDER.map((s) => (
         <span key={s} className="flex items-center gap-1.5">
           <span aria-hidden className={cn("h-2.5 w-2.5 rounded-sm", STACK[s].swatch)} /> {STACK[s].label}
         </span>
@@ -106,23 +106,17 @@ function niceMax(n: number) {
 const PLOT_H = 200;
 
 /**
- * Linimasa beban: satu kolom per rilis, tinggi = poin komitmen awal (skala
- * sama untuk semua rilis), ditumpuk per status. Penanda putus per kolom =
- * KAPASITAS perkiraan rilis itu (velocity poin/minggu × panjang rilis dalam
- * minggu) — rilis yang batangnya jauh di atas penandanya kelebihan beban.
- * Bukan satu garis rata-rata: panjang rilis berbeda-beda. Tooltip muncul saat
- * hover DAN fokus keyboard; angka yang sama ada di label total & matriks.
+ * Linimasa beban: satu kolom per sprint, tinggi = poin komitmen awal (skala
+ * sama untuk semua sprint → sprint yang kelebihan beban langsung terlihat),
+ * ditumpuk per status. Garis putus = rata-rata velocity (hanya bila ada sprint
+ * yang sudah lewat). Tooltip muncul saat hover DAN fokus keyboard; angka yang
+ * sama juga ada di label total & matriks, jadi tooltip tidak menjadi satu-satunya jalan.
  */
-function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: string; average: number | null }) {
-  const [hover, setHover] = useState<string | null>(null);
-  const cols = plan.releases.map((r) => ({
-    release: r,
-    phase: releasePhase(r, today),
-    pts: releaseStatusPoints(r),
-    capacity: average === null ? null : average * (releaseTimeline(r, today).days / 7),
-  }));
-  const totalOf = (p: Record<PlanItemStatus, number>) => PLAN_STACK_ORDER.reduce((t, k) => t + p[k], 0);
-  const yMax = niceMax(Math.max(...cols.map((c) => Math.max(totalOf(c.pts), c.capacity ?? 0))));
+function LoadTimeline({ plan, today, average }: { plan: SprintPlan; today: string; average: number | null }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const cols = plan.sprints.map((s) => ({ sprint: s, phase: sprintPhase(s, today), pts: sprintStatusPoints(s) }));
+  const totalOf = (p: Record<SprintItemStatus, number>) => SPRINT_STACK_ORDER.reduce((t, k) => t + p[k], 0);
+  const yMax = niceMax(Math.max(...cols.map((c) => totalOf(c.pts)), average ?? 0));
   const ticks = [0, yMax / 2, yMax];
 
   return (
@@ -141,29 +135,34 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
           {ticks.map((t) => (
             <div key={t} aria-hidden className="absolute inset-x-0 border-t border-border/60" style={{ bottom: `${(t / yMax) * 100}%` }} />
           ))}
+          {average !== null && (
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-dashed border-foreground/60" style={{ bottom: `${(average / yMax) * 100}%` }}>
+              <span className="absolute -top-5 right-0 rounded bg-background/90 px-1 text-[10px] text-foreground">rata-rata selesai {fmt1(average)}</span>
+            </div>
+          )}
           <div className="absolute inset-0 grid gap-2" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))` }}>
-            {cols.map(({ release, phase, pts, capacity }, idx) => {
+            {cols.map(({ sprint, phase, pts }) => {
               const total = totalOf(pts);
-              const segs = PLAN_STACK_ORDER.filter((k) => pts[k] > 0);
-              const aria = `Rilis ${release.version}, ${PHASE_TAG[phase]}: ${total} poin${capacity === null ? "" : `, kapasitas ±${fmt1(capacity)}`} — ${segs.map((k) => `${STACK[k].label} ${pts[k]}`).join(", ")}`;
+              const segs = SPRINT_STACK_ORDER.filter((k) => pts[k] > 0);
+              const aria = `Sprint ${sprint.number}, ${PHASE_TAG[phase]}: ${total} poin — ${segs.map((k) => `${STACK[k].label} ${pts[k]}`).join(", ")}`;
               return (
                 <div
-                  key={release.version}
+                  key={sprint.number}
                   tabIndex={0}
                   role="img"
                   aria-label={aria}
-                  onMouseEnter={() => setHover(release.version)}
+                  onMouseEnter={() => setHover(sprint.number)}
                   onMouseLeave={() => setHover(null)}
-                  onFocus={() => setHover(release.version)}
+                  onFocus={() => setHover(sprint.number)}
                   onBlur={() => setHover(null)}
                   className={cn(
                     "relative flex h-full flex-col justify-end rounded-md px-[18%] outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     phase === "active" && "bg-primary/[0.06]",
-                    hover === release.version && "bg-muted/60"
+                    hover === sprint.number && "bg-muted/60"
                   )}
                 >
                   {/* Label total di luar alur flex (absolute): bila ikut, batang setinggi
-                      yMax menyusut ±10% dan tak lagi sejajar sumbu Y. */}
+                      yMax menyusut ±10% dan tak lagi sejajar sumbu Y & garis rata-rata. */}
                   <div className="relative flex shrink-0 flex-col-reverse gap-[2px]" style={{ height: `${(total / yMax) * 100}%` }}>
                     <span className="absolute inset-x-0 bottom-full mb-1 text-center text-xs font-semibold tabular-nums">{total}</span>
                     {segs.map((k, i) => (
@@ -174,82 +173,42 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
                       />
                     ))}
                   </div>
-                  {capacity !== null && (
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute inset-x-[8%] z-10 border-t-2 border-dashed border-foreground/60"
-                      style={{ bottom: `${(capacity / yMax) * 100}%` }}
-                    />
-                  )}
-                  {hover === release.version && (
-                    <ColumnTooltip
-                      release={release}
-                      phase={phase}
-                      pts={pts}
-                      total={total}
-                      capacity={capacity}
-                      side={idx < cols.length / 2 ? "right" : "left"}
-                    />
-                  )}
+                  {hover === sprint.number && <ColumnTooltip sprint={sprint} phase={phase} pts={pts} total={total} />}
                 </div>
               );
             })}
           </div>
         </div>
       </div>
-      {/* Sumbu X: versi + target; rilis berjalan ditandai. */}
+      {/* Sumbu X: nomor sprint + tanggal; sprint berjalan ditandai. */}
       <div className="grid grid-cols-[2rem_1fr] gap-2">
         <span />
         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))` }}>
-          {cols.map(({ release, phase }) => (
-            <div key={release.version} className="text-center leading-tight">
-              <p className={cn("text-xs font-medium", phase === "active" && "text-primary")}>{release.version}</p>
-              <p className="text-[10px] text-muted-foreground">target {fmtDate(release.end, false)}</p>
-              {phase === "active" && <p className="text-[10px] font-medium text-primary">berjalan</p>}
+          {cols.map(({ sprint, phase }) => (
+            <div key={sprint.number} className="text-center leading-tight">
+              <p className={cn("text-xs font-medium", phase === "active" && "text-primary")}>Sprint {sprint.number}</p>
+              <p className="text-[10px] text-muted-foreground">{fmtDate(sprint.start, false)}</p>
+              {phase === "active" && <p className="text-[10px] font-medium text-primary">minggu ini</p>}
             </div>
           ))}
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">
-        {average === null
-          ? "Penanda kapasitas muncul setelah rilis pertama ditandai dirilis — rilis berjalan atau terlambat belum dihitung karena akan menarik rata-rata ke bawah."
-          : `Garis putus di tiap kolom = kapasitas perkiraan: ${fmt1(average)} poin/minggu × panjang rilis. Batang jauh di atas garis = rilis kelebihan beban.`}
-      </p>
+      {average === null && (
+        <p className="text-xs text-muted-foreground">Garis rata-rata velocity muncul setelah sprint pertama selesai — sprint berjalan belum dihitung karena akan menarik rata-rata ke bawah.</p>
+      )}
     </div>
   );
 }
 
-function ColumnTooltip({
-  release,
-  phase,
-  pts,
-  total,
-  capacity,
-  side,
-}: {
-  release: Release;
-  phase: ReleasePhase;
-  pts: Record<PlanItemStatus, number>;
-  total: number;
-  capacity: number | null;
-  side: "left" | "right";
-}) {
-  // Di samping kolom, rata atas plot — bukan di atasnya: kolom setinggi plot,
-  // jadi `bottom-full` keluar dari Card dan terpotong. Sisi menjauhi tepi grafik.
+function ColumnTooltip({ sprint, phase, pts, total }: { sprint: Sprint; phase: SprintPhase; pts: Record<SprintItemStatus, number>; total: number }) {
   return (
-    <div
-      role="tooltip"
-      className={cn(
-        "pointer-events-none absolute top-0 z-20 w-56 rounded-md border bg-popover p-3 text-xs shadow-md",
-        side === "right" ? "left-full ml-2" : "right-full mr-2"
-      )}
-    >
+    <div role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-56 -translate-x-1/2 rounded-md border bg-popover p-3 text-xs shadow-md">
       <p className="font-medium">
-        Rilis {release.version} <span className="font-normal text-muted-foreground">· {fmtDate(release.start, false)}–{fmtDate(release.end, false)} · {PHASE_TAG[phase]}</span>
+        Sprint {sprint.number} <span className="font-normal text-muted-foreground">· {fmtDate(sprint.start, false)}–{fmtDate(sprint.end, false)} · {PHASE_TAG[phase]}</span>
       </p>
-      <p className="mb-2 text-muted-foreground">{release.title}</p>
+      <p className="mb-2 text-muted-foreground">{sprint.title}</p>
       <ul className="space-y-1">
-        {PLAN_STACK_ORDER.filter((k) => pts[k] > 0).map((k) => (
+        {SPRINT_STACK_ORDER.filter((k) => pts[k] > 0).map((k) => (
           <li key={k} className="flex items-center gap-2">
             <span aria-hidden className={cn("h-0.5 w-3", k === "moved" ? "border-t border-dashed border-muted-foreground" : STACK[k].fill)} />
             <span className="font-semibold tabular-nums">{pts[k]}</span>
@@ -259,20 +218,19 @@ function ColumnTooltip({
       </ul>
       <p className="mt-2 border-t pt-1.5 tabular-nums">
         <span className="font-semibold">{total}</span> <span className="text-muted-foreground">poin komitmen</span>
-        {capacity !== null && <span className="text-muted-foreground"> · kapasitas ±{fmt1(capacity)}</span>}
       </p>
     </div>
   );
 }
 
 /**
- * Fokus kategori sebagai matriks Kategori × Rilis berisi angka poin. Isi sel
+ * Fokus kategori sebagai matriks Kategori × Sprint berisi angka poin. Isi sel
  * = satu hue sekuensial (biru, makin pekat makin besar) — bukan enam warna
  * kategori — sehingga terbaca tanpa membedakan warna; titik kategori di kepala
  * baris hanya penanda identitas yang berlabel.
  */
-function FocusMatrix({ plan, today }: { plan: ReleasePlan; today: string }) {
-  const comp = plan.releases.map((r) => ({ release: r, phase: releasePhase(r, today), parts: releaseComposition(r) }));
+function FocusMatrix({ plan, today }: { plan: SprintPlan; today: string }) {
+  const comp = plan.sprints.map((s) => ({ sprint: s, phase: sprintPhase(s, today), parts: sprintComposition(s) }));
   const maxCell = Math.max(1, ...comp.flatMap((c) => c.parts.map((p) => p.points)));
   const rowTotal = (cat: string) => comp.reduce((t, c) => t + (c.parts.find((p) => p.category === cat)?.points ?? 0), 0);
 
@@ -282,16 +240,16 @@ function FocusMatrix({ plan, today }: { plan: ReleasePlan; today: string }) {
         <thead>
           <tr className="text-xs text-muted-foreground">
             <th className="py-1 pr-3 text-left font-medium">Kategori</th>
-            {comp.map(({ release, phase }) => (
-              <th key={release.version} className={cn("px-1 py-1 text-center font-medium", phase === "active" && "text-primary")}>
-                {release.version}
+            {comp.map(({ sprint, phase }) => (
+              <th key={sprint.number} className={cn("px-1 py-1 text-center font-medium", phase === "active" && "text-primary")}>
+                S{sprint.number}
               </th>
             ))}
             <th className="py-1 pl-3 text-right font-medium">Total</th>
           </tr>
         </thead>
         <tbody>
-          {PLAN_CATEGORIES.map((cat) => (
+          {SPRINT_CATEGORIES.map((cat) => (
             <tr key={cat}>
               <th scope="row" className="whitespace-nowrap py-1 pr-3 text-left text-xs font-normal">
                 <span className="inline-flex items-center gap-1.5">
@@ -303,12 +261,12 @@ function FocusMatrix({ plan, today }: { plan: ReleasePlan; today: string }) {
                   {cat}
                 </span>
               </th>
-              {comp.map(({ release, parts }) => {
+              {comp.map(({ sprint, parts }) => {
                 const v = parts.find((p) => p.category === cat)?.points ?? 0;
                 return (
                   <td
-                    key={release.version}
-                    title={`Rilis ${release.version} · ${cat}: ${v} poin`}
+                    key={sprint.number}
+                    title={`Sprint ${sprint.number} · ${cat}: ${v} poin`}
                     className="h-8 min-w-10 rounded text-center text-xs tabular-nums"
                     style={v > 0 ? { backgroundColor: `rgba(57, 135, 229, ${0.12 + (v / maxCell) * 0.5})` } : undefined}
                   >
@@ -322,19 +280,19 @@ function FocusMatrix({ plan, today }: { plan: ReleasePlan; today: string }) {
         </tbody>
       </table>
       <p className="mt-2 text-xs text-muted-foreground">
-        Baris diurutkan menurut prioritas &quot;risiko prod dulu&quot; — rilis awal sebaiknya berat di baris atas (Keamanan, Rilis).
+        Baris diurutkan menurut prioritas &quot;risiko prod dulu&quot; — sprint awal sebaiknya berat di baris atas (Keamanan, Rilis).
       </p>
     </div>
   );
 }
 
-const DECISION_GROUPS: { phase: ReleasePhase; title: string; open: boolean; tone: string }[] = [
-  { phase: "past", title: "Terlambat — target rilisnya sudah lewat", open: true, tone: "text-amber-700 dark:text-amber-300" },
-  { phase: "active", title: "Rilis berjalan", open: true, tone: "text-foreground" },
-  { phase: "upcoming", title: "Rilis mendatang", open: false, tone: "text-foreground" },
+const DECISION_GROUPS: { phase: SprintPhase; title: string; open: boolean; tone: string }[] = [
+  { phase: "past", title: "Terlambat — sprintnya sudah lewat", open: true, tone: "text-amber-700 dark:text-amber-300" },
+  { phase: "active", title: "Minggu ini", open: true, tone: "text-foreground" },
+  { phase: "upcoming", title: "Sprint mendatang", open: false, tone: "text-foreground" },
 ];
 
-/** Antrean keputusan owner, dikelompokkan per urgensi — bahan keputusan di awal rilis. */
+/** Antrean keputusan owner, dikelompokkan per urgensi — bahan rapat awal minggu. */
 function DecisionQueue({ pending }: { pending: PendingDecision[] }) {
   if (pending.length === 0) return <p className="text-sm text-muted-foreground">Tidak ada keputusan yang ditunggu.</p>;
   return (
@@ -354,8 +312,8 @@ function DecisionQueue({ pending }: { pending: PendingDecision[] }) {
             </summary>
             <ul className="divide-y border-t">
               {rows.map((d) => (
-                <li key={`${d.release}-${d.item.no}`} className="grid gap-1 px-3 py-2 text-sm sm:grid-cols-[3.5rem_1fr_2.5rem] sm:gap-3">
-                  <span className="text-xs tabular-nums text-muted-foreground sm:pt-0.5">{d.release}</span>
+                <li key={`${d.sprint}-${d.item.no}`} className="grid gap-1 px-3 py-2 text-sm sm:grid-cols-[3rem_1fr_2.5rem] sm:gap-3">
+                  <span className="text-xs tabular-nums text-muted-foreground sm:pt-0.5">Sprint {d.sprint}</span>
                   <div className="min-w-0 space-y-0.5">
                     <p><Inline text={d.item.issue} /></p>
                     <p className="text-xs text-muted-foreground"><Inline text={d.item.decision ?? "—"} /></p>
@@ -371,24 +329,23 @@ function DecisionQueue({ pending }: { pending: PendingDecision[] }) {
   );
 }
 
-export function SprintAnalysis({ plan, today }: { plan: ReleasePlan; today: string }) {
-  const velocity = releaseVelocity(plan, today);
+export function SprintAnalysis({ plan, today }: { plan: SprintPlan; today: string }) {
+  const velocity = sprintVelocity(plan, today);
   const pending = pendingDecisions(plan, today);
   const carry = carryOvers(plan);
   const totals = planTotals(plan);
   const overdue = pending.filter((d) => d.phase === "past").length;
-  const current = pending.filter((d) => d.phase === "active").length;
-  const upcoming = pending.length - overdue - current;
+  const thisWeek = pending.filter((d) => d.phase === "active").length;
+  const upcoming = pending.length - overdue - thisWeek;
   // Rincian per urgensi yang nol tidak ditulis — dulu "0 minggu ini" tampil
-  // di samping poin yang seluruhnya milik rilis mendatang.
+  // di samping poin yang seluruhnya milik sprint mendatang.
   const pendingBreakdown = [
     overdue > 0 && `${overdue} terlambat`,
-    current > 0 && `${current} di rilis berjalan`,
+    thisWeek > 0 && `${thisWeek} minggu ini`,
     upcoming > 0 && `${upcoming} mendatang`,
   ].filter(Boolean);
-  const active = plan.releases.find((r) => releasePhase(r, today) === "active");
-  const activeProgress = active ? releaseProgress(active) : null;
-  const activeTimeline = active ? releaseTimeline(active, today) : null;
+  const active = plan.sprints.find((s) => sprintPhase(s, today) === "active");
+  const activeProgress = active ? sprintProgress(active) : null;
 
   return (
     <div className="space-y-4">
@@ -397,7 +354,7 @@ export function SprintAnalysis({ plan, today }: { plan: ReleasePlan; today: stri
           icon={<CalendarRange className="h-4 w-4" />}
           label="Rencana"
           value={`${totals.points} poin`}
-          note={totals.end ? `${totals.releases} rilis · sampai ${fmtDate(totals.end)}` : "belum ada rilis"}
+          note={totals.end ? `${totals.sprints} sprint · sampai ${fmtDate(totals.end)}` : "belum ada sprint"}
         />
         <Stat
           icon={<Scale className="h-4 w-4" />}
@@ -416,10 +373,10 @@ export function SprintAnalysis({ plan, today }: { plan: ReleasePlan; today: stri
           value={velocity.average === null ? "—" : `${fmt1(velocity.average)} poin`}
           note={
             velocity.average !== null
-              ? `per minggu kalender · dari ${velocity.sample.releases} rilis dirilis (${fmt1(velocity.sample.weeks)} minggu)${velocity.sample.weeks < 4 ? " — sampel masih kecil" : ""}`
+              ? "per minggu, dari sprint yang sudah selesai"
               : active && activeProgress
-                ? `${active.version} berjalan: ${activeProgress.donePoints}/${activeProgress.totalPoints} poin, hari ke-${activeTimeline?.day} dari ${activeTimeline?.days}`
-                : "belum ada rilis yang dirilis"
+                ? `Sprint ${active.number} berjalan: ${activeProgress.donePoints}/${activeProgress.totalPoints} poin, hari ke-${sprintDay(active, today)}`
+                : "belum ada sprint yang selesai"
           }
         />
         <Stat
@@ -427,12 +384,12 @@ export function SprintAnalysis({ plan, today }: { plan: ReleasePlan; today: stri
           tone={carry.some((c) => c.movedFrom.length > 1) ? "warn" : undefined}
           label="Carry-over"
           value={`${carry.length} butir`}
-          note={carry.length === 0 ? "belum ada butir yang digeser" : "pindah rilis minimal sekali"}
+          note={carry.length === 0 ? "belum ada butir yang digeser" : "pindah sprint minimal sekali"}
         />
       </div>
 
       <Section
-        title="Beban & kemajuan per rilis"
+        title="Beban & kemajuan per sprint"
         subtitle="Tinggi kolom = poin komitmen awal; isinya menurut status. Arahkan kursor atau Tab ke kolom untuk rinciannya."
       >
         <LoadTimeline plan={plan} today={today} average={velocity.average} />
@@ -442,19 +399,19 @@ export function SprintAnalysis({ plan, today }: { plan: ReleasePlan; today: stri
         <Section title="Keputusan menunggu owner" subtitle="Semua butir ⚖️ yang belum diputuskan, dikelompokkan per urgensi.">
           <DecisionQueue pending={pending} />
         </Section>
-        <Section title="Fokus per kategori" subtitle="Poin per kategori di tiap rilis — apakah prioritas benar-benar dijalankan.">
+        <Section title="Fokus per kategori" subtitle="Poin per kategori di tiap sprint — apakah prioritas benar-benar dijalankan.">
           <FocusMatrix plan={plan} today={today} />
         </Section>
       </div>
 
       {carry.length > 0 && (
-        <Section title="Carry-over" subtitle="Butir yang pindah rilis. Digeser berulang = estimasi terlalu optimis atau ada penghambat.">
+        <Section title="Carry-over" subtitle="Butir yang pindah sprint. Digeser berulang = estimasi terlalu optimis atau ada penghambat.">
           <ul className="divide-y text-sm">
             {carry.map((c) => (
               <li key={c.issue} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-2">
                 <span className="min-w-0 flex-1"><Inline text={c.issue} /></span>
                 <span className="text-xs text-muted-foreground">
-                  {c.movedFrom.join(", ")} → {c.destination === null ? "belum dijadwalkan" : c.destination}
+                  Sprint {c.movedFrom.join(", ")} → {c.destination === null ? "belum dijadwalkan" : `Sprint ${c.destination}`}
                 </span>
                 <span className={cn("text-xs tabular-nums", c.movedFrom.length > 1 && "font-semibold text-amber-700 dark:text-amber-300")}>
                   {c.movedFrom.length}×

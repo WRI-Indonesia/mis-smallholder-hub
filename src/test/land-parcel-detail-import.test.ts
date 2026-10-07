@@ -10,7 +10,6 @@ import {
   parseNktCategories,
   parseDateCell,
   parsePositiveNumber,
-  STATED_AREA_MAX_HA,
   type ParcelRef,
 } from "@/lib/land-parcel-detail-import";
 
@@ -51,8 +50,6 @@ describe("normalizeDocumentType — 19 ejaan jenis surat → enum", () => {
     ["SKTB (Surat Keterangan Tidak Bersengketa)", "SKTB"],
     ["Surat Keterangan Hibah", "HIBAH"],
     ["Surat Jual beli", "JUAL_BELI"],
-    ["AJB", "JUAL_BELI"], // Akta Jual Beli, berkas Siak (#366)
-    ["AJB No. 12/2019", "JUAL_BELI"],
   ])("%s → %s", (raw, type) => {
     const r = normalizeDocumentType(raw);
     expect(r.type).toBe(type);
@@ -99,12 +96,6 @@ describe("parseStdbNumber — nomor mentah + tahun terbit bila berpola", () => {
       expect(parseStdbNumber(token), token).toEqual({ number: null, issuedYear: null, stage: "PERSIAPAN_DATA" });
     }
   });
-  it("'Belum Terbit' / 'Tidak Terbit' (berkas Siak, 2.186 baris) → PERSIAPAN_DATA, bukan nomor (#366 A1)", () => {
-    // Tanpa token ini sel dibaca sebagai NOMOR "Belum Terbit" dan bertabrakan lintas petani.
-    for (const token of ["Belum Terbit", "BELUM TERBIT", " tidak  terbit "]) {
-      expect(parseStdbNumber(token), token).toEqual({ number: null, issuedYear: null, stage: "PERSIAPAN_DATA" });
-    }
-  });
   it("sel yang benar-benar kosong tetap → null (tak ada baris STDB)", () => {
     for (const token of ["", " ", "-", "0", "null"]) {
       expect(parseStdbNumber(token), JSON.stringify(token)).toBeNull();
@@ -128,15 +119,6 @@ describe("parseStatedArea", () => {
   });
   it("teks bukan angka → error", () => {
     expect(parseStatedArea("dua").error).toMatch(/tidak valid/);
-  });
-  it("> 25 ha → error yang menunjuk satuan m², bukan diam-diam dianggap hektar (#366 B)", () => {
-    // Berkas Siak menulis m² di kolom ha; 1.000–9.999 sebelumnya lolos sebagai hektar.
-    expect(parseStatedArea(STATED_AREA_MAX_HA)).toEqual({ value: 25, error: null });
-    for (const v of ["25,01", "1500", 17830]) {
-      const r = parseStatedArea(v);
-      expect(r.value, String(v)).toBeNull();
-      expect(r.error, String(v)).toMatch(/kemungkinan satuannya m²/);
-    }
   });
 });
 
@@ -321,43 +303,14 @@ describe("validateParcelDetailRows", () => {
     expect(r._errors[0]).toMatch(/Tidak ada data detail/);
   });
 
-  it("luas/nomor/nama '0' dianggap kosong; STDB 'n/a' → PERSIAPAN_DATA, tidak dibuang (#366 A1)", () => {
-    // Sebelumnya test ini meng-assert stdb = null: readRaw membuang token pra-terbit
-    // sebelum parseStdbNumber, sehingga jalur #306 mati end-to-end di import.
+  it("luas tertera 0 / nomor 'n/a' dianggap kosong (bukan error)", () => {
     const [r] = validateParcelDetailRows(
       [row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", Jenis: "SHM", No: "0", Nama: "0", Luas: "0", STDB: "n/a", parcel_code: "ID000d50ef1" })],
       mapping, parcels,
     );
     expect(r._isValid).toBe(true);
     expect(r.data?.document).toEqual({ type: "SHM", typeRaw: "SHM", number: null, holderName: null, statedArea: null, custodyNote: null });
-    expect(r.data?.stdb).toEqual({ number: null, issuedYear: null, stage: "PERSIAPAN_DATA" });
-  });
-
-  it("baris dengan STDB 'Belum Terbit' saja → valid (bukan 'tidak ada data'), beberapa petani tak saling bentrok (#366 A1)", () => {
-    const rs = validateParcelDetailRows(
-      [
-        row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", STDB: "Belum Terbit" }),
-        row({ "ID Lahan": "APSS.0002.A", "ID Petani": "APSS.0002", STDB: "Belum Terbit" }),
-      ],
-      mapping, parcels,
-    );
-    expect(rs.map((r) => r._isValid)).toEqual([true, true]);
-    expect(rs.map((r) => r.data?.stdb?.stage)).toEqual(["PERSIAPAN_DATA", "PERSIAPAN_DATA"]);
-  });
-
-  it("Nomor Surat berisi daftar 'A || B' → error, tidak dipecah (#366 D direvisi: daftar milik petani, bukan lahan)", () => {
-    const [r] = validateParcelDetailRows(
-      [row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", Jenis: "SHM", No: "123 || 456", STDB: "9999/99/1401/6/2025" })],
-      mapping, parcels,
-    );
-    expect(r._isValid).toBe(false);
-    expect(r._errors.join()).toMatch(/beberapa nomor \(\|\|\)/);
-  });
-
-  it("luas tertera m² di kolom ha → baris error, bukan tersimpan sebagai hektar (#366 B)", () => {
-    const [r] = validateParcelDetailRows([row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", Jenis: "SHM", Luas: "17830" })], mapping, parcels);
-    expect(r._isValid).toBe(false);
-    expect(r._errors.join()).toMatch(/m²/);
+    expect(r.data?.stdb).toBeNull();
   });
 
   it("UL Parcel Code yang sama di dua lahan berbeda → keduanya valid (klaim ganda boleh, keputusan owner 2026-09-23)", () => {
@@ -476,8 +429,7 @@ describe("NKT (#328) — parser sel", () => {
     expect(parsePositiveNumber("-0,088", "Luas NKT").error).toMatch(/negatif/);
     expect(parsePositiveNumber("120000", "Panjang", 100_000).error).toMatch(/terlalu besar/);
     expect(parsePositiveNumber("0", "L")).toEqual({ value: null, error: null });
-    expect(parsePositiveNumber("1.234,5", "Luas tertera").value).toBeCloseTo(1234.5);
-    expect(parseStatedArea("1.234,5").error).toMatch(/m²/); // parser sama, lalu pagar 25 ha (#366)
+    expect(parseStatedArea("1.234,5").value).toBeCloseTo(1234.5);
     expect(parseStatedArea("-1").error).toMatch(/negatif/);
   });
 });

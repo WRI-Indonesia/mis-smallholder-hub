@@ -40,7 +40,7 @@ Peran: OPERATOR · Langkah: selektor kolom, Excel · Harapan: kolom Excel = kolo
 Peran: OPERATOR · Langkah: pilih Lembaga, Buka semua, PDF · Harapan: seluruh roster ikut.
 
 ### SM-12 · Report › Patok [P0] (2 mnt)
-Peran: OPERATOR, lalu DONOR · Langkah: Distrik → Muat Data, Excel · Harapan: KPI kondisi + tabel; DONOR **tidak** melihat menu Patok.
+Peran: OPERATOR, lalu DONOR · Langkah: Distrik → Muat Data, Excel · Harapan: KPI kondisi + tabel; DONOR **tanpa** tombol Excel.
 
 ### SM-13 · Map › Peta Lahan [P0] (4 mnt)
 Peran: OPERATOR · Langkah: Muat Data 1 Distrik, toggle tiap baris legenda, popup lahan, unduh 1 baris · Harapan: semua layer tergambar; popup lengkap; unduhan sesuai tipe baris.
@@ -66,23 +66,23 @@ Peran: OPERATOR · Langkah: daftar, filter · Harapan: terbuka.
 ### SM-20 · Data Analyst › Ringkasan Petani [P1] (1 mnt)
 Peran: SUPERADMIN · Langkah: filter, Excel · Harapan: terbuka.
 
-### SM-21 · Data Analyst › Data — All Lembaga [P1] (2 mnt)
+### SM-21 · Data Analyst › Ketersediaan Data — Semua Lembaga [P1] (2 mnt)
 Peran: SUPERADMIN, lalu OPERATOR · Langkah: hero, kartu domain, tab Radar/Heatmap/Cakupan modul, klik 1 grafik → modal · Harapan: terisi; OPERATOR hanya Lembaga dalam scope.
 
-### SM-22 · Data Analyst › Data — Per Lembaga [P1] (2 mnt)
+### SM-22 · Data Analyst › Ketersediaan Data — Per Lembaga [P1] (2 mnt)
 Peran: SUPERADMIN, lalu OPERATOR · Langkah: pilih Lembaga (analisa otomatis), klik label sumbu radar → seksi, buka 1 baris checklist · Harapan: Index + radar + prioritas + checklist terisi.
 
 ### SM-23 · Data Analyst › Komparasi Data Acuan · Metrik Rilis · Peta Data & Skema [P2] (2 mnt)
 Peran: SUPERADMIN · Langkah: buka ketiganya · Harapan: angka terisi; Peta Data memuat tabel baru rilis ini.
 
 ### SM-24 · Bulk Upload › Petani · Produksi · Lahan (tiap tab) · Pohon [P0] (3 mnt)
-Peran: ADMIN · Langkah: tiap tab terbuka, unduh template · Harapan: template terunduh.
+Peran: OPERATOR · Langkah: tiap tab terbuka, unduh template · Harapan: template terunduh.
 
 ### SM-25 · Tools › Dashboard Snapshot · Snapshot BMP [P2] (1 mnt)
 Peran: SUPERADMIN · Langkah: daftar terbuka (tanpa generate) · Harapan: terbuka.
 
 ### SM-26 · Settings › Users · Menu · Roles · Regions [P0] (3 mnt)
-Peran: SUPERADMIN · Langkah: buka keempatnya; matriks Roles memuat menu baru rilis ini; Menu Management → Edit 1 menu · Harapan: izin = seed; Menu Management **tanpa** Tambah Menu, dialog Edit hanya saklar Aktif/Visible (struktur baca-saja, #364).
+Peran: SUPERADMIN · Langkah: buka keempatnya; matriks Roles memuat menu baru rilis ini · Harapan: izin = seed.
 
 ### SM-27 · Bantuan [P1] (2 mnt)
 Peran: DONOR · Langkah: indeks, cari 1 kata, buka 1 tutorial baru rilis ini · Harapan: render, tanpa 404.
@@ -91,16 +91,10 @@ Peran: DONOR · Langkah: indeks, cari 1 kata, buka 1 tutorial baru rilis ini · 
 Peran: OPERATOR · Langkah: dropdown Distrik/Lembaga di Report & Master Data · Harapan: **tidak** ada Lembaga/Distrik di luar scope.
 
 ### SM-29 · Menu DONOR [P0] (1 mnt)
-Peran: DONOR · Langkah: sidebar · Harapan: Master Data tampil read-only (Lembaga, Petani, Pelatihan, Lahan, Monev BMP — tanpa Produksi, tanpa tombol Tambah/Ubah/Excel); Report tanpa Kelompok Tani & Patok; Bulk Upload/Settings/Data Analyst **tidak** tampil.
+Peran: DONOR · Langkah: sidebar · Harapan: Master Data/Bulk Upload/Settings **tidak** tampil; Report & Map read-only.
 
 ### SM-30 · Dashboard › Monev BMP [P0] (3 mnt)
 Peran: OPERATOR, lalu DONOR · Langkah: filter Distrik/Lembaga/Tahun, klik nama Lembaga di Papan → filter, radar A/B ganti seri B, Unduh Excel rekap · Harapan: 4 seksi terisi; filter di URL; DONOR **tanpa** tombol Unduh Excel.
 
 ### SM-31 · Master Data › Monev BMP · Detail · Penilaian Lembaga [P0] (3 mnt)
 Peran: OPERATOR, lalu DONOR · Langkah: daftar (KPI, filter Kategori), Lihat 1 baris → detail (radar + 5 tabel), tombol Penilaian Lembaga · Harapan: hanya Lembaga dalam scope; DONOR tanpa Tambah/Import/Ubah.
-
-### SM-32 · Data Analyst › Tumpang Tindih Lahan [P1] (2 mnt)
-Peran: OPERATOR · Langkah: filter %/jenis/Distrik/Lembaga, klik 1 baris → peta menyorot irisan, Unduh Excel · Harapan: tiap pasangan punya **minimal satu** sisi dalam scope (sisi lawan boleh di luar scope, tampil lengkap tanpa tautan Detail Lahan); tabel dan peta sepadan.
-
-### SM-33 · Data Analyst › Rencana Pengembangan [P2] (1 mnt)
-Peran: MANAGEMENT · Langkah: pilih rilis lain (tombol atau combobox **Riwayat**), buka tab Analisa dan Semua Issue · Harapan: papan kanban (4 kolom) = tabel rilis di `docs/project/sprint.md`; strip header menampilkan tanggal dokumen & rilis yang dikejar; OPERATOR/DONOR **tidak** melihat menu ini.

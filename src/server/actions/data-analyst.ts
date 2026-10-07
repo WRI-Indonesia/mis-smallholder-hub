@@ -82,42 +82,36 @@ export async function getFarmerSummary(filters: AnalystFilters): Promise<FarmerS
     farmerGroup: farmerGroupWhere,
   };
 
-  // Agregat dihitung di DB (#253, performance.md §Payload Trimming): dulu satu baris
-  // per lahan ditarik ke Node hanya untuk `.length` & `sum(area)` (±19.500 objek).
-  // `rows` per petani tetap dibutuhkan tabel rincian, kini dengan `_count` saja.
-  const [farmers, luas, groups] = await Promise.all([
-    prisma.farmer.findMany({
-      where: farmerWhere,
-      select: {
-        farmerId: true,
-        name:     true,
-        farmerGroup: { select: { name: true } },
-        _count: { select: { landParcels: { where: { isActive: true } } } },
+  const farmers = await prisma.farmer.findMany({
+    where: farmerWhere,
+    select: {
+      farmerId: true,
+      name:     true,
+      farmerGroup: { select: { name: true } },
+      landParcels: {
+        where:  { isActive: true },
+        select: { area: true },
       },
-      orderBy: [
-        { farmerGroup: { name: "asc" } },
-        { name: "asc" },
-      ],
-    }),
-    prisma.landParcel.aggregate({
-      where: { isActive: true, farmer: farmerWhere },
-      _sum: { area: true },
-    }),
-    // Lembaga yang punya petani dalam scope — distinct per id di DB (dulu Set nama di JS;
-    // setara selama nama Lembaga unik: 32 aktif = 32 nama, 2026-09-30).
-    prisma.farmer.groupBy({ by: ["farmerGroupId"], where: farmerWhere }),
-  ]);
+    },
+    orderBy: [
+      { farmerGroup: { name: "asc" } },
+      { name: "asc" },
+    ],
+  });
 
-  const distinctKT     = groups.length;
+  const distinctKT     = new Set(farmers.map(f => f.farmerGroup.name)).size;
   const totalPetani    = farmers.length;
-  const totalPersil    = farmers.reduce((sum, f) => sum + f._count.landParcels, 0);
-  const totalLuasLahan = luas._sum.area ?? 0;
+  const totalPersil    = farmers.reduce((sum, f) => sum + f.landParcels.length, 0);
+  const totalLuasLahan = farmers.reduce(
+    (sum, f) => sum + f.landParcels.reduce((s, p) => s + (p.area ?? 0), 0),
+    0
+  );
 
   const rows: FarmerDetailRow[] = farmers.map(f => ({
     farmerGroupName: f.farmerGroup.name,
     farmerId:        f.farmerId,
     farmerName:      f.name,
-    totalParcels:    f._count.landParcels,
+    totalParcels:    f.landParcels.length,
   }));
 
   return {

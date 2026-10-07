@@ -17,8 +17,7 @@ vi.mock("@/lib/access-context", async () => ({
 const db = vi.hoisted(() => ({
   district: { findMany: vi.fn() },
   farmerGroup: { findMany: vi.fn() },
-  farmer: { findMany: vi.fn(), count: vi.fn(), groupBy: vi.fn() },
-  landParcel: { aggregate: vi.fn() },
+  farmer: { findMany: vi.fn(), count: vi.fn() },
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
@@ -32,8 +31,6 @@ beforeEach(() => {
   db.farmerGroup.findMany.mockResolvedValue([]);
   db.farmer.findMany.mockResolvedValue([]);
   db.farmer.count.mockResolvedValue(0);
-  db.farmer.groupBy.mockResolvedValue([]);
-  db.landParcel.aggregate.mockResolvedValue({ _sum: { area: null } });
 });
 
 describe("guard — data-analyst-farmer-summary:VIEW", () => {
@@ -81,12 +78,7 @@ describe("scope", () => {
     await actions.getFarmerSummary({ farmerGroupId: "kt-1" });
     const args = db.farmer.findMany.mock.calls[0][0];
     expect(args.where).toEqual({ isActive: true, farmerGroup: { isActive: true, districtId: { in: ["1401"] }, id: "kt-1" } });
-    // #253: tak ada nested landParcels (baris lahan ke Node) — hanya _count ber-filter aktif.
-    expect(args.select.landParcels).toBeUndefined();
-    expect(args.select._count.select.landParcels.where).toEqual({ isActive: true });
-    // Luas & jumlah Lembaga memakai scope petani yang SAMA dengan daftar.
-    expect(db.landParcel.aggregate.mock.calls[0][0].where).toEqual({ isActive: true, farmer: args.where });
-    expect(db.farmer.groupBy.mock.calls[0][0]).toEqual({ by: ["farmerGroupId"], where: args.where });
+    expect(args.select.landParcels.where).toEqual({ isActive: true });
   });
 
   it("getFarmersWithoutParcels BY_FARMER_GROUP + filter distrik → scope Lembaga; 'tanpa lahan' = tanpa lahan AKTIF", async () => {
@@ -99,19 +91,11 @@ describe("scope", () => {
 });
 
 describe("agregasi ringkas", () => {
-  it("getFarmerSummary scope tanpa lahan → luas 0 (bukan null), 0 Lembaga", async () => {
-    const res = await actions.getFarmerSummary({});
-    expect(res.summary).toEqual({ totalKT: 0, totalPetani: 0, totalPersil: 0, totalLuasLahan: 0 });
-  });
-
-  it("getFarmerSummary menjumlah Lembaga, petani, persil, luas — nilai sama dengan implementasi lama (fixture sama)", async () => {
-    // Fixture lama: P1 = lahan 1,5 + null, P2 = lahan 2 → persil 3, luas 3,5, 1 Lembaga.
+  it("getFarmerSummary menjumlah Lembaga, petani, persil, luas", async () => {
     db.farmer.findMany.mockResolvedValue([
-      { farmerId: "P1", name: "A", farmerGroup: { name: "HJP" }, _count: { landParcels: 2 } },
-      { farmerId: "P2", name: "B", farmerGroup: { name: "HJP" }, _count: { landParcels: 1 } },
+      { farmerId: "P1", name: "A", farmerGroup: { name: "HJP" }, landParcels: [{ area: 1.5 }, { area: null }] },
+      { farmerId: "P2", name: "B", farmerGroup: { name: "HJP" }, landParcels: [{ area: 2 }] },
     ]);
-    db.landParcel.aggregate.mockResolvedValue({ _sum: { area: 3.5 } });
-    db.farmer.groupBy.mockResolvedValue([{ farmerGroupId: "kt-hjp" }]);
     const res = await actions.getFarmerSummary({});
     expect(res.summary).toEqual({ totalKT: 1, totalPetani: 2, totalPersil: 3, totalLuasLahan: 3.5 });
     expect(res.rows[0]).toEqual({ farmerGroupName: "HJP", farmerId: "P1", farmerName: "A", totalParcels: 2 });

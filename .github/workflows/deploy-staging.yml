@@ -54,20 +54,6 @@ jobs:
             # `free -m` sebelum/sesudah build sebagai jejak diagnosis memori (#340: OOM tanpa data).
             free -m || true
             npm ci --no-audit --no-fund
-
-            # GUARD MIGRASI (#277, opsi 2): migrasi staging tetap MANUAL (DB dulu, baru push),
-            # tetapi deploy tidak boleh mendaratkan kode baru di skema lama. `migrate status`
-            # keluar non-0 bila ada migrasi pending (atau gagal) atau DB tak terjangkau — DB yang
-            # LEBIH MAJU dari kode tetap lolos (dipakai rollback aplikasi, docs/standards/rollback.md) —
-            # job berhenti SEBELUM build/reload, jadi aplikasi yang sedang jalan tidak tersentuh.
-            # Sesudah `npm ci` agar versi Prisma CLI = lock-file.
-            if ! MIGRATE_STATUS="$(npx prisma migrate status 2>&1)"; then
-              echo "$MIGRATE_STATUS"
-              echo "::error::Skema mis-staging belum sesuai kode (migrasi pending / DB tak terjangkau). Terapkan migrasi manual ke mis-staging (docs/database/migrations.md) lalu jalankan ulang deploy. Build & reload dibatalkan — aplikasi lama tetap jalan."
-              exit 1
-            fi
-            echo "$MIGRATE_STATUS" | tail -n 2
-
             npx prisma generate
             npm run build
             free -m || true

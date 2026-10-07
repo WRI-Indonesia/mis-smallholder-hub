@@ -38,7 +38,7 @@ Setelah pekerjaan selesai (dan setiap kali owner minta recheck), audit hasil ker
 
 1. **Rule** — `standards/*` (code-standards, rbac, ui-ux, architecture, principles): perubahan mengikuti konvensi (3 lapis keamanan, `ActionResult`, Zod, soft delete, kebab-case, surgical change).
 2. **Workflow** — file ini: urutan Issue Workflow diikuti (scope issue, Pre-Commit Gate 5 gate, approval DB/destructive, retro sebelum close).
-3. **Progress** — `project/*`: status pekerjaan tercermin di `roadmap.md` (Phase Status/Evidence), `sprint.md` (Rencana Rilis + Backlog), `changelog/YYYY-MM.md` (Decision Log/Changelog bulan berjalan), `tech-debt.md` — **tidak ada baris usang** (mis. issue selesai masih "Todo").
+3. **Progress** — `project/*`: status pekerjaan tercermin di `roadmap.md` (Phase Status/Evidence), `sprint.md` (Active Issues), `changelog/YYYY-MM.md` (Decision Log/Changelog bulan berjalan), `tech-debt.md` — **tidak ada baris usang** (mis. issue selesai masih "Todo").
 4. **Identifikasi file `docs/` lain yang terdampak** (peta cepat di Docs sync) dan perbarui **sebelum commit** — di-commit **bersama** kode. Temuan ketidakpatuhan dilaporkan ke owner, bukan didiamkan.
 5. **Bantuan (`src/content/help/`)** — setiap **perubahan atau penambahan fitur** wajib diperiksa dampaknya ke materi Bantuan: apakah ada tutorial/konsep yang jadi **keliru** (label tombol berubah, langkah bertambah, aturan validasi berubah), dan apakah alur baru itu **perlu tutorial baru**. Perbarui bersama kode, jangan ditunda — panduan yang salah lebih berbahaya daripada panduan yang belum ada, karena pengguna terlanjur memercayainya.
 
@@ -87,7 +87,7 @@ Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `s
 **Docs sync (wajib, sebelum commit):** setiap perubahan yang menyentuh skema/migrasi/kolom, modul/fitur, status delivery, atau aturan **harus** memperbarui file `docs/` yang relevan **sebelum commit** dan di-commit **bersama** kodenya — jangan dipisah/ditunda. Peta cepat:
 
 - **Skema/migrasi/kolom** → `database/models.md`, `database/erd.md`, `database/migrations.md` (riwayat + Versi Skema)
-- **Modul/fitur/status** → `project/roadmap.md` (Phase Status / Evidence per fase; Code Audit Evidence era MVP ada di `project/roadmap-mvp.md`), `project/sprint.md` (Active Issues), `project/changelog/YYYY-MM.md` (Changelog; + Decision Log bila ada keputusan)
+- **Modul/fitur/status** → `project/roadmap.md` (Phase Status / Code Audit Evidence), `project/sprint.md` (Active Issues), `project/changelog/YYYY-MM.md` (Changelog; + Decision Log bila ada keputusan)
 - **Aturan / standar / keputusan arsitektur** → `standards/*` + Decision Log bulan berjalan; keputusan besar lintas modul juga sebagai catatan di `decisions/NNNN-slug.md`
 - **Tech debt / bug** → `project/tech-debt.md`
 
@@ -102,13 +102,13 @@ Repo **punya CI** — hanya saja bukan untuk lint/build/test. Jangan mengira gat
 | `gitleaks.yml` | **setiap push & PR** | Memindai kredensial/rahasia yang tak sengaja ter-commit |
 | `semgrep.yml` | **PR** (+push ke `main` bila berkasnya berubah) | Analisis keamanan statis (SAST) |
 | `deploy-dev.yaml` | push ke branch dev | Deploy otomatis ke lingkungan dev |
-| `deploy-staging.yml` | **push ke `staging`** | Deploy otomatis ke app staging (server staging, pm2 `mis-staging`, port 3000); `.env` dari secret `MIS_STAGING_ENV` — gagal keras bila secret kosong; **guard migrasi** sesudah `npm ci`: `prisma migrate status` ≠ 0 (migrasi pending / DB tak terjangkau; DB yang lebih maju dari kode tetap lolos — jalur rollback aplikasi) → job gagal dengan pesan jelas **sebelum** build & reload, aplikasi lama tetap jalan (#277) |
-| `deploy-main.yml` | **push ke `main`** | **Deploy otomatis ke produksi** via SSH: `git reset --hard origin/main` → tulis `.env` dari secret `MIS_MAIN_ENV` (gagal keras bila kosong) → `npm ci --no-audit --no-fund` → **guard migrasi** `prisma migrate status` (≠ 0 → job gagal sebelum build & reload, aplikasi lama tetap jalan; #394, pola #277) → `prisma generate` → `npm run build` → `pm2 reload mis-main` |
+| `deploy-staging.yml` | **push ke `staging`** | Deploy otomatis ke app staging (server staging, pm2 `mis-staging`, port 3000); `.env` dari secret `MIS_STAGING_ENV` — gagal keras bila secret kosong |
+| `deploy-main.yml` | **push ke `main`** | **Deploy otomatis ke produksi** via SSH: `git reset --hard origin/main` → tulis `.env` dari secret → `npm ci --no-audit --no-fund` → `prisma generate` → `npm run build` → `pm2 reload mis-main` |
 
 Konsekuensi yang wajib diingat:
 
 - **Merge PR ke `main` = deploy produksi.** Tidak ada langkah manual terpisah; begitu PR di-merge, produksi ikut terbarui. Pastikan gate lokal hijau **sebelum** merge, bukan sesudah.
-- **Tidak ada workflow deploy yang menjalankan migrasi Prisma** — `deploy-main.yml` maupun `deploy-staging.yml` hanya `prisma generate` (≠ `migrate deploy`). Migrasi DB tetap **manual** dan harus diterapkan **sebelum** kode yang membutuhkannya di-merge/di-push ke branch deploy — lihat Safety & Approval di bawah. Preseden v0.27.0: 2 migrasi Fire Alert di-`migrate deploy` ke mis-prod **sebelum** PR rilis di-merge. **Staging (#277) dan produksi (#394) punya pengaman:** bila migrasi terlupa, `deploy-staging.yml`/`deploy-main.yml` berhenti di guard `migrate status` (bukan mendaratkan kode di skema lama) — terapkan migrasi ke `mis-staging`/`mis-prod`, lalu *re-run* job. Guard hanya menangkap; migrasi tetap manual dan tetap diterapkan **sebelum** merge. Cara membatalkan rilis (aplikasi, migrasi, migrasi gagal): [rollback.md](./rollback.md).
+- **Tidak ada workflow deploy yang menjalankan migrasi Prisma** — `deploy-main.yml` maupun `deploy-staging.yml` hanya `prisma generate` (≠ `migrate deploy`). Migrasi DB tetap **manual** dan harus diterapkan **sebelum** kode yang membutuhkannya di-merge/di-push ke branch deploy — lihat Safety & Approval di bawah. Preseden v0.27.0: 2 migrasi Fire Alert di-`migrate deploy` ke mis-prod **sebelum** PR rilis di-merge.
 - Gitleaks memindai **seluruh riwayat** (`fetch-depth: 0`), jadi rahasia yang pernah ter-commit lalu dihapus tetap terdeteksi.
 - Kegagalan `gitleaks`/`semgrep` muncul sebagai check merah di PR; periksa `gh pr checks <nomor>` sebelum merge.
 

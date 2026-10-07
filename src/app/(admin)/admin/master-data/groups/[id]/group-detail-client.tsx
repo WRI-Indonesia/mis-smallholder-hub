@@ -24,8 +24,7 @@ import { ProductionMonthlyMatrix } from "@/components/shared/production-monthly-
 import { formatGroupType, formatCertStatus } from "@/lib/farmer-group-labels";
 import type { FarmerGroupDetailData } from "@/lib/farmer-group-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
-import type { MarkerStats } from "@/lib/land-marker-query";
-import { getFarmerGroupMarkerPoints } from "@/server/actions/farmer-group";
+import type { MarkerPoint } from "@/lib/land-marker-query";
 import { formatNumber } from "@/lib/format";
 import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import { scoreBand } from "@/lib/data-availability-aggregation";
@@ -82,7 +81,7 @@ interface Props {
   completeness: { healthScore: number };
   mapParcels: DistributionMapParcel[];
   /** Patok batas Lembaga (#331) — titik di peta sebaran + KPI kondisi. */
-  markerStats: MarkerStats;
+  markerPoints: MarkerPoint[];
   canEdit: boolean;
   districts: { id: string; name: string }[];
   canViewParcel: boolean;
@@ -186,7 +185,7 @@ export function GroupDetailClient({
   detail,
   completeness,
   mapParcels,
-  markerStats,
+  markerPoints,
   canEdit,
   districts,
   canViewParcel,
@@ -555,10 +554,10 @@ export function GroupDetailClient({
             <SummaryCard
               icon={Milestone}
               title="Patok"
-              value={formatNumber(markerStats.total)}
+              value={formatNumber(markerPoints.length)}
               sub={
-                markerStats.total > 0
-                  ? `${Math.round((markerStats.present / markerStats.total) * 100)}% terpasang`
+                markerPoints.length > 0
+                  ? `${Math.round((markerPoints.filter((m) => m.condition === "PRESENT").length / markerPoints.length) * 100)}% terpasang`
                   : "Belum ada patok"
               }
             />
@@ -605,7 +604,7 @@ export function GroupDetailClient({
               onCancel={() => setXlsxOpen(false)}
               onConfirm={(opts) => void handleParcelXlsx(opts)}
             />
-            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} markerStats={markerStats} loadMarkers={() => getFarmerGroupMarkerPoints(group.id)} allowColorByBlok />
+            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} markerPoints={markerPoints} allowColorByBlok />
           </Card>
           <p className="text-sm text-muted-foreground">
             Detail per lahan ada di{" "}

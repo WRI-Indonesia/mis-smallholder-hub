@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { fetchFarmerGroupMarkerPoints, fetchFarmerGroupMarkerStats, type MarkerPoint } from "@/lib/land-marker-query";
+import { fetchFarmerGroupMarkerPoints } from "@/lib/land-marker-query";
 import { loadNktReportData } from "@/lib/nkt-report-query";
 import type { NktReportData } from "@/lib/nkt-report";
 import type { ActionResult } from "@/types/action-result";
@@ -106,24 +106,6 @@ export async function getFarmerGroups(search?: string) {
 }
 
 /**
- * Titik patok peta sebaran Detail Lembaga, dimuat malas saat layer "Patok lahan"
- * dicentang (#335) — payload halaman detail tak lagi membawa ratusan–ribuan
- * titik di setiap render/refresh. Guard + scope sama dengan getFarmerGroupDetail.
- */
-export async function getFarmerGroupMarkerPoints(farmerGroupId: string): Promise<ActionResult<MarkerPoint[]>> {
-  if (!(await hasPermission("master-data-groups", "VIEW"))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
-  }
-  const access = await getAccessContext();
-  const group = await prisma.farmerGroup.findFirst({
-    where: { id: farmerGroupId, AND: farmerGroupAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
-    select: { id: true },
-  });
-  if (!group) return { success: false, error: "Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses" };
-  return { success: true, data: await fetchFarmerGroupMarkerPoints(group.id) };
-}
-
-/**
  * Profil 360° satu Lembaga (#171): profil + agregat Petani/KT/Lahan/Pelatihan/
  * Produksi + skor kelengkapan DA-02. Real-time (keputusan #153/#154 — detail 1
  * entitas), agregasi di pure lib. Tidak memanggil action report/DA (beda
@@ -142,7 +124,7 @@ export async function getFarmerGroupDetail(id: string) {
   });
   if (!group) return null;
 
-  const [trainingPackages, activities, farmers, markerStats] = await Promise.all([
+  const [trainingPackages, activities, farmers, markerPoints] = await Promise.all([
     // Paket wajib (exclude OTHER) — basis cakupan pelatihan (pola DA-02).
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
@@ -211,8 +193,8 @@ export async function getFarmerGroupDetail(id: string) {
         },
       },
     }),
-    // Patok (#331) — hanya hitungan untuk KPI; titik dimuat malas saat layer dicentang (#335).
-    fetchFarmerGroupMarkerStats(group.id),
+    // Patok (#331) — sejajar dengan kueri lain, bukan setelahnya (review 2026-09-15).
+    fetchFarmerGroupMarkerPoints(group.id),
   ]);
 
   const detail = buildFarmerGroupDetail(
@@ -317,8 +299,8 @@ export async function getFarmerGroupDetail(id: string) {
     group,
     detail,
     completeness: { healthScore: completeness.healthScore },
-    // Patok (#331/#335): KPI jumlah + terpasang; titik lewat getFarmerGroupMarkerPoints.
-    markerStats,
+    // Patok (#331): titik di peta sebaran + KPI kondisi.
+    markerPoints,
     // Poligon untuk peta sebaran lahan (tab Lahan) — hanya field yang dipakai peta/popup.
     mapParcels: farmers.flatMap((f) =>
       f.landParcels.map((p) => ({

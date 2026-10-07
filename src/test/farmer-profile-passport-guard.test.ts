@@ -24,7 +24,7 @@ vi.mock("@/lib/access-context", () => ({
   getAccessibleDistrictIds: async () => null,
 }));
 vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "user-1" } }) }));
-vi.mock("@/lib/land-marker-query", () => ({ fetchFarmerGroupMarkerPoints: vi.fn(), fetchFarmerMarkerPoints: vi.fn(), fetchFarmerGroupMarkerStats: vi.fn(async () => ({ total: 0, present: 0 })), fetchFarmerMarkerStats: vi.fn(async () => ({ total: 0, present: 0 })) }));
+vi.mock("@/lib/land-marker-query", () => ({ fetchFarmerGroupMarkerPoints: vi.fn(), fetchFarmerMarkerPoints: vi.fn() }));
 
 const passportQuery = vi.hoisted(() => ({ fetchParcelPassport: vi.fn(), computeFarmerTrainingItems: vi.fn() }));
 vi.mock("@/lib/parcel-passport-query", () => passportQuery);

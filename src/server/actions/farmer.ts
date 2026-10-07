@@ -3,7 +3,7 @@
 import { centroid } from "@turf/turf";
 import type { Polygon, MultiPolygon } from "geojson";
 import { prisma } from "@/lib/prisma";
-import { fetchFarmerMarkerPoints, fetchFarmerMarkerStats, type MarkerPoint } from "@/lib/land-marker-query";
+import { fetchFarmerMarkerPoints } from "@/lib/land-marker-query";
 import { nktAffectedStatusWhere, summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
@@ -125,23 +125,6 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
 }
 
 /**
- * Titik patok peta sebaran Detail Petani, dimuat malas saat layer dicentang
- * (#335). Guard + scope sama dengan getFarmerDetail (`farmerAccessFilter`).
- */
-export async function getFarmerMarkerPoints(farmerId: string): Promise<ActionResult<MarkerPoint[]>> {
-  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
-  }
-  const access = await getAccessContext();
-  const farmer = await prisma.farmer.findFirst({
-    where: { id: farmerId, ...farmerAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
-    select: { id: true },
-  });
-  if (!farmer) return { success: false, error: "Petani tidak ditemukan atau Anda tidak memiliki akses" };
-  return { success: true, data: await fetchFarmerMarkerPoints(farmer.id) };
-}
-
-/**
  * Profil 360° satu Petani (#172): profil + Lahan (tabel + peta) + Pelatihan
  * (checklist paket + riwayat ber-skor) + Produksi (per tahun + bulanan +
  * ketersediaan). Real-time (keputusan #153/#154 — detail 1 entitas), agregasi
@@ -154,7 +137,7 @@ export async function getFarmerDetail(id: string) {
 
   const access = await getAccessContext();
 
-  const [farmer, trainingPackages] = await Promise.all([
+  const [farmer, trainingPackages, markerPoints] = await Promise.all([
     prisma.farmer.findFirst({
       where: {
         id,
@@ -217,11 +200,10 @@ export async function getFarmerDetail(id: string) {
       select: { code: true, name: true },
       orderBy: { code: "asc" },
     }),
+    // Patok (#331) — sejajar dengan kueri lain; dibuang bila petani di luar scope (return null).
+    fetchFarmerMarkerPoints(id),
   ]);
   if (!farmer) return null;
-  // Patok (#331/#335): hitungan KPI SESUDAH scope lolos — dulu kueri titik tanpa scope
-  // jalan sejajar lalu dibuang untuk id di luar cakupan (review #339). Titik dimuat malas.
-  const markerStats = await fetchFarmerMarkerStats(farmer.id);
 
   const detail = buildFarmerDetail(
     {
@@ -278,8 +260,8 @@ export async function getFarmerDetail(id: string) {
       },
     },
     detail,
-    // Patok (#331/#335): KPI; titik lewat getFarmerMarkerPoints saat layer dicentang.
-    markerStats,
+    // Patok (#331): titik di peta sebaran + ringkasan.
+    markerPoints,
     // Tabel persil (tanpa geometry) + poligon peta (pola #171).
     parcels: farmer.landParcels.map((p) => ({
       id: p.id,

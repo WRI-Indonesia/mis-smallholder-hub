@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
-import {
-  groupRemainingByHorizon,
-  parseHorizonLabels,
-  parseRoadmapPhases,
-  parseStreamLabels,
-  summarizeRoadmap,
-} from "@/lib/roadmap";
+import { parseRoadmapPhases, parseStreamLabels, summarizeRoadmap } from "@/lib/roadmap";
 import { parseReleaseMetrics } from "@/lib/release-metrics";
 
 // Sama seperti release-metrics.test.ts: vitest tidak memuat `.md` (itu rule
@@ -30,18 +24,17 @@ const table = (rows: string[]) =>
 describe("parseRoadmapPhases — file roadmap.md nyata", () => {
   it("memparse seluruh baris Phase Status dengan bobot & status valid", () => {
     const phases = parseRoadmapPhases(roadmapMd);
-    // Baseline reset 2026-09-30 (Roadmap 2026–2027): 26 fase (pasca-MVP + Visi Produk); batas bawah longgar.
-    expect(phases.length).toBeGreaterThanOrEqual(14);
-    expect(phases[0]).toMatchObject({ key: "PLATFORM-08", stream: "PLATFORM", status: "Partial", weight: "inti" });
-    expect(phases.find((p) => p.key === "DQ-01")).toMatchObject({
+    expect(phases.length).toBeGreaterThanOrEqual(48);
+    expect(phases[0]).toMatchObject({ key: "PLATFORM-01", stream: "PLATFORM", status: "Done", weight: "inti" });
+    expect(phases.find((p) => p.key === "BULK-02")).toMatchObject({
       status: "Not Started",
-      horizon: "Now",
+      horizon: "Next",
       weight: "inti",
       score: 0,
       maxPoints: 2,
       points: 0,
     });
-    expect(phases.find((p) => p.key === "OPS-02")).toMatchObject({
+    expect(phases.find((p) => p.key === "TOOLS-01")).toMatchObject({
       status: "Partial",
       weight: "pendukung",
       score: 0.5,
@@ -49,27 +42,17 @@ describe("parseRoadmapPhases — file roadmap.md nyata", () => {
     });
   });
 
-  it("fase arsip MVP yang diparkir tidak lagi ikut dihitung", () => {
-    const keys = parseRoadmapPhases(roadmapMd).map((p) => p.key);
-    for (const parked of ["MD-09", "BULK-02", "TOOLS-01", "CMS-01", "COMM-02"]) {
-      expect(keys).not.toContain(parked);
-    }
-  });
-
   it("mengambil evidence & next step dari blok Rincian per Phase", () => {
     const phases = parseRoadmapPhases(roadmapMd);
     const ops02 = phases.find((p) => p.key === "OPS-02");
     expect(ops02?.evidence).toMatch(/Dockerfile/);
-    expect(ops02?.nextStep).toMatch(/rollback/i);
-    // Setiap fase wajib punya evidence & next step — rincian kosong = tabel indeks tanpa bukti.
-    expect(phases.filter((p) => !p.evidence || !p.nextStep).map((p) => p.key)).toEqual([]);
+    expect(ops02?.nextStep).toMatch(/env matrix/i);
   });
 
   it("label stream terbaca dari Stream Definition", () => {
     const labels = parseStreamLabels(roadmapMd);
     expect(labels.MD).toBe("Master Data");
     expect(labels.OPS).toBe("Operations & DevOps");
-    expect(labels.SC).toBe("Supply Chain");
   });
 });
 
@@ -99,51 +82,6 @@ describe("summarizeRoadmap — rincian angka Roadmap %", () => {
     for (const s of summary.streams) {
       expect(s.done + s.partial + s.open).toBe(s.total);
     }
-  });
-});
-
-describe("parseHorizonLabels & groupRemainingByHorizon — sisa fase per horizon (#392)", () => {
-  it("label periode horizon dibaca dari Horizon Definition roadmap.md nyata", () => {
-    const labels = parseHorizonLabels(roadmapMd);
-    expect(labels.Now).toMatch(/Kuartal 4 2026/);
-    expect(labels.Next).toMatch(/Semester 1 2027/);
-    expect(labels.Later).toMatch(/Semester 2 2027/);
-    // Penanda markdown dibuang agar layak tampil apa adanya.
-    expect(Object.values(labels).some((l) => l?.includes("**"))).toBe(false);
-  });
-
-  it("menolak tabel Horizon Definition yang hilang", () => {
-    expect(() => parseHorizonLabels("# Roadmap")).toThrow(/Horizon Definition/);
-  });
-
-  it("roadmap.md nyata: blok Now → Next → Later, jumlahnya menutup seluruh sisa fase", () => {
-    const summary = summarizeRoadmap(parseRoadmapPhases(roadmapMd), {}, parseHorizonLabels(roadmapMd));
-    const groups = groupRemainingByHorizon(summary);
-    expect(groups.map((g) => g.horizon)).toEqual(["Now", "Next", "Later"]);
-    expect(groups.reduce((a, g) => a + g.items.length, 0)).toBe(summary.remaining.length);
-    expect(groups[0].label).toMatch(/Kuartal 4 2026/);
-    const gap = groups.reduce((a, g) => a + g.gainPp, 0);
-    expect(summary.pct + gap).toBeCloseTo(100, 6);
-  });
-
-  it("dalam blok: inti dulu, Partial sebelum belum-mulai, lalu kode; horizon kosong disembunyikan", () => {
-    const phases = parseRoadmapPhases(
-      table([
-        "| MD-01 | A | 🔲 Not Started | Now | pendukung |",
-        "| MD-02 | B | 🔲 Not Started | Now | inti |",
-        "| MD-03 | C | 🟠 Partial | Now | inti |",
-        "| MD-04 | D | 🟠 Partial | Now | pendukung |",
-        "| MD-05 | E | ✅ Done | Done | inti |",
-        "| MD-06 | F | 🔲 Planned | Later | inti |",
-      ])
-    );
-    const groups = groupRemainingByHorizon(summarizeRoadmap(phases, {}, { Now: "K4" }));
-    expect(groups.map((g) => g.horizon)).toEqual(["Now", "Later"]);
-    expect(groups[0].items.map((r) => r.phase.key)).toEqual(["MD-03", "MD-02", "MD-04", "MD-01"]);
-    expect(groups[0].label).toBe("K4");
-    expect(groups[1].label).toBeNull();
-    // Poin terbuka = maks − diperoleh: inti 2−1 + 2 + pendukung 1−0,5 + 1.
-    expect(groups[0].openPoints).toBe(4.5);
   });
 });
 

@@ -45,7 +45,7 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 | File | `groups/[id]/page.tsx` + `groups/[id]/group-detail-client.tsx` |
 | Tipe | Server Component + client component |
 | Guard | `requirePermission("master-data-groups")`; `hasPermission("master-data-groups","EDIT")` untuk tombol Edit; `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate aksi popup peta); `notFound()` bila data tidak ada |
-| Server action / data | `getFarmerGroupDetail(id)` → `{ group, detail, completeness, markerStats, mapParcels }` (`markerStats` = `{ total, present }` untuk KPI Patok & legenda, #335); titik patok dimuat malas lewat `getFarmerGroupMarkerPoints(id)` (VIEW `master-data-groups` + scope Lembaga) saat baris legenda **Patok lahan** pertama kali dicentang — label berganti "Memuat patok…" selama permintaan; cache hilang saat halaman di-refresh, `getDistrictsForSelect()` (hanya bila boleh edit) |
+| Server action / data | `getFarmerGroupDetail(id)` → `{ group, detail, completeness, markerPoints, mapParcels }` (`markerPoints` = titik patok #331), `getDistrictsForSelect()` (hanya bila boleh edit) |
 
 ## Objek halaman
 

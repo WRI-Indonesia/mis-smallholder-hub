@@ -1,115 +1,82 @@
-# Rencana Pengembangan
+# Sprint Mingguan
 
 [← Menu Data Analyst](README.md) · [← Katalog halaman](../README.md)
 
-Sub menu `data-analyst-sprint`, satu halaman: `/admin/data-analyst/sprint` (#378; dulu **Sprint Mingguan** — key, URL, dan izin sengaja tidak diganti). Seperti Metrik Rilis, halaman ini tentang pengembangan aplikasinya sendiri, bukan data petani. Audiensnya tim, manajemen, dan owner. Akses: **SUPERADMIN, ADMIN, dan MANAGEMENT** (VIEW), sama dengan Metrik Rilis. Dijaga `src/test/menu-access.test.ts`.
+Sub menu `data-analyst-sprint`, satu halaman: `/admin/data-analyst/sprint` (#378). Seperti Metrik Rilis, halaman ini tentang pengembangan aplikasinya sendiri, bukan data petani. Audiensnya tim, manajemen, dan owner. Akses: **SUPERADMIN, ADMIN, dan MANAGEMENT** (VIEW), sama dengan Metrik Rilis. Dijaga `src/test/menu-access.test.ts`.
 
-## Keputusan owner
+## Keputusan owner (2026-09-28)
 
-**2026-09-28 (#378)**
-- **Sumber data = `docs/project/sprint.md`**, di-bundle webpack (`asset/source`) dan diparse saat modul dimuat (pola Metrik Rilis). Tanpa DB, migrasi, atau token GitHub. Konsekuensinya, status baru berubah setelah deploy.
-- **Poin = ukuran S/M/L = 1/3/5** (S ≤ ½ hari kerja, M 1–2 hari, L 3+ hari, sebaiknya dipecah). Progres dihitung dalam poin karena jumlah butir menyesatkan bila ukurannya timpang.
-- **Tab Analisa** memuat empat analisa: velocity, keputusan tertunda, carry-over, komposisi fokus (putaran 3, 2026-09-29: kartu ringkasan + satu grafik beban per status + matriks fokus per kategori).
-
-**2026-09-29 (#389)** — tab utama = **kanban** tahapan penyelesaian issue (menggantikan daftar per status, bukan toggle).
-
-**2026-09-30 — perombakan (opsi ber-preview)**
-- **Unit rencana = RILIS, bukan sprint mingguan.** Pengembangan dikerjakan satu orang di sela cleaning data dan kunjungan distrik: ada minggu padat, ada minggu tanpa coding. Ritme Senin–Minggu membuat minggu kosong tampak seperti sprint gagal. Setiap rilis punya tanggal mulai & target bebas. Sprint 1–6 lama dipetakan: Sprint 1 selesai → v1.2.0, sisa Sprint 1 + Sprint 2–4 → v1.3.0, Sprint 5–6 → v1.4.0.
-- **Nama menu = "Rencana Pengembangan"** (label di `menu.csv`; ke staging/prod lewat `seed-menu-only.ts` saat rilis v1.3.0 — lokal `mis-dev` sudah).
-- **Velocity = poin selesai per MINGGU KALENDER** (Σ selesai ÷ Σ minggu mulai → tanggal dirilis, hanya rilis bertanda dirilis — bukan rilis terlambat yang masih dikerjakan), bukan per rilis — panjang rilis berbeda-beda. Grafik beban tidak lagi punya satu garis rata-rata; tiap kolom mendapat **penanda kapasitas** = velocity × panjang rilis.
-- **Pemilih tidak tumbuh bersama riwayat:** tombol hanya untuk rilis yang belum tuntas (berjalan / terlambat / mendatang); rilis yang sudah dirilis masuk combobox **Riwayat** ber-cari. Filter Rilis di Semua Issue juga combobox ber-cari (`shared/filter-combobox.tsx`), bukan chip.
-- **Tab Semua Issue** (`No. Issue | Rilis | Kategori | Status | Deskripsi`) diturunkan dari tabel Rilis + Backlog, **tanpa file md baru** (satu informasi satu tempat). Backlog berupa tabel satu issue per baris dan **hanya** tampil di tab ini; tabel Work Item lama di `sprint.md` diarsipkan.
-- **Kartu kanban ringkas** (judul, ukuran, kategori, keputusan yang masih terbuka; target di balik Detail; kartu Selesai satu baris bercentang) dan **strip ringkasan** di header (umur dokumen, rilis yang sedang dikejar, keputusan menunggu owner).
+- Pasca-MVP (v1.0.0) pengembangan memakai **sprint mingguan Senin → Minggu**.
+- **Sumber data = `docs/project/sprint.md`** §Sprint Focus, di-bundle webpack (`asset/source`) dan diparse saat modul dimuat (pola Metrik Rilis). Tanpa DB, migrasi, atau token GitHub. Konsekuensinya, status baru berubah setelah deploy.
+- **Tata letak = tab Sprint | Analisa + pemilih minggu** (putaran 2, menggantikan akordeon kartu per minggu dari putaran 1).
+- **Tata letak tab Sprint = kanban** tahapan penyelesaian issue (#389, keputusan owner 2026-09-29: menggantikan daftar per status, bukan toggle; masuk v1.2.0).
+- **Poin sprint = ukuran S/M/L = 1/3/5** (S ≤ ½ hari, M 1–2 hari, L 3+ hari, sebaiknya dipecah). Progres dihitung dalam poin karena jumlah butir menyesatkan bila ukurannya timpang.
+- **Tab Analisa** memuat keempat analisa: velocity, keputusan tertunda, carry-over, dan komposisi fokus. Putaran 3 (2026-09-29): tata letak dirombak menjadi kartu ringkasan + satu grafik beban per status + matriks fokus per kategori.
 
 ## Diagram objek
 
 ```text
-Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
+Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 ├── Header — judul + HelpHint (tutorial p-15) + deskripsi sumber data
-├── Strip ringkasan (`sprint-header-strip.tsx`, dirender di `SprintViewClient`) — 3 kotak:
-│   · Dokumen rencana diperbarui (`updatedAt` + `daysBetween`, kuning bila > 14 hari)
-│   · Rilis yang sedang dikejar: berjalan, atau — bila tak ada — terlambat pertama; "sisa n hari (target …)"
-│     atau "target lewat n hari" (kuning) + bilah poin; rilis terlambat LAIN disebut di bawahnya ("Belum dirilis &
-│     lewat target: …"); tanpa keduanya: "Tidak ada rilis yang sedang dikejar"
-│   · Keputusan menunggu owner (`pendingDecisions`: butir · poin · terlambat → tombol ke tab Analisa) + "+ n keputusan
-│     di backlog" (butir backlog ⚖️ → tab Semua Issue, filter Backlog + Menunggu keputusan)
-│   Tombol memakai `setMany` induk, BUKAN `<Link href="?tab=…">` — `useUrlFilters` membaca URL sekali saat mount
-├── Tabs (URL ?tab=analisa|issue; bawaan Rilis)
-├── Tab Rilis
-│   ├── Peringatan (kuning) — hanya bila SEMUA rilis sudah dirilis
-│   ├── Pemilih (URL ?rilis=<versi>; `?sprint=` lama diabaikan) — tombol untuk rilis BELUM TUNTAS
-│   │   (`releaseState`: berjalan bertitik · terlambat · mendatang) + rilis terpilih bila dari riwayat;
-│   │   combobox "Riwayat (n)" untuk rilis yang sudah dirilis, terbaru dulu
-│   │   └── Bawaan: berjalan → terlambat pertama → mendatang terdekat → terakhir
-│   ├── Ringkasan rilis (2 baris) — badge Berjalan/Terlambat/Mendatang/Dirilis · versi · judul · rentang ·
-│   │   "hari ke-n dari m · sisa k hari" / "target lewat n hari" / "mulai n hari lagi" · bilah POIN + "x/y butir selesai"
-│   ├── Papan kanban (`releaseKanban`, 4 kolom urut alur): Belum dimulai → Dikerjakan → Menunggu keputusan → Selesai;
-│   │   kepala kolom = label + jumlah butir + poin ("poin tertahan" di kolom keputusan, kuning bila berisi);
+├── Tabs (URL ?tab=analisa; bawaan Sprint)
+├── Tab Sprint
+│   ├── Peringatan (kuning) — hanya bila SEMUA sprint sudah lewat
+│   ├── Pemilih minggu (URL ?sprint=<n>|backlog) — tombol per sprint: titik "minggu ini", rentang, x/y poin
+│   │   └── Bawaan: sprint aktif (tanggal WIB server) → mendatang terdekat → terakhir
+│   ├── Ringkasan sprint — badge Minggu ini/Mendatang/Selesai · rentang · "hari ke-n dari 7" · judul
+│   │   · bilah progres POIN + "x/y butir selesai"
+│   ├── Papan kanban (#389, menggantikan kotak keputusan + daftar per status) — `sprintKanban`, 4 kolom urut alur:
+│   │   Belum dimulai → Dikerjakan → Menunggu keputusan → Selesai; kepala kolom = label `SPRINT_STATUS_LABEL`
+│   │   + jumlah butir + poin ("poin tertahan" di kolom keputusan, berlatar kuning bila berisi); kolom kosong = "Kosong";
 │   │   grid 1 kolom (ponsel) · 2 (sm) · 4 (xl)
-│   │   └── Kartu ringkas: judul (markdown inline, `#nnn` → GitHub) · ukuran "M · 3" · titik kategori ·
-│   │       keputusan owner yang masih terbuka (kotak kuning; yang sudah "✅ …" pindah ke Detail) · tombol "Detail"/"Tutup"
-│   │       (`aria-expanded`) → target. Kartu SELESAI satu baris: ✓ + judul + ukuran + panah detail. Read-only
-│   └── Lajur terlipat "Digeser ke rilis lain (n)" — kartu butir ⏭️ (poinnya dihitung di rilis tujuan)
-├── Tab Analisa
-│   ├── 4 kartu (`planTotals`): Rencana (poin tanpa butir digeser · n rilis · tanggal akhir) · Tertahan keputusan owner
-│   │   (poin + % rencana + rincian terlambat / rilis berjalan / mendatang — yang nol tidak ditulis) · Velocity rata-rata
-│   │   (poin/minggu kalender dari rilis lewat target + ukuran sampel "n rilis (m minggu)", "sampel masih kecil" bila < 4
-│   │   minggu; bila belum ada: progres rilis berjalan + hari ke-n dari m) · Carry-over
-│   ├── Beban & kemajuan per rilis — satu kolom per rilis, tinggi = KOMITMEN AWAL (termasuk butir yang kemudian digeser),
-│   │   skala sama, ditumpuk per STATUS (`releaseStatusPoints`, `PLAN_STACK_ORDER`); penanda putus per kolom = kapasitas
-│   │   (velocity × minggu rilis) setelah ada rilis lewat target; tooltip saat hover & fokus keyboard
-│   │   └── Warna = STATUS, bukan kategori: enam warna kategori tak lolos validator bila ditumpuk bebas
-│   ├── Fokus per kategori — matriks angka poin kategori × rilis
-│   ├── Keputusan menunggu owner — butir ⚖️ di rilis, per urgensi: Terlambat (target lewat) · Rilis berjalan · Mendatang
-│   └── Carry-over — butir Digeser: dari rilis mana → rilis tujuan (atau "belum dijadwalkan"), berapa kali
-└── Tab Semua Issue (`sprint-issues.tsx`, `allIssues`)
-    ├── Ringkasan: n issue unik (m baris)
-    ├── Kotak Cari (URL ?q=, `matchesQuery`: setiap kata harus ada di nomor/rilis/status/kategori/deskripsi/catatan)
-    ├── Combobox Rilis (URL ?di=<versi>|backlog; urutan opsi: belum tuntas → Backlog → riwayat; setiap kali filter
-    │   berpindah ke Backlog urutan jadi urutan prioritas). `get`/`setMany` dioper dari induk (instance hook kedua = URL basi)
-    ├── Chip Status (URL ?status=todo|progress|decision|done) + jumlah (4 nilai tetap — tidak tumbuh)
-    └── Tabel No. Issue (tautan GitHub) · Rilis (versi / "Backlog (urutan n)") · Kategori (md+, — untuk backlog) ·
-        Status · Deskripsi (kolom Issue tanpa `#nnn`, catatan backlog di baris kedua). Header No. Issue & Rilis bisa
-        diklik (`sortIssueRows`, `aria-sort`). Butir ⏭️ dan baris RILIS tanpa `#nnn` tidak ikut; baris BACKLOG tanpa
-        `#nnn` (TD-xxx) ikut tanpa tautan
+│   │   └── Kartu: judul (markdown inline, `#nnn` → GitHub) · ukuran "M · 3" · titik kategori · target (terpotong 3 baris,
+│   │       tombol "Target lengkap"/"Ringkas" berlabel judul butir, hanya bila target > 110 karakter; saat terpotong = teks polos `plainInline`) · teks keputusan owner (kotak kuning) bila ada. Read-only — status diubah di sprint.md
+│   ├── Lajur terlipat "Digeser ke sprint lain (n)" — kartu butir ⏭️ (poinnya dihitung di sprint tujuan)
+│   └── Backlog (bila dipilih) — daftar bernomor dari "#### Backlog …"
+└── Tab Analisa
+    ├── 4 kartu (`planTotals`): Rencana (poin tanpa butir digeser · n sprint · tanggal akhir) · Tertahan keputusan owner
+    │   (poin + % rencana + rincian terlambat / minggu ini / mendatang — yang nol tidak ditulis) · Velocity rata-rata
+    │   (sprint lewat saja; bila belum ada: progres sprint berjalan + hari ke-n) · Carry-over (butir; kuning bila digeser > 1×)
+    ├── Beban & kemajuan per sprint — satu kolom per sprint, tinggi = KOMITMEN AWAL (termasuk butir yang kemudian digeser),
+    │   skala sama untuk semua sprint, ditumpuk per STATUS (`sprintStatusPoints`, urutan `SPRINT_STACK_ORDER`: selesai ·
+    │   dikerjakan · menunggu keputusan · belum dimulai · digeser putus-putus); label total di atas batang (di luar alur
+    │   flex agar batang tetap sejajar sumbu); garis putus rata-rata velocity; tooltip saat hover & fokus keyboard
+    │   └── Warna = STATUS, bukan kategori: enam warna kategori tak lolos validator bila ditumpuk bebas
+    ├── Fokus per kategori — matriks angka poin kategori × sprint (menggantikan batang bertumpuk 100%)
+    ├── Keputusan menunggu owner — SEMUA butir ⚖️, dikelompokkan per urgensi: Terlambat (sprint lewat) · Minggu ini · Sprint mendatang
+    └── Carry-over — butir ber-status Digeser: dari sprint mana → sprint tujuan (atau "belum dijadwalkan"), berapa kali
 ```
 
-## Format sumber (`docs/project/sprint.md` §Rencana Rilis)
+## Format sumber (`docs/project/sprint.md` §Sprint Focus)
 
 | Elemen | Format | Diparse menjadi |
 |---|---|---|
-| Terakhir diperbarui | baris `Terakhir diperbarui: YYYY-MM-DD` (wajib) | `updatedAt` |
-| Heading rilis | `#### Rilis v<x.y.z> · <mulai YYYY-MM-DD> → <target YYYY-MM-DD> — <judul>`, + ` (dirilis YYYY-MM-DD)` di akhir setelah keluar | `Release { version, start, end, releasedAt, title }` |
-| Tabel rilis | 7 kolom: `# \| Issue \| Kategori \| Poin \| Target \| Status \| ⚖️ Keputusan owner` | `PlanItem[]`; `#nnn` di kolom Issue → `issueRefs` |
-| Kategori | Keamanan · Rilis · Performa · Data · Fitur · Kerapian (urutan = prioritas = urutan warna) | `PlanCategory` |
+| Heading sprint | `#### Sprint <n> · <YYYY-MM-DD> → <YYYY-MM-DD> — <judul>` | `Sprint { number, start, end, title }` |
+| Tabel sprint | 7 kolom: `# \| Issue \| Kategori \| Poin \| Target minggu ini \| Status \| ⚖️ Keputusan owner` | `SprintItem[]`; `#nnn` di kolom Issue → `issueRefs` |
+| Kategori | Keamanan · Rilis · Performa · Data · Fitur · Kerapian (urutan = prioritas = urutan warna) | `SprintCategory` |
 | Poin | S · M · L | `size` + `points` 1/3/5 |
 | Status | awalan 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser | `todo`/`progress`/`decision`/`done`/`moved` |
 | Keputusan owner | teks; `—` = tidak ada | `decision: string \| null` |
-| Backlog | `#### Backlog …` + tabel 4 kolom `# \| Issue \| Status \| Catatan` (`#` = urutan kelompok, boleh berulang) | `backlog: BacklogItem[]` |
+| Heading backlog | `#### Backlog …` diikuti daftar `1. …` | `backlog: string[]` |
 
-- Rilis ditulis **urut** dan tidak tumpang tindih (mulai rilis berikutnya > target rilis sebelumnya). Versi unik. Konvensi: rilis dimulai **sehari setelah rilis sebelumnya dirilis**, agar velocity mencerminkan siklus sebenarnya (pemetaan awal v1.2.0 = 2 hari sempat menghasilkan 52,5 poin/minggu).
-- Keadaan rilis (`releaseState`): bertanda `(dirilis …)` = **dirilis** (boleh sebelum target); tanpa penanda: sebelum mulai = mendatang, dalam rentang = berjalan, lewat target = **terlambat** (tetap tampil di depan sampai ditandai). Rilis bertanda dirilis tidak boleh menyisakan butir selain ✅/⏭️ (parser melempar), dan rilis berikutnya boleh mulai sesudah tanggal dirilis. Review `98ba652`: dulu "dirilis" disimpulkan dari tanggal + semua ✅ — rilis yang keluar lebih awal tetap "Berjalan", rilis yang seluruhnya ⏭️ terhitung "dirilis".
-- Butir yang digeser ditulis di rilis asal dengan ⏭️, **lalu** ditulis ulang di rilis tujuan dengan **teks kolom Issue yang sama persis**. Carry-over dikunci per teks Issue (satu baris = satu butir): "#286 butir 2" dan "#286 butir 1 & 3" dua butir.
-- Dua hitungan sengaja berbeda untuk butir ⏭️: **progres rilis** tidak menghitungnya (sisa kerja rilis tujuan); **velocity** menghitungnya di komitmen rilis asal, supaya selisih rencana vs selesai terlihat.
-- Kolom Issue memuat **paling banyak satu** `#nnn`; rujukan lain ditulis di kolom Target/Catatan — dijaga test file nyata.
-- `Terakhir diperbarui` tidak boleh lebih lama dari tanggal terbaru (≤ hari ini, WIB) di baris berstatus ✅ — dijaga test. Hanya baris selesai, agar tenggat masa depan di baris Todo tidak membuat test merah saat harinya tiba.
+- Butir yang digeser ditulis di sprint asal dengan ⏭️, **lalu** ditulis ulang di sprint tujuan dengan **teks kolom Issue yang sama persis**. Carry-over dikunci per teks Issue (satu baris = satu butir), bukan per `#nnn`: "**#253** · **#320**" satu butir, "#286 butir 2" dan "#286 butir 1 & 3" dua butir.
+- Dua hitungan sengaja berbeda untuk butir ⏭️: **progres sprint** (kartu ringkasan) tidak menghitungnya, karena itu sisa kerja sprint tujuan; **velocity** menghitungnya di komitmen sprint asal, supaya selisih rencana vs selesai terlihat.
 - Pipa di dalam sel wajib di-escape `\|` (aturan GFM, juga di dalam `kode`); parser mengembalikannya menjadi `|`.
-- Blok `<details>` di dalam section **dilewati**, tidak menghentikan parse; section berakhir di heading `###` berikutnya. Tag buka/tutup dihitung per baris.
-- Format rusak (status/kategori/poin tak dikenal, jumlah kolom ≠ 7 / ≠ 4, heading `####` asing — termasuk format lama `#### Sprint …`, versi dobel, rilis tumpang tindih atau mulai sesudah target, rilis tanpa baris, baris dobel, `Terakhir diperbarui` hilang) **melempar**, jadi build gagal alih-alih salah render diam-diam.
+- Blok `<details>` di dalam §Sprint Focus (riwayat fokus lama, catatan) **dilewati**, tidak menghentikan parse; section berakhir di heading `###` berikutnya. Tag buka/tutup dihitung per baris, jadi `<details>…</details>` satu baris atau `teks </details>` juga aman (wrap-up 2026-09-29: dulu sisa section terbuang diam-diam).
+- Format rusak (status/kategori/poin tak dikenal, jumlah kolom ≠ 7, heading `####` asing, sprint tanpa baris, nomor sprint atau nomor baris dobel) **melempar**, jadi build gagal alih-alih salah render diam-diam.
 
 ## Kode
 
 | Berkas | Isi |
 |---|---|
-| `src/lib/release-plan.ts` | Parser murni `parseReleasePlan` + `releasePhase`, `releaseTimeline`, `releaseState`, `releaseProgress`, `releaseVelocity` (poin/minggu), `pendingDecisions`, `carryOvers`, `releaseComposition`, `releaseStatusPoints` + `PLAN_STACK_ORDER`, `planTotals`, `releaseKanban` + `KANBAN_COLUMNS`, `allIssues` + `issueDescription` + `sortIssueRows`, `daysBetween`, `PLAN_STATUS_LABEL` (dulu `sprint-plan.ts`) |
-| `src/lib/release-plan-data.ts` | Import `sprint.md` + parse sekali (jangan diimport dari test) |
-| `src/app/(admin)/admin/data-analyst/sprint/` | `page.tsx` (guard, tanggal WIB) · `sprint-view-client.tsx` (tabs, pemilih rilis, tab Rilis) · `sprint-header-strip.tsx` (strip ringkasan) · `sprint-analysis.tsx` (tab Analisa) · `sprint-issues.tsx` (tab Semua Issue + backlog) · `sprint-shared.tsx` (warna kategori, `fmtDate`, `Inline`, bilah progres, `SearchBox` + `matchesQuery`, `CategoryLabel`) · `loading.tsx`. Nama berkas mengikuti URL `/sprint`, bukan unit rencana |
-| `src/lib/chart-palette.ts` · `src/lib/repo-links.ts` | Palet kategorikal & tautan repo bersama — dipakai juga Metrik Rilis |
-| `scripts/seed/seed-menu-key.mjs <key>` · `scripts/seed/seed-menu-only.ts` | `seed-menu-key` hanya MENAMBAH menu/izin yang belum ada — tidak mengganti label. Label baru "Rencana Pengembangan" ke staging/prod lewat `seed-menu-only.ts` (dry-run menampilkan diff judul; izin yang dihapus admin ikut dipulihkan → cek `rbac:compare`) |
-| `src/test/release-plan.test.ts` | File nyata (rilis urut, ≤ 1 `#nnn` per kolom Issue, kesegaran tanggal) + fixture + format rusak + fase/linimasa/keadaan rilis + velocity per minggu + keputusan/carry-over + kanban + Semua Issue (TD-xxx, urutan) + helper tampilan |
+| `src/lib/sprint-plan.ts` | Parser murni `parseSprintPlan` + `sprintPhase`, `sprintDay`, `sprintProgress` (butir & poin), `sprintVelocity`, `pendingDecisions`, `carryOvers`, `sprintComposition`, `sprintStatusPoints` + `SPRINT_STACK_ORDER`, `planTotals`, `sprintKanban` + `KANBAN_COLUMNS` (#389), `SPRINT_STATUS_LABEL` (label status — sumber tunggal UI) |
+| `src/lib/sprint-plan-data.ts` | Import `sprint.md` + parse sekali (jangan diimport dari test) |
+| `src/app/(admin)/admin/data-analyst/sprint/` | `page.tsx` (guard, tanggal WIB) · `sprint-view-client.tsx` (tabs, pemilih minggu, tab Sprint) · `sprint-analysis.tsx` (tab Analisa) · `sprint-shared.tsx` (warna kategori, `fmtDate`, `Inline`, bilah progres) · `loading.tsx` |
+| `src/lib/chart-palette.ts` · `src/lib/repo-links.ts` | Palet kategorikal & tautan repo bersama — dipakai juga Metrik Rilis (review #378: dulu disalin/diimpor lintas route) |
+| `scripts/seed/seed-menu-key.mjs <key>` | Seed parsial generik: menu + izin dibaca dari CSV |
+| `src/test/sprint-plan.test.ts` | File nyata (Senin→Minggu berurutan) + fixture + format rusak + batas fase + velocity/keputusan/carry-over/hari ke-n + temuan review (pipa ter-escape, `<details>` di tengah / satu baris / tag tutup setelah teks, dobel, keputusan terlambat, carry-over per baris) + poin per status = komitmen awal, total rencana tanpa hitung ganda |
 
 ## Batas yang disadari
 
 - `sprint.md` hanya menyimpan keadaan **terakhir**, bukan kapan status berubah. Karena itu burndown harian **tidak** dibuat. Bila diperlukan kelak, tambah kolom tanggal selesai atau baca riwayat git berkas ini.
-- Velocity per minggu kalender tetap menghitung minggu tanpa coding (cleaning data, kunjungan distrik). Itu disengaja: kapasitas perkiraan harus realistis terhadap waktu yang benar-benar tersedia, bukan hanya minggu produktif.
-- Di luar lingkup: status live dari GitHub API dan mengedit rencana dari UI (#378).
+- Di luar lingkup: status live dari GitHub API dan mengedit sprint dari UI (#378).

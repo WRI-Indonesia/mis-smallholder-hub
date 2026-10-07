@@ -13,7 +13,7 @@ Audit docs 2026-09-29 menemukan fakta yang sama disalin di banyak berkas dan sud
 2. Changelog dipecah **per bulan** (`project/changelog/YYYY-MM.md`); keputusan besar ditulis di `decisions/`.
 3. Cerminan yang tak perlu dihapus (`product/module-status.md`); satu fakta satu tempat.
 4. Dokumen yang bisa diturunkan dari kode (tabel menu, referensi skema, riwayat migrasi, angka ringkasan) **di-generate** oleh skrip + test kesegaran.
-5. Nama berkas berbahasa Inggris, **heading berbahasa Indonesia**; kunci yang diparse build (`Phase Status (Indeks)`, `Sprint Focus`, `Debt Register`, …) tidak diubah. *(Catatan 2026-09-30: `Sprint Focus` diganti `Rencana Rilis` bersama parsernya — perombakan rencana per rilis.)*
+5. Nama berkas berbahasa Inggris, **heading berbahasa Indonesia**; kunci yang diparse build (`Phase Status (Indeks)`, `Sprint Focus`, `Debt Register`, …) tidak diubah.
 6. Emoji status: 🟠 sebagian · 🟡 sedang dikerjakan (legenda di `docs/README.md`).
 7. QA: paket **tiga rilis terakhir yang sudah terbit** + paket rilis yang sedang disiapkan tetap di `qa/`; sisanya `qa/archive/`. `01-smoke.md` tetap **salinan penuh** per versi (snapshot yang diuji), bukan selisih dari template.
 8. Tautan docs di aplikasi menunjuk `main` (versi produksi).

@@ -1,6 +1,6 @@
 # QA/QC v0.38.0
 
-> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../../README.md)
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md)
 
 | | |
 |---|---|

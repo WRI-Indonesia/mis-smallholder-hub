@@ -46,10 +46,9 @@ Tersedia dua berkas contoh di Langkah 1: **Unduh Template Excel** (semua kolom) 
 
 ### Kolom STDB yang belum bernomor
 
-Sel bertuliskan **"belum terbit"**, **"tidak terbit"**, **"belum ada"**, **"belum dapat"**, atau **"n/a"** berarti STDB-nya sedang diurus. Sistem mencatatnya sebagai STDB tahap **Persiapan Data** tanpa nomor untuk petani itu — tidak dibuang, dan tidak dianggap nomor. Ringkasan hasil unggah menyebutnya *"(N belum bernomor)"*. Tahap berikutnya (Pengajuan, Revisi, Terbit) diperbarui di tab **Legalitas** detail lahan — lihat tutorial *Mencatat surat, STDB, dan program pada lahan*.
+Sel bertuliskan **"belum ada"**, **"belum dapat"**, atau **"n/a"** saat ini masih diperlakukan sama dengan sel kosong: **tidak** ada baris STDB yang dibuat dari sel itu. Untuk mencatat STDB yang sedang diurus (tahap Persiapan Data, Pengajuan, atau Revisi), gunakan tab **Legalitas** di detail lahan — lihat tutorial *Mencatat surat, STDB, dan program pada lahan*.
 
-+ Satu petani hanya boleh punya satu berkas STDB yang sedang berjalan, jadi beberapa lahan milik petani yang sama ditautkan ke berkas yang sama. Petani yang **sudah punya STDB** dilewati — ringkasan menyebutnya *"petani 'belum ada' dilewati (sudah punya STDB)"*.
-+ Sel kosong, `-`, atau `0` tidak membuat baris STDB apa pun. Sel berisi nomor menghasilkan STDB tahap **Terbit**.
++ Sel kosong, `-`, atau `0` juga tidak membuat baris STDB apa pun. Hanya sel berisi nomor STDB yang menghasilkan STDB tahap **Terbit**.
 
 > [!hati-hati] Baris yang **ID Lahan-nya muncul dua kali dengan ID Petani berbeda** ditandai error di *kedua* barisnya. Sistem sengaja tidak memilih salah satu — itu salah ketik di sumber yang harus Anda putuskan sendiri.
 
@@ -62,10 +61,6 @@ Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: 
 **"ID Lahan … tidak terdaftar untuk petani …"** — pasangan ID Lahan + ID Petani tidak cocok dengan sistem. Biasanya ID Petani-nya yang salah ketik (mis. `…2004.0001` padahal seharusnya `…2006.0001`). Cek di Master Data → Lahan siapa pemilik lahan itu.
 
 **"ID Petani … tidak ditemukan dalam database atau akses Anda"** — petani ada tapi di luar wilayah/lembaga akses Anda, atau ID-nya berubah format (spasi, nol di depan hilang).
-
-**"Nomor Surat berisi beberapa nomor (||)"** — satu sel memuat daftar seperti `123 || 456`. Pada berkas kabupaten, daftar itu biasanya **seluruh surat milik petani** yang disalin ke setiap lahannya, jadi sistem tidak bisa tahu surat mana milik lahan mana dan sengaja tidak memecahnya. Isi satu nomor surat per baris lahan, atau kosongkan kolom Nomor Surat baris itu agar STDB dan kode lainnya tetap bisa disimpan.
-
-**"Luas tertera … tidak wajar untuk lahan pekebun (maks 25 ha) — kemungkinan satuannya m²"** — angka di kolom luas surat lebih dari 25 ha. Hampir selalu itu luas dalam **meter persegi**: bagi dengan 10.000 (mis. `17830` m² = `1,783` ha), lalu unggah ulang.
 
 **"Tidak ada data detail … untuk disimpan"** — baris itu tidak membawa surat, STDB, UL Parcel Code, kelompok tani, blok, sepadan, maupun NKT. Hapus barisnya atau lengkapi.
 
