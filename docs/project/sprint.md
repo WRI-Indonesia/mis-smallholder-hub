@@ -8,7 +8,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 ### Rencana Rilis
 
-Terakhir diperbarui: 2026-09-30
+Terakhir diperbarui: 2026-10-07
 
 Rencana disusun **per rilis**, bukan per minggu (keputusan owner 2026-09-30): pengembangan dikerjakan satu orang sambil cleaning data dan kunjungan ke distrik, jadi ada minggu yang padat dan ada minggu tanpa coding sama sekali — ritme mingguan membuat minggu kosong tampak seperti sprint gagal. Setiap rilis punya **tanggal mulai dan target**; kemajuan diukur dalam poin, velocity dalam **poin per minggu kalender** rilis yang sudah lewat. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Riwayat: disusun 2026-09-28 dari triase 42 issue terbuka sebagai 6 sprint mingguan; 2026-09-30 dipetakan ke rilis — setiap rilis dimulai sehari setelah rilis sebelumnya (v1.1.0 dirilis 2026-09-23), agar velocity mencerminkan siklus sebenarnya (Sprint 1 selesai → v1.2.0, sisa Sprint 1 + Sprint 2–4 → v1.3.0, Sprint 5–6 → v1.4.0), backlog jadi tabel satu issue per baris, tabel Work Item diarsipkan. **v1.3.0 dirilis lebih awal 2026-09-30** (keputusan owner): sisa butirnya digeser ke rilis baru **v1.4.0** (10-01 → 10-25), sehingga Supply Chain menjadi **v1.5.0** dan penyangga akhir tahun **v1.6.0** (tanggal tetap). Setiap rilis berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner dan sebaiknya diputuskan di awal rilis.
 
