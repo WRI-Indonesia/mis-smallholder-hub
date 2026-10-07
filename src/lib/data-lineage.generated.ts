@@ -696,6 +696,10 @@ export const UNMAPPED_ROUTES: UnmappedRoute[] = [
     "reason": "tanpa-requirePermission"
   },
   {
+    "route": "(admin)/admin/platform-developer",
+    "reason": "tanpa-requirePermission"
+  },
+  {
     "route": "(admin)/admin/profile",
     "reason": "tanpa-requirePermission"
   },

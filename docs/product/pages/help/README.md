@@ -17,7 +17,7 @@ Sejak **HELP-02** materi dibagi **tiga lapis** lewat `section` pada `HelpChapter
 | Lapis | Isi | Status |
 |---|---|---|
 | `tutorial` | Panduan **per tugas**, dua tingkat kedalaman (Ringkas/Detail) | 48 topik / 5 bab |
-| `konsep` | Istilah & aturan main yang dirujuk tutorial | 13 topik / 6 bab |
+| `konsep` | Istilah & aturan main yang dirujuk tutorial | 14 topik / 6 bab |
 | `referensi` | Arti kolom & tombol per halaman | 5 topik / 1 bab (`r-1-daftar-petani` … `r-5-ketersediaan-data`) |
 
 ## Diagram objek
@@ -41,7 +41,7 @@ Menu: Bantuan (/admin/help)
 
 | Aspek | Keterangan |
 |---|---|
-| Berkas materi | `src/content/help/` — lapis tutorial di `tutorial/` (48 file), lapis referensi di `referensi/` (5 file), lapis konsep di 6 folder `<n>-<bab>/<n>-<m>-<topik>.md` (13 file); total 12 bab di `CHAPTER_SOURCES` (5 tutorial + 1 referensi + 6 konsep). Registrasi file ↔ `CHAPTER_SOURCES`, frontmatter `menuKey`/`href` ↔ `menu.csv`, dan cakupan tutorial per menu daun dijaga `src/test/help-registry.test.ts` (#257). Cakupan dihitung dari **setiap** materi ber-`menuKey`, bukan hanya lapis `tutorial/` — menu `help` ditutup topik konsep 7.4 karena halaman Bantuan tak bisa punya tutorial ke dirinya sendiri. Per 2026-09-28 cakupan **39/39** dan `TANPA_TUTORIAL` kosong (#257 tuntas) |
+| Berkas materi | `src/content/help/` — lapis tutorial di `tutorial/` (48 file), lapis referensi di `referensi/` (5 file), lapis konsep di 6 folder `<n>-<bab>/<n>-<m>-<topik>.md` (14 file); total 12 bab di `CHAPTER_SOURCES` (5 tutorial + 1 referensi + 6 konsep). Registrasi file ↔ `CHAPTER_SOURCES`, frontmatter `menuKey`/`href` ↔ `menu.csv`, dan cakupan tutorial per menu daun dijaga `src/test/help-registry.test.ts` (#257). Cakupan dihitung dari **setiap** materi ber-`menuKey`, bukan hanya lapis `tutorial/` — menu `help` ditutup topik konsep 7.4 karena halaman Bantuan tak bisa punya tutorial ke dirinya sendiri. Per 2026-09-28 cakupan **39/39** dan `TANPA_TUTORIAL` kosong (#257 tuntas) |
 | Registrasi | `src/lib/help-content.ts` — konstanta `CHAPTER_SOURCES` (slug, judul, ringkasan, ikon bab) + satu baris `import` per file `.md` |
 | Bundling | file `.md` dimuat sebagai string via webpack `asset/source` (`next.config.ts`), di-parse sekali saat modul dimuat → perubahan materi baru tampil setelah build ulang |
 | Parser | `src/lib/markdown-lite.ts` (`parseMarkdown`, `parseBlocks`, `parseInline`, `blocksToPlainText`) — subset Markdown: frontmatter, heading `##`, paragraf, daftar `-`, baris definisi `**Istilah** — deskripsi`, inline `**tebal**` / `` `kode` `` / `[tautan](url)`, dan baris media `![caption](src)` |
@@ -63,7 +63,7 @@ Menu: Bantuan (/admin/help)
 | 6 | referensi | Referensi Halaman (`referensi-halaman`) | Arti tiap kolom, filter, dan tombol di halaman yang paling sering dipakai — untuk dirujuk saat bekerja, bukan dibaca berurutan. | 6.1 Halaman Petani — arti kolom & tombol (`daftar-petani`) · 6.2 Halaman Lahan — arti kolom & tombol (`daftar-lahan`) · 6.3 Halaman Pelatihan — arti kolom & tombol (`daftar-pelatihan`) · 6.4 Halaman Produksi — arti kolom & tombol (`daftar-produksi`) · 6.5 Ketersediaan Data — cara skor dihitung (`ketersediaan-data-skor`) |
 | 7 | konsep | Memulai (`memulai`) | Kenali istilah yang dipakai sistem, cara masuk, mengapa tampilan tiap pengguna berbeda, dan cara memakai Bantuan ini. | 7.1 Sekilas & Istilah Penting (`istilah`) · 7.2 Masuk & Akun (`masuk-akun`) · 7.3 Hak Akses & Cakupan Data (`hak-akses`) · 7.4 Cara Memakai Bantuan (`memakai-bantuan`, ber-`menuKey: help` → cakupan menu Bantuan, #257) · 7.5 Peta Data (`peta-data`, #256) |
 | 8 | konsep | Mengelola Data (`mengelola-data`) | Input harian lewat Master Data, atau unggah massal lewat Bulk Upload. | 8.1 Master Data (`master-data`) · 8.2 Bulk Upload (Unggah Massal) (`bulk-upload`) |
-| 9 | konsep | Memantau & Menganalisa (`memantau`) | Ringkasan program lewat dashboard, sebaran spasial lewat peta, dan kualitas data lewat analisa. | 9.1 Dashboard (`dashboard`) · 9.2 Peta (`peta`) · 9.3 Data Analyst (`data-analyst`) |
+| 9 | konsep | Memantau & Menganalisa (`memantau`) | Ringkasan program lewat dashboard, sebaran spasial lewat peta, dan kualitas data lewat analisa. | 9.1 Dashboard (`dashboard`) · 9.2 Peta (`peta`) · 9.3 Data Analyst (`data-analyst`) · 9.4 Platform Developer (`platform-developer`; Metrik Rilis, Rencana Pengembangan, Peta Data & Skema — dipindah dari Data Analyst 2026-10-07) |
 | 10 | konsep | Laporan & Cetak (`laporan`) | Tujuh laporan siap unduh (Excel & PDF), termasuk Laporan Lahan yang menyertakan peta dan Laporan Patok. | 10.1 Report (Laporan) (`report`) |
 | 11 | konsep | Administrasi (`administrasi`) | Perawatan berkala agar angka dashboard mengikuti data terbaru. | 11.1 Tools (`tools`) |
 | 12 | konsep | Bantuan Lanjutan (`bantuan-lanjutan`) | Kendala yang paling sering ditemui beserta langkah pemeriksaannya. | 12.1 Pertanyaan Umum & Kendala (`kendala`) |

@@ -16,7 +16,7 @@ Halaman ini memantau pengembangan **aplikasinya sendiri**, bukan data petani. Ti
 
 ## Langkah
 
-1. Buka menu **Data Analyst → Metrik Rilis**.
+1. Buka menu **Platform Developer → Metrik Rilis**.
 2. Baca **tiga kartu teratas** untuk kondisi terkini: RVS sekarang, Roadmap, dan jumlah test otomatis.
 + Baris kecil di bawah angka RVS dan Test adalah **perolehan rilis terakhir** (mis. "+183 di v1.2.0"). Di kartu Roadmap, baris itu memuat poin yang sudah diperoleh dari total poin dan jumlah fase roadmap aktif, ditambah nilai akhir baseline lama yang sudah dibekukan.
 + Angka ber-prefiks **≈** adalah estimasi rekonstruksi (rilis sebelum v0.21.0, dihitung mundur dari changelog) — cukup akurat untuk tren, jangan dikutip sebagai angka pasti.
@@ -44,4 +44,4 @@ Halaman ini memantau pengembangan **aplikasinya sendiri**, bukan data petani. Ti
 
 **Fase yang sudah selesai masih tampil sebagai sisa** — statusnya belum diubah di tabel Phase Status `roadmap.md`. Halaman tidak pernah menebak status dari kode; ia hanya membaca tabel itu.
 
-**Menu Metrik Rilis tidak muncul di sidebar** — cari di grup **Data Analyst**, bukan Dashboard (alamat halamannya memang masih `/admin/dashboard/metrics`, peninggalan penempatan lama). Menu ini hanya dibuka untuk SUPERADMIN, ADMIN, dan MANAGEMENT; role lain perlu diberi izin VIEW `dashboard-metrics` lewat Settings → Role & Permission bila memang diputuskan dibuka.
+**Menu Metrik Rilis tidak muncul di sidebar** — cari di grup **Platform Developer**, bukan Dashboard atau Data Analyst (alamat halamannya memang masih `/admin/dashboard/metrics`, peninggalan penempatan lama). Menu ini hanya dibuka untuk SUPERADMIN, ADMIN, dan MANAGEMENT; role lain perlu diberi izin VIEW `dashboard-metrics` lewat Settings → Role & Permission bila memang diputuskan dibuka.

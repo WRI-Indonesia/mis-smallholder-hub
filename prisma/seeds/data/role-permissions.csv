@@ -384,6 +384,7 @@ SUPERADMIN,data-analyst-parcel-overlap,EXPORT
 SUPERADMIN,data-analyst-parcel-overlap,VIEW
 SUPERADMIN,data-analyst-sprint,VIEW
 SUPERADMIN,data-analyst,VIEW
+SUPERADMIN,platform-developer,VIEW
 SUPERADMIN,help,EXPORT
 SUPERADMIN,help,PRINT
 SUPERADMIN,help,VIEW

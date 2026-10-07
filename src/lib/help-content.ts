@@ -42,6 +42,7 @@ import bulkUpload from "@/content/help/2-mengelola-data/2-2-bulk-upload.md";
 import dashboard from "@/content/help/3-memantau/3-1-dashboard.md";
 import peta from "@/content/help/3-memantau/3-2-peta.md";
 import dataAnalyst from "@/content/help/3-memantau/3-3-data-analyst.md";
+import platformDeveloper from "@/content/help/3-memantau/3-4-platform-developer.md";
 import report from "@/content/help/4-laporan/4-1-report.md";
 import tools from "@/content/help/5-administrasi/5-1-tools.md";
 import kendala from "@/content/help/6-bantuan-lanjutan/6-1-kendala.md";
@@ -329,6 +330,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "dashboard", source: dashboard },
       { id: "peta", source: peta },
       { id: "data-analyst", source: dataAnalyst },
+      { id: "platform-developer", source: platformDeveloper },
     ],
   },
   {

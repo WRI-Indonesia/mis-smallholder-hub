@@ -17,13 +17,14 @@ master-data-parcels,master-data,Lahan,/admin/master-data/parcels,Map,4,TRUE,TRUE
 bulk-upload-parcels,bulk-upload,Upload Data Lahan,/admin/bulk-upload/parcels,Map,3,TRUE,TRUE
 master-data-production,master-data,Produksi,/admin/master-data/production,TrendingUp,5,TRUE,TRUE
 data-analyst,,Data Analyst,/admin/data-analyst,BarChart3,4,TRUE,TRUE
+platform-developer,,Platform Developer,/admin/platform-developer,Code2,5,TRUE,TRUE
 data-analyst-farmer-summary,data-analyst,Ringkasan Petani,/admin/data-analyst/farmer-summary,Users,1,TRUE,TRUE
 data-analyst-data-availability,data-analyst,Data — All Lembaga,/admin/data-analyst/data-availability,Gauge,2,TRUE,TRUE
 data-analyst-data-completeness,data-analyst,Data — Per Lembaga,/admin/data-analyst/data-completeness,ClipboardCheck,3,TRUE,TRUE
 data-analyst-benchmark-comparison,data-analyst,Komparasi Data Acuan,/admin/data-analyst/benchmark-comparison,GitCompare,4,TRUE,TRUE
-data-analyst-data-map,data-analyst,Peta Data & Skema,/admin/data-analyst/data-map,Network,6,TRUE,TRUE
+data-analyst-data-map,platform-developer,Peta Data & Skema,/admin/data-analyst/data-map,Network,2,TRUE,TRUE
 data-analyst-parcel-overlap,data-analyst,Tumpang Tindih Lahan,/admin/data-analyst/parcel-overlap,Layers,7,TRUE,TRUE
-data-analyst-sprint,data-analyst,Rencana Pengembangan,/admin/data-analyst/sprint,CalendarRange,8,TRUE,TRUE
+data-analyst-sprint,platform-developer,Rencana Pengembangan,/admin/data-analyst/sprint,CalendarRange,3,TRUE,TRUE
 report,,Report,/admin/report,FileText,1,TRUE,TRUE
 report-farmer,report,Petani,/admin/report/farmer,User,1,TRUE,TRUE
 report-training,report,Pelatihan,/admin/report/training,GraduationCap,3,TRUE,TRUE
@@ -42,7 +43,7 @@ dashboard-bmp,dashboard,BMP Dashboard (Produksi),/admin/dashboard/bmp,Sprout,3,T
 dashboard-training,dashboard,Dashboard Pelatihan,/admin/dashboard/training,GraduationCap,2,TRUE,TRUE
 dashboard-snapshot-bmp,tools,Dashboard Snapshot BMP,/admin/tools/snapshot-bmp,Camera,2,TRUE,TRUE
 help,,Bantuan,/admin/help,HelpCircle,9,TRUE,TRUE
-dashboard-metrics,data-analyst,Metrik Rilis,/admin/dashboard/metrics,Activity,5,TRUE,TRUE
+dashboard-metrics,platform-developer,Metrik Rilis,/admin/dashboard/metrics,Activity,1,TRUE,TRUE
 bulk-upload-trees,bulk-upload,Pohon Sawit,/admin/bulk-upload/trees,TreePine,4,TRUE,TRUE
 dashboard-risk,dashboard,Risk Management,/admin/dashboard/risk,ShieldAlert,5,TRUE,TRUE
 dashboard-risk-fire,dashboard-risk,Fire Alert,/admin/dashboard/risk/fire,Flame,1,TRUE,TRUE
