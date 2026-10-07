@@ -92,9 +92,9 @@ describe("SVG ekspor", () => {
   });
 });
 
-describe("Workbook Training Benefit (3 sheet)", () => {
+describe("Workbook Training Benefit (2 sheet: Capaian · Kontrak)", () => {
   const base: BenefitExcelInput = {
-    years, rows, any, activeFarmers: 100, currentYear: 2026, filterActive: true,
+    years, rows, any, currentYear: 2026, filterActive: true,
     contract: { baselineYear: grid.baselineYear, years: grid.years, rows: contractRows },
     images: {},
   };
@@ -104,22 +104,16 @@ describe("Workbook Training Benefit (3 sheet)", () => {
     return wb;
   };
 
-  it("sheet Tabel · Grafis · vs Kontrak, tabel mulai di baris 1", async () => {
+  it("sheet Capaian · Kontrak (owner 2026-10-07), tabel mulai di baris 1", async () => {
     const wb = await roundTrip(base);
-    expect(wb.worksheets.map((w) => w.name)).toEqual(["Tabel", "Grafis", "vs Kontrak"]);
-    const tabel = wb.getWorksheet("Tabel")!;
-    expect(tabel.getRow(1).getCell(1).value).toBe("Package");
-    expect(tabel.getRow(3).values).toEqual([undefined, "P1 | BMP, P&C RSPO, HCV", 50, 50, 20, 70, 10, 80]);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Capaian", "Kontrak"]);
+    const ws = wb.getWorksheet("Capaian")!;
+    expect(ws.getRow(1).getCell(1).value).toBe("Package");
+    expect(ws.getRow(3).values).toEqual([undefined, "P1 | BMP, P&C RSPO, HCV", 50, 50, 20, 70, 10, 80]);
   });
 
-  it("Grafis: angka segmen + kumulatif + belum dilatih + petani aktif", async () => {
-    const ws = (await roundTrip(base)).getWorksheet("Grafis")!;
-    expect(ws.getRow(1).values).toEqual([undefined, "Package", "s.d. 2024", "baru 2025", "baru 2026", "Kumulative 2026", "Belum dilatih", "Petani aktif"]);
-    expect(ws.getRow(4).values).toEqual([undefined, "Petani pernah mengikuti pelatihan (minimal 1)", 60, 20, 12, 92, 8, 100]);
-  });
-
-  it("vs Kontrak: Start + tahun (target/realisasi/%), tahun mendatang tanpa realisasi, total kontrak; catatan filter", async () => {
-    const ws = (await roundTrip(base)).getWorksheet("vs Kontrak")!;
+  it("Kontrak: Start + tahun (target/realisasi/%), tahun mendatang tanpa realisasi, total kontrak; catatan filter", async () => {
+    const ws = (await roundTrip(base)).getWorksheet("Kontrak")!;
     expect(ws.getRow(1).getCell(2).value).toBe("Start s.d. 2025");
     expect(ws.getRow(1).getCell(11).value).toBe("Total kontrak");
     // P1: Start 70/2, 2026 20/1 (5%), 2027 target 10 belum mulai, total 100 / 3 (3%)
@@ -128,17 +122,18 @@ describe("Workbook Training Benefit (3 sheet)", () => {
     expect(texts.some((t) => t.startsWith("Filter Distrik/Lembaga aktif"))).toBe(true);
   });
 
-  it("tanpa target → sheet vs Kontrak berisi pesan", async () => {
-    const ws = (await roundTrip({ ...base, contract: null })).getWorksheet("vs Kontrak")!;
+  it("tanpa target → sheet Kontrak berisi pesan", async () => {
+    const ws = (await roundTrip({ ...base, contract: null })).getWorksheet("Kontrak")!;
     expect(String(ws.getRow(1).getCell(1).value)).toMatch(/^Belum ada target kontrak/);
   });
 
-  it("gambar ditempel di bawah tabel", async () => {
+  it("gambar Grafis di bawah tabel Capaian; gambar 5 grafik di bawah tabel Kontrak", async () => {
     const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
     const wb = buildTrainingBenefitWorkbook({ ...base, images: { grafis: { base64: png, widthPx: 10, heightPx: 10 }, kontrak: { base64: png, widthPx: 10, heightPx: 10 } } });
-    const grafis = wb.getWorksheet("Grafis")!;
-    const [img] = grafis.getImages();
-    expect(img.range.tl.nativeRow).toBeGreaterThan(4);
-    expect(wb.getWorksheet("vs Kontrak")!.getImages()).toHaveLength(1);
+    const capaian = wb.getWorksheet("Capaian")!;
+    const [img] = capaian.getImages();
+    expect(img.range.tl.nativeRow).toBeGreaterThanOrEqual(capaian.rowCount - 1);
+    expect(img.range.tl.nativeRow).toBeGreaterThan(4); // 2 baris header + 3 baris data
+    expect(wb.getWorksheet("Kontrak")!.getImages()).toHaveLength(1);
   });
 });

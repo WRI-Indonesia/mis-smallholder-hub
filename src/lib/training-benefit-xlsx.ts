@@ -4,11 +4,11 @@ import { contractTrajectory, trajectorySummary } from "@/lib/training-benefit-ch
 import type { TrainingBenefitRow, TrainingBenefitYear } from "@/lib/training-dashboard-aggregation";
 
 /**
- * Workbook kartu Training Benefit per year (#402/#403) — tiga sheet, satu per tampilan:
- * "Tabel" (format donor), "Grafis" (angka bar + gambar), "vs Kontrak" (target vs realisasi
- * per periode + gambar 5 grafik). Tabel selalu mulai di baris 1 (AutoFilter/pivot tetap
- * jalan, pola report-land-parcel-xlsx); gambar ditempel DI BAWAH tabel. exceljs tak bisa
- * membuat grafik Excel asli → gambar PNG dari SVG yang sama dengan layar.
+ * Workbook kartu Training Benefit per year (#402/#403) — dua sheet (owner 2026-10-07):
+ * "Capaian" (tabel format donor + gambar Grafis di bawahnya) dan "Kontrak" (target vs
+ * realisasi per periode + gambar 5 grafik). Tabel selalu mulai di baris 1 (AutoFilter/pivot
+ * tetap jalan, pola report-land-parcel-xlsx); gambar ditempel DI BAWAH tabel. exceljs tak
+ * bisa membuat grafik Excel asli → gambar PNG dari SVG yang sama dengan layar.
  */
 
 export interface BenefitExcelImage {
@@ -22,7 +22,6 @@ export interface BenefitExcelInput {
   years: TrainingBenefitYear[];
   rows: TrainingBenefitRow[];
   any: TrainingBenefitRow;
-  activeFarmers: number;
   currentYear: number;
   /** null = target gagal dimuat / belum diisi → sheet vs Kontrak berisi pesan saja. */
   contract: { baselineYear: number | null; years: number[]; rows: ContractRow[] } | null;
@@ -51,8 +50,8 @@ function addImageBelow(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, image: Benef
   ws.addImage(id, { tl: { col: 0, row: ws.rowCount + 1 }, ext: { width: image.widthPx, height: image.heightPx } });
 }
 
-function sheetTabel(wb: ExcelJS.Workbook, { years, rows, any }: BenefitExcelInput) {
-  const ws = wb.addWorksheet("Tabel");
+function sheetCapaian(wb: ExcelJS.Workbook, { years, rows, any, images }: BenefitExcelInput) {
+  const ws = wb.addWorksheet("Capaian");
   ws.addRow(["Package", ...years.flatMap((y) => [yearLabel(y), ""])]);
   ws.addRow(["", ...years.flatMap(() => ["Actual", "Kumulative"])]);
   ws.mergeCells(1, 1, 2, 1);
@@ -63,31 +62,12 @@ function sheetTabel(wb: ExcelJS.Workbook, { years, rows, any }: BenefitExcelInpu
   boxTable(ws, 1, ws.rowCount, last, 2);
   ws.getColumn(1).width = 52;
   for (let c = 2; c <= last; c++) ws.getColumn(c).width = 13;
-}
-
-function sheetGrafis(wb: ExcelJS.Workbook, input: BenefitExcelInput) {
-  const { years, rows, any, activeFarmers, images } = input;
-  const ws = wb.addWorksheet("Grafis");
-  const lastIdx = years.length - 1;
-  const t = years[lastIdx].year;
-  ws.addRow(["Package", ...years.map((y) => (y.upTo ? `s.d. ${y.year}` : `baru ${y.year}`)), `Kumulative ${t}`, "Belum dilatih", "Petani aktif"]);
-  for (const r of [...rows, any]) {
-    const cum = r.cells[lastIdx].cumulative;
-    ws.addRow([r.label, ...r.cells.map((c) => c.actual), cum, Math.max(0, activeFarmers - cum), activeFarmers]);
-  }
-  ws.getRow(ws.rowCount).font = { bold: true };
-  const last = years.length + 4;
-  boxTable(ws, 1, ws.rowCount, last, 1);
-  ws.getColumn(1).width = 52;
-  for (let c = 2; c <= last; c++) ws.getColumn(c).width = 14;
-  ws.addRow([]);
-  ws.addRow([`Segmen = tahun pertama dilatih; trek penuh = petani aktif (${activeFarmers}); sisa = belum dilatih.`]).font = { italic: true, color: { argb: "FF64748B" } };
   if (images.grafis) addImageBelow(wb, ws, images.grafis);
 }
 
 function sheetKontrak(wb: ExcelJS.Workbook, input: BenefitExcelInput) {
   const { contract, currentYear, filterActive, images } = input;
-  const ws = wb.addWorksheet("vs Kontrak");
+  const ws = wb.addWorksheet("Kontrak");
   // Grid kosong sudah dijadikan null oleh pemanggil (satu sumber dengan layar).
   if (!contract) {
     ws.addRow(["Belum ada target kontrak (atau gagal dimuat). Isi lewat Master Data › Target Program."]);
@@ -132,8 +112,7 @@ function sheetKontrak(wb: ExcelJS.Workbook, input: BenefitExcelInput) {
 
 export function buildTrainingBenefitWorkbook(input: BenefitExcelInput): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
-  sheetTabel(wb, input);
-  sheetGrafis(wb, input);
+  sheetCapaian(wb, input);
   sheetKontrak(wb, input);
   return wb;
 }

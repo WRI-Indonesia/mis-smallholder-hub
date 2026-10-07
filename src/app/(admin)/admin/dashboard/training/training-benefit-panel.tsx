@@ -372,7 +372,7 @@ export function TrainingBenefitPanel({
   }, [programTargets, groups, currentYear]);
   const [exporting, setExporting] = useState(false);
 
-  /** Excel 3 sheet (Tabel · Grafis · vs Kontrak), grafik sebagai gambar PNG dari SVG ekspor. */
+  /** Excel 2 sheet (Capaian = tabel + gambar Grafis · Kontrak), grafik sebagai PNG dari SVG ekspor. */
   const exportExcel = async () => {
     setExporting(true);
     try {
@@ -389,7 +389,7 @@ export function TrainingBenefitPanel({
           )
         : null;
       const [grafis, kontrak] = await Promise.all([svgToPng(bars), grid ? svgToPng(grid) : Promise.resolve(null)]);
-      const wb = buildTrainingBenefitWorkbook({ years, rows, any, activeFarmers, currentYear, contract, filterActive, images: { grafis, kontrak } });
+      const wb = buildTrainingBenefitWorkbook({ years, rows, any, currentYear, contract, filterActive, images: { grafis, kontrak } });
       const buffer = await wb.xlsx.writeBuffer();
       const url = URL.createObjectURL(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
       const a = document.createElement("a");
@@ -480,7 +480,7 @@ export function TrainingBenefitPanel({
                   className="h-8 gap-2"
                   onClick={exportExcel}
                   disabled={exporting}
-                  title="Unduh 3 sheet: Tabel (format donor), Grafis, vs Kontrak — angka + gambar grafik"
+                  title="Unduh 2 sheet: Capaian (tabel format donor + grafik) dan Kontrak (target vs realisasi + grafik)"
                 >
                   {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   Excel
