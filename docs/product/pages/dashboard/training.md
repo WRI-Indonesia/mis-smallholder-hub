@@ -29,7 +29,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 ├── Card Training Benefit per year (full row, collapsible, #402; selalu tampil)
 │   ├── Toggle Tabel | Grafis (state lokal, bawaan Tabel) · tombol Excel (izin EXPORT; selalu format tabel, header dua tingkat)
 │   ├── Grafis: bar bertumpuk per baris — panjang = kumulatif t, segmen ≤ t−2 (gelap) · baru t−1 · baru t (terang), angka di segmen bila ≥ 9% trek; trek abu netral
-│   ├── Tabel (format donor; header: pita tahun hijau, sub-kolom & angka rata tengah, Package 34%) paket (P1 · P2 Group Dynamic · P2 HSE · P3) + baris total "Petani mengikuti ≥ 1 pelatihan" × kolom tahun ≤ t−2 · t−1 · t (masing-masing Actual · Kumulative)
+│   ├── Tabel (format donor; header netral — tahun teks biasa, sub-kolom abu; kolom proporsional, rata tengah, Package 34%) paket (P1 · P2 Group Dynamic · P2 HSE · P3) + baris total "Petani mengikuti ≥ 1 pelatihan" × kolom tahun ≤ t−2 · t−1 · t (masing-masing Actual · Kumulative)
 │   └── Catatan kaki: definisi, kesetaraan dengan Capaian Paket per Distrik, filter Tahun tak berlaku
 ├── Matriks Capaian Paket per Lembaga (collapsible)
 │   ├── Kolom Lembaga Petani

@@ -195,8 +195,8 @@ export function TrainingBenefitPanel({
               <BenefitChart years={years} rows={rows} any={any} />
             ) : (
               <div className="overflow-x-auto">
-                {/* Format tabel donor; header dirapikan (owner 2026-10-07): lebar kolom proporsional,
-                    pita tahun berlatar, sub-kolom & angka rata tengah. */}
+                {/* Format tabel donor; header netral (owner 2026-10-07: fokus pada capaian, bukan
+                    tahun — pita tahun berwarna terlalu mencolok): kolom proporsional, rata tengah. */}
                 <table className="w-full table-fixed text-sm">
                   <colgroup>
                     <col className="w-[34%]" />
@@ -206,22 +206,22 @@ export function TrainingBenefitPanel({
                     <tr>
                       <th
                         rowSpan={2}
-                        className="rounded-tl-md border-b-2 border-emerald-600/40 bg-emerald-50/70 px-3 py-2 text-left align-middle text-xs font-semibold uppercase tracking-wider text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200"
+                        className="border-b border-border px-3 py-2 text-left align-bottom text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                       >
                         Package
                       </th>
-                      {years.map((y, i) => (
+                      {years.map((y) => (
                         <th
                           key={y.year}
                           colSpan={2}
-                          className={`border-l border-background bg-emerald-600 px-2 py-1.5 text-center text-sm font-bold tabular-nums text-white dark:bg-emerald-700 ${i === lastIdx ? "rounded-tr-md" : ""}`}
+                          className="border-l border-border/60 px-2 pt-2 pb-1 text-center text-xs font-semibold tabular-nums text-foreground"
                           title={y.upTo ? `Tahun ${y.year} dan sebelumnya` : undefined}
                         >
                           {yearLabel(y)}
                         </th>
                       ))}
                     </tr>
-                    <tr className="border-b-2 border-emerald-600/40 bg-emerald-50/70 text-[11px] font-semibold uppercase tracking-wider text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
+                    <tr className="border-b border-border text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                       {years.flatMap((y) => [
                         <th key={`${y.year}-a`} className="border-l border-border/60 px-2 py-1.5 text-center" title="Penerima manfaat baru pada tahun tsb">
                           Actual
