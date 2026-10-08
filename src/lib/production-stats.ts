@@ -2,6 +2,7 @@
 // detail Lembaga Petani (#171) dan detail Petani (#172). Pure (tanpa Prisma).
 
 import { productionAvailabilityCategory } from "@/lib/map-data";
+import { annualizeFactorFor, type DataMonthsByYear } from "@/lib/productivity-annualize";
 
 export interface ProductionStatsParcel {
   /** LandParcel.id (db) — kunci ketersediaan & luas pelapor. */
@@ -41,7 +42,10 @@ export interface ProductionYearRow {
   parcelsReporting: number;
   /** Σ luas lahan melapor (Ha) — penyebut produktivitas (#166). */
   areaReporting: number;
-  /** Ton/Ha per tahun = Σ produksi ÷ Σ luas lahan melapor (#166); 0 bila belum ada pelapor ber-lahan. */
+  /**
+   * Ton/Ha/tahun = Σ produksi disetahunkan (× 12 ÷ bulan ber-data Lembaga, owner
+   * 2026-10-08) ÷ Σ luas lahan melapor (#166); 0 bila belum ada pelapor ber-lahan.
+   */
   productivityTonHa: number;
   /** Rincian per bulan (urut naik) — baris collapsible di bawah tahun. */
   months: ProductionMonthRow[];
@@ -92,7 +96,7 @@ export interface ParcelYearBreakdownRow {
   months: Record<number, ParcelBreakdownMonth>;
   totalKg: number;
   recordCount: number;
-  /** Ton/Ha lahan tsb tahun tsb; 0 bila luas tak diketahui. */
+  /** Ton/Ha/tahun lahan tsb tahun tsb (disetahunkan seperti baris tahun); 0 bila luas tak diketahui. */
   productivityTonHa: number;
 }
 
@@ -104,7 +108,9 @@ export interface ParcelYearBreakdownRow {
 export function buildParcelYearBreakdown(
   parcels: (ProductionMatrixParcel & { label: string })[],
   records: ProductionStatsRecord[],
-  currentYear: number
+  currentYear: number,
+  /** Bulan ber-data Lembaga per tahun — basis penyetahunan; absen = tak disetahunkan. */
+  monthsByYear?: DataMonthsByYear
 ): ParcelYearBreakdownRow[] {
   const meta = new Map(parcels.map((p) => [p.id, p]));
   const rows = new Map<string, ParcelYearBreakdownRow>();
@@ -144,7 +150,9 @@ export function buildParcelYearBreakdown(
     .map((row) => ({
       ...row,
       productivityTonHa:
-        row.area != null && row.area > 0 ? round2(row.totalKg / 1000 / row.area) : 0,
+        row.area != null && row.area > 0
+          ? round2((row.totalKg * annualizeFactorFor(monthsByYear, row.year)) / 1000 / row.area)
+          : 0,
     }))
     .sort((a, b) => a.label.localeCompare(b.label, "id"));
 }
@@ -156,12 +164,14 @@ export function buildParcelYearBreakdown(
 export function buildExcludeVariant(
   parcels: ProductionMatrixParcel[],
   records: ProductionStatsRecord[],
-  currentYear: number
+  currentYear: number,
+  monthsByYear?: DataMonthsByYear
 ): ProductionMatrixVariant {
   const kept = parcels.filter((p) => !isExcludedParcel(p, currentYear));
   const keptIds = new Set(kept.map((p) => p.id));
   const keptRecords = records.filter((r) => r.parcelId == null || keptIds.has(r.parcelId));
-  const stats = buildProductionStats(kept, keptRecords);
+  // Faktor tetap bulan ber-data Lembaga (bukan subset lahan yang tersisa).
+  const stats = buildProductionStats(kept, keptRecords, monthsByYear);
   return {
     perYear: stats.perYear,
     totalParcels: kept.length,
@@ -188,7 +198,9 @@ const round2 = (n: number) => parseFloat(n.toFixed(2));
  */
 export function buildProductionStats(
   parcels: ProductionStatsParcel[],
-  records: ProductionStatsRecord[]
+  records: ProductionStatsRecord[],
+  /** Bulan ber-data Lembaga per tahun — basis penyetahunan produktivitas; absen = tak disetahunkan. */
+  monthsByYear?: DataMonthsByYear
 ): ProductionStats {
   interface MonthAcc {
     totalKg: number;
@@ -258,7 +270,10 @@ export function buildProductionStats(
         reportedParcelMonths: acc.parcelMonths.size,
         parcelsReporting: acc.parcelIds.size,
         areaReporting: round2(areaReporting),
-        productivityTonHa: areaReporting > 0 ? round2(acc.totalKg / 1000 / areaReporting) : 0,
+        productivityTonHa:
+          areaReporting > 0
+            ? round2((acc.totalKg * annualizeFactorFor(monthsByYear, year)) / 1000 / areaReporting)
+            : 0,
         months,
       };
     })

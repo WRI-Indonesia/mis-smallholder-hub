@@ -10,6 +10,7 @@ import {
   getAccessibleDistrictIds,
 } from "@/lib/access-context";
 import { buildMapData, buildBmpMapData, summarizeProduction } from "@/lib/map-data";
+import { fetchGroupDataMonths } from "@/lib/production-data-months-query";
 import { mapFilterSchema, bmpMapFilterSchema } from "@/validations/map.schema";
 import { PARCEL_NKT_MARKER_SELECT } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
@@ -314,24 +315,30 @@ export async function getBmpMapData(
 
   // One scoped query for all parcels' production, summed per (parcel, period)
   // (avoids N+1). The _sum aggregate scans the same rows — no extra query cost.
+  // Sejajar: bulan ber-data Lembaga untuk penyetahunan produktivitas (owner
+  // 2026-10-08). Filter wajib menunjuk satu Lembaga; groupWhere menolak Lembaga di
+  // luar scope (groups kosong → tanpa kueri).
   const parcelIds = parcelRows.map((p) => p.id);
+  const [rows, monthsByYear] = await Promise.all([
+    parcelIds.length > 0
+      ? prisma.productionRecord.groupBy({
+          by: ["parcelId", "period"],
+          where: { parcelId: { in: parcelIds }, isActive: true },
+          _sum: { yieldKg: true },
+        })
+      : Promise.resolve([]),
+    groups.length === 1 ? fetchGroupDataMonths(groups[0].id) : Promise.resolve({}),
+  ]);
   const productionByParcel = new Map<string, { period: string; kg: number }[]>();
-  if (parcelIds.length > 0) {
-    const rows = await prisma.productionRecord.groupBy({
-      by: ["parcelId", "period"],
-      where: { parcelId: { in: parcelIds }, isActive: true },
-      _sum: { yieldKg: true },
-    });
-    for (const r of rows) {
-      if (!r.parcelId) continue;
-      const entry = { period: r.period, kg: r._sum.yieldKg ?? 0 };
-      const list = productionByParcel.get(r.parcelId);
-      if (list) list.push(entry);
-      else productionByParcel.set(r.parcelId, [entry]);
-    }
+  for (const r of rows) {
+    if (!r.parcelId) continue;
+    const entry = { period: r.period, kg: r._sum.yieldKg ?? 0 };
+    const list = productionByParcel.get(r.parcelId);
+    if (list) list.push(entry);
+    else productionByParcel.set(r.parcelId, [entry]);
   }
 
-  return { success: true, data: buildBmpMapData(groups, parcelRows, productionByParcel) };
+  return { success: true, data: buildBmpMapData(groups, parcelRows, productionByParcel, monthsByYear) };
 }
 
 /**

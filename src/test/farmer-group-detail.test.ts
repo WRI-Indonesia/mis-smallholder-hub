@@ -84,11 +84,13 @@ describe("buildFarmerGroupDetail (#171)", () => {
     expect(y2025.reportedParcelMonths).toBe(3);
     expect(y2025.parcelsReporting).toBe(2);
     expect(y2025.areaReporting).toBe(5); // p1 (2) + p2 (3), dedupe
-    expect(y2025.productivityTonHa).toBe(0.9); // 4,5 Ton ÷ 5 Ha
+    // Disetahunkan per bulan ber-data Lembaga (owner 2026-10-08): 2025 = Jan–Apr (4 bulan,
+    // April dari record tanpa lahan pun dihitung) → 4,5 Ton × 12/4 ÷ 5 Ha.
+    expect(y2025.productivityTonHa).toBe(2.7);
 
     const y2024 = d.produksi.all.perYear[1];
     expect(y2024.areaReporting).toBe(2);
-    expect(y2024.productivityTonHa).toBe(0.35); // 0,7 ÷ 2
+    expect(y2024.productivityTonHa).toBe(4.2); // 0,7 × 12/1 (hanya Desember) ÷ 2
 
     // Rincian bulanan: urut naik, agregat per periode, record tanpa lahan tak menambah lahan
     // (field bulanan dipangkas ke period/totalKg/parcelsReporting — TD-033)

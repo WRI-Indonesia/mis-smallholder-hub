@@ -415,7 +415,7 @@ export function MapBmpControlPanel(props: Props) {
 
           <Separator />
           <LayerSection
-            title="Produktivitas (Ton/Ha)"
+            title="Produktivitas (Ton/Ha/tahun)"
             active={colorMode === "PRODUCTIVITY"}
             onActivate={() => onColorModeChange("PRODUCTIVITY")}
           >
@@ -450,9 +450,10 @@ export function MapBmpControlPanel(props: Props) {
                   ))}
                 </div>
                 <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
-                  Produktivitas = produksi tahun terpilih ÷ luas persil (Rata-rata =
-                  rata-rata antar tahun terdata). Produksi tanpa tautan lahan tidak
-                  dihitung.
+                  Produktivitas = produksi tahun terpilih disetahunkan (× 12 ÷ bulan
+                  ber-data Lembaga pada tahun itu, sama dengan BMP Dashboard) ÷ luas
+                  persil; Rata-rata = rata-rata antar tahun terdata. Produksi tanpa
+                  tautan lahan tidak dihitung.
                 </p>
               </>
             )}

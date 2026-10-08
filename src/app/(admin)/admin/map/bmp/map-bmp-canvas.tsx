@@ -747,7 +747,7 @@ function BmpParcelPopupBody({
                 ? [
                     {
                       label: `Produktivitas${prodLabel ? ` (${prodLabel})` : ""}`,
-                      value: prodTonHa != null ? `${formatTonHa(prodTonHa)} Ton/Ha` : "—",
+                      value: prodTonHa != null ? `${formatTonHa(prodTonHa)} Ton/Ha/tahun` : "—",
                     },
                     prodIsAvg
                       ? { label: "Tahun Terdata", value: prodYears > 0 ? `${prodYears} tahun` : "—" }

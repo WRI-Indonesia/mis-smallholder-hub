@@ -2,7 +2,7 @@
 
 // Matriks produksi bulanan berwarna (#239) — dua section collapsible:
 // (1) Produksi Bulanan: Jan–Des (Lembaga: Ton; Petani: Kg), gradasi hijau
-//     relatif terhadap sel tertinggi + kolom Total & Produktivitas (Ton/Ha);
+//     relatif terhadap sel tertinggi + kolom Total & Produktivitas (Ton/Ha/tahun);
 // (2) Ketersediaan Data Bulanan: lahan pelapor + % per bulan dengan warna
 //     threshold selaras palet BMP + ringkasan tahunan Record/Lahan/Luas Terdata.
 // Filter All vs Exclude (tanpa PSR & tanaman <3 thn) berlaku untuk keduanya.
@@ -24,6 +24,7 @@ import type {
   ProductionMonthRow,
   ProductionYearRow,
 } from "@/lib/production-stats";
+import { parcelAverageTonHa } from "@/lib/productivity-annualize";
 import { formatNumber } from "@/lib/format";
 
 const MONTH_LABELS = [
@@ -155,7 +156,7 @@ interface ParcelAgg {
   years: ParcelYearBreakdownRow[];
   totalKg: number;
   recordCount: number;
-  /** Rata-rata tahunan: Σ Ton ÷ luas ÷ jumlah tahun ber-data; 0 bila luas tak diketahui. */
+  /** Rata-rata Ton/Ha/tahun antar tahun ber-data (`parcelAverageTonHa`); 0 bila luas tak diketahui. */
   avgTonHa: number;
 }
 
@@ -284,7 +285,7 @@ interface ProductionMonthlyMatrixProps {
   /** Penutup kalimat footnote: "total persil/luas {scopeLabel}" — mis. "Lembaga" / "milik petani". */
   scopeLabel: string;
   emptyMessage: string;
-  /** Satuan sel bulanan & Total: "ton" (Lembaga) atau "kg" (Petani). Produktivitas selalu Ton/Ha. */
+  /** Satuan sel bulanan & Total: "ton" (Lembaga) atau "kg" (Petani). Produktivitas selalu Ton/Ha/tahun. */
   weightUnit?: "ton" | "kg";
   /** Desimal sel bulanan & Total pada satuan ton (Lembaga: 0). Satuan kg selalu bulat. */
   tonDecimals?: number;
@@ -381,10 +382,7 @@ export function ProductionMonthlyMatrix({
       .map((agg) => ({
         ...agg,
         years: [...agg.years].sort((a, b) => b.year - a.year),
-        avgTonHa:
-          agg.area != null && agg.area > 0 && agg.years.length > 0
-            ? agg.totalKg / 1000 / agg.area / agg.years.length
-            : 0,
+        avgTonHa: parcelAverageTonHa(agg.area, agg.years),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, "id"));
     return {
@@ -570,9 +568,9 @@ export function ProductionMonthlyMatrix({
                       <th className="py-2 pl-3 text-right">Total</th>
                       <th
                         className="py-2 pl-3 text-right whitespace-nowrap"
-                        title="Produktivitas (Ton/Ha)"
+                        title="Produktivitas (Ton/Ha/tahun, produksi disetahunkan)"
                       >
-                        Ton/Ha
+                        Ton/Ha/thn
                       </th>
                     </tr>
                   </thead>
@@ -692,12 +690,14 @@ export function ProductionMonthlyMatrix({
               <p className="text-xs text-muted-foreground mt-3">
                 {hasBreakdown &&
                   (byParcel
-                    ? "Klik baris lahan untuk rincian per tahun; Produktivitas baris lahan = rata-rata tahunan (Σ produksi ÷ luas ÷ jumlah tahun ber-data). "
+                    ? "Klik baris lahan untuk rincian per tahun; Produktivitas baris lahan = rata-rata Ton/Ha/tahun antar tahun ber-data. "
                     : "Klik baris tahun untuk rincian per lahan. ")}
                 Warna makin gelap = produksi bulan tsb makin tinggi (relatif terhadap bulan
-                tertinggi); &ldquo;—&rdquo; = tidak ada data. Produktivitas = Σ produksi tahun tsb
-                ÷ Σ luas lahan yang terdata pada tahun tsb (Ton/Ha). Record tanpa lahan masuk
-                total produksi, tidak menambah luas terdata.
+                tertinggi); &ldquo;—&rdquo; = tidak ada data. Produktivitas (Ton/Ha/tahun) = Σ
+                produksi tahun tsb disetahunkan (× 12 ÷ bulan ber-data Lembaga pada tahun itu,
+                sama dengan BMP Dashboard) ÷ Σ luas lahan yang terdata pada tahun tsb; Total
+                tetap produksi tercatat. Record tanpa lahan masuk total produksi, tidak menambah
+                luas terdata.
               </p>
             </>
           ))}

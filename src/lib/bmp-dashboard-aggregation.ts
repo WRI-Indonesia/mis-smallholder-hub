@@ -1,4 +1,5 @@
 import { productionAvailabilityCategory } from "@/lib/map-data";
+import { annualizeFactor, isDataMonth } from "@/lib/productivity-annualize";
 import type {
   BmpAgeBucketStat,
   BmpAvailabilityCounts,
@@ -361,15 +362,13 @@ function seriesOf(g: BmpGroupEntry, dataMode: BmpDataMode) {
 }
 
 /**
- * Faktor penyetahunan produktivitas (keputusan owner 2026-10-08): Ton/Ha/tahun pada
- * tahun yang datanya belum 12 bulan diproyeksikan = produksi × 12 ÷ bulan ber-data.
- * Bulan dihitung PER LEMBAGA (cakupan impor tiap Lembaga berbeda) dari seri bulanan
- * mode yang sama; 1 bila tahun itu tanpa data bulanan. Hanya produktivitas yang
- * disetahunkan — angka produksi tetap yang tercatat.
+ * Faktor penyetahunan produktivitas (keputusan owner 2026-10-08, aturan di
+ * `productivity-annualize.ts` — sama dengan Peta BMP & detail Lembaga/Petani): bulan
+ * dihitung PER LEMBAGA dari seri bulanan snapshot mode yang sama; 1 bila tahun itu
+ * tanpa data bulanan.
  */
 export function bmpAnnualizeFactor(g: BmpGroupEntry, yearKey: string, dataMode: BmpDataMode = "all"): number {
-  const months = monthsPerYear(g, dataMode).get(yearKey) ?? 0;
-  return months > 0 ? 12 / months : 1;
+  return annualizeFactor(monthsPerYear(g, dataMode).get(yearKey));
 }
 
 /**
@@ -387,7 +386,7 @@ function monthsPerYear(g: BmpGroupEntry, dataMode: BmpDataMode): Map<string, num
   if (!counts) {
     counts = new Map();
     for (const [period, m] of Object.entries(seriesOf(g, dataMode).monthly ?? {})) {
-      if (!(m.produksiTon > 0 || m.lahanMelapor > 0)) continue;
+      if (!isDataMonth(m.produksiTon, m.lahanMelapor)) continue;
       const year = period.slice(0, 4);
       counts.set(year, (counts.get(year) ?? 0) + 1);
     }

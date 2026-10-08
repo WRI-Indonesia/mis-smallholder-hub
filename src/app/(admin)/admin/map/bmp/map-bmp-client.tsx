@@ -92,12 +92,16 @@ export function MapBmpClient({ provinces, canViewParcel, canEditParcel, canExpor
   const [printing, setPrinting] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Per-parcel Ton/Ha + class for the selected view — pure client-side math
-  // over the already-fetched per-period production (no extra query).
+  // Per-parcel Ton/Ha/tahun + class for the selected view — pure client-side math
+  // over the already-fetched per-period production + Lembaga months (no extra query).
   const productivity = useMemo(
     () =>
       mapData
-        ? buildBmpProductivityView(mapData.parcels, prodView === "AVG" ? "AVG" : Number(prodView))
+        ? buildBmpProductivityView(
+            mapData.parcels,
+            prodView === "AVG" ? "AVG" : Number(prodView),
+            mapData.monthsByYear
+          )
         : null,
     [mapData, prodView]
   );
@@ -185,7 +189,7 @@ export function MapBmpClient({ provinces, canViewParcel, canEditParcel, canExpor
 
       // Data page(s) follow the active layer too.
       const dataPages = isProd
-        ? { productivityMatrix: buildBmpProductivityMatrix(mapData.parcels) }
+        ? { productivityMatrix: buildBmpProductivityMatrix(mapData.parcels, mapData.monthsByYear) }
         : (() => {
             const { periods, rows: sortedParcels } = buildAvailabilityMatrix(mapData.parcels);
             return {
@@ -206,13 +210,13 @@ export function MapBmpClient({ provinces, canViewParcel, canEditParcel, canExpor
       generateBmpMapPdf({
         title: `Peta BMP — ${ktName}`,
         subtitle: isProd
-          ? `Produktivitas ${prodLabel} (Ton/Ha) · Dicetak ${dateStr}`
+          ? `Produktivitas ${prodLabel} (Ton/Ha/tahun) · Dicetak ${dateStr}`
           : `Ketersediaan Data Produksi · Dicetak ${dateStr}`,
         imageDataUrl: shot.dataUrl,
         imageWidthPx: shot.width,
         imageHeightPx: shot.height,
         legend,
-        legendTitle: isProd ? "Legenda Produktivitas (Ton/Ha):" : undefined,
+        legendTitle: isProd ? "Legenda Produktivitas (Ton/Ha/tahun):" : undefined,
         ...dataPages,
         fileName: isProd ? `peta-bmp-produktivitas-${ktSlug}.pdf` : `peta-bmp-${ktSlug}.pdf`,
       });
@@ -236,14 +240,14 @@ export function MapBmpClient({ provinces, canViewParcel, canEditParcel, canExpor
       // WYSIWYG: the Excel follows the active layer as well.
       if (colorMode === "PRODUCTIVITY") {
         const round2 = (n: number) => Math.round(n * 100) / 100;
-        const matrix = buildBmpProductivityMatrix(mapData.parcels);
+        const matrix = buildBmpProductivityMatrix(mapData.parcels, mapData.monthsByYear);
         const columns = [
           { header: "Nama", key: "nama", width: 24 },
           { header: "ID Petani", key: "idPetani", width: 16 },
           { header: "ID Lahan", key: "idLahan", width: 18 },
           { header: "Luas Lahan (Ha)", key: "luas", width: 14 },
-          ...matrix.years.map((y) => ({ header: `${y} (Ton/Ha)`, key: String(y), width: 13 })),
-          { header: "Rata-rata (Ton/Ha)", key: "rataRata", width: 16 },
+          ...matrix.years.map((y) => ({ header: `${y} (Ton/Ha/tahun)`, key: String(y), width: 15 })),
+          { header: "Rata-rata (Ton/Ha/tahun)", key: "rataRata", width: 20 },
         ];
         const data = matrix.rows.map((r) => {
           const row: Record<string, unknown> = {

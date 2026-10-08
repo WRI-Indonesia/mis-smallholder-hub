@@ -148,6 +148,11 @@ export type BmpMapData = {
   parcels: BmpParcelFeature[];
   kt: KTPoint[];
   counts: { baik: number; cukup: number; kurang: number; none: number };
+  /**
+   * Bulan ber-data per tahun ("YYYY" → n) Lembaga terpilih — basis penyetahunan
+   * produktivitas (× 12 ÷ n), aturan sama dengan BMP Dashboard (owner 2026-10-08).
+   */
+  monthsByYear: Record<string, number>;
 };
 
 /**
@@ -162,12 +167,13 @@ export type BmpMapDataWire = {
   kt: KTPoint[];
   farmers: Record<string, MapFarmerTuple>;
   counts: BmpMapData["counts"];
+  monthsByYear: BmpMapData["monthsByYear"];
 };
 
 // ── Peta BMP — produktivitas per persil (MAP-03) ───────────────────────────
 
 /**
- * Productivity class of a parcel in Ton/Ha per year:
+ * Productivity class of a parcel in Ton/Ha/tahun (produksi disetahunkan):
  * TINGGI (>= 20) · SEDANG (15–<20) · RENDAH (10–<15) · SANGAT_RENDAH (< 10) ·
  * NO_DATA (no linked production for the selected view, or unknown parcel area).
  */
@@ -175,7 +181,7 @@ export type ProductivityClass = "TINGGI" | "SEDANG" | "RENDAH" | "SANGAT_RENDAH"
 
 /** Productivity of one parcel for a selected view (a year or the cross-year average). */
 export type BmpParcelProductivity = {
-  /** Ton/Ha for the view, or null when it cannot be computed (→ NO_DATA). */
+  /** Ton/Ha/tahun for the view, or null when it cannot be computed (→ NO_DATA). */
   tonHa: number | null;
   cls: ProductivityClass;
   /** Periods with data in the selected year (0–12); for AVG, total periods across years. */

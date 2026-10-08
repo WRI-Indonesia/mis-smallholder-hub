@@ -192,7 +192,7 @@ const CLASS_CELL_STYLES: Record<
   { fill: [number, number, number]; text: [number, number, number] } | null
 >;
 
-/** Append the per-parcel productivity table (Ton/Ha per year + average) as landscape page(s). */
+/** Append the per-parcel productivity table (Ton/Ha/tahun per year + average) as landscape page(s). */
 function renderProductivityPages(doc: jsPDF, opts: BmpPrintOptions, margin: number) {
   const matrix = opts.productivityMatrix;
   if (!matrix || matrix.rows.length === 0) return;
@@ -204,12 +204,12 @@ function renderProductivityPages(doc: jsPDF, opts: BmpPrintOptions, margin: numb
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
     doc.setTextColor(20);
-    doc.text(`${opts.title} — Produktivitas per Lahan (Ton/Ha)`, margin, 14);
+    doc.text(`${opts.title} — Produktivitas per Lahan (Ton/Ha/tahun)`, margin, 14);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(90);
     doc.text(
-      "Ton/Ha = produksi tahun tsb ÷ luas persil · warna sel = kelas produktivitas · produksi tanpa tautan lahan tidak dihitung.",
+      "Ton/Ha/tahun = produksi tahun tsb × 12 ÷ bulan ber-data Lembaga ÷ luas persil · warna sel = kelas produktivitas · produksi tanpa tautan lahan tidak dihitung.",
       margin,
       18
     );

@@ -3,6 +3,7 @@
 
 import { deriveFarmerSubGroups, type FarmerSubGroups } from "@/lib/farmer-sub-groups";
 import { NIK_REGEX } from "@/lib/data-completeness";
+import type { DataMonthsByYear } from "@/lib/productivity-annualize";
 import {
   buildExcludeVariant,
   buildParcelYearBreakdown,
@@ -47,6 +48,12 @@ export interface FarmerDetailRawInput {
   landParcels: FarmerDetailRawParcel[];
   trainingParticipants: FarmerDetailRawParticipation[];
   productionRecords: { parcelId: string | null; period: string; yieldKg: number }[];
+  /**
+   * Bulan ber-data per tahun LEMBAGA petani ini (`fetchGroupDataMonths`) — basis
+   * penyetahunan produktivitas, sama dengan BMP Dashboard (owner 2026-10-08).
+   * Absen = tak disetahunkan.
+   */
+  groupDataMonths?: DataMonthsByYear;
 }
 
 export interface ProfileCompleteness {
@@ -138,12 +145,14 @@ export function buildFarmerDetail(
     plantingYear: p.plantingYear,
     label: p.parcelId,
   }));
-  const prodStats = buildProductionStats(matrixParcels, farmer.productionRecords);
-  const exclude = buildExcludeVariant(matrixParcels, farmer.productionRecords, currentYear);
+  const months = farmer.groupDataMonths;
+  const prodStats = buildProductionStats(matrixParcels, farmer.productionRecords, months);
+  const exclude = buildExcludeVariant(matrixParcels, farmer.productionRecords, currentYear, months);
   const parcelBreakdown = buildParcelYearBreakdown(
     matrixParcels,
     farmer.productionRecords,
-    currentYear
+    currentYear,
+    months
   );
 
   const checklist: FarmerTrainingChecklistItem[] = trainingPackages.map((pkg) => {

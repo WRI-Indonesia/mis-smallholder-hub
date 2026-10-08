@@ -11,6 +11,7 @@ import {
   type AvailabilityDistribution,
   type ProductionMatrixVariant,
 } from "@/lib/production-stats";
+import { dataMonthsFromRecords } from "@/lib/productivity-annualize";
 import type { KelompokTaniDetailReportResult } from "@/types/report";
 
 export interface DetailRawParcel {
@@ -160,8 +161,11 @@ export function buildFarmerGroupDetail(
     }))
   );
   const allRecords = farmers.flatMap((f) => f.productionRecords);
-  const prodStats = buildProductionStats(allParcels, allRecords);
-  const exclude = buildExcludeVariant(allParcels, allRecords, currentYear);
+  // Produktivitas disetahunkan per bulan ber-data Lembaga ini (owner 2026-10-08) —
+  // record di sini = seluruh record petani aktif Lembaga, populasi snapshot BMP.
+  const groupMonths = dataMonthsFromRecords(allRecords);
+  const prodStats = buildProductionStats(allParcels, allRecords, groupMonths);
+  const exclude = buildExcludeVariant(allParcels, allRecords, currentYear, groupMonths);
 
   // ── Pelatihan: cakupan per paket + daftar aktivitas ──
   const coverage: GroupTrainingCoverage[] = trainingPackages.map((pkg) => {
