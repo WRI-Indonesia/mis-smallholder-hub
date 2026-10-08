@@ -15,7 +15,7 @@ Selain skor akhir, Monev BMP punya **rincian**: 5 kegiatan berbobot (Knowledge 0
 
 + Enam indikator Lembaga (standar teknis kerja, infrastruktur panen, transportasi, taksasi produksi, catatan produksi, …) ikut masuk ke skor akhir **setiap petani** Lembaga itu. Karena itu penilaian Lembaga disimpan sekali per Lembaga per tahun, bukan diulang di tiap petani.
 
-Sumbernya adalah **form survei per petani** (`.xlsx`, empat sheet: Form Penilaian Gabungan, Form Survey Lembaga, Form Survey Individu, Panduan) — satu berkas per petani, dikelompokkan per Lembaga. Sheet individu yang dinamai dengan nama petani (bukan "Form Survey Individu") juga dikenali, asalkan hanya ada satu sheet seperti itu.
+Sumbernya adalah **form survei per petani** (`.xlsx`, empat sheet: Form Penilaian Gabungan, Form Survey Lembaga, Form Survey Individu, Panduan) — satu berkas per petani, dikelompokkan per Lembaga. Sheet individu yang dinamai dengan nama petani (bukan "Form Survey Individu") juga dikenali, asalkan hanya ada satu sheet seperti itu — kolom peringatan menyebut sheet mana yang dibaca.
 
 ## Langkah — mengimpor form survei
 

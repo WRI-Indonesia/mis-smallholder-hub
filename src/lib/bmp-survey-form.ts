@@ -75,22 +75,37 @@ const isBlank = (v: unknown) => v == null || String(v).trim() === "";
 
 /**
  * Nama petani dari nama berkas: `… - 2026 - IM_Budi Santoso(1).xlsx` → "Budi Santoso".
- * Awalan Lembaga sebelum "_" (ada token huruf kapital: "IM_", "ASPEK RAS_", "KPUD …_")
- * dibuang; tanpa awalan itu "_" = pemisah alias ("Jimmy_mahmudi" → "Jimmy/mahmudi")
- * atau apostrof yang tak boleh di nama berkas ("Zam_ah" → "Zam'ah") — pola Kampar.
+ * Awalan Lembaga sebelum "_" (token huruf kapital di depan nama ber-huruf kecil: "IM_",
+ * "ASPEK RAS_", "KPUD …_") dibuang. Tanpa awalan itu "_" (pola Kampar) = apostrof yang tak
+ * boleh di nama berkas ("Zam_ah" → "Zam'ah", "Ma_ruf" → "Ma'ruf") atau pemisah alias
+ * ("Jimmy_mahmudi" → "Jimmy/mahmudi"); bagian berangka/"Monev"/"BMP" dibuang.
  */
 export function farmerNameFromFileName(fileName: string): string | null {
   let base = fileName.split("/").pop() ?? fileName;
-  base = base.replace(/\.xlsx?$/i, "").replace(/xlsx$/i, "").replace(/\s*\(\d+\)\s*$/, "").trim();
+  base = base.replace(/\.xlsx?$/i, "").replace(/\s*\(\d+\)\s*$/, "").replace(/\.?xlsx$/i, "").trim();
   const parts = base.split(/\s+-\s*|\s*-\s+/);
   let last = parts[parts.length - 1]?.trim() ?? "";
   const us = last.indexOf("_");
   if (us >= 0) {
-    if (/\b[A-Z]{2,}\b/.test(last.slice(0, us))) last = last.slice(last.lastIndexOf("_") + 1).trim();
-    else last = last.replace(/_(?=[a-z]{1,2}\b)/g, "'").replace(/\s*_\s*/g, "/");
+    const tail = last.slice(last.lastIndexOf("_") + 1).trim();
+    if (/\b[A-Z]{2,}\b/.test(last.slice(0, us)) && /[a-z]/.test(tail)) last = tail;
+    else {
+      // Apostrof: ekor ≤ 2 huruf ("Syafi_i") atau awalan ≤ 3 huruf + ekor huruf kecil ("Mas_ud").
+      last = last.replace(/(\b[A-Za-z]{1,3}|[A-Za-z]+)_([A-Za-z]+)\b/g, (m, a: string, b: string) => (b.length <= 2 || (a.length <= 3 && /^[a-z]/.test(b)) ? `${a}'${b}` : m));
+      last = last
+        .split(/\s*_\s*/)
+        .filter((x) => x && !/\d/.test(x) && !/^(monev|bmp|form)\b/i.test(x))
+        .join("/");
+    }
   }
   return last || null;
 }
+
+/** Varian nama dipisah "/" (alias dari nama berkas Kampar). */
+const aliasesOf = (name: string) => name.split("/").map((x) => x.trim()).filter(Boolean);
+
+/** Kode kriteria "1.2.3" di kolom 3 sheet Lembaga/Individu. */
+const CRITERIA_CODE = /^\d\.\d\.\d$/;
 
 function cellText(row: RawSheetRow | undefined, col: number): string {
   const v = row?.values[col - 1];
@@ -146,13 +161,15 @@ export function parseBmpSurveyForm(
   const gab = findSheet(sheets, /gabungan|penilaian/i) ?? sheets[0];
   const lem = findSheet(sheets, /lembaga/i);
   // Template Kampar menamai sheet individu dengan nama petani → pakai satu-satunya sheet lain
-  // yang memuat baris kode kriteria (bukan Gabungan/Lembaga/Panduan).
-  const ind =
-    findSheet(sheets, /individu/i) ??
-    (() => {
-      const rest = sheets.filter((s) => s !== gab && s !== lem && !/panduan|petunjuk/i.test(s.name) && s.rows.some((r) => /^\d\.\d\.\d$/.test(cellText(r, 3))));
-      return rest.length === 1 ? rest[0] : undefined;
-    })();
+  // yang memuat baris kode kriteria (bukan Gabungan/Lembaga/Panduan), dan beri tahu pengguna.
+  let ind = findSheet(sheets, /individu/i);
+  if (!ind) {
+    const rest = sheets.filter((s) => s !== gab && !/gabungan|penilaian|lembaga|panduan|petunjuk/i.test(s.name) && s.rows.some((r) => CRITERIA_CODE.test(cellText(r, 3))));
+    if (rest.length === 1) {
+      ind = rest[0];
+      out.warnings.push(`Sheet individu dibaca dari sheet "${ind.name.trim()}"`);
+    }
+  }
   if (!gab) {
     out.warnings.push("Sheet Form Penilaian tidak ditemukan");
     return out;
@@ -203,7 +220,7 @@ export function parseBmpSurveyForm(
     const result: BmpSurveyIndicatorScore[] = [];
     for (const row of sheet.rows) {
       const crit = cellText(row, 3);
-      if (!/^\d\.\d\.\d$/.test(crit)) continue;
+      if (!CRITERIA_CODE.test(crit)) continue;
       const text = cellText(row, 5);
       const rawScore = row.values[5];
       const notes = cellText(row, 7) || null;
@@ -243,7 +260,8 @@ export function parseBmpSurveyForm(
   out.lembaga = readLevel(lem, "LEMBAGA");
   out.individu = readLevel(ind, "INDIVIDU");
 
-  if (out.fileFarmerName && out.headerFarmerName && !namesAgree(out.fileFarmerName, out.headerFarmerName)) {
+  const headerAgrees = (file: string, header: string) => aliasesOf(file).some((a) => aliasesOf(header).some((b) => namesAgree(a, b)));
+  if (out.fileFarmerName && out.headerFarmerName && !headerAgrees(out.fileFarmerName, out.headerFarmerName)) {
     out.warnings.push(`Nama di header "${out.headerFarmerName}" ≠ nama berkas "${out.fileFarmerName}" — nama berkas yang dipakai`);
   }
   return out;
@@ -306,15 +324,18 @@ export function matchFarmerName(
   } = {},
 ): BmpNameMatch {
   if (!name) return { farmerDbId: null, confidence: "NONE", suggestions: [] };
-  // Alias "Jimmy/Mahmudi" (berkas Kampar): cocokkan per nama; satu alias EXACT yang menang.
-  const aliases = name.split("/").map((x) => x.trim()).filter(Boolean);
+  // Alias "Jimmy/Mahmudi" (berkas Kampar): cocokkan per nama. EXACT hanya bila tepat satu
+  // alias EXACT dan alias lain tidak menunjuk petani lain; alias yang ragu/ganda → Ganda.
+  const aliases = aliasesOf(name);
   if (aliases.length > 1) {
     const results = aliases.map((a) => matchFarmerName(a, farmers, options));
-    const exact = [...new Set(results.filter((r) => r.confidence === "EXACT").map((r) => r.farmerDbId))];
-    if (exact.length === 1) return results.find((r) => r.farmerDbId === exact[0] && r.confidence === "EXACT")!;
-    const fuzzy = [...new Set(results.filter((r) => r.farmerDbId).map((r) => r.farmerDbId))];
     const suggestions = [...new Map(results.flatMap((r) => r.suggestions).map((f) => [f.farmerDbId, f])).values()].slice(0, 5);
-    if (exact.length === 0 && fuzzy.length === 1) return { farmerDbId: fuzzy[0], confidence: "FUZZY", suggestions };
+    const exact = [...new Set(results.filter((r) => r.confidence === "EXACT").map((r) => r.farmerDbId))];
+    const others = results.filter((r) => r.confidence !== "EXACT" && r.confidence !== "NONE");
+    if (exact.length === 1 && others.every((r) => r.farmerDbId === exact[0])) return { farmerDbId: exact[0], confidence: "EXACT", suggestions };
+    if (exact.length > 1 || results.some((r) => r.confidence === "AMBIGUOUS")) return { farmerDbId: null, confidence: "AMBIGUOUS", suggestions };
+    const picked = [...new Set(results.filter((r) => r.farmerDbId).map((r) => r.farmerDbId))];
+    if (picked.length === 1) return { farmerDbId: picked[0], confidence: "FUZZY", suggestions };
     if (suggestions.length) return { farmerDbId: null, confidence: "AMBIGUOUS", suggestions };
     return { farmerDbId: null, confidence: "NONE", suggestions: [] };
   }
