@@ -8,6 +8,8 @@
  * dihitung PostGIS `ST_Area(::geography)` dari poligon, bukan kolom `area`.
  */
 
+import { formatPct } from "@/lib/format";
+
 /** Irisan dibuang bila luasnya < 100 m² DAN < 1% lahan terkecil (keputusan #317). */
 export const OVERLAP_MIN_AREA_M2 = 100;
 export const OVERLAP_MIN_PCT = 1;
@@ -208,4 +210,74 @@ export function pairCountByParcel(rows: ParcelOverlapRow[]): Map<string, number>
     m.set(r.b.id, (m.get(r.b.id) ?? 0) + 1);
   }
   return m;
+}
+
+// ── Guard bulk upload shapefile (#317 Fase 3) ─────────────────────────────────
+
+/** Peringatan per baris ditampilkan paling banyak sekian; sisanya diringkas "+N lainnya". */
+export const UPLOAD_OVERLAP_MAX_PER_ROW = 3;
+
+/**
+ * Irisan mentah satu baris berkas terhadap lahan aktif di DB (`DB`) atau baris lain di
+ * berkas yang sama (`FILE`). Luas dalam m² (`ST_Area(::geography)`), sama dengan laporan.
+ */
+export interface UploadOverlapRaw {
+  rowNum: number;
+  intersectionM2: number;
+  rowAreaM2: number;
+  rowFarmerId: string;
+  rowGroupId: string;
+  source: "DB" | "FILE";
+  /** Nomor baris lawan bila `FILE`. */
+  otherRowNum: number | null;
+  otherParcelId: string;
+  otherAreaM2: number;
+  otherFarmerId: string;
+  otherFarmerCode: string;
+  otherFarmerName: string;
+  otherGroupId: string;
+  otherGroupName: string;
+}
+
+export interface UploadOverlapWarning {
+  rowNum: number;
+  pctMin: number;
+  kind: OverlapKind;
+  level: OverlapLevel;
+  message: string;
+}
+
+/**
+ * Peringatan tumpang tindih per baris berkas (#317 Fase 3 — PERINGATAN, tidak memblokir
+ * simpan). Ambang buang, persen, jenis, dan label = laporan Tumpang Tindih Lahan, jadi
+ * yang diperingatkan di sini adalah yang kelak muncul di laporan. Per baris: urut % terbesar.
+ */
+export function buildUploadOverlapWarnings(raws: UploadOverlapRaw[]): Map<number, UploadOverlapWarning[]> {
+  const out = new Map<number, UploadOverlapWarning[]>();
+  for (const r of raws) {
+    const smaller = Math.min(r.rowAreaM2, r.otherAreaM2);
+    if (isNegligibleOverlap(r.intersectionM2, smaller)) continue;
+    const pctRow = pctOf(r.intersectionM2, r.rowAreaM2);
+    const pctOther = pctOf(r.intersectionM2, r.otherAreaM2);
+    const pctMin = round(Math.max(pctRow, pctOther), 1);
+    const kind = overlapKind({ farmerId: r.rowFarmerId, groupId: r.rowGroupId }, { farmerId: r.otherFarmerId, groupId: r.otherGroupId });
+    const level = overlapLevel(Math.max(pctRow, pctOther), Math.min(pctRow, pctOther));
+    const where =
+      r.source === "FILE"
+        ? `baris ${r.otherRowNum} di berkas ini (ID Lahan ${r.otherParcelId})`
+        : `lahan ${r.otherParcelId} milik ${r.otherFarmerName} (${r.otherFarmerCode}, ${r.otherGroupName})`;
+    const message = `Tumpang tindih ${formatPct(pctMin)}% — ${OVERLAP_LEVEL_LABEL[level]}, ${OVERLAP_KIND_LABEL[kind]} — dengan ${where}`;
+    let list = out.get(r.rowNum);
+    if (!list) out.set(r.rowNum, (list = []));
+    list.push({ rowNum: r.rowNum, pctMin, kind, level, message });
+  }
+  for (const list of out.values()) list.sort((a, b) => b.pctMin - a.pctMin);
+  return out;
+}
+
+/** Teks peringatan satu baris untuk tabel/Excel: maks `UPLOAD_OVERLAP_MAX_PER_ROW`, sisanya diringkas. */
+export function uploadOverlapMessages(warnings: UploadOverlapWarning[]): string[] {
+  const shown = warnings.slice(0, UPLOAD_OVERLAP_MAX_PER_ROW).map((w) => w.message);
+  const rest = warnings.length - shown.length;
+  return rest > 0 ? [...shown, `+${rest} tumpang tindih lainnya`] : shown;
 }

@@ -9,6 +9,9 @@ import { formatFieldErrors } from "@/lib/validation-message";
 import { getAccessContext } from "@/lib/access-context";
 import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
 import { parseShapefileZip } from "@/lib/shapefile-server";
+import { groupScopeSql } from "@/lib/access-scope-sql";
+import { buildUploadOverlapWarnings, uploadOverlapMessages, type UploadOverlapRaw } from "@/lib/parcel-overlap";
+import { uploadOverlapInputSchema } from "@/validations/parcel-topology.schema";
 import type { ActionResult } from "@/types/action-result";
 
 export async function parseShapefile(base64Data: string) {
@@ -236,5 +239,89 @@ export async function bulkCreateLandParcels(
     console.error("Bulk save land parcels error:", error);
     const message = error instanceof Error ? error.message : String(error);
     return { success: false, error: message || "Gagal menyimpan data ke database" };
+  }
+}
+
+/**
+ * Guard tumpang tindih saat bulk upload shapefile (#317 Fase 3, keputusan owner
+ * 2026-09-01: PERINGATAN, tidak memblokir simpan). Poligon baris berkas yang lolos
+ * validasi diurai on-the-fly (`ST_GeomFromGeoJSON`, ekspresi sama dengan kolom generated
+ * `geom`) lalu diadu ke (a) lahan aktif di DB lewat GiST dan (b) sesama baris berkas.
+ *
+ * Revisi lahan itu sendiri (petani + ID Lahan sama → baris lama dinonaktifkan saat
+ * simpan) tidak dihitung; pencocokan persis seperti `bulkCreateLandParcels`. Baris yang
+ * petaninya di luar scope dibuang (sama dengan simpan). PENGECUALIAN SCOPE tercatat
+ * (#317, docs/product/access-context.md): lahan lawan di DB dicari di SELURUH data dan
+ * identitasnya ditampilkan — tanpa itu klaim ganda lintas Lembaga tak terlihat.
+ *
+ * Hasil: `{ [rowNum]: pesan[] }` — hanya baris yang punya peringatan.
+ */
+export async function checkUploadParcelOverlaps(
+  rows: { rowNum: number; farmerId: string; parcelId: string; geometry: string }[]
+): Promise<ActionResult<Record<number, string[]>>> {
+  if (!(await hasPermission("bulk-upload-parcels", "VIEW"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  }
+  const parsed = uploadOverlapInputSchema.safeParse(rows);
+  if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Data cek tumpang tindih tidak valid" };
+  if (parsed.data.length === 0) return { success: true, data: {} };
+
+  const access = await getAccessContext();
+  const inScope = groupScopeSql("g", access);
+  const c = parsed.data;
+  try {
+    const raws = await prisma.$queryRaw<UploadOverlapRaw[]>`
+      WITH cand AS MATERIALIZED (
+        SELECT c.row_num, c.farmer_id, c.parcel_id, f.farmer_group_id AS group_id,
+               ST_Multi(ST_CollectionExtract(ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(c.gj), 4326)), 3)) AS geom
+        FROM unnest(${c.map((r) => r.rowNum)}::int[], ${c.map((r) => r.farmerId)}::text[],
+                    ${c.map((r) => r.parcelId)}::text[], ${c.map((r) => r.geometry)}::text[])
+             AS c(row_num, farmer_id, parcel_id, gj)
+        JOIN tbl_farmer f ON f.id = c.farmer_id AND f.is_active
+        JOIN tbl_farmer_group g ON g.id = f.farmer_group_id AND g.is_active
+        WHERE ${inScope}
+      ),
+      cand_ok AS MATERIALIZED (SELECT * FROM cand WHERE NOT ST_IsEmpty(geom))
+      SELECT c.row_num AS "rowNum", 'DB' AS source, NULL::int AS "otherRowNum",
+             ST_Area(ST_Intersection(c.geom, b.geom)::geography) AS "intersectionM2",
+             ST_Area(c.geom::geography) AS "rowAreaM2", c.farmer_id AS "rowFarmerId", c.group_id AS "rowGroupId",
+             b.parcel_id AS "otherParcelId", ST_Area(b.geom::geography) AS "otherAreaM2",
+             fb.id AS "otherFarmerId", fb.farmer_id AS "otherFarmerCode", fb.name AS "otherFarmerName",
+             gb.id AS "otherGroupId", gb.name AS "otherGroupName"
+      FROM cand_ok c
+      JOIN tbl_land_parcel b
+        ON b.is_active AND b.geom IS NOT NULL
+       AND ST_Intersects(c.geom, b.geom) AND NOT ST_Touches(c.geom, b.geom)
+       AND NOT (b.farmer_id = c.farmer_id AND b.parcel_id = c.parcel_id)
+      JOIN tbl_farmer fb ON fb.id = b.farmer_id AND fb.is_active
+      JOIN tbl_farmer_group gb ON gb.id = fb.farmer_group_id AND gb.is_active
+      UNION ALL
+      SELECT a.row_num, 'FILE', o.row_num,
+             ST_Area(ST_Intersection(a.geom, o.geom)::geography),
+             ST_Area(a.geom::geography), a.farmer_id, a.group_id,
+             o.parcel_id, ST_Area(o.geom::geography),
+             fo.id, fo.farmer_id, fo.name, go.id, go.name
+      FROM cand_ok a
+      JOIN cand_ok o ON o.row_num <> a.row_num AND ST_Intersects(a.geom, o.geom) AND NOT ST_Touches(a.geom, o.geom)
+      JOIN tbl_farmer fo ON fo.id = o.farmer_id
+      JOIN tbl_farmer_group go ON go.id = fo.farmer_group_id
+    `;
+    const warnings = buildUploadOverlapWarnings(
+      // Angka dari PostGIS bisa datang sebagai string (numeric) — normalkan.
+      raws.map((r) => ({
+        ...r,
+        rowNum: Number(r.rowNum),
+        otherRowNum: r.otherRowNum == null ? null : Number(r.otherRowNum),
+        intersectionM2: Number(r.intersectionM2),
+        rowAreaM2: Number(r.rowAreaM2),
+        otherAreaM2: Number(r.otherAreaM2),
+      }))
+    );
+    return { success: true, data: Object.fromEntries([...warnings].map(([rowNum, list]) => [rowNum, uploadOverlapMessages(list)])) };
+  } catch (error) {
+    // GeoJSON rusak di satu baris membuat seluruh kueri gagal — cek ini hanya peringatan,
+    // jadi kegagalan tidak boleh menghalangi simpan; pemanggil menampilkan pemberitahuan.
+    console.error("checkUploadParcelOverlaps", error);
+    return { success: false, error: "Cek tumpang tindih gagal dijalankan — data tetap bisa disimpan" };
   }
 }

@@ -15,19 +15,21 @@ interface ParcelPreviewRow {
   _isValid?: boolean;
   _farmerName?: string;
   _errors?: string[];
+  /** Peringatan tumpang tindih (#317 Fase 3) — tetap bisa disimpan, diwarnai kuning. */
+  _warnings?: string[];
 }
 
 interface Props {
   data: ParcelPreviewRow[];
 }
 
-// Layer style per status validasi baris (isValid) — konstan, di-hoist agar tidak
-// dibuat ulang per render.
+// Layer style per status validasi baris: hijau valid · kuning valid bertumpang tindih
+// (peringatan) · merah error — konstan, di-hoist agar tidak dibuat ulang per render.
 const layerStyle: LayerProps = {
   id: "bulk-parcels-fill",
   type: "fill",
   paint: {
-    "fill-color": ["case", ["get", "isValid"], "#22c55e", "#ef4444"],
+    "fill-color": ["case", ["!", ["get", "isValid"]], "#ef4444", ["get", "hasWarning"], "#f59e0b", "#22c55e"],
     "fill-opacity": 0.4,
   },
 };
@@ -36,7 +38,7 @@ const borderStyle: LayerProps = {
   id: "bulk-parcels-border",
   type: "line",
   paint: {
-    "line-color": ["case", ["get", "isValid"], "#16a34a", "#dc2626"],
+    "line-color": ["case", ["!", ["get", "isValid"]], "#dc2626", ["get", "hasWarning"], "#d97706", "#16a34a"],
     "line-width": 2,
   },
 };
@@ -52,6 +54,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
     farmerName: string;
     isValid: boolean;
     errors: string;
+    warnings: string[];
   } | null>(null);
 
   // Construct GeoJSON FeatureCollection from data list. Memo (#audit peta):
@@ -92,6 +95,9 @@ export function ParcelBulkUploadMap({ data }: Props) {
           parcelId: row.parcelId || "—",
           farmerName: row._farmerName || "—",
           errors: Array.isArray(row._errors) ? row._errors.join("; ") : "",
+          hasWarning: (row._warnings?.length ?? 0) > 0,
+          // Properti fitur maplibre diserialisasi ke string — gabung dengan pemisah baris.
+          warnings: (row._warnings ?? []).join("\n"),
         },
       });
     });
@@ -148,6 +154,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
         farmerName: props.farmerName,
         isValid: props.isValid === "true" || props.isValid === true,
         errors: props.errors || "",
+        warnings: props.warnings ? String(props.warnings).split("\n") : [],
       });
     }
   };
@@ -197,12 +204,14 @@ export function ParcelBulkUploadMap({ data }: Props) {
                 <span className="font-semibold text-foreground">Detail Lahan</span>
                 <span
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    popupInfo.isValid
-                      ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
-                      : "bg-destructive/10 text-destructive border border-destructive/20"
+                    !popupInfo.isValid
+                      ? "bg-destructive/10 text-destructive border border-destructive/20"
+                      : popupInfo.warnings.length > 0
+                        ? "bg-amber-500/10 text-amber-700 border border-amber-500/30 dark:text-amber-400"
+                        : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                   }`}
                 >
-                  {popupInfo.isValid ? "Valid" : "Error"}
+                  {!popupInfo.isValid ? "Error" : popupInfo.warnings.length > 0 ? "Peringatan" : "Valid"}
                 </span>
               </div>
               <div className="space-y-1 text-muted-foreground">
@@ -212,6 +221,14 @@ export function ParcelBulkUploadMap({ data }: Props) {
                 <p>
                   <strong className="text-foreground">Petani:</strong> {popupInfo.farmerName}
                 </p>
+                {popupInfo.warnings.length > 0 && (
+                  <div className="border-t pt-1 mt-1 text-[11px] max-w-[260px] leading-tight text-amber-700 dark:text-amber-400">
+                    <strong className="text-foreground block mb-0.5 text-xs">Peringatan:</strong>
+                    {popupInfo.warnings.map((w) => (
+                      <p key={w}>{w}</p>
+                    ))}
+                  </div>
+                )}
                 {popupInfo.errors && (
                   <p className="text-destructive font-medium border-t pt-1 mt-1 text-[11px] max-w-[200px] leading-tight">
                     <strong className="text-foreground block mb-0.5 text-xs">Error Detail:</strong>

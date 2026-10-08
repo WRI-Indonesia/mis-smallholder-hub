@@ -32,11 +32,15 @@ Tabel atribut `.dbf` harus memuat **ID Petani** dan **ID Lahan**, karena dari si
 + Nama kolom di shapefile sering terpotong menjadi 10 karakter (batas format DBF), misalnya `ID_PETANI` jadi `ID_PETAN`. Itu normal — cocokkan berdasarkan isinya, bukan namanya. **Komoditas** boleh dibiarkan tak dipetakan: baris yang kosong otomatis tersimpan sebagai **Kelapa Sawit**, dan pratinjau sudah menampilkannya begitu — jadi yang Anda lihat sama dengan yang tersimpan.
 + Bila tabel atribut memuat **sepadan** (dengan siapa/apa lahan berbatasan di sisi Utara/Timur/Selatan/Barat), petakan ke empat kolom **Sepadan …**. Kolom bernama `BTS_UTARA`, `SEP_UTARA`, atau `UTARA` (dan padanannya untuk timur/selatan/barat) dikenali otomatis. Sepadan disimpan pada *identitas* lahan, jadi tetap utuh saat poligonnya direvisi; sel yang terisi menimpa nilai lama, sel kosong dibiarkan.
 4. Klik **Validasi Data Shapefile**.
-5. Periksa **peta pratinjau**: poligon hijau berarti valid, merah bermasalah. Klik sebuah poligon untuk melihat detail dan alasan errornya.
+5. Periksa **peta pratinjau**: poligon hijau berarti valid, **kuning** valid tetapi bertumpang tindih, merah bermasalah. Klik sebuah poligon untuk melihat detail, peringatan, dan alasan errornya.
 + Peta ini pemeriksaan terpenting di halaman ini. Tabel bisa menyatakan seluruh baris valid, tetapi hanya peta yang memperlihatkan bahwa poligonnya mendarat di lokasi yang keliru.
-6. Klik **Fokus Semua** untuk memastikan semua poligon berada di wilayah yang masuk akal.
+6. Tunggu cek **tumpang tindih** selesai (penanda "Mengecek tumpang tindih…" di samping jumlah valid/error). Lahan yang poligonnya menumpuk dengan lahan lain di sistem, atau dengan baris lain di berkas yang sama, ditandai **Peringatan** kuning; kolom **Keterangan** menyebut lahan lawannya dan berapa persen yang menumpuk. Tombol **Tumpang Tindih (N)** menyaring hanya baris itu.
++ Ini **hanya peringatan** — lahan tetap ikut tersimpan, karena sebagian tumpang tindih memang sah (misalnya batas yang belum diukur ulang). Yang perlu dicurigai: **Duplikat, Petani sama** (lahan yang sama terdaftar dua kali dengan ID Lahan berbeda — luasnya terhitung ganda) dan **Lintas Lembaga** (satu lahan diklaim dua Lembaga). Irisan kecil di batas (di bawah 100 m² dan di bawah 1% luas lahan) tidak diperingatkan.
++ Revisi lahan itu sendiri (ID Petani dan ID Lahan sama dengan yang sudah ada) tidak dihitung sebagai tumpang tindih. Sesudah disimpan, temuan yang sama muncul di **Data Analyst › Tumpang Tindih Lahan**.
++ Bila cek gagal (penanda "Cek tumpang tindih gagal"), data tetap bisa disimpan; periksa tumpang tindihnya nanti di menu Data Analyst tersebut.
+7. Klik **Fokus Semua** untuk memastikan semua poligon berada di wilayah yang masuk akal.
 + Bila peta melompat ke tengah laut atau ke belahan bumi lain, hampir pasti `.prj` tidak terbaca. Perbaiki di perangkat lunak GIS asal lalu ekspor ulang — jangan diteruskan.
-7. Perbaiki bila perlu, lalu klik **Simpan N Lahan Valid**.
+8. Perbaiki bila perlu, lalu klik **Simpan N Lahan Valid**.
 
 > [!penting] Bila sebuah ID Lahan sudah ada **dengan bentuk poligon berbeda**, sistem memperlakukannya sebagai **revisi**: data lama dinonaktifkan, data baru disimpan dengan nomor revisi berikutnya, dan catatan produksinya ikut dipindahkan. Riwayat tidak hilang.
 

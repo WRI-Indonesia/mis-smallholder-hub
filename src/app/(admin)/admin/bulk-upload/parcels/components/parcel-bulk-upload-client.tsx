@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Excel from "exceljs";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
-import { parseShapefile, bulkCreateLandParcels } from "@/server/actions/bulk-upload-parcel";
+import { AlertCircle, AlertTriangle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
+import { parseShapefile, bulkCreateLandParcels, checkUploadParcelOverlaps } from "@/server/actions/bulk-upload-parcel";
 import { DEFAULT_CROP_TYPE } from "@/validations/land-parcel.schema";
 import { readFileAsBase64 } from "@/lib/file-base64";
 import {
@@ -65,6 +65,8 @@ interface ParcelValidatedRow {
   _original: Record<string, string | number | null | undefined>;
   _isValid: boolean;
   _errors: string[];
+  /** Peringatan tumpang tindih (#317 Fase 3) — tidak memblokir simpan. */
+  _warnings?: string[];
   _farmerName: string;
   _farmerIdRaw: string;
   farmerId: string;
@@ -134,7 +136,10 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
   const [features, setFeatures] = useState<ParcelFeature[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [validatedData, setValidatedData] = useState<ParcelValidatedRow[]>([]);
-  const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
+  const [filter, setFilter] = useState<"all" | "valid" | "warning" | "error">("all");
+  /** Status cek tumpang tindih (#317 Fase 3) yang berjalan sesudah validasi atribut. */
+  const [overlapStatus, setOverlapStatus] = useState<"idle" | "checking" | "done" | "failed">("idle");
+  const overlapRun = useRef(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -404,6 +409,36 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     setValidatedData(results);
     setIsProcessing(false);
     toast.success("Validasi selesai");
+    void runOverlapCheck(results);
+  }
+
+  /**
+   * Cek tumpang tindih (#317 Fase 3): baris valid diadu ke lahan di DB dan sesama baris
+   * berkas di server. Hasilnya PERINGATAN — simpan tetap boleh, gagal cek pun tidak
+   * menghalangi. Validasi ulang membatalkan hasil cek lama (nomor putaran).
+   */
+  async function runOverlapCheck(results: ParcelValidatedRow[]) {
+    const run = ++overlapRun.current;
+    const rows = results
+      .filter((r) => r._isValid && (r.geometry?.type === "Polygon" || r.geometry?.type === "MultiPolygon"))
+      .map((r) => ({
+        rowNum: r._rowNum,
+        farmerId: r.farmerId,
+        parcelId: r.parcelId,
+        geometry: JSON.stringify({ type: r.geometry!.type, coordinates: r.geometry!.coordinates }),
+      }));
+    if (rows.length === 0) return setOverlapStatus("idle");
+    setOverlapStatus("checking");
+    const res = await checkUploadParcelOverlaps(rows).catch(() => ({ success: false as const, error: "Cek tumpang tindih gagal dijalankan" }));
+    if (run !== overlapRun.current) return;
+    if (!res.success) {
+      setOverlapStatus("failed");
+      toast.warning(res.error);
+      return;
+    }
+    const byRow = res.data ?? {};
+    setValidatedData((prev) => prev.map((r) => ({ ...r, _warnings: byRow[r._rowNum] ?? [] })));
+    setOverlapStatus("done");
   }
 
   async function handleDownload(mode: "all" | "errors") {
@@ -429,6 +464,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       { header: "Sepadan Barat", key: "borderWest", width: 18 },
       { header: "Status Validasi", key: "status", width: 15 },
       { header: "Detail Error", key: "keterangan", width: 45 },
+      { header: "Peringatan Tumpang Tindih", key: "peringatan", width: 60 },
     ];
 
     sheet.columns = cols;
@@ -461,6 +497,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
         borderWest: row.border?.west ?? row._original.borderWest ?? "",
         status: row._isValid ? "VALID" : "ERROR",
         keterangan: row._errors.join("; "),
+        peringatan: (row._warnings ?? []).join("; "),
       });
     });
 
@@ -513,9 +550,12 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
 
   const validCount = validatedData.filter((d) => d._isValid).length;
   const invalidCount = validatedData.length - validCount;
+  const hasWarning = (d: ParcelValidatedRow) => d._isValid && (d._warnings?.length ?? 0) > 0;
+  const warningCount = validatedData.filter(hasWarning).length;
 
   const filteredData = validatedData.filter((d) => {
     if (filter === "valid") return d._isValid;
+    if (filter === "warning") return hasWarning(d);
     if (filter === "error") return !d._isValid;
     return true;
   });
@@ -630,7 +670,23 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                   <AlertCircle className="h-4 w-4" />
                   {invalidCount} Lahan Error
                 </span>
+                {overlapStatus !== "idle" && (
+                  <span className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/30">
+                    {overlapStatus === "checking" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
+                    {overlapStatus === "checking"
+                      ? "Mengecek tumpang tindih…"
+                      : overlapStatus === "failed"
+                        ? "Cek tumpang tindih gagal"
+                        : `${warningCount} Lahan Tumpang Tindih`}
+                  </span>
+                )}
               </div>
+              {warningCount > 0 && (
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Tumpang tindih hanya peringatan: lahan tetap ikut tersimpan. Periksa poligonnya di peta; sesudah disimpan, temuan
+                  muncul di Data Analyst › Tumpang Tindih Lahan.
+                </p>
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -649,6 +705,16 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
               >
                 Valid ({validCount})
               </Button>
+              {warningCount > 0 && (
+                <Button
+                  variant={filter === "warning" ? "default" : "outline"}
+                  size="sm"
+                  className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400"
+                  onClick={() => setFilter("warning")}
+                >
+                  Tumpang Tindih ({warningCount})
+                </Button>
+              )}
               <Button
                 variant={filter === "error" ? "default" : "outline"}
                 size="sm"
@@ -716,7 +782,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                   <TableHead>Blok</TableHead>
                   <TableHead>Revisi</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="min-w-[200px]">Detail Error</TableHead>
+                  <TableHead className="min-w-[200px]">Keterangan</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -728,7 +794,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                   </TableRow>
                 ) : (
                   filteredData.slice(0, 100).map((row, idx) => (
-                    <TableRow key={idx} className={row._isValid ? "" : "bg-destructive/5"}>
+                    <TableRow key={idx} className={!row._isValid ? "bg-destructive/5" : hasWarning(row) ? "bg-amber-500/5" : ""}>
                       <TableCell className="font-mono text-muted-foreground">
                         {row._rowNum}
                       </TableCell>
@@ -749,7 +815,12 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                       <TableCell>{row.blok || "—"}</TableCell>
                       <TableCell className="font-mono">{row.revision}</TableCell>
                       <TableCell>
-                        {row._isValid ? (
+                        {hasWarning(row) ? (
+                          <Badge className="bg-amber-500 hover:bg-amber-500 text-white gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Peringatan
+                          </Badge>
+                        ) : row._isValid ? (
                           <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">
                             <CheckCircle2 className="h-3 w-3" />
                             Valid
@@ -761,8 +832,16 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-destructive font-medium">
-                        {row._errors.join("; ") || "—"}
+                      <TableCell className="text-sm font-medium">
+                        {row._errors.length === 0 && !hasWarning(row) && "—"}
+                        {row._errors.length > 0 && <p className="text-destructive">{row._errors.join("; ")}</p>}
+                        {hasWarning(row) && (
+                          <ul className="space-y-0.5 text-amber-700 dark:text-amber-400">
+                            {row._warnings!.map((w) => (
+                              <li key={w}>{w}</li>
+                            ))}
+                          </ul>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
