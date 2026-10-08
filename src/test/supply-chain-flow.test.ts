@@ -5,6 +5,7 @@ import {
   layoutSankey,
   UNKNOWN_MILL_FILTER,
   matchesSupplyChainFilter,
+  millDistrict,
   millLabel,
   millVolumes,
   parseChainNodeId,
@@ -185,7 +186,16 @@ describe("summarizeSupplyChain & millVolumes", () => {
     expect(s.tonByStatus.TIDAK_DIKETAHUI).toBe(5);
     const rows = millVolumes(records, new Map(data.mills.map((m) => [m.id, m])));
     expect(rows[0]).toMatchObject({ millId: "M1", ton: 16, isUl: true, groupCount: 1 });
-    expect(rows[1]).toMatchObject({ millId: null, name: "Mill tidak diketahui" });
+    expect(rows[1]).toMatchObject({ millId: null, name: "Mill tidak diketahui" , district: null });
+    expect(rows[0].district).toBe("Siak");
+  });
+
+  it("millDistrict membuang awalan Kabupaten/Kab. dari data UML yang tak seragam", () => {
+    expect(millDistrict({ district: "Kabupaten Rokan Hulu" })).toBe("Rokan Hulu");
+    expect(millDistrict({ district: "Kab. Kampar" })).toBe("Kampar");
+    expect(millDistrict({ district: "Siak" })).toBe("Siak");
+    expect(millDistrict({ district: "" })).toBeNull();
+    expect(millDistrict({ district: null })).toBeNull();
   });
 });
 

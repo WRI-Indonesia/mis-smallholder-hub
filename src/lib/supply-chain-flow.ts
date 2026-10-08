@@ -310,6 +310,8 @@ export interface MillVolumeRow {
   millId: string | null;
   name: string;
   company: string | null;
+  /** Kabupaten lokasi Mill (`millDistrict`); null bila tak diketahui. */
+  district: string | null;
   status: MillStatus;
   basis: string;
   isUl: boolean;
@@ -317,6 +319,11 @@ export interface MillVolumeRow {
   ulTon: number;
   groupCount: number;
   offtakerCount: number;
+}
+
+/** Kabupaten Mill dari UML tanpa awalan "Kabupaten"/"Kab." (data UML tak seragam); null bila kosong. */
+export function millDistrict(m: Pick<ScMill, "district">): string | null {
+  return m.district?.replace(/^(Kabupaten|Kab\.?)\s+/i, "").trim() || null;
 }
 
 /** Volume per Mill (Mill tidak diketahui digabung satu baris), urut tonase. */
@@ -329,6 +336,7 @@ export function millVolumes(records: ScRecord[], mills: Map<string, ScMill>): Mi
       const m = r.millId ? mills.get(r.millId) : undefined;
       row = {
         millId: r.millId, name: m ? millLabel(m) : "Mill tidak diketahui", company: m?.company ?? null,
+        district: m ? millDistrict(m) : null,
         status: r.millId ? r.millStatus : "TIDAK_DIKETAHUI", basis: r.millBasis,
         isUl: !!m?.buyerPrograms.includes("UL"), ton: 0, ulTon: 0, groupCount: 0, offtakerCount: 0,
         groups: new Set(), offs: new Set(),

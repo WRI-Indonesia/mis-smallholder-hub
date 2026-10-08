@@ -20,6 +20,7 @@ import {
   OFFTAKER_TYPE_LABEL,
   buildFlowSegments,
   flowSegmentKey,
+  millDistrict,
   millLabel,
   recordChannel,
   type SankeyMode,
@@ -545,7 +546,7 @@ function SelectedCard({
     const rs = records.filter((r) => r.millId === selected.id);
     body = m && (
       <>
-        <MapPopupHeader accent="blue" icon={<Factory className="h-5 w-5" />} title={millLabel(m)} badge={m.buyerPrograms.includes("UL") && <Badge className="h-4 px-1.5 text-[10px]">UL</Badge>} rows={[{ label: "UML ID", value: m.umlId ?? "— (manual)", mono: true }]} />
+        <MapPopupHeader accent="blue" icon={<Factory className="h-5 w-5" />} title={millLabel(m)} badge={m.buyerPrograms.includes("UL") && <Badge className="h-4 px-1.5 text-[10px]">UL</Badge>} rows={[{ label: "UML ID", value: m.umlId ?? "— (manual)", mono: true }, { label: "Distrik", value: millDistrict(m) ?? "—" }]} />
         <MapPopupHighlight label="TBS" value={fmtTon(ton(rs))} />
         <div className="space-y-2 px-3.5 py-2.5">
           <MapPopupRows rows={[

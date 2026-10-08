@@ -461,7 +461,8 @@ function MillTable({ rows, total, onSelect }: { rows: MillVolumeRow[]; total: nu
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">
               <th className="py-2 pr-3 font-medium">Mill</th>
-              <th className="py-2 pr-3 font-medium w-[38%]">Tonase</th>
+              <th className="py-2 pr-3 font-medium">Distrik</th>
+              <th className="py-2 pr-3 font-medium w-[34%]">Tonase</th>
               <th className="py-2 pr-3 text-right font-medium">Porsi</th>
               <th className="py-2 pr-3 text-right font-medium">Lembaga</th>
               <th className="py-2 text-right font-medium">Offtaker</th>
@@ -484,6 +485,7 @@ function MillTable({ rows, total, onSelect }: { rows: MillVolumeRow[]; total: nu
                       {m.isUl && <Badge className="h-4 px-1.5 text-[10px]">UL</Badge>}
                     </span>
                   </td>
+                  <td className="whitespace-nowrap py-1.5 pr-3 text-muted-foreground">{m.district ?? "—"}</td>
                   <td className="py-1.5 pr-3">
                     {m.ton > 0 ? (
                       <div className="flex items-center gap-2">
