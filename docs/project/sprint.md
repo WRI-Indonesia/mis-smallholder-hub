@@ -8,7 +8,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 ### Rencana Rilis
 
-Terakhir diperbarui: 2026-10-07
+Terakhir diperbarui: 2026-10-08
 
 Rencana disusun **per rilis**, bukan per minggu (keputusan owner 2026-09-30): pengembangan dikerjakan satu orang sambil cleaning data dan kunjungan ke distrik, jadi ada minggu yang padat dan ada minggu tanpa coding sama sekali — ritme mingguan membuat minggu kosong tampak seperti sprint gagal. Setiap rilis punya **tanggal mulai dan target**; kemajuan diukur dalam poin, velocity dalam **poin per minggu kalender** rilis yang sudah lewat. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Riwayat: disusun 2026-09-28 dari triase 42 issue terbuka sebagai 6 sprint mingguan; 2026-09-30 dipetakan ke rilis — setiap rilis dimulai sehari setelah rilis sebelumnya (v1.1.0 dirilis 2026-09-23), agar velocity mencerminkan siklus sebenarnya (Sprint 1 selesai → v1.2.0, sisa Sprint 1 + Sprint 2–4 → v1.3.0, Sprint 5–6 → v1.4.0), backlog jadi tabel satu issue per baris, tabel Work Item diarsipkan. **v1.3.0 dirilis lebih awal 2026-09-30** (keputusan owner): sisa butirnya digeser ke rilis baru **v1.4.0** (10-01 → 10-25), sehingga Supply Chain menjadi **v1.5.0** dan penyangga akhir tahun **v1.6.0** (tanggal tetap). Setiap rilis berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner dan sebaiknya diputuskan di awal rilis.
 
@@ -120,7 +120,7 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 1 | **#291** Fire Alert: basemap Sentinel-2 10 m via CDSE | 🔲 Todo | Roadmap **GIS-01** (K1 2027). Dirancang bersama #286; kuota CDSE → cache wajib |
 | 2 | **#345 tahap 2** Patok NKT jadi tipe sendiri (`purpose BATAS_LAHAN\|NKT`, dari buffer sungai) | 🔲 Todo | Roadmap **MD-08** (K2 2027) |
 | 2 | **#349** Peta BMP: layer Monev BMP (warna lahan per kategori skor) | 🔲 Todo | Roadmap **MAP-04** (K2 2027) |
-| 2 | **#401** Tahun Tanam: tab di Sebaran Lahan Detail Lembaga + layer di Peta BMP | ⚖️ Menunggu keputusan | Permintaan owner 2026-10-07; perlu keputusan: warna per tahun vs per kelas umur tanaman (TBM / TM / tua → PSR) |
+| 2 | **#401** Tahun Tanam: tab di Sebaran Lahan Detail Lembaga + layer di Peta BMP | 🔲 Todo | Permintaan owner 2026-10-07; ✅ Diputuskan 2026-10-08: warna per **kelas umur** tanaman (TBM / TM muda / TM / tua → kandidat PSR), bukan per tahun |
 | 2 | **#178** DA-05 deteksi anomali data produksi | 🔲 Todo | Roadmap **DA-05** (K1 2027); ✅ Diputuskan 2026-09-30: grain lahan×bulan < 500 kg/Ha, kategori tinggi > 4.000 kg/Ha/bulan (keduanya bisa diubah), bulan tanpa laporan di luar scope (DA-02) |
 | 3 | **#355** Sertifikasi: nilai eksplisit `NONE` | 🔲 Todo | Roadmap **DA-08** (K2 2027), prasyarat MD-12; "Belum diisi" ≠ "tidak bersertifikat" |
 | 3 | **#356** Bobot cakupan modul ke Index | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
