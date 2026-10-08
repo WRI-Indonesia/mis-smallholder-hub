@@ -32,39 +32,89 @@ export function CategoryLegend() {
 
 export interface BmpComparisonRow {
   label: string;
-  exPlasma: number;
-  swadaya: number;
+  /** null = belum ada data (bukan nol) — tampil "—". */
+  exPlasma: number | null;
+  swadaya: number | null;
+  /** Keterangan tooltip per sel (mis. luas terdata), opsional. */
+  exPlasmaTitle?: string;
+  swadayaTitle?: string;
 }
 
-/** Sepasang bar horizontal (Ex-Plasma vs Swadaya) untuk satu label baris. */
-function CompareBars({ rows, unit }: { rows: BmpComparisonRow[]; unit: string }) {
-  const max = Math.max(1, ...rows.flatMap((r) => [r.exPlasma, r.swadaya]));
+const CATEGORY_KEYS = [
+  ["exPlasma", "Ex-Plasma"],
+  ["swadaya", "Swadaya"],
+] as const;
+
+/**
+ * Tabel pembanding Ex-Plasma | Swadaya: tiap sel angka + mini bar dengan SATU skala
+ * per tabel, sehingga kedua kolom bisa dibandingkan langsung (owner 2026-10-08 —
+ * dulu dua bar tanpa label per baris dan 0,00 untuk data yang tidak ada).
+ */
+function CompareTable({
+  rows,
+  rowHeader,
+  emptyNote,
+}: {
+  rows: BmpComparisonRow[];
+  rowHeader: string;
+  /** Arti "—" di tabel ini. */
+  emptyNote: string;
+}) {
+  if (rows.length === 0) {
+    return <p className="text-xs text-muted-foreground">Belum ada data untuk analisa ini.</p>;
+  }
+  const max = Math.max(1, ...rows.flatMap((r) => [r.exPlasma ?? 0, r.swadaya ?? 0]));
+  const hasEmpty = rows.some((r) => r.exPlasma == null || r.swadaya == null);
   return (
-    <div className="space-y-3">
-      {rows.map((row) => (
-        <div key={row.label} className="space-y-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-xs font-medium truncate">{row.label}</span>
-            <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">
-              {formatTon(row.exPlasma)} · {formatTon(row.swadaya)} {unit}
-            </span>
-          </div>
-          {(["exPlasma", "swadaya"] as const).map((key) => (
-            <div key={key} className="h-2 w-full rounded-full bg-muted">
-              <div
-                className="h-2 rounded-full"
-                style={{
-                  width: `${Math.min((row[key] / max) * 100, 100)}%`,
-                  backgroundColor: CATEGORY_COLORS[key],
-                }}
-              />
-            </div>
+    <div className="space-y-2">
+      <table className="w-full table-fixed text-xs">
+        <thead>
+          <tr className="border-b text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+            <th className="w-[36%] py-1.5 pr-2 font-medium">{rowHeader}</th>
+            {CATEGORY_KEYS.map(([key, label]) => (
+              <th key={key} className="py-1.5 pl-2 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[key] }} />
+                  {label}
+                </span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.label} className="border-b border-border/40 last:border-0">
+              <td className="py-1.5 pr-2 font-medium truncate" title={row.label}>
+                {row.label}
+              </td>
+              {CATEGORY_KEYS.map(([key]) => {
+                const value = row[key];
+                return (
+                  <td key={key} className="py-1.5 pl-2" title={row[`${key}Title`]}>
+                    {value == null ? (
+                      <span className="block text-right text-muted-foreground">—</span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 flex-1 rounded-full bg-muted">
+                          <span
+                            className="block h-2 rounded-full"
+                            style={{
+                              width: `${Math.min((value / max) * 100, 100)}%`,
+                              backgroundColor: CATEGORY_COLORS[key],
+                            }}
+                          />
+                        </span>
+                        <span className="w-14 shrink-0 text-right tabular-nums">{formatTon(value)}</span>
+                      </span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
           ))}
-        </div>
-      ))}
-      {rows.length === 0 && (
-        <p className="text-xs text-muted-foreground">Belum ada data untuk analisa ini.</p>
-      )}
+        </tbody>
+      </table>
+      {hasEmpty && <p className="text-[10px] text-muted-foreground">— = {emptyNote}</p>}
     </div>
   );
 }
@@ -118,19 +168,15 @@ export function BmpCategoryPanel({
                 {m.label} <span className="font-normal normal-case">({m.unit})</span>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {(
-                  [
-                    ["exPlasma", exPlasma],
-                    ["swadaya", swadaya],
-                  ] as const
-                ).map(([key, slice]) => (
+                {CATEGORY_KEYS.map(([key, label]) => (
                   <div key={key}>
                     <div
                       className="text-lg font-bold tabular-nums"
                       style={{ color: CATEGORY_COLORS[key] }}
                     >
-                      {formatTon(m.value(slice))}
+                      {formatTon(m.value(key === "exPlasma" ? exPlasma : swadaya))}
                     </div>
+                    <div className="text-[10px] text-muted-foreground">{label}</div>
                   </div>
                 ))}
               </div>
@@ -144,14 +190,18 @@ export function BmpCategoryPanel({
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Produksi per Distrik (Ton)
             </div>
-            <CompareBars rows={districtRows} unit="Ton" />
+            <CompareTable rows={districtRows} rowHeader="Distrik" emptyNote="belum ada produksi tercatat" />
           </div>
           <div className="rounded-lg border border-border/60 p-3 space-y-3">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Produktivitas per Umur Tanaman (Ton/Ha/tahun)
             </div>
             {hasAgeData ? (
-              <CompareBars rows={ageRows} unit="Ton/Ha/tahun" />
+              <CompareTable
+                rows={ageRows}
+                rowHeader="Umur tanaman"
+                emptyNote="belum ada lahan pada kelompok umur ini yang melapor produksi (lahan tanpa tahun tanam masuk baris Tanpa thn tanam)"
+              />
             ) : (
               <p className="text-xs text-muted-foreground">
                 Snapshot ini belum memuat data umur tanaman — generate ulang snapshot BMP melalui
