@@ -123,7 +123,7 @@ function CompareTable({
  * Card besar full-row Ex-Plasma vs Swadaya (#191) — menggantikan panel
  * Ketersediaan Data Produksi (kategori Baik/Cukup/Kurang tetap tersedia di
  * Peta BMP). Berisi ringkasan 3 metrik per kategori + 2 analisa kombinasi:
- * produksi per distrik dan produktivitas per umur tanaman.
+ * produktivitas per distrik dan per umur tanaman.
  */
 export function BmpCategoryPanel({
   exPlasma,
@@ -135,7 +135,7 @@ export function BmpCategoryPanel({
 }: {
   exPlasma: BmpSlicedStats;
   swadaya: BmpSlicedStats;
-  /** Produksi (Ton) per distrik, dua nilai per baris. */
+  /** Produktivitas (Ton/Ha/tahun, disetahunkan) per distrik, dua nilai per baris. */
   districtRows: BmpComparisonRow[];
   /** Produktivitas (Ton/Ha/tahun, disetahunkan) per bucket umur tanaman. */
   ageRows: BmpComparisonRow[];
@@ -188,9 +188,9 @@ export function BmpCategoryPanel({
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-border/60 p-3 space-y-3">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Produksi per Distrik (Ton)
+              Produktivitas per Distrik (Ton/Ha/tahun)
             </div>
-            <CompareTable rows={districtRows} rowHeader="Distrik" emptyNote="belum ada produksi tercatat" />
+            <CompareTable rows={districtRows} rowHeader="Distrik" emptyNote="belum ada lahan terdata yang melapor produksi" />
           </div>
           <div className="rounded-lg border border-border/60 p-3 space-y-3">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

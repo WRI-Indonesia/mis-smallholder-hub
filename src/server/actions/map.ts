@@ -278,7 +278,7 @@ export async function getBmpMapData(
     AND: farmerGroupAccessFilter(access),
   };
 
-  const [groups, parcelRows] = await Promise.all([
+  const [groups, parcelRows, monthsByYear] = await Promise.all([
     prisma.farmerGroup.findMany({
       where: groupWhere,
       select: {
@@ -311,24 +311,25 @@ export async function getBmpMapData(
         },
       },
     }),
+    // Bulan ber-data Lembaga untuk penyetahunan produktivitas (owner 2026-10-08) —
+    // sejajar kueri lain; scope ikut groupWhere. Record persil peta yang tercatat atas
+    // nama pemilik lain ikut dihitung agar tahunnya tak lolos tanpa faktor (review 7cbf0f1).
+    fetchGroupDataMonths(groupWhere, [
+      { parcel: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } } },
+    ]),
   ]);
 
   // One scoped query for all parcels' production, summed per (parcel, period)
   // (avoids N+1). The _sum aggregate scans the same rows — no extra query cost.
-  // Sejajar: bulan ber-data Lembaga untuk penyetahunan produktivitas (owner
-  // 2026-10-08). Filter wajib menunjuk satu Lembaga; groupWhere menolak Lembaga di
-  // luar scope (groups kosong → tanpa kueri).
   const parcelIds = parcelRows.map((p) => p.id);
-  const [rows, monthsByYear] = await Promise.all([
+  const rows =
     parcelIds.length > 0
-      ? prisma.productionRecord.groupBy({
+      ? await prisma.productionRecord.groupBy({
           by: ["parcelId", "period"],
           where: { parcelId: { in: parcelIds }, isActive: true },
           _sum: { yieldKg: true },
         })
-      : Promise.resolve([]),
-    groups.length === 1 ? fetchGroupDataMonths(groups[0].id) : Promise.resolve({}),
-  ]);
+      : [];
   const productionByParcel = new Map<string, { period: string; kg: number }[]>();
   for (const r of rows) {
     if (!r.parcelId) continue;

@@ -75,10 +75,14 @@ describe("getBmpMapData — bulan ber-data Lembaga (penyetahunan)", () => {
     if (!res.success) return;
     expect(res.data!.monthsByYear).toEqual({ "2026": 2, "2025": 1 });
     const monthsCall = db.productionRecord.groupBy.mock.calls.find((c) => !c[0].by.includes("parcelId"))!;
-    expect(monthsCall[0].where).toEqual({ isActive: true, farmer: { isActive: true, farmerGroupId: "kt-1" } });
+    // Populasi Lembaga (scope ikut groupWhere) + record persil peta atas nama pemilik lain (review 7cbf0f1).
+    const where = monthsCall[0].where;
+    expect(where.isActive).toBe(true);
+    expect(where.OR[0].farmer).toMatchObject({ isActive: true, farmerGroup: { isActive: true, id: "kt-1" } });
+    expect(where.OR[1].parcel).toMatchObject({ isActive: true, farmer: { isActive: true, farmerGroup: { id: "kt-1" } } });
   });
 
-  it("Lembaga di luar scope (groups kosong) → tanpa kueri bulan, monthsByYear kosong", async () => {
+  it("Lembaga di luar scope → kueri bulan membawa scope yang sama (AND), hasil kosong", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-lain"] });
     db.farmerGroup.findMany.mockResolvedValue([]);
     db.landParcel.findMany.mockResolvedValue([]);
@@ -87,6 +91,8 @@ describe("getBmpMapData — bulan ber-data Lembaga (penyetahunan)", () => {
     expect(res.success).toBe(true);
     if (!res.success) return;
     expect(res.data!.monthsByYear).toEqual({});
-    expect(db.productionRecord.groupBy).not.toHaveBeenCalled();
+    const where = db.productionRecord.groupBy.mock.calls[0][0].where;
+    expect(where.OR[0].farmer.farmerGroup.AND).toEqual({ id: { in: ["kt-lain"] } });
+    expect(where.OR[1].parcel.farmer.farmerGroup.AND).toEqual({ id: { in: ["kt-lain"] } });
   });
 });

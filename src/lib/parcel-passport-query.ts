@@ -8,6 +8,8 @@ import type { Polygon, MultiPolygon } from "geojson";
 import { prisma } from "@/lib/prisma";
 import { getAccessContext, farmerGroupAccessFilter, type AccessContext } from "@/lib/access-context";
 import { summarizeProduction } from "@/lib/map-data";
+import { fetchGroupDataMonths } from "@/lib/production-data-months-query";
+import type { DataMonthsByYear } from "@/lib/productivity-annualize";
 import { fetchParcelNeighbors } from "@/lib/parcel-neighbor-query";
 import { NEIGHBOR_LIMIT_PDF } from "@/lib/parcel-neighbor";
 import { hasBorderContent } from "@/lib/land-parcel-satellite-format";
@@ -71,6 +73,8 @@ export async function fetchParcelPassport(
      * review #343): tanpa ini lampiran petani nonaktif gagal "tidak ditemukan".
      */
     includeInactiveFarmer?: boolean;
+    /** Bulan ber-data Lembaga yang sudah dihitung pemanggil (Profil Petani) — tak diulang per lahan. */
+    groupDataMonths?: DataMonthsByYear;
   } = {},
 ): Promise<ActionResult<ParcelPassport>> {
   const access = shared.access ?? (await getAccessContext());
@@ -140,6 +144,7 @@ export async function fetchParcelPassport(
       farmer: {
         select: {
           id: true,
+          farmerGroupId: true,
           name: true,
           farmerId: true,
           gender: true,
@@ -176,7 +181,7 @@ export async function fetchParcelPassport(
   }
 
   const farmer = parcel.farmer;
-  const [training, prodRecords, treeCount, neighborhood] = await Promise.all([
+  const [training, prodRecords, treeCount, neighborhood, groupDataMonths] = await Promise.all([
     shared.training ?? computeFarmerTrainingItems(farmer.id),
     includeProduction
       ? prisma.productionRecord.findMany({
@@ -187,6 +192,11 @@ export async function fetchParcelPassport(
     prisma.tree.count({ where: { landParcelId, isActive: true } }),
     // Lahan tetangga (#327) — cap PDF; scope sudah diterapkan di dalamnya.
     fetchParcelNeighbors(landParcelId, NEIGHBOR_LIMIT_PDF, access),
+    // Penyetahunan Ton/Ha (owner 2026-10-08): bulan Lembaga + record petani & lahan ini.
+    includeProduction
+      ? (shared.groupDataMonths ??
+        fetchGroupDataMonths({ id: farmer.farmerGroupId }, [{ farmerId: farmer.id }, { parcelId: landParcelId }]))
+      : Promise.resolve(undefined),
   ]);
 
   return {
@@ -247,7 +257,7 @@ export async function fetchParcelPassport(
         })),
       },
       training,
-      production: summarizeProduction(prodRecords),
+      production: { ...summarizeProduction(prodRecords), dataMonthsByYear: groupDataMonths },
       neighbors: neighborhood.neighbors,
       neighborsOmitted: neighborhood.omitted,
       markers: parcel.identity.markers.map((l) => {

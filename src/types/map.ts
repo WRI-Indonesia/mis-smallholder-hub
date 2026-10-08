@@ -238,6 +238,11 @@ export type ProductionSummary = {
   byYear: ProductionYear[];
   totalKg: number;
   recordCount: number;
+  /**
+   * Bulan ber-data per tahun Lembaga pemilik lahan — basis Ton/Ha/tahun (× 12 ÷ n) di
+   * detail Lahan & Profil Lahan (owner 2026-10-08). Absen (popup peta) = tak dipakai.
+   */
+  dataMonthsByYear?: Record<string, number>;
 };
 
 /** Everything needed to render the Farm Passport PDF for one parcel. */

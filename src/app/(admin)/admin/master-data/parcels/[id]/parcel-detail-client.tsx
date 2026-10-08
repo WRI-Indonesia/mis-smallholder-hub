@@ -42,6 +42,7 @@ import type { LandParcel, FarmerSelect, LandParcelSatellites, LandParcelMarkers 
 import type { ProductionSummary, ProductionYear } from "@/types/map";
 import type { ParcelTreeData } from "@/server/actions/tree";
 import { formatNumber } from "@/lib/format";
+import { annualizeFactorFor } from "@/lib/productivity-annualize";
 
 /** Lahan aktif lain milik petani yang sama (tabel navigasi + overlay peta). */
 export interface SiblingParcel {
@@ -840,7 +841,9 @@ export function ParcelDetailClient({
                       </th>
                     ))}
                     <th className="py-2 pl-2 pr-4 text-right">Total (kg)</th>
-                    <th className="py-2 text-right">Ton/Ha</th>
+                    <th className="py-2 text-right whitespace-nowrap" title="Produktivitas (Ton/Ha/tahun, produksi disetahunkan)">
+                      Ton/Ha/thn
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -884,7 +887,9 @@ export function ParcelDetailClient({
                       </td>
                       <td className="py-2 text-right tabular-nums font-medium">
                         {y.total > 0 && parcel.area ? (
-                          formatDecimal(y.total / 1000 / parcel.area)
+                          formatDecimal(
+                            (y.total * annualizeFactorFor(production?.dataMonthsByYear, y.year)) / 1000 / parcel.area
+                          )
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -895,7 +900,8 @@ export function ParcelDetailClient({
               </table>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              Angka bulanan dalam kg. Produktivitas (Ton/Ha) = produksi tahun tsb ÷ luas lahan (
+              Angka bulanan dalam kg. Produktivitas (Ton/Ha/tahun) = produksi tahun tsb disetahunkan
+              (× 12 ÷ bulan ber-data Lembaga pada tahun itu, sama dengan BMP Dashboard) ÷ luas lahan (
               {parcel.area != null ? `${formatDecimal(parcel.area)} Ha` : "luas belum diisi"}).
               {canEditProduction &&
                 " Klik sel bulan untuk menambah/mengubah data panen bulan tsb."}

@@ -94,7 +94,8 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
     const exGroups = groupsFor("EX_PLASMA");
     const swGroups = groupsFor("SWADAYA");
 
-    // Produksi per distrik (Ton) — dua nilai per distrik yang ber-lembaga di scope.
+    // Produktivitas per distrik (Ton/Ha/tahun, disetahunkan; owner 2026-10-08 — dulu
+    // produksi Ton) — dua nilai per distrik yang ber-lembaga di scope.
     const districtNames = new Map<string, string>();
     for (const g of [...exGroups, ...swGroups]) {
       if (g.districtId) districtNames.set(g.districtId, g.districtName ?? g.districtId);
@@ -102,10 +103,16 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
     const districtRows: BmpComparisonRow[] = [...districtNames.entries()]
       .sort((a, b) => a[1].localeCompare(b[1]))
       .map(([id, name]) => {
-        // 0 Ton = belum ada produksi tercatat → null ("—"), bukan bar kosong.
-        const ton = (gs: typeof exGroups) =>
-          sumBmpGroups(gs.filter((g) => g.districtId === id), year, dataMode).totals.produksiTon || null;
-        return { label: name, exPlasma: ton(exGroups), swadaya: ton(swGroups) };
+        // Tanpa luas terdata = belum ada data → null ("—"), bukan bar kosong; luas di tooltip.
+        const cell = (gs: typeof exGroups) => {
+          const s = sumBmpGroups(gs.filter((g) => g.districtId === id), year, dataMode);
+          return s.totals.luasMelaporHa > 0
+            ? { value: s.produktivitasTonHa, title: `Luas terdata ${formatArea(s.totals.luasMelaporHa)} Ha` }
+            : { value: null, title: undefined };
+        };
+        const ex = cell(exGroups);
+        const sw = cell(swGroups);
+        return { label: name, exPlasma: ex.value, swadaya: sw.value, exPlasmaTitle: ex.title, swadayaTitle: sw.title };
       });
 
     // Produktivitas per umur tanaman (Ton/Ha/tahun, disetahunkan).
