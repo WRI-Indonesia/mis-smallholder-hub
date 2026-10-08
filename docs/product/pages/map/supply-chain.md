@@ -16,7 +16,7 @@ Halaman: Peta Rantai Pasok (/admin/map/supply-chain)
 │   ├── Garis alir (warna = jalur, tebal ∝ tonase) + panah arah
 │   ├── Titik: Lembaga · offtaker bertitik · ikon pabrik Mill (biru = pemasok UL, ukuran ∝ tonase) · titik lahan (Detail)
 │   ├── Klik node = sorot jaringannya, sisanya diredupkan
-│   └── Popup: Mill · Lembaga · offtaker · lahan · garis
+│   └── Popup (auto-pan di kanan panel, bisa digeser): Mill (badge UL, UML ID, Distrik, Program buyer, RSPO, Lembaga teratas) · Lembaga/offtaker (TBS + Mill tujuan ber-badge UL) · lahan · garis
 └── Basemap: STREET / LIGHT / DARK / SAT / HYBRID
 ```
 

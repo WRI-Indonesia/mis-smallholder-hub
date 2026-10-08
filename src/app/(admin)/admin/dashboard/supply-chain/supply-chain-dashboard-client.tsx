@@ -34,6 +34,7 @@ import {
 import { SupplyChainSankey, channelColor, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { SupplyChainFilterBar } from "./supply-chain-filter-bar";
 import { useSupplyChainFilters } from "./use-supply-chain-filters";
+import { UlBadge } from "./ul-badge";
 
 const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 const pct = (part: number, total: number) => (total > 0 ? `${formatPct(Math.round((part / total) * 1000) / 10)}%` : "—");
@@ -482,7 +483,7 @@ function MillTable({ rows, total, onSelect }: { rows: MillVolumeRow[]; total: nu
                     <span className="inline-flex items-center gap-1.5">
                       <Icon className={cn("h-3.5 w-3.5 shrink-0", className)} aria-label={MILL_STATUS_LABEL[m.status]} />
                       <span className="font-medium group-hover:text-primary">{m.name}</span>
-                      {m.isUl && <Badge className="h-4 px-1.5 text-[10px]">UL</Badge>}
+                      {m.isUl && <UlBadge />}
                     </span>
                   </td>
                   <td className="whitespace-nowrap py-1.5 pr-3 text-muted-foreground">{m.district ?? "—"}</td>

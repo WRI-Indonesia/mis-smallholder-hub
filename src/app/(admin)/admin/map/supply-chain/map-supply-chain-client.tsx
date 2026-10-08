@@ -20,8 +20,10 @@ import {
   OFFTAKER_TYPE_LABEL,
   buildFlowSegments,
   flowSegmentKey,
+  isUlMill,
   millDistrict,
   millLabel,
+  millVolumes,
   recordChannel,
   type SankeyMode,
   type ScRecord,
@@ -30,6 +32,7 @@ import {
 import { channelColor, useChartDark } from "../../dashboard/supply-chain/supply-chain-sankey";
 import { ModeToggle } from "../../dashboard/supply-chain/supply-chain-dashboard-client";
 import { SupplyChainFilterBar } from "../../dashboard/supply-chain/supply-chain-filter-bar";
+import { UlBadge } from "../../dashboard/supply-chain/ul-badge";
 import { useSupplyChainFilters } from "../../dashboard/supply-chain/use-supply-chain-filters";
 
 const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
@@ -103,10 +106,11 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
   const [showParcels, setShowParcels] = useState(true);
   const [showParcelLines, setShowParcelLines] = useState(false);
   const [selected, setSelected] = useState<Selected>(null);
-  // Popup standar peta (#222): auto-pan agar kartu utuh di viewport + bisa digeser.
-  const popupKey = selected ? `${selected.kind}:${selected.id}:${selected.lng},${selected.lat}` : null;
-  useMapPopupAutoPan(mapRef, popupKey);
-  const popupDrag = useMapPopupDrag(popupKey);
+  // Popup standar peta (#222): auto-pan agar kartu utuh di viewport (di kanan panel
+  // melayang) + bisa digeser. Kunci per entitas, bukan titik klik: klik ulang entitas
+  // yang sama tidak me-reset geseran popup.
+  const popupKey = selected ? `${selected.kind}:${selected.id}` : null;
+  useMapPopupAutoPan(mapRef, popupKey, panelOpen ? PANEL_W + 12 : 0);
 
   const groupByCode = useMemo(() => new globalThis.Map(view.data.groups.map((g) => [g.code, g])), [view.data.groups]);
   const { segments, undrawn } = useMemo(() => buildFlowSegments(view.data, records, { viaOfftakers: detail }), [view.data, records, detail]);
@@ -168,7 +172,7 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
         if (m?.lat != null && m.lon != null)
           feats.push({
             type: "Feature",
-            properties: { kind: "mill", id, label: millLabel(m), ton, on, icon: m.buyerPrograms.includes("UL") ? "sc-mill-ul" : "sc-mill" },
+            properties: { kind: "mill", id, label: millLabel(m), ton, on, icon: isUlMill(m) ? "sc-mill-ul" : "sc-mill" },
             geometry: { type: "Point", coordinates: [m.lon, m.lat] },
           });
       }
@@ -349,10 +353,9 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
         </Source>
 
         {selected && (
-          <Popup key={popupKey} {...MAP_POPUP_PROPS} offset={popupDrag.offset} longitude={selected.lng} latitude={selected.lat} onClose={() => setSelected(null)}>
-            <MapPopupDragHandle {...popupDrag.handleProps} />
+          <SelectedPopup key={popupKey} popupKey={popupKey!} selected={selected} onClose={() => setSelected(null)}>
             <SelectedCard selected={selected} view={view} records={records} segments={segments} />
-          </Popup>
+          </SelectedPopup>
         )}
       </Map>
 
@@ -491,20 +494,18 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Seperti `MapPopupRows`, tapi label Mill pemasok UL diberi badge (sama dengan tabel Mill di Dashboard). */
-function MillRows({ rows }: { rows: { id: string; label: string; isUl: boolean; value: string }[] }) {
+/**
+ * <Popup> + state geser dipisah ke komponen sendiri: tiap pointermove saat menggeser
+ * hanya me-render popup ini, bukan seluruh peta. Isi kartu (`children`) dibuat induk,
+ * jadi tidak dihitung ulang selama digeser.
+ */
+function SelectedPopup({ popupKey, selected, onClose, children }: { popupKey: string; selected: NonNullable<Selected>; onClose: () => void; children: React.ReactNode }) {
+  const drag = useMapPopupDrag(popupKey);
   return (
-    <dl className="space-y-1.5">
-      {rows.map((r) => (
-        <div key={r.id} className="flex items-start justify-between gap-3">
-          <dt className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="truncate" title={r.label}>{r.label}</span>
-            {r.isUl && <Badge className="h-4 shrink-0 px-1.5 text-[10px]">UL</Badge>}
-          </dt>
-          <dd className="shrink-0 text-right text-xs font-medium tabular-nums">{r.value}</dd>
-        </div>
-      ))}
-    </dl>
+    <Popup {...MAP_POPUP_PROPS} offset={drag.offset} longitude={selected.lng} latitude={selected.lat} onClose={onClose}>
+      <MapPopupDragHandle {...drag.handleProps} />
+      {children}
+    </Popup>
   );
 }
 
@@ -531,14 +532,9 @@ function SelectedCard({
   const millName = (id: string | null) => (id && mills.get(id) ? millLabel(mills.get(id)!) : "Mill tidak diketahui");
   const ton = (rs: ScRecord[]) => rs.reduce((a, r) => a + (r.supplyTon ?? 0), 0);
   const list = (rows: [string, number][]) => rows.map(([k, v]) => ({ label: k, value: fmtTon(v) }));
-  // Mill tujuan dikelompokkan per id (bukan nama) agar badge UL bisa dibaca dari master Mill.
+  // Mill tujuan = agregasi yang sama dengan tabel Volume per Mill (Mill tak diketahui satu baris).
   const millRows = (rs: ScRecord[]) =>
-    topBy(rs, (r) => r.millId ?? "", (r) => r.supplyTon ?? 0).map(([id, v]) => ({
-      id,
-      label: millName(id || null),
-      isUl: !!mills.get(id)?.buyerPrograms.includes("UL"),
-      value: fmtTon(v),
-    }));
+    millVolumes(rs, mills).slice(0, 5).map((m) => ({ id: m.millId ?? "?", label: m.name, value: fmtTon(m.ton), badge: m.isUl && <UlBadge /> }));
 
   let body: React.ReactNode = null;
   if (selected.kind === "mill") {
@@ -546,7 +542,7 @@ function SelectedCard({
     const rs = records.filter((r) => r.millId === selected.id);
     body = m && (
       <>
-        <MapPopupHeader accent="blue" icon={<Factory className="h-5 w-5" />} title={millLabel(m)} badge={m.buyerPrograms.includes("UL") && <Badge className="h-4 px-1.5 text-[10px]">UL</Badge>} rows={[{ label: "UML ID", value: m.umlId ?? "— (manual)", mono: true }, { label: "Distrik", value: millDistrict(m) ?? "—" }]} />
+        <MapPopupHeader accent="blue" icon={<Factory className="h-5 w-5" />} title={millLabel(m)} badge={isUlMill(m) && <UlBadge />} rows={[{ label: "UML ID", value: m.umlId ?? "— (manual)", mono: true }, { label: "Distrik", value: millDistrict(m) ?? "—" }]} />
         <MapPopupHighlight label="TBS" value={fmtTon(ton(rs))} />
         <div className="space-y-2 px-3.5 py-2.5">
           <MapPopupRows rows={[
@@ -567,7 +563,7 @@ function SelectedCard({
         <MapPopupHighlight label="TBS" value={fmtTon(ton(rs))} />
         <div className="space-y-2 px-3.5 py-2.5">
           <div className="text-[11px] font-medium text-muted-foreground">Mill tujuan teratas</div>
-          <MillRows rows={millRows(rs)} />
+          <MapPopupRows rows={millRows(rs)} />
         </div>
       </>
     );
@@ -580,7 +576,7 @@ function SelectedCard({
         <MapPopupHighlight label="TBS melewati" value={fmtTon(ton(rs))} />
         <div className="space-y-2 px-3.5 py-2.5">
           <div className="text-[11px] font-medium text-muted-foreground">Mill tujuan</div>
-          <MillRows rows={millRows(rs)} />
+          <MapPopupRows rows={millRows(rs)} />
         </div>
       </>
     );

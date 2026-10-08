@@ -321,6 +321,11 @@ export interface MillVolumeRow {
   offtakerCount: number;
 }
 
+/** Mill pemasok program UL (badge UL & ikon biru). */
+export function isUlMill(m: Pick<ScMill, "buyerPrograms">): boolean {
+  return m.buyerPrograms.includes("UL");
+}
+
 /** Kabupaten Mill dari UML tanpa awalan "Kabupaten"/"Kab." (data UML tak seragam); null bila kosong. */
 export function millDistrict(m: Pick<ScMill, "district">): string | null {
   return m.district?.replace(/^(Kabupaten|Kab\.?)\s+/i, "").trim() || null;
@@ -338,7 +343,7 @@ export function millVolumes(records: ScRecord[], mills: Map<string, ScMill>): Mi
         millId: r.millId, name: m ? millLabel(m) : "Mill tidak diketahui", company: m?.company ?? null,
         district: m ? millDistrict(m) : null,
         status: r.millId ? r.millStatus : "TIDAK_DIKETAHUI", basis: r.millBasis,
-        isUl: !!m?.buyerPrograms.includes("UL"), ton: 0, ulTon: 0, groupCount: 0, offtakerCount: 0,
+        isUl: !!m && isUlMill(m), ton: 0, ulTon: 0, groupCount: 0, offtakerCount: 0,
         groups: new Set(), offs: new Set(),
       };
       acc.set(k, row);
@@ -571,7 +576,7 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
       const m = mills.get(id.slice(2));
       n = {
         id, column, label: m ? millLabel(m) : id.slice(2), sub: MILL_STATUS_LABEL[record.millStatus],
-        value: 0, folded: 0, isUl: !!m?.buyerPrograms.includes("UL"), millStatus: record.millStatus, groupCode: null,
+        value: 0, folded: 0, isUl: !!m && isUlMill(m), millStatus: record.millStatus, groupCode: null,
       };
     }
     nodes.set(id, n);
