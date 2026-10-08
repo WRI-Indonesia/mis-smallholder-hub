@@ -183,11 +183,13 @@ export interface KelompokTaniReportResult {
 export interface LandParcelLegalFilters {
   /**
    * Penyebut laporan. `mapped` = hanya lahan yang sudah melalui import Detail
-   * Lahan (proxy: punya UL Parcel Code aktif). Default `mapped` begitu filter
-   * legalitas mana pun aktif — tanpa itu "tanpa surat" mengembalikan 7.607
-   * lahan di prod yang 88%-nya hanya belum diimport (ukur 2026-08-28).
+   * Lahan (proxy: punya UL Parcel Code aktif); `all` = semua lahan (default
+   * halaman sejak #318). **Wajib** (#319): tak ada default di `where` maupun di
+   * teks cetakan, sehingga keduanya tak bisa menyimpang diam-diam. Catatan ukur:
+   * "tanpa surat" atas `all` = 7.607 lahan prod, 88%-nya hanya belum diimport
+   * (2026-08-28) — karena itu pilihan `mapped` tetap ada.
    */
-  coverage?: "all" | "mapped";
+  coverage: "all" | "mapped";
   documentStatus?: "all" | "with" | "without";
   /** Enum `LandDocumentType`; kosong = tidak memfilter jenis. */
   documentTypes?: string[];

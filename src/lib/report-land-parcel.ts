@@ -100,7 +100,8 @@ function clean(s: string | null | undefined): string | null {
  */
 export function buildLandParcelReport(
   parcels: LpRawParcel[],
-  filters: LandParcelLegalFilters = {},
+  /** Hanya `areaDiff` yang dipakai di sini — sisanya sudah jadi `where` di server. */
+  filters: Pick<LandParcelLegalFilters, "areaDiff"> = {},
 ): LandParcelReportResult {
   const distinctPetani = new Set<string>();
   const distinctLembaga = new Set<string>();
@@ -370,10 +371,11 @@ export function describeLegalFilters(filters: LandParcelLegalFilters): { label: 
   const out: { label: string; value: string }[] = [
     {
       label: "Cakupan Pendataan",
+      // Pasangan teks ↔ `landParcelLegalWhere` dikunci test (#319); `coverage` wajib.
       value:
-        filters.coverage === "all"
-          ? "Semua lahan (termasuk yang belum melalui import Detail Lahan)"
-          : "Hanya lahan yang sudah didata (punya UL Parcel Code)",
+        filters.coverage === "mapped"
+          ? "Hanya lahan yang sudah didata (punya UL Parcel Code)"
+          : "Semua lahan (termasuk yang belum melalui import Detail Lahan)",
     },
   ];
   if (filters.documentStatus === "with") out.push({ label: "Status Surat", value: "Ada surat" });
@@ -418,7 +420,7 @@ export function describeLegalFilters(filters: LandParcelLegalFilters): { label: 
  */
 export function describeLegalSummary(
   summary: LandParcelReportSummary,
-  filters: LandParcelLegalFilters = {},
+  filters: LandParcelLegalFilters,
 ): { label: string; value: string; note: string }[] {
   // Penyebut WAJIB mengikuti cakupan yang dipilih. Dengan "Semua lahan",
   // pembilangnya dihitung atas seluruh baris hasil filter sedangkan
