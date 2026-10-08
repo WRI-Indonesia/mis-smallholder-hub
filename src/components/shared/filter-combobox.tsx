@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 
+/** Lebar popover panel peta: selebar trigger (`w-full`), minimal 240px. */
+export const ANCHOR_POPOVER_WIDTH = "w-[var(--anchor-width)] min-w-[240px]";
+
 export interface FilterComboOption {
   id: string;
   name: string;
@@ -33,15 +36,25 @@ export interface FilterComboboxProps {
   emptyLabel: string;
   /** Kelas lebar trigger & popover, default `w-[220px]`. */
   widthClass?: string;
+  /** Kelas lebar popover bila beda dari trigger (panel peta: selebar trigger, min 240px). */
+  popoverWidthClass?: string;
+  /** Label di atas trigger (panel peta, #315); tanpa ini hanya trigger yang dirender. */
+  label?: string;
+  /** Tanda wajib `*` merah di samping `label`. */
+  required?: boolean;
   disabled?: boolean;
 }
 
 /**
- * Primitif combobox filter (Popover + Command) yang dipakai seragam untuk
- * filter Distrik / Lembaga Petani di Master Data dan Report. Dua semantik:
- * `allLabel` = filter opsional dengan pilihan "Semua …"; `placeholder` =
- * pilihan wajib gaya "Pilih …" (report). Pencarian menyertakan kode lembaga
- * bila ada.
+ * Primitif combobox filter (Popover + Command) — SATU-SATUNYA definisi; dipakai
+ * Master Data, Report, dan panel Peta Lahan / Peta BMP (#315, dulu dua salinan
+ * lokal). Dua semantik: `allLabel` = filter opsional dengan pilihan "Semua …";
+ * `placeholder` = pilihan wajib gaya "Pilih …". Pencarian menyertakan kode
+ * lembaga bila ada.
+ *
+ * Item "Semua …" ber-`value="__all__"`: TIDAK ikut tersaring pencarian, jadi ia
+ * tersembunyi selama pengguna mengetik dan kembali begitu kotak cari dikosongkan
+ * (keputusan #315 — salinan peta dulu ikut tersaring; satu perilaku di semua halaman).
  */
 export function FilterCombobox({
   options,
@@ -52,6 +65,9 @@ export function FilterCombobox({
   searchPlaceholder,
   emptyLabel,
   widthClass = "w-[220px]",
+  popoverWidthClass,
+  label,
+  required,
   disabled,
 }: FilterComboboxProps) {
   const [open, setOpen] = useState(false);
@@ -63,7 +79,7 @@ export function FilterCombobox({
     setOpen(false);
   }
 
-  return (
+  const combobox = (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
@@ -75,17 +91,17 @@ export function FilterCombobox({
             className={cn(widthClass, "justify-between h-9 font-normal text-left")}
           >
             {selected ? (
-              <span>{selected.name}</span>
+              <span className="truncate">{selected.name}</span>
             ) : allLabel ? (
-              <span>{allLabel}</span>
+              <span className="truncate">{allLabel}</span>
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="truncate text-muted-foreground">{placeholder}</span>
             )}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         }
       />
-      <PopoverContent className={cn(widthClass, "p-0")} align="start">
+      <PopoverContent className={cn(popoverWidthClass ?? widthClass, "p-0")} align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList className="max-h-[300px]">
@@ -116,5 +132,15 @@ export function FilterCombobox({
         </Command>
       </PopoverContent>
     </Popover>
+  );
+
+  if (!label) return combobox;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-medium text-muted-foreground">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {combobox}
+    </div>
   );
 }
