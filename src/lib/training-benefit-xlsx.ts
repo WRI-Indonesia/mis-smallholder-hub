@@ -1,12 +1,12 @@
 import ExcelJS from "exceljs";
 import type { ContractRow } from "@/lib/program-target";
 import { contractTrajectory, trajectorySummary } from "@/lib/training-benefit-chart";
-import type { TrainingBenefitRow, TrainingBenefitYear } from "@/lib/training-dashboard-aggregation";
+import type { TrainingBenefitDetailRow, TrainingBenefitRow, TrainingBenefitYear } from "@/lib/training-dashboard-aggregation";
 
 /**
- * Workbook kartu Training Benefit per year (#402/#403) — dua sheet (owner 2026-10-07):
- * "Capaian" (tabel format donor + gambar Grafis di bawahnya) dan "Kontrak" (target vs
- * realisasi per periode + gambar 5 grafik). Tabel selalu mulai di baris 1 (AutoFilter/pivot
+ * Workbook kartu Training Benefit per year (#402/#403) — sheet (owner 2026-10-07/08):
+ * "Capaian" (tabel format donor + gambar Grafis di bawahnya), "Kontrak" (target vs
+ * realisasi per periode + gambar 5 grafik), dan "Detail" (tahun dilatih per petani). Tabel selalu mulai di baris 1 (AutoFilter/pivot
  * tetap jalan, pola report-land-parcel-xlsx); gambar ditempel DI BAWAH tabel. exceljs tak
  * bisa membuat grafik Excel asli → gambar PNG dari SVG yang sama dengan layar.
  */
@@ -27,7 +27,12 @@ export interface BenefitExcelInput {
   contract: { baselineYear: number | null; years: number[]; rows: ContractRow[] } | null;
   filterActive: boolean;
   images: { grafis?: BenefitExcelImage | null; kontrak?: BenefitExcelImage | null };
+  /** Baris per petani; null = gagal dimuat → sheet Detail berisi pesan saja. */
+  detail: TrainingBenefitDetailRow[] | null;
 }
+
+/** Judul kolom paket sheet Detail — sejajar `TRAINING_BENEFIT_PACKAGES` (permintaan owner 2026-10-08). */
+export const DETAIL_PACKAGE_HEADERS = ["P1", "P2-GroupDynamic", "P2-HSE", "P3&4"];
 
 const yearLabel = (y: TrainingBenefitYear) => (y.upTo ? `≤ ${y.year}` : String(y.year));
 const THIN = { style: "thin" as const };
@@ -110,9 +115,33 @@ function sheetKontrak(wb: ExcelJS.Workbook, input: BenefitExcelInput) {
   if (images.kontrak) addImageBelow(wb, ws, images.kontrak);
 }
 
+function sheetDetail(wb: ExcelJS.Workbook, { detail }: BenefitExcelInput) {
+  const ws = wb.addWorksheet("Detail");
+  if (!detail) {
+    ws.addRow(["Daftar petani gagal dimuat. Coba unduh ulang."]);
+    ws.getColumn(1).width = 60;
+    return;
+  }
+  ws.addRow(["Distrik", "Lembaga", "ID Petani", "Gender", ...DETAIL_PACKAGE_HEADERS]);
+  // Tahun dilatih per paket: lebih dari sekali dipisah "; ", "-" = belum (s.d. tahun berjalan).
+  for (const r of detail) {
+    ws.addRow([r.district, r.group, r.farmerCode, r.gender === "F" ? "Perempuan" : "Laki-laki", ...r.years.map((ys) => (ys.length ? ys.join("; ") : "-"))]);
+  }
+  const last = 4 + DETAIL_PACKAGE_HEADERS.length;
+  ws.getRow(1).font = { bold: true };
+  ws.views = [{ state: "frozen", ySplit: 1 }];
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: Math.max(1, ws.rowCount), column: last } };
+  [14, 40, 22, 11].forEach((w, i) => (ws.getColumn(i + 1).width = w));
+  for (let c = 5; c <= last; c++) {
+    ws.getColumn(c).width = 16;
+    ws.getColumn(c).alignment = { horizontal: "center" };
+  }
+}
+
 export function buildTrainingBenefitWorkbook(input: BenefitExcelInput): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
   sheetCapaian(wb, input);
   sheetKontrak(wb, input);
+  sheetDetail(wb, input);
   return wb;
 }

@@ -8,11 +8,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
+  trainingBenefitDetailRows,
   trainingBenefitPerYear,
   type TrainingBenefitRow,
   type TrainingBenefitYear,
 } from "@/lib/training-dashboard-aggregation";
 import type { TrainingGroupEntry } from "@/types/dashboard";
+import { getTrainingBenefitFarmers } from "@/server/actions/dashboard-training";
 import { formatNumber } from "@/lib/format";
 import {
   buildProgramTargetGrid,
@@ -372,11 +374,17 @@ export function TrainingBenefitPanel({
   }, [programTargets, groups, currentYear]);
   const [exporting, setExporting] = useState(false);
 
-  /** Excel 2 sheet (Capaian = tabel + gambar Grafis · Kontrak), grafik sebagai PNG dari SVG ekspor. */
+  /** Excel 3 sheet (Capaian = tabel + gambar Grafis · Kontrak · Detail per petani), grafik sebagai PNG dari SVG ekspor. */
   const exportExcel = async () => {
     setExporting(true);
     try {
-      const { buildTrainingBenefitWorkbook } = await import("@/lib/training-benefit-xlsx");
+      const [{ buildTrainingBenefitWorkbook }, farmersRes] = await Promise.all([
+        import("@/lib/training-benefit-xlsx"),
+        getTrainingBenefitFarmers(groups.map((g) => g.id)),
+      ]);
+      // Daftar petani gagal → tetap unduh Capaian & Kontrak; sheet Detail berisi pesan.
+      if (!farmersRes.success) toast.error(farmersRes.error);
+      const detail = farmersRes.success ? trainingBenefitDetailRows(groups, farmersRes.data ?? [], currentYear) : null;
       const bars = benefitBarsSvg(years, rows, any, activeFarmers);
       const grid = contract
         ? contractGridSvg(
@@ -389,7 +397,7 @@ export function TrainingBenefitPanel({
           )
         : null;
       const [grafis, kontrak] = await Promise.all([svgToPng(bars), grid ? svgToPng(grid) : Promise.resolve(null)]);
-      const wb = buildTrainingBenefitWorkbook({ years, rows, any, currentYear, contract, filterActive, images: { grafis, kontrak } });
+      const wb = buildTrainingBenefitWorkbook({ years, rows, any, currentYear, contract, filterActive, images: { grafis, kontrak }, detail });
       const buffer = await wb.xlsx.writeBuffer();
       const url = URL.createObjectURL(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
       const a = document.createElement("a");

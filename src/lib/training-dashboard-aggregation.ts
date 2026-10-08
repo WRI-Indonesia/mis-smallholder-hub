@@ -1,4 +1,5 @@
 import type {
+  TrainingBenefitFarmer,
   TrainingCoverageRow,
   TrainingDashboardData,
   TrainingGroupEntry,
@@ -577,4 +578,59 @@ export function trainingBenefitPerYear(
   }));
   const any: TrainingBenefitRow = { code: "ANY", label: TRAINING_BENEFIT_ANY_LABEL, cells: cellsOf(first.get("ANY") ?? []) };
   return { years, rows, any };
+}
+
+/** Satu baris sheet Detail ekspor Training Benefit per year (#402 lanjutan). */
+export interface TrainingBenefitDetailRow {
+  district: string;
+  group: string;
+  farmerCode: string;
+  gender: "M" | "F";
+  /** Sejajar `TRAINING_BENEFIT_PACKAGES`: tahun-tahun (unik, urut) petani dilatih paket itu; kosong = belum. */
+  years: number[][];
+}
+
+/**
+ * Detail per petani untuk ekspor: tahun dilatih tiap paket Training Benefit. Aturan sama
+ * dengan `firstTrainingYears` — peserta per Lembaga (payload sudah membuang peserta tamu),
+ * kegiatan setelah `upToYear` diabaikan — tetapi SEMUA tahun dicatat, bukan hanya yang
+ * pertama. Petani aktif yang belum pernah dilatih tetap muncul (semua paket kosong), jadi
+ * jumlah baris = total petani aktif (panjang trek Grafis). Urut Distrik → Lembaga → ID Petani.
+ */
+export function trainingBenefitDetailRows(
+  groups: TrainingGroupEntry[],
+  farmers: TrainingBenefitFarmer[],
+  upToYear: number,
+): TrainingBenefitDetailRow[] {
+  const pkgIndex = new Map(TRAINING_BENEFIT_PACKAGES.map((code, i) => [code, i]));
+  const years = new Map<string, Set<number>[]>();
+  for (const g of groups) {
+    for (const a of g.activities) {
+      const i = pkgIndex.get(a.packageCode);
+      const y = yearOf(a.date);
+      if (i == null || y > upToYear) continue;
+      for (const p of a.participants) {
+        const key = `${g.id}|${p.farmerId}`;
+        let perPkg = years.get(key);
+        if (!perPkg) years.set(key, (perPkg = TRAINING_BENEFIT_PACKAGES.map(() => new Set<number>())));
+        perPkg[i].add(y);
+      }
+    }
+  }
+  const groupById = new Map(groups.map((g) => [g.id, g]));
+  const rows: TrainingBenefitDetailRow[] = [];
+  for (const f of farmers) {
+    const g = groupById.get(f.farmerGroupId);
+    if (!g) continue;
+    const perPkg = years.get(`${g.id}|${f.id}`);
+    rows.push({
+      district: g.districtName,
+      group: g.name,
+      farmerCode: f.farmerId,
+      gender: f.gender,
+      years: TRAINING_BENEFIT_PACKAGES.map((_, i) => (perPkg ? [...perPkg[i]].sort((a, b) => a - b) : [])),
+    });
+  }
+  const cmp = (a: string, b: string) => a.localeCompare(b, "id", { numeric: true });
+  return rows.sort((a, b) => cmp(a.district, b.district) || cmp(a.group, b.group) || cmp(a.farmerCode, b.farmerCode));
 }

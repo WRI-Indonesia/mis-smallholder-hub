@@ -300,6 +300,16 @@ export interface TrainingGroupEntry {
   activities: TrainingActivityEntry[];
 }
 
+/** Petani aktif untuk sheet Detail ekspor Training Benefit per year (#402). */
+export interface TrainingBenefitFarmer {
+  /** CUID — kunci yang sama dengan `TrainingParticipantEntry.farmerId`. */
+  id: string;
+  /** ID Petani (kode lapangan). */
+  farmerId: string;
+  gender: "M" | "F";
+  farmerGroupId: string;
+}
+
 export interface TrainingDashboardData {
   groups: TrainingGroupEntry[];
 }
