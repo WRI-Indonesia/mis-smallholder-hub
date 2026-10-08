@@ -73,12 +73,22 @@ const norm = (s: unknown) => String(s ?? "").toLowerCase().replace(/\s+/g, " ").
 const nameKey = (s: unknown) => norm(s).replace(/[^a-z]/g, "");
 const isBlank = (v: unknown) => v == null || String(v).trim() === "";
 
-/** Nama petani dari nama berkas: `… - 2026 - IM_Budi Santoso(1).xlsx` → "Budi Santoso". */
+/**
+ * Nama petani dari nama berkas: `… - 2026 - IM_Budi Santoso(1).xlsx` → "Budi Santoso".
+ * Awalan Lembaga sebelum "_" (ada token huruf kapital: "IM_", "ASPEK RAS_", "KPUD …_")
+ * dibuang; tanpa awalan itu "_" = pemisah alias ("Jimmy_mahmudi" → "Jimmy/mahmudi")
+ * atau apostrof yang tak boleh di nama berkas ("Zam_ah" → "Zam'ah") — pola Kampar.
+ */
 export function farmerNameFromFileName(fileName: string): string | null {
   let base = fileName.split("/").pop() ?? fileName;
-  base = base.replace(/\.xlsx?$/i, "").replace(/\s*\(\d+\)\s*$/, "").trim();
-  const parts = base.includes("_") ? base.split("_") : base.split(/\s+-\s+/);
-  const last = parts[parts.length - 1]?.trim() ?? "";
+  base = base.replace(/\.xlsx?$/i, "").replace(/xlsx$/i, "").replace(/\s*\(\d+\)\s*$/, "").trim();
+  const parts = base.split(/\s+-\s*|\s*-\s+/);
+  let last = parts[parts.length - 1]?.trim() ?? "";
+  const us = last.indexOf("_");
+  if (us >= 0) {
+    if (/\b[A-Z]{2,}\b/.test(last.slice(0, us))) last = last.slice(last.lastIndexOf("_") + 1).trim();
+    else last = last.replace(/_(?=[a-z]{1,2}\b)/g, "'").replace(/\s*_\s*/g, "/");
+  }
   return last || null;
 }
 
@@ -135,7 +145,14 @@ export function parseBmpSurveyForm(
 
   const gab = findSheet(sheets, /gabungan|penilaian/i) ?? sheets[0];
   const lem = findSheet(sheets, /lembaga/i);
-  const ind = findSheet(sheets, /individu/i);
+  // Template Kampar menamai sheet individu dengan nama petani → pakai satu-satunya sheet lain
+  // yang memuat baris kode kriteria (bukan Gabungan/Lembaga/Panduan).
+  const ind =
+    findSheet(sheets, /individu/i) ??
+    (() => {
+      const rest = sheets.filter((s) => s !== gab && s !== lem && !/panduan|petunjuk/i.test(s.name) && s.rows.some((r) => /^\d\.\d\.\d$/.test(cellText(r, 3))));
+      return rest.length === 1 ? rest[0] : undefined;
+    })();
   if (!gab) {
     out.warnings.push("Sheet Form Penilaian tidak ditemukan");
     return out;
@@ -289,6 +306,18 @@ export function matchFarmerName(
   } = {},
 ): BmpNameMatch {
   if (!name) return { farmerDbId: null, confidence: "NONE", suggestions: [] };
+  // Alias "Jimmy/Mahmudi" (berkas Kampar): cocokkan per nama; satu alias EXACT yang menang.
+  const aliases = name.split("/").map((x) => x.trim()).filter(Boolean);
+  if (aliases.length > 1) {
+    const results = aliases.map((a) => matchFarmerName(a, farmers, options));
+    const exact = [...new Set(results.filter((r) => r.confidence === "EXACT").map((r) => r.farmerDbId))];
+    if (exact.length === 1) return results.find((r) => r.farmerDbId === exact[0] && r.confidence === "EXACT")!;
+    const fuzzy = [...new Set(results.filter((r) => r.farmerDbId).map((r) => r.farmerDbId))];
+    const suggestions = [...new Map(results.flatMap((r) => r.suggestions).map((f) => [f.farmerDbId, f])).values()].slice(0, 5);
+    if (exact.length === 0 && fuzzy.length === 1) return { farmerDbId: fuzzy[0], confidence: "FUZZY", suggestions };
+    if (suggestions.length) return { farmerDbId: null, confidence: "AMBIGUOUS", suggestions };
+    return { farmerDbId: null, confidence: "NONE", suggestions: [] };
+  }
   const key = nameKey(name);
   const exact = farmers.filter((f) => nameKey(f.name) === key);
   if (exact.length === 1) return { farmerDbId: exact[0].farmerDbId, confidence: "EXACT", suggestions: exact };
