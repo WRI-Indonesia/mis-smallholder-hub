@@ -48,7 +48,7 @@ export function BmpRankingChart({
                       <span className="font-medium">{e.name}</span>
                     </span>
                     <span className="tabular-nums text-muted-foreground shrink-0">
-                      {formatTon(e.produktivitasTonHa)} Ton/Ha
+                      {formatTon(e.produktivitasTonHa)} Ton/Ha/tahun
                     </span>
                   </div>
                   <div className="h-2 w-full rounded-full bg-muted">
@@ -64,7 +64,7 @@ export function BmpRankingChart({
               );
             })}
             <p className="pt-1 text-[11px] text-muted-foreground">
-              Ton/Ha = Σ produksi ÷ Σ luas terdata lembaga ybs; warna mengikuti kategori
+              Ton/Ha/tahun = Σ produksi disetahunkan (× 12 ÷ bulan ber-data tiap tahun) ÷ Σ luas terdata lembaga ybs; warna mengikuti kategori
               (Ex-Plasma/Swadaya).
             </p>
           </div>

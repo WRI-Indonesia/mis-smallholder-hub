@@ -3,6 +3,7 @@ import {
   buildBmpSnapshotData,
   filterBmpGroups,
   sumBmpGroups,
+  bmpAnnualizeFactor,
   bmpProductivity,
   bmpStatsForYear,
   bmpChartSeries,
@@ -170,7 +171,7 @@ describe("filterBmpGroups & sumBmpGroups (slicing client-side)", () => {
     expect(all.totals.totalPetani).toBe(3);
     expect(all.monthly["2025-01"]).toEqual({ produksiTon: 4, lahanMelapor: 2, luasMelaporHa: 5 });
     expect(all.availability).toEqual({ baik: 0, cukup: 0, kurang: 2, tidakAda: 2 });
-    expect(all.produktivitasTonHa).toBe(0.8); // 4 ton ÷ 5 ha (per tahun 2025)
+    expect(all.produktivitasTonHa).toBe(9.6); // 4 ton × 12/1 bln (disetahunkan per Lembaga) ÷ 5 ha (per tahun 2025)
 
     const onlyG1 = sumBmpGroups(filterBmpGroups(d, { districtId: "d1" }));
     expect(onlyG1.totals.produksiTon).toBe(1);
@@ -197,7 +198,7 @@ describe("filterBmpGroups & sumBmpGroups (slicing client-side)", () => {
     expect(s2025.totals.produksiTon).toBe(3);
     expect(s2025.totals.lahanBerData).toBe(2); // p1 + p3
     expect(s2025.totals.petaniMelapor).toBe(2);
-    expect(s2025.produktivitasTonHa).toBe(1.5); // 3 ton ÷ 2 ha (p3 area null → 0)
+    expect(s2025.produktivitasTonHa).toBe(9); // 3 ton × 12/2 bln ÷ 2 ha (p3 area null → 0)
 
     // Tahun tanpa data → nol, tapi master data tetap
     const s2023 = sumBmpGroups([g1], 2023);
@@ -222,7 +223,8 @@ describe("filterBmpGroups & sumBmpGroups (slicing client-side)", () => {
     expect(avg.totals.petaniMelapor).toBe(2); // (1+2)/2 = 1,5 → 2
     expect(avg.totals.totalLahan).toBe(3); // master data tetap
     expect(avg.totals.totalPetani).toBe(2);
-    expect(avg.produktivitasTonHa).toBe(1); // Σ4 ton ÷ Σ(2+2) ha — sama dgn mode kumulatif
+    // (1 ton × 12/1 bln [2024] + 3 ton × 12/2 bln [2025]) ÷ Σ(2+2) ha = 30 ÷ 4 — sama dgn mode kumulatif
+    expect(avg.produktivitasTonHa).toBe(7.5);
 
     // Tanpa data sama sekali → tetap nol tanpa NaN
     const g2 = d.groups.find((g) => g.id === "g2")!;
@@ -461,9 +463,9 @@ describe("bucket umur tanaman (#191)", () => {
     expect(series.find((s) => s.key === "9-15")).toMatchObject({
       produksiTon: 4,
       luasMelaporHa: 2,
-      produktivitasTonHa: 2,
+      produktivitasTonHa: 24, // 4 ton × 12/1 bln ÷ 2 ha (produksi tetap angka tercatat)
     });
-    expect(series.find((s) => s.key === "16-25")!.produktivitasTonHa).toBe(1); // p4 tanam 2000, umur 25
+    expect(series.find((s) => s.key === "16-25")!.produktivitasTonHa).toBe(12); // p4 tanam 2000, umur 25
     // Bucket program tanpa data tetap tampil (0); "unknown" hanya bila ber-data.
     expect(series.find((s) => s.key === "4-8")!.produksiTon).toBe(0);
     expect(series.find((s) => s.key === "unknown")).toBeUndefined();
@@ -478,7 +480,7 @@ describe("bmpGroupRanking (#191)", () => {
     ]);
     const r = bmpGroupRanking(d.groups, 2025);
     expect(r.map((e) => e.id)).toEqual(["g2", "g1"]);
-    expect(r[0]).toMatchObject({ produktivitasTonHa: 3, category: "EX_PLASMA" });
+    expect(r[0]).toMatchObject({ produktivitasTonHa: 36, category: "EX_PLASMA" }); // 9 ÷ 3 × 12/1 bln
     expect(bmpGroupRanking(d.groups, 2025, "all", 1)).toHaveLength(1);
     expect(bmpGroupRanking(d.groups, 2024)).toEqual([]); // tahun tanpa data → tanpa luas
   });
@@ -493,5 +495,32 @@ describe("totalLuasHa (#191)", () => {
     expect(g1.totals.totalLuasHa).toBe(3.5); // p1 2 + p2 1,5 (p3 area null)
     expect(sumBmpGroups(d.groups, 2025).totals.totalLuasHa).toBe(6.5); // + p4 3
     expect(sumBmpGroups(d.groups, "average").totals.totalLuasHa).toBe(6.5);
+  });
+});
+
+describe("produktivitas disetahunkan (owner 2026-10-08)", () => {
+  const months = (farmerId: string, parcelId: string, year: number, n: number, kg: number) =>
+    Array.from({ length: n }, (_, i) => ({ farmerId, parcelId, period: `${year}-${String(i + 1).padStart(2, "0")}`, kg }));
+
+  it("tahun 12 bulan tidak berubah; tahun berjalan diproyeksikan per Lembaga; produksi tetap tercatat", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, [
+      ...months("f1", "p1", 2025, 12, 1000), // g1 2025: 12 ton, 12 bln, p1 2 ha → 6
+      ...months("f1", "p1", 2026, 6, 1000), // g1 2026: 6 ton, 6 bln → ×2 → 6
+      ...months("f3", "p4", 2026, 3, 1000), // g2 2026: 3 ton, 3 bln → ×4 → 12 ÷ 3 ha = 4
+    ]);
+    const g1 = d.groups.find((g) => g.id === "g1")!;
+    const g2 = d.groups.find((g) => g.id === "g2")!;
+    expect(bmpAnnualizeFactor(g1, "2025")).toBe(1);
+    expect(bmpAnnualizeFactor(g1, "2026")).toBe(2);
+    expect(bmpAnnualizeFactor(g2, "2026")).toBe(4);
+    expect(bmpAnnualizeFactor(g2, "2025")).toBe(1); // tanpa data → netral
+
+    expect(bmpProductivity(g1, 2025)).toBe(6);
+    expect(bmpProductivity(g1, 2026)).toBe(6);
+    // Gabungan 2026: faktor PER LEMBAGA (6×2 + 3×4 = 24 ton/tahun) ÷ (2 + 3 ha) — bukan satu faktor bersama.
+    const s2026 = sumBmpGroups([g1, g2], 2026);
+    expect(s2026.produktivitasTonHa).toBe(4.8);
+    expect(s2026.totals.produksiTon).toBe(9); // angka tercatat, tidak diproyeksikan
+    expect(bmpGroupRanking([g1, g2], 2026).map((r) => [r.id, r.produktivitasTonHa])).toEqual([["g1", 6], ["g2", 4]]);
   });
 });

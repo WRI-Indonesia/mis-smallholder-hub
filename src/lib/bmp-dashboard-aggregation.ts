@@ -360,6 +360,22 @@ function seriesOf(g: BmpGroupEntry, dataMode: BmpDataMode) {
     : { monthly: g.monthly, byYear: g.byYear };
 }
 
+/**
+ * Faktor penyetahunan produktivitas (keputusan owner 2026-10-08): Ton/Ha/tahun pada
+ * tahun yang datanya belum 12 bulan diproyeksikan = produksi × 12 ÷ bulan ber-data.
+ * Bulan dihitung PER LEMBAGA (cakupan impor tiap Lembaga berbeda) dari seri bulanan
+ * mode yang sama; 1 bila tahun itu tanpa data bulanan. Hanya produktivitas yang
+ * disetahunkan — angka produksi tetap yang tercatat.
+ */
+export function bmpAnnualizeFactor(g: BmpGroupEntry, yearKey: string, dataMode: BmpDataMode = "all"): number {
+  const prefix = `${yearKey}-`;
+  let months = 0;
+  for (const [period, m] of Object.entries(seriesOf(g, dataMode).monthly ?? {})) {
+    if (period.startsWith(prefix) && m.produksiTon > 0) months++;
+  }
+  return months > 0 ? 12 / Math.min(months, 12) : 1;
+}
+
 /** Stats sebuah group untuk tahun terpilih (`year = null` → agregat semua tahun). */
 export function bmpStatsForYear(
   g: BmpGroupEntry,
@@ -412,6 +428,8 @@ export function sumBmpGroups(
   // (Σ produksi ÷ Σ luas) dan mode "average" (÷ jumlah tahun ber-data). Distinct
   // per-tahun ≠ distinct all-time (lahan yang melapor 2 tahun dihitung 2× di sini).
   let produksiTahunan = 0;
+  /** Σ produksi disetahunkan per Lembaga per tahun — pembilang produktivitas. */
+  let produksiSetahun = 0;
   let luasTahunan = 0;
   let lahanTahunan = 0;
   let petaniTahunan = 0;
@@ -436,6 +454,7 @@ export function sumBmpGroups(
       if (numericYear != null && Number(yearKey) !== numericYear) continue;
       yearsWithData.add(yearKey);
       produksiTahunan += y.produksiTon;
+      produksiSetahun += y.produksiTon * bmpAnnualizeFactor(g, yearKey, dataMode);
       luasTahunan += y.luasMelaporHa;
       lahanTahunan += y.lahanBerData;
       petaniTahunan += y.petaniMelapor;
@@ -465,21 +484,21 @@ export function sumBmpGroups(
     m.luasMelaporHa = round2(m.luasMelaporHa);
   }
 
-  const produktivitasTonHa = luasTahunan > 0 ? round2(produksiTahunan / luasTahunan) : 0;
+  const produktivitasTonHa = luasTahunan > 0 ? round2(produksiSetahun / luasTahunan) : 0;
 
   return { totals, availability, monthly, produktivitasTonHa };
 }
 
 /**
- * Produktivitas tahunan (Ton/Ha/tahun) sebuah group: Σ produksi per tahun ÷
- * Σ luas lahan melapor per tahun (rata-rata tahunan tertimbang luas).
+ * Produktivitas tahunan (Ton/Ha/tahun) sebuah group: Σ produksi per tahun (disetahunkan,
+ * `bmpAnnualizeFactor`) ÷ Σ luas lahan melapor per tahun (rata-rata tahunan tertimbang luas).
  */
 export function bmpProductivity(g: BmpGroupEntry, year: number | null = null): number {
   let produksi = 0;
   let luas = 0;
   for (const [yearKey, y] of Object.entries(g.byYear)) {
     if (year != null && Number(yearKey) !== year) continue;
-    produksi += y.produksiTon;
+    produksi += y.produksiTon * bmpAnnualizeFactor(g, yearKey);
     luas += y.luasMelaporHa;
   }
   if (luas <= 0) return 0;
@@ -491,7 +510,7 @@ export interface BmpAgeSeriesEntry {
   label: string;
   produksiTon: number;
   luasMelaporHa: number;
-  /** Σ produksi ÷ Σ luas (tertimbang lintas tahun terpilih); 0 bila tanpa luas. */
+  /** Σ produksi disetahunkan ÷ Σ luas (tertimbang lintas tahun terpilih); 0 bila tanpa luas. */
   produktivitasTonHa: number;
 }
 
@@ -499,36 +518,38 @@ export interface BmpAgeSeriesEntry {
  * Ringkasan per bucket umur tanaman lintas group (#191). `year` numerik →
  * tahun itu saja; `"average"`/`null` → Σ lintas tahun (produksi dibagi jumlah
  * tahun ber-data bucket ybs pada mode average; produktivitas selalu tertimbang
- * Σton ÷ Σluas). Bucket "unknown" disertakan hanya bila ber-data.
+ * Σton disetahunkan ÷ Σluas, faktor per Lembaga). Bucket "unknown" disertakan hanya bila ber-data.
  */
 export function bmpAgeSeries(
   groups: BmpGroupEntry[],
   year: number | "average" | null,
   dataMode: BmpDataMode = "all"
 ): BmpAgeSeriesEntry[] {
-  const acc = new Map<string, { ton: number; luas: number; years: Set<string> }>();
+  const acc = new Map<string, { ton: number; tonSetahun: number; luas: number; years: Set<string> }>();
   for (const g of groups) {
     const byYearAge = dataMode === "full" ? g.byYearAgeFull : g.byYearAge;
     for (const [yearKey, buckets] of Object.entries(byYearAge ?? {})) {
       if (typeof year === "number" && Number(yearKey) !== year) continue;
+      const factor = bmpAnnualizeFactor(g, yearKey, dataMode);
       for (const [ageKey, b] of Object.entries(buckets)) {
         let bucket = acc.get(ageKey);
-        if (!bucket) acc.set(ageKey, (bucket = { ton: 0, luas: 0, years: new Set() }));
+        if (!bucket) acc.set(ageKey, (bucket = { ton: 0, tonSetahun: 0, luas: 0, years: new Set() }));
         bucket.ton += b.produksiTon;
+        bucket.tonSetahun += b.produksiTon * factor;
         bucket.luas += b.luasMelaporHa;
         bucket.years.add(yearKey);
       }
     }
   }
   return BMP_AGE_BUCKETS.filter((b) => b.key !== "unknown" || acc.has(b.key)).map((b) => {
-    const a = acc.get(b.key) ?? { ton: 0, luas: 0, years: new Set<string>() };
+    const a = acc.get(b.key) ?? { ton: 0, tonSetahun: 0, luas: 0, years: new Set<string>() };
     const divisor = year === "average" && a.years.size > 0 ? a.years.size : 1;
     return {
       key: b.key,
       label: b.label,
       produksiTon: round2(a.ton / divisor),
       luasMelaporHa: round2(a.luas / divisor),
-      produktivitasTonHa: a.luas > 0 ? round2(a.ton / a.luas) : 0,
+      produktivitasTonHa: a.luas > 0 ? round2(a.tonSetahun / a.luas) : 0,
     };
   });
 }
@@ -560,7 +581,7 @@ export function bmpGroupRanking(
       let luas = 0;
       for (const [yearKey, y] of Object.entries(byYear)) {
         if (numericYear != null && Number(yearKey) !== numericYear) continue;
-        ton += y.produksiTon;
+        ton += y.produksiTon * bmpAnnualizeFactor(g, yearKey, dataMode);
         luas += y.luasMelaporHa;
       }
       return {

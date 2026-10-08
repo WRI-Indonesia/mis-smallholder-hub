@@ -218,7 +218,7 @@ export interface BmpSlicedStats {
   totals: BmpGroupTotals;
   availability: BmpAvailabilityCounts;
   monthly: Record<string, BmpMonthlyStat>;
-  /** Ton/Ha per tahun: Σ produksi ÷ Σ luas melapor pada tahun-tahun terpilih. */
+  /** Ton/Ha/tahun: Σ produksi disetahunkan per Lembaga (`bmpAnnualizeFactor`) ÷ Σ luas melapor pada tahun-tahun terpilih. */
   produktivitasTonHa: number;
 }
 

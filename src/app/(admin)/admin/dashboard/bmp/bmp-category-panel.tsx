@@ -87,7 +87,7 @@ export function BmpCategoryPanel({
   swadaya: BmpSlicedStats;
   /** Produksi (Ton) per distrik, dua nilai per baris. */
   districtRows: BmpComparisonRow[];
-  /** Produktivitas (Ton/Ha) per bucket umur tanaman. */
+  /** Produktivitas (Ton/Ha/tahun, disetahunkan) per bucket umur tanaman. */
   ageRows: BmpComparisonRow[];
   /** Snapshot lama belum memuat breakdown umur — tampilkan ajakan generate ulang. */
   hasAgeData: boolean;
@@ -95,7 +95,7 @@ export function BmpCategoryPanel({
 }) {
   const metrics: { label: string; unit: string; value: (s: BmpSlicedStats) => number }[] = [
     { label: "Total Produksi", unit: "Ton", value: (s) => s.totals.produksiTon },
-    { label: "Produktivitas", unit: "Ton/Ha", value: (s) => s.produktivitasTonHa },
+    { label: "Produktivitas", unit: "Ton/Ha/tahun", value: (s) => s.produktivitasTonHa },
     { label: "Luas Terdata", unit: "Ha", value: (s) => s.totals.luasMelaporHa },
   ];
 
@@ -148,10 +148,10 @@ export function BmpCategoryPanel({
           </div>
           <div className="rounded-lg border border-border/60 p-3 space-y-3">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Produktivitas per Umur Tanaman (Ton/Ha)
+              Produktivitas per Umur Tanaman (Ton/Ha/tahun)
             </div>
             {hasAgeData ? (
-              <CompareBars rows={ageRows} unit="Ton/Ha" />
+              <CompareBars rows={ageRows} unit="Ton/Ha/tahun" />
             ) : (
               <p className="text-xs text-muted-foreground">
                 Snapshot ini belum memuat data umur tanaman — generate ulang snapshot BMP melalui
