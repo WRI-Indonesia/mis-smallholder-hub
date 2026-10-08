@@ -156,7 +156,7 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
 
   const cards = [
     {
-      title: "TBS Dideklarasikan",
+      title: "TBS",
       value: fmtTon(summary.totalTon),
       sub: <>dari <StatEmph kind="total">{formatNumber(summary.groupCount)}</StatEmph> Lembaga · survei {f.year ?? "—"}</>,
       icon: Weight,
@@ -165,7 +165,7 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
     {
       title: "Ke Mill Pemasok UL",
       value: fmtTon(summary.ulTon),
-      sub: <><StatEmph kind="percent">{pct(summary.ulTon, summary.totalTon)}</StatEmph> dari tonase dideklarasikan</>,
+      sub: <><StatEmph kind="percent">{pct(summary.ulTon, summary.totalTon)}</StatEmph> dari TBS</>,
       icon: Factory,
       iconClass: "text-sky-600",
     },

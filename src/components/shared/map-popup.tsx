@@ -198,11 +198,14 @@ export function MapPopupHeader({
   accent = "blue",
   icon,
   title,
+  badge,
   rows,
 }: {
   accent?: MapPopupAccent;
   icon: ReactNode;
   title: string;
+  /** Penanda kecil di samping judul (mis. badge UL Mill pemasok). */
+  badge?: ReactNode;
   rows?: { label: string; value: ReactNode; mono?: boolean }[];
 }) {
   return (
@@ -211,7 +214,10 @@ export function MapPopupHeader({
         {icon}
       </div>
       <div className="min-w-0 space-y-0.5">
-        <p className="truncate text-sm font-semibold leading-tight">{title}</p>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <p className="truncate text-sm font-semibold leading-tight">{title}</p>
+          {badge && <span className="shrink-0">{badge}</span>}
+        </div>
         {rows && rows.length > 0 && (
           <div className="space-y-0.5 text-[11px] text-muted-foreground">
             {rows.map((r) => (

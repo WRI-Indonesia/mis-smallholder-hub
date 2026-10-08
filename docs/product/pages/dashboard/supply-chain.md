@@ -12,7 +12,7 @@ Halaman: Dashboard Rantai Pasok (/admin/dashboard/supply-chain)
 ├── Bar filter (dipakai bersama Peta; tersimpan di URL)
 │   ├── Lingkup: Distrik · Kategori (Swadaya/Ex-Plasma) · UL & Non-UL · Tahun
 │   └── Rantai: Lembaga › Agen·KT/Koperasi › RAMP › Mill (pilihan faset) · Reset
-├── Kartu KPI: TBS Dideklarasikan · Ke Mill Pemasok UL · Sampai PKS Pasti · Offtaker
+├── Kartu KPI: TBS · Ke Mill Pemasok UL · Sampai PKS Pasti · Offtaker
 ├── Batang komposisi "Jalur TBS dari petani" (= legenda warna)
 ├── Banner "Catatan data" (bisa dilipat)
 ├── Kartu Sankey: Lembaga/Distrik → Offtaker (Agen · RAMP · KT/Koperasi · rantai Agen → RAMP satu node) → Mill/UL-Non-UL
