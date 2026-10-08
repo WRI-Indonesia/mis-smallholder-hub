@@ -378,13 +378,6 @@ export function TrainingBenefitPanel({
   const exportExcel = async () => {
     setExporting(true);
     try {
-      const [{ buildTrainingBenefitWorkbook }, farmersRes] = await Promise.all([
-        import("@/lib/training-benefit-xlsx"),
-        getTrainingBenefitFarmers(groups.map((g) => g.id)),
-      ]);
-      // Daftar petani gagal → tetap unduh Capaian & Kontrak; sheet Detail berisi pesan.
-      if (!farmersRes.success) toast.error(farmersRes.error);
-      const detail = farmersRes.success ? trainingBenefitDetailRows(groups, farmersRes.data ?? [], currentYear) : null;
       const bars = benefitBarsSvg(years, rows, any, activeFarmers);
       const grid = contract
         ? contractGridSvg(
@@ -396,7 +389,16 @@ export function TrainingBenefitPanel({
             currentYear,
           )
         : null;
-      const [grafis, kontrak] = await Promise.all([svgToPng(bars), grid ? svgToPng(grid) : Promise.resolve(null)]);
+      // Daftar petani (jaringan) & render PNG berjalan bersamaan. Daftar gagal — termasuk
+      // galat jaringan/DB — → Capaian & Kontrak tetap terunduh, sheet Detail berisi pesan.
+      const [{ buildTrainingBenefitWorkbook }, farmersRes, grafis, kontrak] = await Promise.all([
+        import("@/lib/training-benefit-xlsx"),
+        getTrainingBenefitFarmers(groups.map((g) => g.id)).catch(() => ({ success: false as const, error: "Daftar petani gagal dimuat" })),
+        svgToPng(bars),
+        grid ? svgToPng(grid) : Promise.resolve(null),
+      ]);
+      if (!farmersRes.success) toast.error(`${farmersRes.error} — sheet Detail dikosongkan`);
+      const detail = farmersRes.success ? trainingBenefitDetailRows(groups, farmersRes.data ?? [], currentYear) : null;
       const wb = buildTrainingBenefitWorkbook({ years, rows, any, currentYear, contract, filterActive, images: { grafis, kontrak }, detail });
       const buffer = await wb.xlsx.writeBuffer();
       const url = URL.createObjectURL(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));

@@ -1,7 +1,8 @@
 import ExcelJS from "exceljs";
 import type { ContractRow } from "@/lib/program-target";
 import { contractTrajectory, trajectorySummary } from "@/lib/training-benefit-chart";
-import type { TrainingBenefitDetailRow, TrainingBenefitRow, TrainingBenefitYear } from "@/lib/training-dashboard-aggregation";
+import { TRAINING_BENEFIT_PACKAGES, type TrainingBenefitDetailRow, type TrainingBenefitRow, type TrainingBenefitYear } from "@/lib/training-dashboard-aggregation";
+import type { TrainingPackageCode } from "@/types/dashboard";
 
 /**
  * Workbook kartu Training Benefit per year (#402/#403) — sheet (owner 2026-10-07/08):
@@ -31,8 +32,14 @@ export interface BenefitExcelInput {
   detail: TrainingBenefitDetailRow[] | null;
 }
 
-/** Judul kolom paket sheet Detail — sejajar `TRAINING_BENEFIT_PACKAGES` (permintaan owner 2026-10-08). */
-export const DETAIL_PACKAGE_HEADERS = ["P1", "P2-GroupDynamic", "P2-HSE", "P3&4"];
+/** Judul kolom paket sheet Detail per kode paket (permintaan owner 2026-10-08); urutan kolom = `TRAINING_BENEFIT_PACKAGES`. */
+const DETAIL_PACKAGE_HEADERS: Partial<Record<TrainingPackageCode, string>> = {
+  PAKET_1_BMP_PC_RSPO_NKT: "P1",
+  PAKET_2_MK: "P2-GroupDynamic",
+  PAKET_2_K3: "P2-HSE",
+  PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: "P3&4",
+};
+const GENDER_LABEL: Record<string, string> = { M: "Laki-laki", F: "Perempuan" };
 
 const yearLabel = (y: TrainingBenefitYear) => (y.upTo ? `≤ ${y.year}` : String(y.year));
 const THIN = { style: "thin" as const };
@@ -122,12 +129,15 @@ function sheetDetail(wb: ExcelJS.Workbook, { detail }: BenefitExcelInput) {
     ws.getColumn(1).width = 60;
     return;
   }
-  ws.addRow(["Distrik", "Lembaga", "ID Petani", "Gender", ...DETAIL_PACKAGE_HEADERS]);
-  // Tahun dilatih per paket: lebih dari sekali dipisah "; ", "-" = belum (s.d. tahun berjalan).
+  const pkgHeaders = TRAINING_BENEFIT_PACKAGES.map((code) => DETAIL_PACKAGE_HEADERS[code] ?? code);
+  ws.addRow(["Distrik", "Lembaga", "ID Petani", "Gender", ...pkgHeaders]);
+  // Tahun dilatih per paket: satu tahun = angka (bisa difilter/dihitung di Excel), lebih
+  // dari sekali = teks dipisah "; ", "-" = belum (s.d. tahun berjalan).
   for (const r of detail) {
-    ws.addRow([r.district, r.group, r.farmerCode, r.gender === "F" ? "Perempuan" : "Laki-laki", ...r.years.map((ys) => (ys.length ? ys.join("; ") : "-"))]);
+    const cells = r.years.map((ys) => (ys.length === 0 ? "-" : ys.length === 1 ? ys[0] : ys.join("; ")));
+    ws.addRow([r.district, r.group, r.farmerCode, GENDER_LABEL[r.gender] ?? "-", ...cells]);
   }
-  const last = 4 + DETAIL_PACKAGE_HEADERS.length;
+  const last = 4 + pkgHeaders.length;
   ws.getRow(1).font = { bold: true };
   ws.views = [{ state: "frozen", ySplit: 1 }];
   ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: Math.max(1, ws.rowCount), column: last } };

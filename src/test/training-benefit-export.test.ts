@@ -160,10 +160,10 @@ describe("Workbook Training Benefit (3 sheet: Capaian · Kontrak · Detail)", ()
     expect(texts.some((t) => t.startsWith("Filter Distrik/Lembaga aktif"))).toBe(true);
   });
 
-  it("Detail: tahun dipisah \"; \", \"-\" = belum, header + filter", async () => {
+  it("Detail: satu tahun = angka, lebih dari satu dipisah \"; \", \"-\" = belum, header + filter", async () => {
     const ws = (await roundTrip(base)).getWorksheet("Detail")!;
     expect(ws.getRow(1).values).toEqual([undefined, "Distrik", "Lembaga", "ID Petani", "Gender", "P1", "P2-GroupDynamic", "P2-HSE", "P3&4"]);
-    expect(ws.getRow(2).values).toEqual([undefined, "Kampar", "Lembaga B", "B-0010", "Laki-laki", "-", "2024; 2026", "-", "2025"]);
+    expect(ws.getRow(2).values).toEqual([undefined, "Kampar", "Lembaga B", "B-0010", "Laki-laki", "-", "2024; 2026", "-", 2025]);
     expect(ws.getRow(3).values).toEqual([undefined, "Kampar", "Lembaga B", "B-0002", "Perempuan", "-", "-", "-", "-"]);
     expect(ws.autoFilter).toBeTruthy();
   });
@@ -186,5 +186,15 @@ describe("Workbook Training Benefit (3 sheet: Capaian · Kontrak · Detail)", ()
     expect(img.range.tl.nativeRow).toBeGreaterThanOrEqual(capaian.rowCount - 1);
     expect(img.range.tl.nativeRow).toBeGreaterThan(4); // 2 baris header + 3 baris data
     expect(wb.getWorksheet("Kontrak")!.getImages()).toHaveLength(1);
+  });
+});
+
+describe("trainingBenefitFarmersSchema — input Server Action sheet Detail", () => {
+  it("buang duplikat, tolak array raksasa & bukan string", async () => {
+    const { trainingBenefitFarmersSchema } = await import("@/validations/dashboard-training.schema");
+    expect(trainingBenefitFarmersSchema.parse(["a", "b", "a"])).toEqual(["a", "b"]);
+    expect(trainingBenefitFarmersSchema.safeParse(Array.from({ length: 501 }, (_, i) => `g${i}`)).success).toBe(false);
+    expect(trainingBenefitFarmersSchema.safeParse([1]).success).toBe(false);
+    expect(trainingBenefitFarmersSchema.safeParse("g").success).toBe(false);
   });
 });

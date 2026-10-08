@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 import { TRAINING_PACKAGE_ORDER } from "@/lib/training-dashboard-aggregation";
+import { trainingBenefitFarmersSchema } from "@/validations/dashboard-training.schema";
 import type { ActionResult } from "@/types/action-result";
 import type {
   TrainingBenefitFarmer,
@@ -229,16 +230,15 @@ export async function getTrainingBenefitFarmers(farmerGroupIds: string[]): Promi
   if (!(await hasPermission("dashboard-training", "EXPORT"))) {
     return { success: false, error: "Tidak memiliki izin untuk mengekspor data ini" };
   }
-  if (!Array.isArray(farmerGroupIds) || farmerGroupIds.some((id) => typeof id !== "string")) {
-    return { success: false, error: "Daftar Lembaga tidak valid" };
-  }
-  if (farmerGroupIds.length === 0) return { success: true, data: [] };
+  const parsed = trainingBenefitFarmersSchema.safeParse(farmerGroupIds);
+  if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Daftar Lembaga tidak valid" };
+  if (parsed.data.length === 0) return { success: true, data: [] };
 
   const access = await getAccessContext();
   const farmers = await prisma.farmer.findMany({
     where: {
       isActive: true,
-      farmerGroupId: { in: farmerGroupIds },
+      farmerGroupId: { in: parsed.data },
       // Scope digabung lewat AND (pitfall key-collision `id`, lih. getUntrainedFarmers).
       farmerGroup: { isActive: true, AND: farmerGroupAccessFilter(access) },
     },
