@@ -606,6 +606,43 @@ export function hotspotWindowStart(now: Date, dayRange: number): Date {
   return utcMidnightDaysAgo(now, dayRange - 1);
 }
 
+/**
+ * Tanggal citra GIBS (#290) — "YYYY-MM-DD" UTC, citra harian satu tanggal:
+ * - ada titik api → tanggal akuisisi (UTC) titik api TERBARU: hari itu pasti ada
+ *   lintasan satelit, jadi citranya ada (siang Riau ±06.30 UTC = tanggal WIB sama);
+ * - tanpa titik api → mode Bulan: hari terakhir bulan itu; rentang live: KEMARIN —
+ *   citra hari ini baru utuh beberapa jam sesudah lintasan siang (uji 2026-10-08:
+ *   tile SNPP/NOAA-21 hari ini masih kosong), dan tile kosong GIBS tampil hitam.
+ *   Keduanya dibatasi paling lambat kemarin.
+ */
+export function gibsImageryDate(
+  hotspots: FeatureCollection | null,
+  opts: { now: Date; month: string | null }
+): string {
+  let latest: string | null = null;
+  for (const f of hotspots?.features ?? []) {
+    const iso = f.properties?.acqDatetime;
+    if (typeof iso !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(iso)) continue;
+    const day = iso.slice(0, 10);
+    if (!latest || day > latest) latest = day;
+  }
+  if (latest) return latest;
+  const yesterday = new Date(opts.now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  if (opts.month && /^\d{4}-\d{2}$/.test(opts.month)) {
+    const [y, m] = opts.month.split("-").map(Number);
+    const lastDay = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+    return lastDay < yesterday ? lastDay : yesterday;
+  }
+  return yesterday;
+}
+
+/** "8 Okt 2026" untuk tanggal UTC "YYYY-MM-DD" (citra harian — tanpa konversi zona). */
+export function formatGibsDate(date: string): string {
+  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
+    new Date(`${date}T00:00:00Z`)
+  );
+}
+
 /** Komponen hari/bulan/tahun sebuah Date menurut WIB (bukan zona browser). */
 function wibDateParts(d: Date): { day: number; month: number; year: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {

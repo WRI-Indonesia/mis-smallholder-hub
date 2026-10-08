@@ -220,7 +220,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>GIS-01</strong> · 🔲 Not Started — Fire Alert siap musim kemarau 2027</summary>
 
 - **Evidence:** Fire Alert live (DASH-07 arsip); laporan bulanan dari arsip FIRMS SP (#365, dirilis v1.0.0, diverifikasi owner & ditutup 2026-09-30). Rentang 30 hari masih bergantung cache Next (>2 MB) dan payload tanpa batas (#286 butir 1 & 3).
-- **Next step:** basemap harian NASA GIBS mengikuti tanggal titik api (#290) dijadwalkan di **v1.4.0** (digeser dari v1.3.0). K1 2027: cache FIRMS sendiri + batas payload rentang 30 hari (#286), basemap Sentinel-2 10 m via CDSE dengan cache wajib karena kuota (#291). #286 dan #291 dirancang bersama.
+- **Next step:** basemap harian NASA GIBS mengikuti tanggal titik api (#290) ✅ 2026-10-08 di `mvp` (ikut **v1.5.0**). K1 2027: cache FIRMS sendiri + batas payload rentang 30 hari (#286), basemap Sentinel-2 10 m via CDSE dengan cache wajib karena kuota (#291). #286 dan #291 dirancang bersama.
 - **Selesai bila:** tiga issue ditutup **sebelum musim kemarau 2027** dan uji beban rentang 30 hari tercatat.
 
 </details>

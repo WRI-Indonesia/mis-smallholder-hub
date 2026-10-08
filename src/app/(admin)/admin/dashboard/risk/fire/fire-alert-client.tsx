@@ -29,6 +29,7 @@ import {
   formatHotspotMonth,
   formatHotspotRange,
   hotspotWindowStart,
+  gibsImageryDate,
   indexBoundaries,
   multiPolygonBbox,
   summarizeByNamedArea,
@@ -183,6 +184,8 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
     setMonth(parseHotspotMonth(m, now) ?? (m < HOTSPOT_MONTH_MIN ? HOTSPOT_MONTH_MIN : utcMonth(now)));
   }, []);
   // Label periode untuk judul tabel panel dan PDF: "Januari 2025" / "5 hari terakhir".
+  // Tanggal latar GIBS (#290): titik api terbaru, atau kemarin / akhir bulan bila kosong.
+  const gibsDate = useMemo(() => gibsImageryDate(classified, { now: new Date(), month }), [classified, month]);
   const periodLabel = month ? formatHotspotMonth(month) : `${hotspotWindowLabel(dayRange)} terakhir`;
 
   const summary = useMemo(() => (classified ? summarizeFire(classified) : null), [classified]);
@@ -524,6 +527,7 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
           registerZoomTo={registerZoomTo}
           selectedGroupId={selectedGroupId}
           onSelectGroup={setSelectedGroupId}
+          gibsDate={gibsDate}
         />
       </div>
       {/* 1/4 panel info */}

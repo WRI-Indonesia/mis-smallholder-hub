@@ -16,11 +16,18 @@ import {
   satelliteLabel,
   type HotspotConfBucket,
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
-import { combinedBbox, multiPolygonBbox, type FireBoundaryIndexed } from "@/lib/fire-alert";
+import { combinedBbox, formatGibsDate, multiPolygonBbox, type FireBoundaryIndexed } from "@/lib/fire-alert";
 import { encodeMapCapture, type MapCapture } from "@/lib/map-capture";
 // Hybrid (Google) men-taint canvas — capture cetak akan gagal di sana;
 // pengguna diarahkan ke StreetMap/Light/Dark.
-import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, isImageryStyle, type MapStyleKey } from "@/lib/map-style";
+import {
+  GIBS_LAYER_LABEL,
+  MAP_STYLE_KEYS,
+  MAP_STYLE_LABELS,
+  gibsStyle,
+  isImageryStyle,
+  type MapStyleKey,
+} from "@/lib/map-style";
 import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { useMapPopupDrag, MapPopupDragHandle } from "@/components/shared/map-popup";
 import type { AdminBoundaryLine } from "@/server/actions/fire-boundary";
@@ -134,7 +141,17 @@ interface Props {
   /** Lembaga terpilih (klik baris tabel / klik poligon) — di-highlight. */
   selectedGroupId: string | null;
   onSelectGroup?: (farmerGroupId: string | null) => void;
+  /** Tanggal citra GIBS "YYYY-MM-DD" UTC (`gibsImageryDate`, #290). */
+  gibsDate: string;
 }
+
+/** Basemap Fire Alert = set bersama + GIBS (citra harian bertanggal, hanya di sini, #290). */
+type FireStyleKey = MapStyleKey | "gibs";
+const FIRE_STYLE_KEYS: FireStyleKey[] = [...MAP_STYLE_KEYS, "gibs"];
+const FIRE_STYLE_LABELS: Record<FireStyleKey, { short: string; full: string }> = {
+  ...MAP_STYLE_LABELS,
+  gibs: { short: "GIBS", full: `GIBS — citra satelit harian NASA (${GIBS_LAYER_LABEL}) pada tanggal titik api terbaru` },
+};
 
 export function FireMapCanvas({
   boundaries,
@@ -145,14 +162,18 @@ export function FireMapCanvas({
   registerZoomTo,
   selectedGroupId,
   onSelectGroup,
+  gibsDate,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
-  const [styleOverride, setStyleOverride] = useState<MapStyleKey | null>(null);
+  const [styleOverride, setStyleOverride] = useState<FireStyleKey | null>(null);
   // Ikut tema aplikasi; tema terang jatuh ke `light` (positron), bukan
   // StreetMap — OSM standar terlalu ramai sebagai latar titik api.
-  const styleKey: MapStyleKey = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const styleKey: FireStyleKey = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const isGibs = styleKey === "gibs";
+  // GIBS = raster citra: hook diberi kunci raster (font OpenMapTiles) + style bertanggal.
+  const gibsMapStyle = useMemo(() => (isGibs ? gibsStyle(gibsDate) : undefined), [isGibs, gibsDate]);
 
   const [selected, setSelected] = useState<SelectedHotspot | null>(null);
   // Popup bisa digeser agar tidak menutupi fitur yang dipilih (pola Peta Lahan);
@@ -165,7 +186,7 @@ export function FireMapCanvas({
   const [focusGroupId, setFocusGroupId] = useState<string | null>(null);
 
   const { mapStyle, labelFont, labelsReady, labelBeforeId, syncStyle, registerImageFallback } =
-    useVectorBasemap(styleKey, { provideImage: provideFlameImage });
+    useVectorBasemap(isGibs ? "satellite" : styleKey, { provideImage: provideFlameImage, style: gibsMapStyle });
 
   const boundaryGeojson = useMemo<FeatureCollection>(
     () => ({
@@ -230,7 +251,7 @@ export function FireMapCanvas({
 
   // Satellite & Hybrid sama-sama citra gelap-beragam — label ungu tak terbaca
   // di atasnya, jadi keduanya pakai teks putih ber-halo hitam.
-  const isImagery = isImageryStyle(styleKey);
+  const isImagery = isGibs || isImageryStyle(styleKey);
   const labelColors =
     styleKey === "dark"
       ? { text: "#d8b4fe", halo: "#0f172a" }
@@ -576,19 +597,28 @@ export function FireMapCanvas({
         >
           <Maximize className="h-4 w-4" />
         </button>
+        {isGibs && (
+          <div
+            className="rounded-md border bg-background/90 px-2 py-1 text-[10px] text-muted-foreground shadow-md backdrop-blur-sm"
+            title="Citra harian 250 m: asap dan awan sulit dibedakan; zoom dekat tampak kabur."
+          >
+            Citra GIBS: <span className="font-semibold text-foreground">{formatGibsDate(gibsDate)}</span> ·{" "}
+            {GIBS_LAYER_LABEL}
+          </div>
+        )}
         <div className="bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-          {MAP_STYLE_KEYS.map((key) => (
+          {FIRE_STYLE_KEYS.map((key) => (
             <button
               key={key}
               onClick={() => setStyleOverride(key)}
-              title={MAP_STYLE_LABELS[key].full}
+              title={FIRE_STYLE_LABELS[key].full}
               className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
                 styleKey === key
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {MAP_STYLE_LABELS[key].short}
+              {FIRE_STYLE_LABELS[key].short}
             </button>
           ))}
         </div>

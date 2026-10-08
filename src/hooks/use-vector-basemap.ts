@@ -87,12 +87,19 @@ type Options = {
    * yang belum ada; kembalikan `null` bila id itu bukan milik canvas.
    */
   provideImage?: (id: string) => ImageData | null;
+  /**
+   * Style pengganti `MAP_STYLES[styleKey]` — untuk basemap ber-parameter yang
+   * hanya ada di satu halaman (GIBS bertanggal di Fire Alert, #290). `styleKey`
+   * tetap menentukan sisanya; berikan kunci raster (mis. `satellite`) agar font
+   * yang diharapkan cocok dengan glyphs style ini.
+   */
+  style?: MapStyleValue;
 };
 
 export function useVectorBasemap(styleKey: MapStyleKey, options: Options = {}) {
   const { provideImage } = options;
 
-  const mapStyle: MapStyleValue = MAP_STYLES[styleKey];
+  const mapStyle: MapStyleValue = options.style ?? MAP_STYLES[styleKey];
   const isVectorStyle = typeof mapStyle === "string";
   const expectedFont = isVectorStyle ? OPENFREEMAP_FONT : OPENMAPTILES_FONT;
 
@@ -143,8 +150,16 @@ export function useVectorBasemap(styleKey: MapStyleKey, options: Options = {}) {
     labelFont: expectedFont,
     /** Pasang layer label hanya bila `true` (lihat butir 1 di atas). */
     labelsReady: liveFont === expectedFont,
-    /** `beforeId` untuk layer fill/line canvas (lihat butir 2). */
-    labelBeforeId,
+    /**
+     * `beforeId` untuk layer fill/line canvas (lihat butir 2). Hanya selama style
+     * yang DIMINTA vector: saat beralih vector → raster (Light → SAT/Hybrid/GIBS),
+     * state ini masih menunjuk layer teks style lama (mis. `waterway_line_label`)
+     * sampai `syncStyle` berjalan, sehingga react-map-gl gagal `addLayer` ("before
+     * non-existing layer") dan TIDAK mencoba lagi — poligon hilang sampai halaman
+     * dimuat ulang (ditemukan saat uji #290). Raster tak punya layer teks basemap,
+     * jadi `undefined` selalu benar di sana.
+     */
+    labelBeforeId: isVectorStyle ? labelBeforeId : undefined,
     syncStyle,
     registerImageFallback,
   };
