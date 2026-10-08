@@ -107,9 +107,10 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
   const [showParcelLines, setShowParcelLines] = useState(false);
   const [selected, setSelected] = useState<Selected>(null);
   // Popup standar peta (#222): auto-pan agar kartu utuh di viewport (di kanan panel
-  // melayang) + bisa digeser. Kunci per entitas, bukan titik klik: klik ulang entitas
-  // yang sama tidak me-reset geseran popup.
-  const popupKey = selected ? `${selected.kind}:${selected.id}` : null;
+  // melayang) + bisa digeser. Titik memakai koordinat fiturnya (lihat onClick), jadi
+  // klik ulang entitas yang sama tidak me-reset geseran; garis tetap berjangkar di
+  // titik klik sehingga klik di bagian lain garis memicu auto-pan lagi.
+  const popupKey = selected ? `${selected.kind}:${selected.id}:${selected.lng},${selected.lat}` : null;
   useMapPopupAutoPan(mapRef, popupKey, panelOpen ? PANEL_W + 12 : 0);
 
   const groupByCode = useMemo(() => new globalThis.Map(view.data.groups.map((g) => [g.code, g])), [view.data.groups]);
@@ -245,7 +246,8 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
     const ft = [...(e.features ?? [])].sort((a, b) => rank(a.properties?.kind) - rank(b.properties?.kind))[0];
     if (!ft) return setSelected(null);
     const p = ft.properties as { kind: string; id: string };
-    setSelected({ lng: e.lngLat.lng, lat: e.lngLat.lat, kind: p.kind, id: String(p.id) });
+    const [lng, lat] = ft.geometry.type === "Point" ? (ft.geometry.coordinates as [number, number]) : [e.lngLat.lng, e.lngLat.lat];
+    setSelected({ lng, lat, kind: p.kind, id: String(p.id) });
   };
 
   const totalTon = records.reduce((a, r) => a + (r.supplyTon ?? 0), 0);
@@ -540,12 +542,17 @@ function SelectedCard({
   if (selected.kind === "mill") {
     const m = mills.get(selected.id);
     const rs = records.filter((r) => r.millId === selected.id);
+    const otherPrograms = m ? m.buyerPrograms.filter((p) => p !== "UL") : [];
     body = m && (
       <>
         <MapPopupHeader accent="blue" icon={<Factory className="h-5 w-5" />} title={millLabel(m)} badge={isUlMill(m) && <UlBadge />} rows={[{ label: "UML ID", value: m.umlId ?? "— (manual)", mono: true }, { label: "Distrik", value: millDistrict(m) ?? "—" }]} />
         <MapPopupHighlight label="TBS" value={fmtTon(ton(rs))} />
         <div className="space-y-2 px-3.5 py-2.5">
-          <MapPopupRows rows={[{ label: "RSPO", value: m.rspoStatus }]} />
+          {/* UL sudah diwakili badge di header; program buyer lain (bila kelak ada) tetap tampil. */}
+          <MapPopupRows rows={[
+            ...(otherPrograms.length ? [{ label: "Program buyer lain", value: otherPrograms.join(", ") }] : []),
+            { label: "RSPO", value: m.rspoStatus },
+          ]} />
           <div className="text-[11px] font-medium text-muted-foreground">Lembaga pemasok teratas</div>
           <MapPopupRows rows={list(topBy(rs, (r) => groups.get(r.groupCode)?.abrv ?? r.groupCode, (r) => r.supplyTon ?? 0))} />
         </div>
@@ -585,7 +592,7 @@ function SelectedCard({
         <MapPopupHeader accent="emerald" icon={<Sprout className="h-5 w-5" />} title={p.farmerName ?? "Lahan"} rows={[{ label: "Parcel ID", value: p.parcelId ?? "—", mono: true }, { label: "Lembaga", value: groups.get(p.groupCode)?.abrv ?? p.groupCode }]} />
         <MapPopupHighlight label="Produksi TBS (survei)" value={p.ffbTon == null ? "—" : fmtTon(p.ffbTon)} />
         <div className="space-y-2 px-3.5 py-2.5">
-          <MapPopupRows rows={rs.map((r) => ({ label: `${r.offtakerId ? offs.get(r.offtakerId)?.name ?? r.offtakerId : "Langsung"} → ${millName(r.millId)}`, value: r.supplyTon == null ? "—" : fmtTon(r.supplyTon) }))} />
+          <MapPopupRows rows={rs.map((r) => ({ id: r.id, label: `${r.offtakerId ? offs.get(r.offtakerId)?.name ?? r.offtakerId : "Langsung"} → ${millName(r.millId)}`, value: r.supplyTon == null ? "—" : fmtTon(r.supplyTon) }))} />
           <p className="text-[11px] text-muted-foreground">Titik: {p.pointSource === "POLIGON" ? "titik dalam poligon lahan MIS" : "koordinat survei (lahan tak cocok/tanpa poligon di MIS)"}</p>
         </div>
       </>

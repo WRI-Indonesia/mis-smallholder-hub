@@ -328,7 +328,7 @@ export function isUlMill(m: Pick<ScMill, "buyerPrograms">): boolean {
 
 /** Kabupaten Mill dari UML tanpa awalan "Kabupaten"/"Kab." (data UML tak seragam); null bila kosong. */
 export function millDistrict(m: Pick<ScMill, "district">): string | null {
-  return m.district?.replace(/^(Kabupaten|Kab\.?)\s+/i, "").trim() || null;
+  return m.district?.trim().replace(/^(Kabupaten\s+|Kab\.\s*|Kab\s+)/i, "").trim() || null;
 }
 
 /** Volume per Mill (Mill tidak diketahui digabung satu baris), urut tonase. */

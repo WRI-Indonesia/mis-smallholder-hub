@@ -32,6 +32,16 @@ export const POPUP_VIEW_PAD = 12;
 type EdgeRect = { left: number; top: number; right: number; bottom: number };
 
 /**
+ * Area peta tempat popup boleh berada: tepi kiri digeser `insetLeft` (panel melayang),
+ * kecuali sisa lebarnya tak cukup untuk popup — popup lalu boleh menimpa panel
+ * daripada terdorong keluar tepi kanan (layar sempit / ponsel).
+ */
+export function popupViewRect(box: EdgeRect, popupWidth: number, insetLeft: number, pad = POPUP_VIEW_PAD): EdgeRect {
+  const fits = box.right - box.left - insetLeft >= popupWidth + 2 * pad;
+  return { ...box, left: box.left + (fits ? insetLeft : 0) };
+}
+
+/**
  * Pergeseran `panBy` (px) agar rect popup masuk viewport peta; `[0, 0]` bila
  * sudah utuh. Popup lebih besar dari viewport → prioritaskan tepi kiri/atas
  * (header + tombol close tetap terlihat; sisanya di-scroll internal).
@@ -74,9 +84,9 @@ export function useMapPopupAutoPan(
       if (!el || !content) return;
       const box = container.getBoundingClientRect();
       if (box.height === 0) return;
-      const mapRect = { left: box.left + insetLeft, top: box.top, right: box.right, bottom: box.bottom, height: box.height };
-      content.style.maxHeight = `${Math.max(160, mapRect.height - 2 * POPUP_VIEW_PAD - 24)}px`;
-      const [dx, dy] = computePopupPan(mapRect, el.getBoundingClientRect());
+      content.style.maxHeight = `${Math.max(160, box.height - 2 * POPUP_VIEW_PAD - 24)}px`;
+      const popupRect = el.getBoundingClientRect();
+      const [dx, dy] = computePopupPan(popupViewRect(box, popupRect.width, insetLeft), popupRect);
       if (dx !== 0 || dy !== 0) map.panBy([dx, dy], { duration: 250 });
     };
 
@@ -221,7 +231,8 @@ export function MapPopupHeader({
       </div>
       <div className="min-w-0 space-y-0.5">
         <div className="flex min-w-0 items-center gap-1.5">
-          <p className="truncate text-sm font-semibold leading-tight">{title}</p>
+          {/* Nama panjang (mis. "Perusahaan · Mill") turun ke baris kedua, bukan terpotong satu baris. */}
+          <p className="line-clamp-2 break-words text-sm font-semibold leading-tight" title={title}>{title}</p>
           {badge && <span className="shrink-0">{badge}</span>}
         </div>
         {rows && rows.length > 0 && (
@@ -267,11 +278,12 @@ export function MapPopupRows({ rows, className }: { rows: MapPopupRow[]; classNa
         const display = r.value === null || r.value === undefined || r.value === "" ? "—" : String(r.value);
         return (
           <div key={r.id ?? r.label} className="flex items-start justify-between gap-3">
-            <dt className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+            {/* Baris ber-badge = daftar nama (Mill) + angka pendek: nama yang mengalah/wrap, angka utuh. */}
+            <dt className={cn("flex items-center gap-1.5 text-xs text-muted-foreground", r.badge ? "min-w-0 flex-wrap" : "shrink-0")}>
               {r.label}
               {r.badge}
             </dt>
-            <dd className={cn("min-w-0 break-words text-right text-xs font-medium", r.mono && "font-mono")}>{display}</dd>
+            <dd className={cn("break-words text-right text-xs font-medium", r.badge ? "shrink-0" : "min-w-0", r.mono && "font-mono")}>{display}</dd>
           </div>
         );
       })}
