@@ -607,40 +607,40 @@ export function hotspotWindowStart(now: Date, dayRange: number): Date {
 }
 
 /**
- * Tanggal citra GIBS (#290) — "YYYY-MM-DD" UTC, citra harian satu tanggal:
- * - ada titik api → tanggal akuisisi (UTC) titik api TERBARU: hari itu pasti ada
- *   lintasan satelit, jadi citranya ada (siang Riau ±06.30 UTC = tanggal WIB sama);
- * - tanpa titik api → mode Bulan: hari terakhir bulan itu; rentang live: KEMARIN —
- *   citra hari ini baru utuh beberapa jam sesudah lintasan siang (uji 2026-10-08:
- *   tile SNPP/NOAA-21 hari ini masih kosong), dan tile kosong GIBS tampil hitam.
- *   Keduanya dibatasi paling lambat kemarin.
+ * Jam UTC sejak citra GIBS NOAA-20 hari ini dianggap utuh di atas Riau: lintasan
+ * siang ±06 UTC (13 WIB) + pemrosesan ±3 jam. Uji 2026-10-08 11.55 UTC: utuh.
+ */
+const GIBS_READY_UTC_HOUR = 10;
+
+/**
+ * Tanggal citra GIBS (#290) — "YYYY-MM-DD", citra harian satu lintasan siang:
+ * - ada titik api → tanggal **WIB** titik api terbaru. Deteksi malam (mis. 18.10 UTC
+ *   = 01.10 WIB esoknya) memakai citra siang hari WIB itu — sesudah apinya, jadi
+ *   asapnya bisa terlihat; tanggal UTC-nya justru citra ±12 jam SEBELUM api;
+ * - tanpa titik api → hari terakhir bulan (mode Bulan) atau hari ini (rentang live);
+ * - keduanya dibatasi tanggal citra terakhir yang sudah utuh: hari ini UTC setelah
+ *   `GIBS_READY_UTC_HOUR`, sebelum itu kemarin — tile yang belum diproses tampil hitam.
+ * `month` = "YYYY-MM" yang sudah divalidasi pemanggil (`parseHotspotMonth`).
  */
 export function gibsImageryDate(
   hotspots: FeatureCollection | null,
   opts: { now: Date; month: string | null }
 ): string {
+  const ready = utcMidnightDaysAgo(opts.now, opts.now.getUTCHours() >= GIBS_READY_UTC_HOUR ? 0 : 1);
+  const readyDay = ready.toISOString().slice(0, 10);
   let latest: string | null = null;
   for (const f of hotspots?.features ?? []) {
-    const iso = f.properties?.acqDatetime;
-    if (typeof iso !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(iso)) continue;
-    const day = iso.slice(0, 10);
-    if (!latest || day > latest) latest = day;
+    const t = Date.parse(String(f.properties?.acqDatetime ?? ""));
+    if (Number.isNaN(t)) continue;
+    const wibDay = new Date(t + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    if (!latest || wibDay > latest) latest = wibDay;
   }
-  if (latest) return latest;
-  const yesterday = new Date(opts.now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  if (opts.month && /^\d{4}-\d{2}$/.test(opts.month)) {
-    const [y, m] = opts.month.split("-").map(Number);
-    const lastDay = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
-    return lastDay < yesterday ? lastDay : yesterday;
-  }
-  return yesterday;
-}
-
-/** "8 Okt 2026" untuk tanggal UTC "YYYY-MM-DD" (citra harian — tanpa konversi zona). */
-export function formatGibsDate(date: string): string {
-  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
-    new Date(`${date}T00:00:00Z`)
-  );
+  const wanted =
+    latest ??
+    (opts.month
+      ? new Date(Date.UTC(Number(opts.month.slice(0, 4)), Number(opts.month.slice(5, 7)), 0)).toISOString().slice(0, 10)
+      : readyDay);
+  return wanted < readyDay ? wanted : readyDay;
 }
 
 /** Komponen hari/bulan/tahun sebuah Date menurut WIB (bukan zona browser). */

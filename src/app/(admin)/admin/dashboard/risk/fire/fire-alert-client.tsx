@@ -131,6 +131,9 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
   // Cakupan periode dari proxy (sumber SP/NRT, tanggal kosong) — hanya mode Bulan.
   const [coverage, setCoverage] = useState<HotspotCoverage | null>(null);
   const [classified, setClassified] = useState<FeatureCollection | null>(null);
+  // Tanggal latar GIBS (#290) — dihitung bersama data yang BARU termuat (bukan memo
+  // atas `month` + `classified` lama: selama bulan baru dimuat, keduanya tak sepadan).
+  const [gibsDate, setGibsDate] = useState(() => gibsImageryDate(null, { now: new Date(), month: null }));
   const [loading, setLoading] = useState(true);
   const [printScope, setPrintScope] = useState<FirePrintScope>("riau");
   const [printing, setPrinting] = useState(false);
@@ -157,7 +160,9 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
         });
     load
       .then((fc) => {
-        setClassified(classifyHotspots(filterPointsWithinAreas(fc, clipAreas), indexed));
+        const next = classifyHotspots(filterPointsWithinAreas(fc, clipAreas), indexed);
+        setClassified(next);
+        setGibsDate(gibsImageryDate(next, { now: new Date(), month }));
         setLoading(false);
       })
       .catch((err) => {
@@ -184,8 +189,6 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
     setMonth(parseHotspotMonth(m, now) ?? (m < HOTSPOT_MONTH_MIN ? HOTSPOT_MONTH_MIN : utcMonth(now)));
   }, []);
   // Label periode untuk judul tabel panel dan PDF: "Januari 2025" / "5 hari terakhir".
-  // Tanggal latar GIBS (#290): titik api terbaru, atau kemarin / akhir bulan bila kosong.
-  const gibsDate = useMemo(() => gibsImageryDate(classified, { now: new Date(), month }), [classified, month]);
   const periodLabel = month ? formatHotspotMonth(month) : `${hotspotWindowLabel(dayRange)} terakhir`;
 
   const summary = useMemo(() => (classified ? summarizeFire(classified) : null), [classified]);

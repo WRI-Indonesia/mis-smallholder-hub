@@ -16,7 +16,7 @@ import {
   satelliteLabel,
   type HotspotConfBucket,
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
-import { combinedBbox, formatGibsDate, multiPolygonBbox, type FireBoundaryIndexed } from "@/lib/fire-alert";
+import { combinedBbox, formatDateList, multiPolygonBbox, type FireBoundaryIndexed } from "@/lib/fire-alert";
 import { encodeMapCapture, type MapCapture } from "@/lib/map-capture";
 // Hybrid (Google) men-taint canvas — capture cetak akan gagal di sana;
 // pengguna diarahkan ke StreetMap/Light/Dark.
@@ -172,8 +172,8 @@ export function FireMapCanvas({
   // StreetMap — OSM standar terlalu ramai sebagai latar titik api.
   const styleKey: FireStyleKey = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
   const isGibs = styleKey === "gibs";
-  // GIBS = raster citra: hook diberi kunci raster (font OpenMapTiles) + style bertanggal.
-  const gibsMapStyle = useMemo(() => (isGibs ? gibsStyle(gibsDate) : undefined), [isGibs, gibsDate]);
+  // GIBS = style raster bertanggal (bukan kunci MAP_STYLES) — dioper langsung ke hook.
+  const gibsMapStyle = useMemo(() => (isGibs ? gibsStyle(gibsDate) : null), [isGibs, gibsDate]);
 
   const [selected, setSelected] = useState<SelectedHotspot | null>(null);
   // Popup bisa digeser agar tidak menutupi fitur yang dipilih (pola Peta Lahan);
@@ -186,7 +186,7 @@ export function FireMapCanvas({
   const [focusGroupId, setFocusGroupId] = useState<string | null>(null);
 
   const { mapStyle, labelFont, labelsReady, labelBeforeId, syncStyle, registerImageFallback } =
-    useVectorBasemap(isGibs ? "satellite" : styleKey, { provideImage: provideFlameImage, style: gibsMapStyle });
+    useVectorBasemap(gibsMapStyle ?? (styleKey as MapStyleKey), { provideImage: provideFlameImage });
 
   const boundaryGeojson = useMemo<FeatureCollection>(
     () => ({
@@ -602,7 +602,7 @@ export function FireMapCanvas({
             className="rounded-md border bg-background/90 px-2 py-1 text-[10px] text-muted-foreground shadow-md backdrop-blur-sm"
             title="Citra harian 250 m: asap dan awan sulit dibedakan; zoom dekat tampak kabur."
           >
-            Citra GIBS: <span className="font-semibold text-foreground">{formatGibsDate(gibsDate)}</span> ·{" "}
+            Citra GIBS: <span className="font-semibold text-foreground">{formatDateList([gibsDate])}</span> ·{" "}
             {GIBS_LAYER_LABEL}
           </div>
         )}

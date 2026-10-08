@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { FeatureCollection } from "geojson";
-import { formatGibsDate, gibsImageryDate } from "@/lib/fire-alert";
+import { formatDateList, gibsImageryDate } from "@/lib/fire-alert";
 import { GIBS_LAYER, GIBS_MAXZOOM, gibsStyle, gibsTileTemplate } from "@/lib/map-style";
 
 /** Latar satelit harian NASA GIBS di Fire Alert (#290). */
@@ -34,32 +34,41 @@ describe("gibsTileTemplate / gibsStyle", () => {
 });
 
 describe("gibsImageryDate", () => {
-  const now = new Date("2026-10-08T11:55:00Z"); // 18.55 WIB
+  const now = new Date("2026-10-08T11:55:00Z"); // 18.55 WIB — citra NOAA-20 hari ini sudah utuh
+  const morning = new Date("2026-10-08T03:00:00Z"); // 10.00 WIB — lintasan siang belum diproses
 
-  it("ada titik api → tanggal akuisisi UTC terbaru (bukan urutan fitur)", () => {
-    expect(gibsImageryDate(fc(["2026-10-05T06:30:00Z", "2026-10-07T18:10:00Z", "2026-10-06T06:20:00Z"]), { now, month: null })).toBe(
-      "2026-10-07"
-    );
+  it("ada titik api → tanggal WIB titik api terbaru (bukan urutan fitur)", () => {
+    expect(
+      gibsImageryDate(fc(["2026-10-05T06:30:00Z", "2026-10-07T06:10:00Z", "2026-10-06T06:20:00Z"]), { now, month: null })
+    ).toBe("2026-10-07");
+  });
+
+  it("deteksi malam memakai citra siang hari WIB-nya (sesudah api), bukan tanggal UTC (±12 jam sebelum api)", () => {
+    // 7 Okt 18.10 UTC = 8 Okt 01.10 WIB → citra 8 Okt (lintasan 13 WIB).
+    expect(gibsImageryDate(fc(["2026-10-07T18:10:00Z"]), { now, month: null })).toBe("2026-10-08");
+  });
+
+  it("dibatasi tanggal citra terakhir yang utuh: sebelum 10 UTC = kemarin, tile hari ini belum diproses", () => {
+    expect(gibsImageryDate(fc(["2026-10-08T01:00:00Z"]), { now: morning, month: null })).toBe("2026-10-07");
+    expect(gibsImageryDate(fc(["2026-10-08T01:00:00Z"]), { now, month: null })).toBe("2026-10-08");
   });
 
   it("acqDatetime kosong/tak valid diabaikan", () => {
     expect(gibsImageryDate(fc([null, "bukan-tanggal", "2026-10-03T06:00:00Z"]), { now, month: null })).toBe("2026-10-03");
   });
 
-  it("rentang live tanpa titik api → kemarin UTC (citra hari ini belum tentu utuh)", () => {
-    expect(gibsImageryDate(fc([]), { now, month: null })).toBe("2026-10-07");
-    expect(gibsImageryDate(null, { now, month: null })).toBe("2026-10-07");
-    // 00.30 WIB 9 Okt = 8 Okt 17.30 UTC → kemarin UTC = 7 Okt.
-    expect(gibsImageryDate(null, { now: new Date("2026-10-08T17:30:00Z"), month: null })).toBe("2026-10-07");
+  it("rentang live tanpa titik api → citra terakhir yang utuh (hari ini, atau kemarin bila masih pagi)", () => {
+    expect(gibsImageryDate(fc([]), { now, month: null })).toBe("2026-10-08");
+    expect(gibsImageryDate(null, { now: morning, month: null })).toBe("2026-10-07");
   });
 
-  it("mode Bulan tanpa titik api → hari terakhir bulan, paling lambat kemarin", () => {
+  it("mode Bulan tanpa titik api → hari terakhir bulan, dibatasi citra terakhir yang utuh", () => {
     expect(gibsImageryDate(null, { now, month: "2026-02" })).toBe("2026-02-28");
     expect(gibsImageryDate(null, { now, month: "2024-02" })).toBe("2024-02-29");
-    expect(gibsImageryDate(null, { now, month: "2026-10" })).toBe("2026-10-07");
+    expect(gibsImageryDate(null, { now, month: "2026-10" })).toBe("2026-10-08");
   });
 
-  it("formatGibsDate: tanggal UTC tanpa geser zona", () => {
-    expect(formatGibsDate("2026-10-08")).toBe("8 Okt 2026");
+  it("label chip memakai formatter tanggal UTC yang sudah ada", () => {
+    expect(formatDateList(["2026-10-08"])).toBe("8 Okt 2026");
   });
 });
