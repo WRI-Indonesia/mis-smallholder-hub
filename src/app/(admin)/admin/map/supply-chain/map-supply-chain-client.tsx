@@ -545,10 +545,7 @@ function SelectedCard({
         <MapPopupHeader accent="blue" icon={<Factory className="h-5 w-5" />} title={millLabel(m)} badge={isUlMill(m) && <UlBadge />} rows={[{ label: "UML ID", value: m.umlId ?? "— (manual)", mono: true }, { label: "Distrik", value: millDistrict(m) ?? "—" }]} />
         <MapPopupHighlight label="TBS" value={fmtTon(ton(rs))} />
         <div className="space-y-2 px-3.5 py-2.5">
-          <MapPopupRows rows={[
-            { label: "Program buyer", value: m.buyerPrograms.length ? m.buyerPrograms.join(", ") : "—" },
-            { label: "RSPO", value: m.rspoStatus },
-          ]} />
+          <MapPopupRows rows={[{ label: "RSPO", value: m.rspoStatus }]} />
           <div className="text-[11px] font-medium text-muted-foreground">Lembaga pemasok teratas</div>
           <MapPopupRows rows={list(topBy(rs, (r) => groups.get(r.groupCode)?.abrv ?? r.groupCode, (r) => r.supplyTon ?? 0))} />
         </div>
