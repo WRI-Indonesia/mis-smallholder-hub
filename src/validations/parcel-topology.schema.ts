@@ -36,7 +36,8 @@ export const uploadOverlapInputSchema = z
     z.object({
       rowNum: z.number().int().positive(),
       farmerId: z.string().min(1).max(40),
-      parcelId: z.string().min(1).max(100),
+      // DBF menampung teks sampai 254 karakter; simpan pun tak membatasi.
+      parcelId: z.string().min(1).max(255),
       geometry: z
         .string()
         .max(2_000_000)

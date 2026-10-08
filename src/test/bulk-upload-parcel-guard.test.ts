@@ -196,13 +196,29 @@ describe("checkUploadParcelOverlaps — guard tumpang tindih upload (#317 Fase 3
     db.$queryRaw.mockResolvedValue([raw(), raw({ rowNum: 3, intersectionM2: "50", rowAreaM2: "20000", otherAreaM2: "20000" })]);
     const res = await actions.checkUploadParcelOverlaps([cand(), cand({ rowNum: 3, parcelId: "HJP.0002.A" })]);
     const sql = (db.$queryRaw.mock.calls[0][0] as TemplateStringsArray).join("?");
-    expect(sql).toContain("NOT (b.farmer_id = c.farmer_id AND b.parcel_id = c.parcel_id)");
-    expect(sql).toContain("o.row_num <> a.row_num");
+    // Lahan DB yang direvisi baris MANA PUN di berkas tidak diadu (poligon lamanya akan hilang).
+    expect(sql).toContain("NOT EXISTS (SELECT 1 FROM cand_ok r WHERE r.farmer_id = b.farmer_id AND r.parcel_id = b.parcel_id)");
+    expect(sql).toContain("o.row_num > a.row_num");
     expect(res.success).toBe(true);
     if (!res.success) return;
     // Baris 3: irisan 50 m² (< 100 m² dan < 1%) dibuang ambang laporan.
     expect(Object.keys(res.data!)).toEqual(["2"]);
     expect(res.data![2][0]).toMatch(/^Tumpang tindih 100% — Duplikat, Lintas Lembaga — dengan lahan HJP\.0009\.A/);
+  });
+
+  it("tanpa izin laporan Tumpang Tindih Lahan: lahan lawan di luar scope disamarkan", async () => {
+    hasPermission.mockImplementation(async (menu: string) => menu === "bulk-upload-parcels");
+    db.$queryRaw.mockResolvedValue([raw({ otherVisible: false })]);
+    const res = await actions.checkUploadParcelOverlaps([cand()]);
+    expect(res.success && res.data![2][0]).toMatch(/dengan lahan terdaftar di Lembaga Lain \(di luar wilayah akses Anda\)$/);
+    expect(JSON.stringify(res)).not.toContain("Petani Fiktif");
+  });
+
+  it("parcelId panjang (DBF 254 karakter) tidak menggagalkan cek; galat validasi menyebut nomor baris", async () => {
+    db.$queryRaw.mockResolvedValue([]);
+    expect((await actions.checkUploadParcelOverlaps([cand({ parcelId: "X".repeat(254) })])).success).toBe(true);
+    const bad = await actions.checkUploadParcelOverlaps([cand({ rowNum: 9, geometry: "{}" })]);
+    expect(bad).toEqual({ success: false, error: "Data cek tumpang tindih tidak valid (baris 9)" });
   });
 
   it("galat PostGIS (GeoJSON rusak) → success false tanpa melempar, simpan tetap boleh", async () => {

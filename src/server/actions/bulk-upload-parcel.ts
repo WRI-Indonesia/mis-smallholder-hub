@@ -248,11 +248,15 @@ export async function bulkCreateLandParcels(
  * validasi diurai on-the-fly (`ST_GeomFromGeoJSON`, ekspresi sama dengan kolom generated
  * `geom`) lalu diadu ke (a) lahan aktif di DB lewat GiST dan (b) sesama baris berkas.
  *
- * Revisi lahan itu sendiri (petani + ID Lahan sama → baris lama dinonaktifkan saat
- * simpan) tidak dihitung; pencocokan persis seperti `bulkCreateLandParcels`. Baris yang
- * petaninya di luar scope dibuang (sama dengan simpan). PENGECUALIAN SCOPE tercatat
- * (#317, docs/product/access-context.md): lahan lawan di DB dicari di SELURUH data dan
- * identitasnya ditampilkan — tanpa itu klaim ganda lintas Lembaga tak terlihat.
+ * Lahan DB yang direvisi oleh baris mana pun di berkas (petani + ID Lahan sama → baris
+ * lama dinonaktifkan saat simpan) tidak diadu — poligon lamanya akan hilang; pencocokan
+ * persis seperti `bulkCreateLandParcels` (bukan case-insensitive seperti label Revisi di
+ * pratinjau, karena yang menentukan hasil adalah simpan). Baris yang petaninya di luar
+ * scope dibuang (sama dengan simpan). Lahan lawan di DB dicari di SELURUH data agar klaim
+ * lintas Lembaga terlihat, tetapi identitasnya (ID Lahan, nama & kode petani) hanya disebut
+ * bila dalam scope user ATAU user berizin VIEW laporan `data-analyst-parcel-overlap` —
+ * pemegang pengecualian scope #317 (docs/product/access-context.md); selain itu hanya
+ * nama Lembaga-nya.
  *
  * Hasil: `{ [rowNum]: pesan[] }` — hanya baris yang punya peringatan.
  */
@@ -263,11 +267,16 @@ export async function checkUploadParcelOverlaps(
     return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
   }
   const parsed = uploadOverlapInputSchema.safeParse(rows);
-  if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Data cek tumpang tindih tidak valid" };
+  if (!parsed.success) {
+    const idx = parsed.error.issues[0]?.path[0];
+    const rowNum = typeof idx === "number" && Array.isArray(rows) ? rows[idx]?.rowNum : undefined;
+    return { success: false, error: `Data cek tumpang tindih tidak valid${rowNum ? ` (baris ${rowNum})` : ""}` };
+  }
   if (parsed.data.length === 0) return { success: true, data: {} };
 
-  const access = await getAccessContext();
+  const [access, seesAll] = await Promise.all([getAccessContext(), hasPermission("data-analyst-parcel-overlap", "VIEW")]);
   const inScope = groupScopeSql("g", access);
+  const otherInScope = groupScopeSql("gb", access);
   const c = parsed.data;
   try {
     const raws = await prisma.$queryRaw<UploadOverlapRaw[]>`
@@ -282,29 +291,28 @@ export async function checkUploadParcelOverlaps(
         WHERE ${inScope}
       ),
       cand_ok AS MATERIALIZED (SELECT * FROM cand WHERE NOT ST_IsEmpty(geom))
-      SELECT c.row_num AS "rowNum", 'DB' AS source, NULL::int AS "otherRowNum",
+      SELECT c.row_num AS "rowNum", 'DB' AS source, NULL::int AS "otherRowNum", NULL::text AS "rowParcelId",
              ST_Area(ST_Intersection(c.geom, b.geom)::geography) AS "intersectionM2",
              ST_Area(c.geom::geography) AS "rowAreaM2", c.farmer_id AS "rowFarmerId", c.group_id AS "rowGroupId",
              b.parcel_id AS "otherParcelId", ST_Area(b.geom::geography) AS "otherAreaM2",
              fb.id AS "otherFarmerId", fb.farmer_id AS "otherFarmerCode", fb.name AS "otherFarmerName",
-             gb.id AS "otherGroupId", gb.name AS "otherGroupName"
+             gb.id AS "otherGroupId", gb.name AS "otherGroupName", ${otherInScope} AS "otherVisible"
       FROM cand_ok c
       JOIN tbl_land_parcel b
         ON b.is_active AND b.geom IS NOT NULL
        AND ST_Intersects(c.geom, b.geom) AND NOT ST_Touches(c.geom, b.geom)
-       AND NOT (b.farmer_id = c.farmer_id AND b.parcel_id = c.parcel_id)
       JOIN tbl_farmer fb ON fb.id = b.farmer_id AND fb.is_active
       JOIN tbl_farmer_group gb ON gb.id = fb.farmer_group_id AND gb.is_active
+      WHERE NOT EXISTS (SELECT 1 FROM cand_ok r WHERE r.farmer_id = b.farmer_id AND r.parcel_id = b.parcel_id)
       UNION ALL
-      SELECT a.row_num, 'FILE', o.row_num,
+      SELECT a.row_num, 'FILE', o.row_num, a.parcel_id,
              ST_Area(ST_Intersection(a.geom, o.geom)::geography),
              ST_Area(a.geom::geography), a.farmer_id, a.group_id,
              o.parcel_id, ST_Area(o.geom::geography),
-             fo.id, fo.farmer_id, fo.name, go.id, go.name
+             o.farmer_id, '', '', o.group_id, '', TRUE
       FROM cand_ok a
-      JOIN cand_ok o ON o.row_num <> a.row_num AND ST_Intersects(a.geom, o.geom) AND NOT ST_Touches(a.geom, o.geom)
-      JOIN tbl_farmer fo ON fo.id = o.farmer_id
-      JOIN tbl_farmer_group go ON go.id = fo.farmer_group_id
+      -- Satu arah per pasangan; peringatan untuk kedua baris dirakit buildUploadOverlapWarnings.
+      JOIN cand_ok o ON o.row_num > a.row_num AND ST_Intersects(a.geom, o.geom) AND NOT ST_Touches(a.geom, o.geom)
     `;
     const warnings = buildUploadOverlapWarnings(
       // Angka dari PostGIS bisa datang sebagai string (numeric) — normalkan.
@@ -315,6 +323,7 @@ export async function checkUploadParcelOverlaps(
         intersectionM2: Number(r.intersectionM2),
         rowAreaM2: Number(r.rowAreaM2),
         otherAreaM2: Number(r.otherAreaM2),
+        otherVisible: seesAll || Boolean(r.otherVisible),
       }))
     );
     return { success: true, data: Object.fromEntries([...warnings].map(([rowNum, list]) => [rowNum, uploadOverlapMessages(list)])) };

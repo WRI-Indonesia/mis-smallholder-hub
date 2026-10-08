@@ -220,6 +220,8 @@ export const UPLOAD_OVERLAP_MAX_PER_ROW = 3;
 /**
  * Irisan mentah satu baris berkas terhadap lahan aktif di DB (`DB`) atau baris lain di
  * berkas yang sama (`FILE`). Luas dalam m² (`ST_Area(::geography)`), sama dengan laporan.
+ * Pasangan `FILE` dikirim SEKALI (rowNum < otherRowNum); builder memberi peringatan ke
+ * kedua baris memakai `rowParcelId` (ID Lahan baris ini, untuk pesan di baris lawan).
  */
 export interface UploadOverlapRaw {
   rowNum: number;
@@ -227,6 +229,8 @@ export interface UploadOverlapRaw {
   rowAreaM2: number;
   rowFarmerId: string;
   rowGroupId: string;
+  /** ID Lahan baris ini — wajib untuk `FILE` (pesan di baris lawan). */
+  rowParcelId?: string | null;
   source: "DB" | "FILE";
   /** Nomor baris lawan bila `FILE`. */
   otherRowNum: number | null;
@@ -237,6 +241,11 @@ export interface UploadOverlapRaw {
   otherFarmerName: string;
   otherGroupId: string;
   otherGroupName: string;
+  /**
+   * Lahan lawan di DB boleh disebut identitasnya (dalam scope user, atau user berizin
+   * laporan Tumpang Tindih Lahan). `false` → hanya Lembaga-nya yang disebut.
+   */
+  otherVisible?: boolean;
 }
 
 export interface UploadOverlapWarning {
@@ -254,22 +263,33 @@ export interface UploadOverlapWarning {
  */
 export function buildUploadOverlapWarnings(raws: UploadOverlapRaw[]): Map<number, UploadOverlapWarning[]> {
   const out = new Map<number, UploadOverlapWarning[]>();
+  const push = (rowNum: number, w: Omit<UploadOverlapWarning, "rowNum">) => {
+    let list = out.get(rowNum);
+    if (!list) out.set(rowNum, (list = []));
+    list.push({ rowNum, ...w });
+  };
   for (const r of raws) {
     const smaller = Math.min(r.rowAreaM2, r.otherAreaM2);
     if (isNegligibleOverlap(r.intersectionM2, smaller)) continue;
     const pctRow = pctOf(r.intersectionM2, r.rowAreaM2);
     const pctOther = pctOf(r.intersectionM2, r.otherAreaM2);
     const pctMin = round(Math.max(pctRow, pctOther), 1);
+    // Jenis & label simetris → sama untuk kedua arah pasangan FILE.
     const kind = overlapKind({ farmerId: r.rowFarmerId, groupId: r.rowGroupId }, { farmerId: r.otherFarmerId, groupId: r.otherGroupId });
     const level = overlapLevel(Math.max(pctRow, pctOther), Math.min(pctRow, pctOther));
-    const where =
-      r.source === "FILE"
-        ? `baris ${r.otherRowNum} di berkas ini (ID Lahan ${r.otherParcelId})`
+    const head = `Tumpang tindih ${formatPct(pctMin)}% — ${OVERLAP_LEVEL_LABEL[level]}, ${OVERLAP_KIND_LABEL[kind]} — dengan`;
+    if (r.source === "FILE") {
+      push(r.rowNum, { pctMin, kind, level, message: `${head} baris ${r.otherRowNum} di berkas ini (ID Lahan ${r.otherParcelId})` });
+      if (r.otherRowNum != null) {
+        push(r.otherRowNum, { pctMin, kind, level, message: `${head} baris ${r.rowNum} di berkas ini (ID Lahan ${r.rowParcelId ?? "—"})` });
+      }
+      continue;
+    }
+    const who =
+      r.otherVisible === false
+        ? `lahan terdaftar di ${r.otherGroupName} (di luar wilayah akses Anda)`
         : `lahan ${r.otherParcelId} milik ${r.otherFarmerName} (${r.otherFarmerCode}, ${r.otherGroupName})`;
-    const message = `Tumpang tindih ${formatPct(pctMin)}% — ${OVERLAP_LEVEL_LABEL[level]}, ${OVERLAP_KIND_LABEL[kind]} — dengan ${where}`;
-    let list = out.get(r.rowNum);
-    if (!list) out.set(r.rowNum, (list = []));
-    list.push({ rowNum: r.rowNum, pctMin, kind, level, message });
+    push(r.rowNum, { pctMin, kind, level, message: `${head} ${who}` });
   }
   for (const list of out.values()) list.sort((a, b) => b.pctMin - a.pctMin);
   return out;

@@ -182,12 +182,20 @@ describe("buildUploadOverlapWarnings — guard bulk upload (#317 Fase 3)", () =>
       raw({ intersectionM2: 1000 }), // 20% dari lahan kecil → Sebagian
       raw(), // lahan baris 100% di dalam lahan lawan 2× lebih besar → Tercakup
       raw({ intersectionM2: 50, rowAreaM2: 20000, otherAreaM2: 20000 }), // dibuang ambang
-      raw({ rowNum: 2, source: "FILE", otherRowNum: 7, otherParcelId: "Y.07", otherFarmerId: "f1", otherAreaM2: 5000 }),
+      raw({ rowNum: 2, rowParcelId: "Y.02", source: "FILE", otherRowNum: 7, otherParcelId: "Y.07", otherFarmerId: "f1", otherAreaM2: 5000 }),
     ]);
-    expect([...w.keys()]).toEqual([1, 2]);
+    expect([...w.keys()]).toEqual([1, 2, 7]);
     expect(w.get(1)!.map((x) => [x.pctMin, x.level, x.kind])).toEqual([[100, "CONTAINED", "SAME_GROUP"], [20, "PARTIAL", "SAME_GROUP"]]);
     expect(w.get(1)![0].message).toBe("Tumpang tindih 100% — Tercakup, Beda petani, satu Lembaga — dengan lahan X.01 milik Petani Fiktif (X-2, Lembaga A)");
     expect(w.get(2)![0].message).toBe("Tumpang tindih 100% — Duplikat, Petani sama — dengan baris 7 di berkas ini (ID Lahan Y.07)");
+    // Pasangan berkas dikirim sekali; baris lawan ikut mendapat peringatan.
+    expect(w.get(7)![0].message).toBe("Tumpang tindih 100% — Duplikat, Petani sama — dengan baris 2 di berkas ini (ID Lahan Y.02)");
+  });
+
+  it("lahan lawan di luar akses → hanya Lembaga yang disebut, tanpa ID Lahan/nama/kode petani", () => {
+    const [m] = buildUploadOverlapWarnings([raw({ otherVisible: false, otherGroupId: "g9", otherGroupName: "Lembaga Z" })]).get(1)!;
+    expect(m.message).toBe("Tumpang tindih 100% — Tercakup, Lintas Lembaga — dengan lahan terdaftar di Lembaga Z (di luar wilayah akses Anda)");
+    expect(m.message).not.toMatch(/Petani Fiktif|X-2|X\.01/);
   });
 
   it("maks 3 pesan per baris, sisanya diringkas", () => {

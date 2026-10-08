@@ -158,6 +158,10 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     setFeatures([]);
     setMapping({});
     setValidatedData([]);
+    // Batalkan cek tumpang tindih berkas sebelumnya yang mungkin masih berjalan.
+    overlapRun.current++;
+    setOverlapStatus("idle");
+    setFilter("all");
     setIsProcessing(true);
 
     try {
@@ -407,6 +411,8 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
 
     const results = features.map((feat, idx) => validateRow(feat, idx, duplicates).data);
     setValidatedData(results);
+    // Filter "Tumpang Tindih" kosong sampai cek baru selesai — kembali ke Semua.
+    if (filter === "warning") setFilter("all");
     setIsProcessing(false);
     toast.success("Validasi selesai");
     void runOverlapCheck(results);
