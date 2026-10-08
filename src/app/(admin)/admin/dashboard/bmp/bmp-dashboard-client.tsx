@@ -109,7 +109,7 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
           .totals.produksiTon,
       }));
 
-    // Produktivitas per umur tanaman (Ton/Ha).
+    // Produktivitas per umur tanaman (Ton/Ha/tahun, disetahunkan).
     const exAge = bmpAgeSeries(exGroups, year, dataMode);
     const swAge = bmpAgeSeries(swGroups, year, dataMode);
     const ageKeys = [...new Set([...exAge, ...swAge].map((a) => a.key))];

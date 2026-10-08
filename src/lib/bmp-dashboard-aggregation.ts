@@ -368,12 +368,32 @@ function seriesOf(g: BmpGroupEntry, dataMode: BmpDataMode) {
  * disetahunkan — angka produksi tetap yang tercatat.
  */
 export function bmpAnnualizeFactor(g: BmpGroupEntry, yearKey: string, dataMode: BmpDataMode = "all"): number {
-  const prefix = `${yearKey}-`;
-  let months = 0;
-  for (const [period, m] of Object.entries(seriesOf(g, dataMode).monthly ?? {})) {
-    if (period.startsWith(prefix) && m.produksiTon > 0) months++;
+  const months = monthsPerYear(g, dataMode).get(yearKey) ?? 0;
+  return months > 0 ? 12 / months : 1;
+}
+
+/**
+ * Jumlah bulan ber-data per tahun sebuah group — dihitung sekali per objek snapshot
+ * (dipanggil berulang tiap ganti filter; review bb562b7). Kunci bulanan `YYYY-MM` unik,
+ * jadi maks 12 per tahun. Bulan dihitung ada bila tercatat produksi ATAU lahan melapor:
+ * `produksiTon` sudah dibulatkan 2 desimal, sehingga bulan < 5 kg terbaca 0 padahal
+ * tonasenya tetap ikut pembilang.
+ */
+const monthsCache = new WeakMap<BmpGroupEntry, Partial<Record<BmpDataMode, Map<string, number>>>>();
+function monthsPerYear(g: BmpGroupEntry, dataMode: BmpDataMode): Map<string, number> {
+  let byMode = monthsCache.get(g);
+  if (!byMode) monthsCache.set(g, (byMode = {}));
+  let counts = byMode[dataMode];
+  if (!counts) {
+    counts = new Map();
+    for (const [period, m] of Object.entries(seriesOf(g, dataMode).monthly ?? {})) {
+      if (!(m.produksiTon > 0 || m.lahanMelapor > 0)) continue;
+      const year = period.slice(0, 4);
+      counts.set(year, (counts.get(year) ?? 0) + 1);
+    }
+    byMode[dataMode] = counts;
   }
-  return months > 0 ? 12 / Math.min(months, 12) : 1;
+  return counts;
 }
 
 /** Stats sebuah group untuk tahun terpilih (`year = null` → agregat semua tahun). */
@@ -564,7 +584,7 @@ export interface BmpGroupRankingEntry {
 }
 
 /**
- * Ranking Lembaga berdasarkan produktivitas (Ton/Ha) pada tahun/mode terpilih
+ * Ranking Lembaga berdasarkan produktivitas (Ton/Ha/tahun, disetahunkan) pada tahun/mode terpilih
  * (#191) — hanya lembaga dengan luas terdata > 0, urut tertinggi dulu.
  */
 export function bmpGroupRanking(

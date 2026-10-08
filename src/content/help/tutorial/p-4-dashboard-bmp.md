@@ -11,7 +11,7 @@ goal: Anda bisa membaca angka produksi & produktivitas program, dan tahu batas k
 
 ## Sebelum mulai
 
-BMP Dashboard fokus pada **produksi**: produktivitas Ton/Ha, total tonase, luasan terdata, dan berapa petani yang terdata.
+BMP Dashboard fokus pada **produksi**: produktivitas Ton/Ha/tahun, total tonase, luasan terdata, dan berapa petani yang terdata.
 
 Angkanya dibaca dari **snapshot**, sama seperti Main Dashboard.
 

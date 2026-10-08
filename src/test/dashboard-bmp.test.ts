@@ -523,4 +523,12 @@ describe("produktivitas disetahunkan (owner 2026-10-08)", () => {
     expect(s2026.totals.produksiTon).toBe(9); // angka tercatat, tidak diproyeksikan
     expect(bmpGroupRanking([g1, g2], 2026).map((r) => [r.id, r.produktivitasTonHa])).toEqual([["g1", 6], ["g2", 4]]);
   });
+
+  it("bulan dengan tonase < 5 kg (terbulatkan 0 ton) tetap dihitung bulan ber-data", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, [
+      ...months("f1", "p1", 2025, 11, 1000),
+      { farmerId: "f1", parcelId: "p1", period: "2025-12", kg: 4 },
+    ]);
+    expect(bmpAnnualizeFactor(d.groups.find((g) => g.id === "g1")!, "2025")).toBe(1);
+  });
 });
