@@ -32,7 +32,8 @@ export interface FilterComboboxProps {
   allLabel?: string;
   /** Label trigger (muted) saat kosong tanpa `allLabel`, mis. "Pilih Distrik". */
   placeholder?: string;
-  searchPlaceholder: string;
+  /** Placeholder kotak cari; default = `placeholder`. */
+  searchPlaceholder?: string;
   emptyLabel: string;
   /** Kelas lebar trigger & popover, default `w-[220px]`. */
   widthClass?: string;
@@ -46,15 +47,16 @@ export interface FilterComboboxProps {
 }
 
 /**
- * Primitif combobox filter (Popover + Command) — SATU-SATUNYA definisi; dipakai
- * Master Data, Report, dan panel Peta Lahan / Peta BMP (#315, dulu dua salinan
- * lokal). Dua semantik: `allLabel` = filter opsional dengan pilihan "Semua …";
- * `placeholder` = pilihan wajib gaya "Pilih …". Pencarian menyertakan kode
- * lembaga bila ada.
+ * Primitif combobox filter (Popover + Command) bersama — dipakai Master Data,
+ * Report, dan panel Peta Lahan / Peta BMP (#315: dua salinan peta dihapus). Masih
+ * ada combobox filter inline (Popover+Command) di beberapa dashboard, daftar, dan
+ * laporan — semantik "Semua …"-nya bisa berbeda (TD-056). Dua semantik: `allLabel` = filter opsional dengan pilihan
+ * "Semua …"; `placeholder` = pilihan wajib gaya "Pilih …". Pencarian menyertakan
+ * kode lembaga bila ada.
  *
  * Item "Semua …" ber-`value="__all__"`: TIDAK ikut tersaring pencarian, jadi ia
  * tersembunyi selama pengguna mengetik dan kembali begitu kotak cari dikosongkan
- * (keputusan #315 — salinan peta dulu ikut tersaring; satu perilaku di semua halaman).
+ * (keputusan #315 untuk semua pemakai primitif ini).
  */
 export function FilterCombobox({
   options,
@@ -73,6 +75,10 @@ export function FilterCombobox({
   const [open, setOpen] = useState(false);
 
   const selected = value !== null ? options.find((o) => o.id === value) : undefined;
+  // "Semua …" hanya bila nilainya memang kosong. Nilai terisi yang belum ada di
+  // `options` (daftar masih dimuat / basi) tampil sebagai placeholder, bukan "Semua"
+  // — kalau tidak, layar berkata "semua" padahal filter masih menyaring (review #315).
+  const showAll = allLabel && value === null;
 
   function handleSelect(id: string | null) {
     onSelect(id);
@@ -92,7 +98,7 @@ export function FilterCombobox({
           >
             {selected ? (
               <span className="truncate">{selected.name}</span>
-            ) : allLabel ? (
+            ) : showAll ? (
               <span className="truncate">{allLabel}</span>
             ) : (
               <span className="truncate text-muted-foreground">{placeholder}</span>
@@ -103,7 +109,7 @@ export function FilterCombobox({
       />
       <PopoverContent className={cn(popoverWidthClass ?? widthClass, "p-0")} align="start">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={searchPlaceholder ?? placeholder} />
           <CommandList className="max-h-[300px]">
             <CommandEmpty>{emptyLabel}</CommandEmpty>
             <CommandGroup>

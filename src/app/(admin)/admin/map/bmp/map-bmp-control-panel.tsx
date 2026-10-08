@@ -258,7 +258,6 @@ export function MapBmpControlPanel(props: Props) {
               popoverWidthClass={ANCHOR_POPOVER_WIDTH}
               label="Provinsi"
               placeholder="Pilih Provinsi (opsional)"
-              searchPlaceholder="Pilih Provinsi (opsional)"
               allLabel="Semua Provinsi"
               emptyLabel="Provinsi tidak ditemukan."
               options={provinces}
@@ -270,7 +269,6 @@ export function MapBmpControlPanel(props: Props) {
               popoverWidthClass={ANCHOR_POPOVER_WIDTH}
               label="Distrik"
               placeholder="Pilih Distrik (opsional)"
-              searchPlaceholder="Pilih Distrik (opsional)"
               allLabel="Semua Distrik"
               emptyLabel="Distrik tidak ditemukan."
               options={districts}
@@ -283,7 +281,6 @@ export function MapBmpControlPanel(props: Props) {
               label="Lembaga Petani"
               required
               placeholder="Pilih Lembaga Petani"
-              searchPlaceholder="Pilih Lembaga Petani"
               emptyLabel="Lembaga Petani tidak ditemukan."
               options={farmerGroups}
               value={farmerGroupId}

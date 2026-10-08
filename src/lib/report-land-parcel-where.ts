@@ -6,17 +6,18 @@ import type { Prisma, LandDocumentType, LandStdbStage, LandNktStatus } from "@pr
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
 import { LAND_STDB_STAGES, LAND_NKT_STATUSES, nktAffectedStatusWhere } from "@/lib/land-parcel-satellite-format";
 import type { LandParcelLegalFilters, LandParcelReportFilters } from "@/types/report";
+import { landParcelReportFiltersSchema } from "@/validations/report-land-parcel.schema";
 
 /**
- * Validasi bentuk filter dari klien (#319): `coverage` wajib `all`/`mapped` — tanpa
- * itu laporan TIDAK dijalankan, bukan jatuh ke default yang bisa berbeda dengan
- * yang dicetak. Sisa filter tetap disaring per nilai di `landParcelLegalWhere`.
+ * Validasi filter dari klien (#319, Zod `landParcelReportFiltersSchema`): `coverage`
+ * wajib `all`/`mapped` — tanpa itu laporan TIDAK dijalankan, bukan jatuh ke default
+ * yang bisa berbeda dengan yang dicetak — dan bentuk field lain dijaga (mis.
+ * `documentTypes` bukan array tak lagi meledak di `.filter`). Nilai enum yang tak
+ * dikenal tetap diabaikan per field di `landParcelLegalWhere`.
  */
 export function parseLandParcelReportFilters(input: unknown): LandParcelReportFilters | null {
-  if (!input || typeof input !== "object") return null;
-  const coverage = (input as { coverage?: unknown }).coverage;
-  if (coverage !== "all" && coverage !== "mapped") return null;
-  return input as LandParcelReportFilters;
+  const parsed = landParcelReportFiltersSchema.safeParse(input);
+  return parsed.success ? parsed.data : null;
 }
 
 /**

@@ -427,7 +427,9 @@ export function describeLegalSummary(
   // `totalDidata` hanya sebagian — memakai `totalDidata` sebagai penyebut di
   // sana menghasilkan persen di atas 100% ("Ada Surat: 60 — 150% dari 40 lahan
   // yang sudah didata"), dan itu ikut tercetak ke PDF & Excel.
-  const allCoverage = filters.coverage === "all";
+  // Fallback sama dengan `describeLegalFilters` (apa pun selain `mapped` = semua lahan),
+  // supaya kartu dan header cetakan tak pernah bercerita beda (review #319).
+  const allCoverage = filters.coverage !== "mapped";
   const base = allCoverage ? summary.totalLahan : summary.totalDidata;
   const pct = (n: number) => (base > 0 ? `${Math.round((n / base) * 100)}%` : "—");
   const denom = allCoverage

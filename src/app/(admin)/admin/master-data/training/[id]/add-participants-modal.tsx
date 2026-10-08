@@ -299,7 +299,9 @@ export function AddParticipantsModal({
             (p) => p.activity.packageId === packageId && p.activity.id !== activityId,
           );
           if (previousParticipation) {
-            status = "WARNING";
+            // Jangan menurunkan ERROR (nilai di luar 0–100) jadi WARNING — baris
+            // ERROR tidak disimpan; dulu nilainya hilang diam-diam (review #310).
+            if (status !== "ERROR") status = "WARNING";
             const formattedPrevDate = formatDateWarning(
               previousParticipation.activity.trainingDate,
             );

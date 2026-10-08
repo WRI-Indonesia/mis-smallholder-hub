@@ -48,6 +48,7 @@ Siapkan: paket pelatihan, tanggal, lokasi, daftar hadir, dan notulen PDF (maksim
 Jalur ini paling praktis untuk sesi berpeserta banyak: satu berkas memuat daftar hadir sekaligus nilai pre/post-test.
 
 1. Pada seksi **Peserta Pelatihan**, klik **Tambah Peserta**, lalu buka tab **Upload List Peserta**.
++ Menambah peserta (manual maupun unggah) butuh izin **Edit** pada menu Pelatihan, bukan hanya Tambah. Bila tombol simpan menjawab "Tidak memiliki izin untuk mengubah peserta pelatihan", minta admin menambah izin Edit untuk akun Anda.
 2. Klik **Template Excel** untuk mengunduh berkas contoh, lalu isi satu baris per peserta.
 + Kolomnya **ID Petani**, **Nilai Pre-Test**, dan **Nilai Post-Test**. Hanya ID Petani yang wajib; kolom nilai boleh dihapus atau dikosongkan dan dilengkapi belakangan di tabel peserta. Nama kolom ID boleh juga `Farmer ID`, `Kode Petani`, atau `ID` — bila tak ada satu pun nama yang dikenali, **kolom pertama** dianggap berisi ID Petani. Nilai harus bilangan bulat 0–100 (desimal dibulatkan ke bawah).
 3. Pilih berkasnya (`.xlsx` atau `.csv`) di kotak unggah.
@@ -73,7 +74,9 @@ Jumlah peserta muncul di daftar pelatihan. Petani tersebut **langsung** terhitun
 
 **Muncul pesan "Header ditemukan di baris 3" saat mengunggah daftar peserta** — berkas punya baris judul di atas nama kolom, dan sistem melewatinya sendiri. Periksa sekilas bahwa kolom ID Petani terbaca benar di tabel validasi, lalu lanjutkan.
 
-**"Tidak menemukan baris header pada berkas ini"** — sheet yang terbaca tidak berisi satu pun baris nama kolom; biasanya berkasnya kosong, atau sheet pertamanya bukan tabel. Pindahkan tabel peserta ke sheet pertama, atau mulai dari **Template Excel**.
+**"Tidak menemukan baris header pada berkas ini"** — semua sheet yang terlihat di berkas itu kosong (sheet tersembunyi tidak dibaca). Pastikan tabel pesertanya ada di sheet yang tidak disembunyikan, atau mulai dari **Template Excel**.
+
++ Bila berkas punya beberapa sheet, yang dibaca adalah sheet bernama **Data** bila ada, selain itu sheet terlihat pertama yang berisi tabel. Jadi bila tabel validasi menampilkan isi yang aneh, kemungkinan sheet lain yang terbaca — simpan daftar peserta di berkas tersendiri, atau beri nama sheet-nya `Data`.
 
 **Semua baris ERROR "ID Petani tidak ditemukan di lembaga tani ini"** — biasanya kolom yang terbaca sebagai ID bukan kolom ID Petani (mis. kolom pertama berisi nomor urut atau nama). Ganti judul kolomnya menjadi `ID Petani`, atau pakai template.
 
