@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSupplyChainSankey, type ScRecord, type SupplyChainData } from "@/lib/supply-chain-flow";
-import { DIRECT_NODE_ID, buildPathRows, buildSupplyChainTree, treeBranchKeys, type SupplyTreeNode } from "@/lib/supply-chain-views";
+import { DIRECT_NODE_ID, buildPathRows, buildSupplyChainTree, dodgeLabels, sortPathRows, spreadEdgeEnds, treeBranchKeys, type SupplyTreeNode } from "@/lib/supply-chain-views";
 
 const rec = (over: Partial<ScRecord>): ScRecord => ({
   id: "r", year: 2025, level: "LAHAN", groupCode: "G1", surveyId: null, offtakerId: null, nextOfftakerId: null,
@@ -92,5 +92,38 @@ describe("buildSupplyChainTree (tab Tabel Pohon)", () => {
     expect(new Set(keys).size).toBe(keys.length);
     expect(treeBranchKeys(tree, 1)).toEqual(tree.filter((n) => n.children.length > 0).map((n) => n.key));
     expect(treeBranchKeys(tree).length).toBeGreaterThan(treeBranchKeys(tree, 1).length);
+  });
+});
+
+describe("sortPathRows (header tab Jalur)", () => {
+  const rows = buildPathRows(treeGraph);
+  it("tonase naik/turun", () => {
+    expect(sortPathRows(rows, "TON", "asc").map((r) => r.ton)).toEqual([4, 5, 20, 40]);
+    expect(sortPathRows(rows, "TON", "desc").map((r) => r.ton)).toEqual([40, 20, 5, 4]);
+  });
+  it("per nama; seri diurut tonase terbesar; jalur tanpa offtaker = 'langsung ke Mill'", () => {
+    expect(sortPathRows(rows, "ORIGIN", "asc").map((r) => [r.steps[0].label, r.ton])).toEqual([["L1", 40], ["L2", 20], ["L3", 5], ["L3", 4]]);
+    expect(sortPathRows(rows, "OFFTAKER", "desc").map((r) => r.ton)).toEqual([20, 5, 4, 40]);
+    expect(sortPathRows(rows, "DEST", "asc").map((r) => r.steps[r.steps.length - 1].label)[0]).toBe("Karya Cipta");
+  });
+});
+
+describe("tata letak Diagram Alur", () => {
+  it("spreadEdgeEnds membagi ujung garis rata menurut posisi ujung lainnya", () => {
+    const links = [
+      { key: "a", source: "S", target: "T2", value: 1 },
+      { key: "b", source: "S", target: "T1", value: 1 },
+      { key: "c", source: "X", target: "T1", value: 1 },
+    ];
+    const y = { S: 0, X: 100, T1: 0, T2: 50 } as Record<string, number>;
+    const { sourceOffset, targetOffset } = spreadEdgeEnds(links, (id) => y[id], 20);
+    expect([sourceOffset.get("b"), sourceOffset.get("a"), sourceOffset.get("c")]).toEqual([-10, 10, 0]);
+    expect([targetOffset.get("b"), targetOffset.get("c"), targetOffset.get("a")]).toEqual([-10, 10, 0]);
+  });
+  it("dodgeLabels: label satu kolom berjarak ≥ gap dan tetap berpusat; kolom lain tak tersentuh", () => {
+    const out = dodgeLabels([{ key: "a", x: 100, y: 50 }, { key: "b", x: 101, y: 52 }, { key: "c", x: 400, y: 50 }], 20);
+    expect(out.get("b")!.y - out.get("a")!.y).toBe(20);
+    expect((out.get("a")!.y + out.get("b")!.y) / 2).toBeCloseTo(51);
+    expect(out.get("c")).toEqual({ x: 400, y: 50 });
   });
 });

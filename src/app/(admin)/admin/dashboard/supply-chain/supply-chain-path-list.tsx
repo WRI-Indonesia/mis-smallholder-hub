@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatNumber, formatPct } from "@/lib/format";
 import { CHANNEL_LABEL, type SankeyGraph, type SankeyNode } from "@/lib/supply-chain-flow";
-import { buildPathRows } from "@/lib/supply-chain-views";
+import { DIRECT_PATH_LABEL, buildPathRows, sortPathRows, type PathSortKey, type SortDir } from "@/lib/supply-chain-views";
 import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 
 const ROWS_COLLAPSED = 20;
@@ -20,7 +20,11 @@ const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: SankeyGraph; unit: SankeyUnit; onSelectNode: (n: SankeyNode) => void }) {
   const dark = useChartDark();
   const [showAll, setShowAll] = useState(false);
-  const rows = useMemo(() => buildPathRows(graph), [graph]);
+  const [sort, setSort] = useState<{ key: PathSortKey; dir: SortDir }>({ key: "TON", dir: "desc" });
+  const ranked = useMemo(() => buildPathRows(graph), [graph]);
+  // Kolom # = peringkat tonase, tetap walau tabel diurut per nama.
+  const rank = useMemo(() => new Map(ranked.map((r, i) => [r.key, i + 1])), [ranked]);
+  const rows = useMemo(() => sortPathRows(ranked, sort.key, sort.dir), [ranked, sort]);
   const max = Math.max(1, ...rows.map((r) => r.ton));
   const total = graph.totalTon;
   const share = (v: number) => `${total > 0 ? formatPct((v / total) * 100) : "0"}%`;
@@ -31,7 +35,7 @@ export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: Sank
   const visible = showAll ? rows : rows.slice(0, ROWS_COLLAPSED);
 
   const step = (n: SankeyNode | undefined) => {
-    if (!n) return <span className="text-xs italic text-muted-foreground">langsung ke Mill</span>;
+    if (!n) return <span className="text-xs italic text-muted-foreground">{DIRECT_PATH_LABEL}</span>;
     const clickable = isFilterableNode(n) || isGroupNode(n);
     const text = (
       <>
@@ -53,34 +57,56 @@ export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: Sank
     );
   };
 
+  const sortHead = (key: PathSortKey, label: string, className: string) => {
+    const on = sort.key === key;
+    const Icon = !on ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
+    return (
+      <th className={className} aria-sort={on ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}>
+        <button
+          type="button"
+          // Nama mulai A–Z; tonase mulai terbesar.
+          onClick={() => setSort(on ? { key, dir: sort.dir === "asc" ? "desc" : "asc" } : { key, dir: key === "TON" ? "desc" : "asc" })}
+          className="inline-flex items-center gap-1 font-medium hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          {label}
+          <Icon className={cn("h-3 w-3", !on && "opacity-50")} />
+        </button>
+      </th>
+    );
+  };
+  const sortText =
+    sort.key === "TON"
+      ? sort.dir === "desc" ? "diurut dari tonase terbesar" : "diurut dari tonase terkecil"
+      : `diurut menurut ${{ ORIGIN: "asal", OFFTAKER: "offtaker", DEST: "tujuan" }[sort.key]} ${sort.dir === "asc" ? "A–Z" : "Z–A"}`;
+
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
-        {formatNumber(rows.length)} jalur, diurut dari tonase terbesar. Warna batang = jalur pertama TBS dari petani.
+        {formatNumber(rows.length)} jalur, {sortText} — klik judul kolom untuk mengurutkan. Kolom # = peringkat tonase. Warna batang = jalur pertama TBS dari petani.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">
               <th className="py-2 pr-2 font-medium w-8 text-right">#</th>
-              <th className="py-2 pr-2 font-medium">{graph.nodes.some((n) => n.id.startsWith("D:")) ? "Distrik" : "Lembaga"}</th>
+              {sortHead("ORIGIN", graph.nodes.some((n) => n.id.startsWith("D:")) ? "Distrik" : "Lembaga", "py-2 pr-2")}
               <th className="w-4" />
-              <th className="py-2 pr-2 font-medium">Offtaker</th>
+              {sortHead("OFFTAKER", "Offtaker", "py-2 pr-2")}
               <th className="w-4" />
-              <th className="py-2 pr-2 font-medium">{graph.nodes.some((n) => n.id.startsWith("U:")) ? "UL / Non-UL" : "Mill"}</th>
-              <th className="py-2 pr-2 font-medium w-[26%]">Tonase</th>
-              <th className="py-2 text-right font-medium">Porsi</th>
+              {sortHead("DEST", graph.nodes.some((n) => n.id.startsWith("U:")) ? "UL / Non-UL" : "Mill", "py-2 pr-2")}
+              {sortHead("TON", "Tonase", "py-2 pr-2 w-[26%]")}
+              {sortHead("TON", "Porsi", "py-2 text-right")}
             </tr>
           </thead>
           <tbody>
-            {visible.map((r, i) => {
+            {visible.map((r) => {
               const first = r.steps[0];
               const last = r.steps[r.steps.length - 1];
               const mid = r.steps.length === 3 ? r.steps[1] : undefined;
               const color = channelColor(r.channel, dark);
               return (
                 <tr key={r.key} className="border-b last:border-0 hover:bg-muted/40">
-                  <td className="py-1.5 pr-2 text-right text-xs tabular-nums text-muted-foreground">{i + 1}</td>
+                  <td className="py-1.5 pr-2 text-right text-xs tabular-nums text-muted-foreground">{rank.get(r.key)}</td>
                   <td className="max-w-[180px] py-1.5 pr-2">{step(first)}</td>
                   <td className="text-muted-foreground"><ArrowRight className="h-3.5 w-3.5" /></td>
                   <td className="max-w-[240px] py-1.5 pr-2">{step(mid)}</td>

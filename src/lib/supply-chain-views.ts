@@ -31,6 +31,25 @@ export function buildPathRows(graph: SankeyGraph): PathRow[] {
     .sort((a, b) => b.ton - a.ton || a.key.localeCompare(b.key));
 }
 
+export type PathSortKey = "ORIGIN" | "OFFTAKER" | "DEST" | "TON";
+export type SortDir = "asc" | "desc";
+/** Label kolom Offtaker untuk jalur tanpa offtaker (langsung ke Mill). */
+export const DIRECT_PATH_LABEL = "langsung ke Mill";
+
+const pathStepLabel = (r: PathRow, key: Exclude<PathSortKey, "TON">) =>
+  key === "ORIGIN" ? r.steps[0]?.label ?? "" : key === "DEST" ? r.steps[r.steps.length - 1]?.label ?? "" : r.steps.length === 3 ? r.steps[1].label : DIRECT_PATH_LABEL;
+
+/**
+ * Urut baris tab Jalur per kolom (header bisa diklik, owner 2026-10-09). Seri nama
+ * diurut tonase terbesar dulu, jadi "Lembaga A–Z" tetap menampilkan jalur terbesar tiap
+ * Lembaga di atas. `rows` diasumsikan sudah urut tonase (`buildPathRows`).
+ */
+export function sortPathRows(rows: PathRow[], key: PathSortKey, dir: SortDir): PathRow[] {
+  const sign = dir === "asc" ? 1 : -1;
+  if (key === "TON") return [...rows].sort((a, b) => sign * (a.ton - b.ton) || a.key.localeCompare(b.key));
+  return [...rows].sort((a, b) => sign * pathStepLabel(a, key).localeCompare(pathStepLabel(b, key), "id") || b.ton - a.ton);
+}
+
 export type TreeDirection = "HULU" | "HILIR";
 export type TreeLevel = "DISTRIK" | "LEMBAGA" | "OFFTAKER" | "UL" | "MILL";
 export const TREE_LEVEL_LABEL: Record<TreeLevel, string> = { DISTRIK: "Distrik", LEMBAGA: "Lembaga", OFFTAKER: "Offtaker", UL: "UL / Non-UL", MILL: "Mill" };
@@ -137,3 +156,47 @@ export function treeBranchKeys(nodes: SupplyTreeNode[], maxDepth = Infinity, dep
 
 /** Urutan kanal tetap (sama dengan legenda) untuk batang komposisi. */
 export const channelSegments = (n: Pick<SupplyTreeNode, "tonByChannel">) => CHANNEL_ORDER.map((c) => ({ channel: c, ton: n.tonByChannel[c] })).filter((s) => s.ton > 0);
+
+/**
+ * Sebar ujung garis sepanjang sisi kotak (Diagram Alur): garis yang keluar/masuk satu
+ * kotak diurut menurut posisi ujung lainnya, lalu dibagi rata di `span` piksel — tanpa
+ * ini semua garis bertemu di satu titik dan label tonasenya bertumpuk (owner 2026-10-09).
+ * Hasil: offset y relatif tengah kotak, per kunci garis, untuk sisi sumber & target.
+ */
+export function spreadEdgeEnds<L extends { key: string; source: string; target: string; value: number }>(
+  links: L[],
+  centerY: (nodeId: string) => number,
+  span: number,
+): { sourceOffset: Map<string, number>; targetOffset: Map<string, number> } {
+  const spread = (side: "source" | "target") => {
+    const other = side === "source" ? "target" : "source";
+    const groups = new Map<string, L[]>();
+    for (const l of links) groups.set(l[side], [...(groups.get(l[side]) ?? []), l]);
+    const out = new Map<string, number>();
+    for (const ls of groups.values()) {
+      ls.sort((a, b) => centerY(a[other]) - centerY(b[other]) || b.value - a.value || a.key.localeCompare(b.key));
+      ls.forEach((l, i) => out.set(l.key, ls.length === 1 ? 0 : -span / 2 + (span * i) / (ls.length - 1)));
+    }
+    return out;
+  };
+  return { sourceOffset: spread("source"), targetOffset: spread("target") };
+}
+
+/**
+ * Geser label agar tidak saling tindih: label dengan x (dibulatkan) yang sama diurut
+ * menurut y lalu didorong ke bawah sampai berjarak ≥ `gap`; kelompok yang terdorong
+ * digeser balik setengah total dorongannya supaya tetap berpusat di posisi asalnya.
+ */
+export function dodgeLabels(items: { key: string; x: number; y: number }[], gap: number): Map<string, { x: number; y: number }> {
+  const out = new Map<string, { x: number; y: number }>();
+  const byX = new Map<number, { key: string; x: number; y: number }[]>();
+  for (const it of items) byX.set(Math.round(it.x / 8), [...(byX.get(Math.round(it.x / 8)) ?? []), it]);
+  for (const col of byX.values()) {
+    col.sort((a, b) => a.y - b.y || a.key.localeCompare(b.key));
+    const ys: number[] = [];
+    col.forEach((it, i) => ys.push(i === 0 ? it.y : Math.max(it.y, ys[i - 1] + gap)));
+    const drift = col.reduce((a, it, i) => a + (ys[i] - it.y), 0) / col.length;
+    col.forEach((it, i) => out.set(it.key, { x: it.x, y: ys[i] - drift }));
+  }
+  return out;
+}

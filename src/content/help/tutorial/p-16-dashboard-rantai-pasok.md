@@ -26,7 +26,7 @@ Dashboard ini masih **prototipe** untuk bahan diskusi. Datanya berasal dari **fo
 5. Di kartu **Aliran TBS** (Lembaga → Offtaker → Mill), pilih tab yang paling mudah Anda baca. Keempatnya memakai data dan angka yang sama:
    - **Sankey**: pita setebal tonase. Arahkan kursor ke Lembaga atau Mill untuk menyalakan seluruh jalurnya.
    - **Diagram Alur**: kotak per Lembaga, offtaker, dan Mill yang dihubungkan garis beranimasi; tebal garis sebanding tonase. **Klik kotak** untuk menyorot jalurnya. Angka di garis yang menyala = tonase yang lewat kotak itu. Tombol **Jadikan filter** ada di panel kanan bawah.
-   - **Jalur**: satu baris per jalur utuh (Lembaga → offtaker → Mill), urut dari tonase terbesar. Tidak ada garis yang bersilangan.
+   - **Jalur**: satu baris per jalur utuh (Lembaga → offtaker → Mill), bawaannya urut dari tonase terbesar. Tidak ada garis yang bersilangan. Klik judul kolom (Lembaga, Offtaker, Mill, Tonase) untuk mengurutkan; kolom **#** tetap menunjukkan peringkat tonase.
    - **Tabel Pohon**: angka bertingkat yang bisa dibuka-tutup. Pilih **Arah**: **Hulu → Hilir** (Lembaga › Offtaker › Mill) atau **Hilir → Hulu** (Mill › Offtaker › Lembaga). Kolom **% induk** = porsi terhadap baris di atasnya.
 + Agen, RAMP, dan KT/koperasi berada di satu bagian **Offtaker**; TBS yang lewat agen lalu RAMP tampil sebagai satu node rantai "Agen → RAMP". Di Tabel Pohon, ikon corong di ujung baris (muncul saat kursor di atas baris) menjadikan baris itu filter.
 6. Atur tampilan dengan toolbar di bawah tab. Arahkan kursor ke tombol untuk melihat penjelasannya:

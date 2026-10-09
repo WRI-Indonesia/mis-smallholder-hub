@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BaseEdge,
   Controls,
@@ -14,6 +14,7 @@ import {
   type EdgeProps,
   type Node,
   type NodeProps,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Pause, Play, X } from "lucide-react";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatNumber, formatPct } from "@/lib/format";
 import { CHANNEL_LABEL, SANKEY_COLUMNS, layoutSankey, sankeyLinkKey, type SankeyGraph, type SankeyNode, type SupplyChannel } from "@/lib/supply-chain-flow";
+import { dodgeLabels, spreadEdgeEnds } from "@/lib/supply-chain-views";
 import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 
 /**
@@ -92,11 +94,17 @@ type FlowEdgeData = {
   lit: boolean;
   animate: boolean;
   label: string | null;
+  /** Ujung garis digeser sepanjang sisi kotak (`spreadEdgeEnds`). */
+  sourceOffset: number;
+  targetOffset: number;
+  /** Posisi label sesudah dihindarkan dari label lain (`dodgeLabels`). */
+  labelX: number;
+  labelY: number;
 };
 
 function FlowEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data }: EdgeProps) {
   const d = data as unknown as FlowEdgeData;
-  const [path, labelX, labelY] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+  const [path] = getBezierPath({ sourceX, sourceY: sourceY + d.sourceOffset, targetX, targetY: targetY + d.targetOffset, sourcePosition, targetPosition });
   const base = d.dimmed ? 0.06 : d.lit ? 0.45 : 0.28;
   return (
     <>
@@ -117,7 +125,7 @@ function FlowEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targ
         <EdgeLabelRenderer>
           <div
             className="nodrag nopan pointer-events-none absolute rounded border bg-popover px-1.5 py-0.5 text-[10px] font-medium tabular-nums shadow-sm"
-            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+            style={{ transform: `translate(-50%, -50%) translate(${d.labelX}px, ${d.labelY}px)` }}
           >
             {d.label}
           </div>
@@ -140,6 +148,13 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
   const [selected, setSelected] = useState<string | null>(null);
   const [hoverEdge, setHoverEdge] = useState<string | null>(null);
   const [animate, setAnimate] = useState(true);
+  // `fitView` (prop) hanya berlaku saat inisialisasi → pasang ulang viewport tiap graf
+  // berubah dengan tinggi kanvas sama (filter); tinggi berubah ditangani `key` ReactFlow.
+  const instance = useRef<ReactFlowInstance | null>(null);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => instance.current?.fitView(FIT_VIEW));
+    return () => cancelAnimationFrame(id);
+  }, [graph]);
   const total = graph.totalTon;
   const fmtValue = useCallback((v: number) => (unit === "PCT" ? `${total > 0 ? formatPct((v / total) * 100) : "0"}%` : fmtTon(v)), [unit, total]);
 
@@ -216,11 +231,34 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
   );
 
   const maxLink = Math.max(1, ...graph.links.map((l) => l.value));
+  const ends = useMemo(() => {
+    const keyed = graph.links.map((l) => ({ ...l, key: sankeyLinkKey(l) }));
+    return spreadEdgeEnds(keyed, (id) => placed.pos.get(id)?.y ?? 0, NODE_H - 16);
+  }, [graph.links, placed]);
+
+  // Label hanya untuk garis menyala / disorot kursor; posisinya titik tengah kurva
+  // (setelah ujungnya disebar) lalu dihindarkan dari label lain di celah kolom yang sama.
+  const labels = useMemo(() => {
+    const items: { key: string; x: number; y: number }[] = [];
+    for (const l of graph.links) {
+      const k = sankeyLinkKey(l);
+      if (!(lit ? lit.links.has(k) : hoverEdge === k)) continue;
+      const s = placed.pos.get(l.source);
+      const t = placed.pos.get(l.target);
+      if (!s || !t) continue;
+      const sy = s.y + NODE_H / 2 + (ends.sourceOffset.get(k) ?? 0);
+      const ty = t.y + NODE_H / 2 + (ends.targetOffset.get(k) ?? 0);
+      items.push({ key: k, x: (s.x + NODE_W + t.x) / 2, y: (sy + ty) / 2 });
+    }
+    return dodgeLabels(items, 22);
+  }, [graph.links, lit, hoverEdge, placed, ends]);
+
   const edges: Edge[] = useMemo(
     () =>
       graph.links.map((l) => {
         const k = sankeyLinkKey(l);
         const on = !lit || lit.links.has(k);
+        const pos = labels.get(k);
         return {
           id: k,
           source: l.source,
@@ -232,11 +270,15 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
             dimmed: !on,
             lit: !!lit && on,
             animate,
-            label: lit && on ? fmtValue(lit.links.get(k) ?? 0) : hoverEdge === k ? fmtValue(l.value) : null,
+            label: !pos ? null : lit ? fmtValue(lit.links.get(k) ?? 0) : fmtValue(l.value),
+            sourceOffset: ends.sourceOffset.get(k) ?? 0,
+            targetOffset: ends.targetOffset.get(k) ?? 0,
+            labelX: pos?.x ?? 0,
+            labelY: pos?.y ?? 0,
           } satisfies FlowEdgeData,
         };
       }),
-    [graph.links, lit, dark, maxLink, animate, hoverEdge, fmtValue],
+    [graph.links, lit, dark, maxLink, animate, fmtValue, labels, ends],
   );
 
   if (graph.nodes.length === 0) {
@@ -257,6 +299,9 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
       </p>
       <div className="overflow-hidden rounded-lg border border-border/60" style={{ height }}>
         <ReactFlow
+          // Tinggi kanvas berubah (mis. Lembaga → Distrik) → pasang ulang: fitView di efek
+          // berjalan sebelum React Flow mengukur tinggi baru dan menyisakan viewport lama.
+          key={height}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
@@ -270,6 +315,9 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
           colorMode={dark ? "dark" : "light"}
           fitView
           fitViewOptions={FIT_VIEW}
+          onInit={(inst) => {
+            instance.current = inst;
+          }}
           minZoom={0.3}
           nodesDraggable={false}
           nodesConnectable={false}

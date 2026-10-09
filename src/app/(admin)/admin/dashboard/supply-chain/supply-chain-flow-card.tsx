@@ -38,7 +38,7 @@ type FlowTab = (typeof TABS)[number];
 const TAB_META: Record<FlowTab, { label: string; icon: typeof Spline; hint: string }> = {
   SANKEY: { label: "Sankey", icon: Spline, hint: "Pita setebal tonase. Arahkan kursor untuk menyalakan jalurnya; klik node untuk memfilter." },
   ALUR: { label: "Diagram Alur", icon: Workflow, hint: "Kotak & garis beranimasi — klik kotak untuk menyorot jalurnya." },
-  JALUR: { label: "Jalur", icon: ListOrdered, hint: "Satu baris per jalur utuh, urut tonase — tanpa garis yang bersilangan." },
+  JALUR: { label: "Jalur", icon: ListOrdered, hint: "Satu baris per jalur utuh — tanpa garis yang bersilangan; klik judul kolom untuk mengurutkan." },
   POHON: { label: "Tabel Pohon", icon: ListTree, hint: "Agregasi bertingkat yang bisa dibuka-tutup, dari hulu ke hilir atau sebaliknya." },
 };
 
