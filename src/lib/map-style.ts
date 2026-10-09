@@ -169,6 +169,50 @@ export const MAP_STYLE_LABELS: Record<MapStyleKey, { short: string; full: string
 };
 
 // ---------------------------------------------------------------------------
+// GIBS — citra satelit harian NASA (#290, tahap 1 latar satelit Fire Alert)
+//
+// Bukan bagian `MAP_STYLES`: tanggalnya dinamis (ikut titik api) dan hanya Fire
+// Alert yang memakainya. Fakta endpoint (uji 2026-08-24 & 2026-10-08):
+//   • tile matrix set WAJIB `GoogleMapsCompatible_Level9` (Level8 → HTTP 400),
+//     zoom native maks 9 — di atasnya MapLibre overzoom (kabur, bukan kosong);
+//   • urutan WMTS `{z}/{y}/{x}` (baris/kolom), BUKAN XYZ — tertukar = tile salah
+//     tempat tanpa galat;
+//   • CORS `*`, tanpa API key/kuota → tanpa proxy, dan tidak men-taint canvas;
+//   • `{TIME}` satu tanggal UTC (citra harian, bukan komposit). NOAA-20 dipilih
+//     karena per 2026-10-08 satu-satunya VIIRS yang tile hari-ini-nya sudah utuh
+//     di atas Riau (SNPP/NOAA-21 kosong, NOAA-21 kemarin 404).
+// ---------------------------------------------------------------------------
+
+export const GIBS_LAYER = "VIIRS_NOAA20_CorrectedReflectance_TrueColor";
+export const GIBS_LAYER_LABEL = "VIIRS NOAA-20, 250 m";
+export const GIBS_MAXZOOM = 9;
+export const GIBS_ATTRIBUTION =
+  'Citra &copy; <a href="https://earthdata.nasa.gov/gibs">NASA GIBS</a> (VIIRS NOAA-20)';
+
+/** Template tile GIBS untuk satu tanggal UTC "YYYY-MM-DD". */
+export function gibsTileTemplate(date: string): string {
+  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${GIBS_LAYER}/default/${date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
+}
+
+/** Style raster GIBS satu tanggal — glyphs OpenMapTiles seperti basemap raster lain. */
+export function gibsStyle(date: string): StyleSpecification {
+  return {
+    version: 8,
+    glyphs: GLYPHS,
+    sources: {
+      "nasa-gibs": {
+        type: "raster",
+        tiles: [gibsTileTemplate(date)],
+        tileSize: 256,
+        maxzoom: GIBS_MAXZOOM,
+        attribution: GIBS_ATTRIBUTION,
+      },
+    },
+    layers: [{ id: "nasa-gibs-layer", type: "raster", source: "nasa-gibs", minzoom: 0, maxzoom: 22 }],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Terrain 3D (owner 2026-09-20): relief dari DEM global agar tampilan miring
 // (pitch) di Peta Lahan lebih bermakna. AWS Terrain Tiles (Mapzen, encoding
 // Terrarium) — tanpa API key/registrasi, resolusi ±30 m (SRTM) sampai z15.

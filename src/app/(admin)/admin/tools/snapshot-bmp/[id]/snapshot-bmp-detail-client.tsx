@@ -60,7 +60,7 @@ export function SnapshotBmpDetailClient({
     },
     {
       key: "id",
-      label: "Produktivitas (Ton/Ha)",
+      label: "Produktivitas (Ton/Ha/tahun)",
       sortable: false,
       cellClassName: "text-sm tabular-nums text-right pr-4",
       render: (row) => formatTon(bmpProductivity(row)),

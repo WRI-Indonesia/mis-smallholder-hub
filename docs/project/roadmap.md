@@ -119,7 +119,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | SC-01       | Supply Chain: master Mill/Offtaker + import survei         | 🔲 Not Started | Now     | inti      |
 | SC-02       | Supply Chain: peta rantai pasok + report                   | 🔲 Not Started | Now     | inti      |
 | SC-03       | Supply Chain: analisa volume, jarak & risiko Mill          | 🔲 Not Started | Now     | pendukung |
-| GIS-01      | Fire Alert siap musim kemarau 2027                         | 🔲 Not Started | Next    | inti      |
+| GIS-01      | Fire Alert siap musim kemarau 2027                         | 🟠 Partial     | Next    | inti      |
 | DA-05       | Deteksi anomali data produksi                              | 🔲 Planned     | Next    | pendukung |
 | MD-08       | HCV/NKT: area NKT & patok NKT                              | 🟠 Partial     | Next    | inti      |
 | DA-08       | Ketersediaan data lanjutan                                 | 🔲 Planned     | Next    | pendukung |
@@ -146,7 +146,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>PLATFORM-08</strong> · 🟠 Partial — Pengerasan keamanan & RBAC pasca-MVP</summary>
 
 - **Evidence:** v1.2.0 (2026-09-29): struktur menu dikunci dari UI (#364), reaktivasi menu (#237), kunci berkas bukti pelatihan & path unggahan S3 divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). v1.3.0 (2026-09-30): role/`isActive` di JWT dibaca ulang dari DB ≤ 1 menit, memo dibuang saat sign-in (#342, `src/lib/auth-role-refresh.ts` + test; TC-342-01 lulus di staging), akun seed fiktif + password dari `SEED_USER_PASSWORD` (#390, `5028ffd` + `seed-data-privacy.test.ts`).
-- **Next step:** #342 ditutup 2026-10-07 (retro di issue). #390 ditutup 2026-10-07 (keputusan owner). #286 butir 2 (key FIRMS di log) risiko diterima tanpa rotasi (Decision Log 2026-09-30). v1.6.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
+- **Next step:** #342 ditutup 2026-10-07 (retro di issue). #390 ditutup 2026-10-07 (keputusan owner). #286 butir 2 (key FIRMS di log) risiko diterima tanpa rotasi (Decision Log 2026-09-30). v1.7.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
 - **Selesai bila:** #342, #390, #386, #384 ditutup; tidak ada temuan keamanan P1 terbuka.
 
 </details>
@@ -182,7 +182,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>DA-09</strong> · 🟠 Partial — Tumpang tindih lahan: laporan lengkap, guard upload, layer peta</summary>
 
 - **Evidence:** #317 Fase 1: `LandParcel.geom` GENERATED + GiST (v0.35.0). Fase 2 (sebagian): menu Data Analyst › Tumpang Tindih Lahan (`data-analyst-parcel-overlap`), self-join 256 ms / 14.174 lahan, dirilis v1.2.0. **Fase 2 tuntas di `mvp` (2026-10-07):** tab Luar Boundary (130 sepenuhnya + 24 sebagian, ringkasan per Lembaga, peta lahan + boundary, 120 ms) & Selisih Luas (98) — satu definisi dengan check DA-02 (`src/lib/parcel-boundary-area.ts`).
-- **Next step:** Fase 2 ikut rilis v1.4.0. Fase 3 guard saat upload shapefile → v1.5.0 (keputusan owner 2026-10-07). Fase 4 layer tumpang tindih di Peta Lahan → v1.7.0.
+- **Next step:** Fase 2 ikut rilis v1.4.0. Fase 3 guard saat upload shapefile ✅ 2026-10-08 di `mvp` (`checkUploadParcelOverlaps`, ikut v1.5.0). Fase 4 layer tumpang tindih di Peta Lahan → v1.7.0.
 - **Selesai bila:** keempat fase #317 selesai dan #317 ditutup.
 
 </details>
@@ -217,10 +217,10 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 #### Semester 1 2027 — Next
 
 <details>
-<summary><strong>GIS-01</strong> · 🔲 Not Started — Fire Alert siap musim kemarau 2027</summary>
+<summary><strong>GIS-01</strong> · 🟠 Partial — Fire Alert siap musim kemarau 2027</summary>
 
-- **Evidence:** Fire Alert live (DASH-07 arsip); laporan bulanan dari arsip FIRMS SP (#365, dirilis v1.0.0, diverifikasi owner & ditutup 2026-09-30). Rentang 30 hari masih bergantung cache Next (>2 MB) dan payload tanpa batas (#286 butir 1 & 3).
-- **Next step:** basemap harian NASA GIBS mengikuti tanggal titik api (#290) dijadwalkan di **v1.4.0** (digeser dari v1.3.0). K1 2027: cache FIRMS sendiri + batas payload rentang 30 hari (#286), basemap Sentinel-2 10 m via CDSE dengan cache wajib karena kuota (#291). #286 dan #291 dirancang bersama.
+- **Evidence:** Fire Alert live (DASH-07 arsip); laporan bulanan dari arsip FIRMS SP (#365, dirilis v1.0.0, diverifikasi owner & ditutup 2026-09-30); latar satelit harian NASA GIBS (#290, VIIRS NOAA-20, tanggal = titik api terbaru) dirilis **v1.5.0** 2026-10-09 → fase 🟠. Rentang 30 hari masih bergantung cache Next (>2 MB) dan payload tanpa batas (#286 butir 1 & 3).
+- **Next step:** K1 2027: cache FIRMS sendiri + batas payload rentang 30 hari (#286), basemap Sentinel-2 10 m via CDSE dengan cache wajib karena kuota (#291). #286 dan #291 dirancang bersama.
 - **Selesai bila:** tiga issue ditutup **sebelum musim kemarau 2027** dan uji beban rentang 30 hari tercatat.
 
 </details>

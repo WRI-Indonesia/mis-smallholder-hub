@@ -27,13 +27,13 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 │   │   ├── Seri batang (Produksi Ton) + garis (Cakupan data %)
 │   │   ├── Tooltip hover · Legenda · Empty state
 │   └── Chart ranking "Produktivitas per Lembaga — Top 10"
-│       ├── Bar horizontal Ton/Ha, warna per kategori + legend
+│       ├── Bar horizontal Ton/Ha/tahun, warna per kategori + legend
 │       └── Empty state
 ├── Card besar Ex-Plasma vs Swadaya (full row)
 │   ├── Legend warna kategori
 │   ├── Ringkasan 3 metrik per kategori (Produksi, Produktivitas, Luas Terdata)
-│   ├── Analisa "Produksi per Distrik (Ton)" (bar berpasangan)
-│   ├── Analisa "Produktivitas per Umur Tanaman (Ton/Ha)" (bar berpasangan)
+│   ├── Analisa "Produktivitas per Distrik (Ton/Ha/tahun)" (tabel Ex-Plasma | Swadaya + mini bar)
+│   ├── Analisa "Produktivitas per Umur Tanaman (Ton/Ha/tahun)" (tabel Ex-Plasma | Swadaya + mini bar)
 │   └── Catatan filter & definisi umur
 └── Empty state halaman
     ├── "Belum ada snapshot"
@@ -75,7 +75,7 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 
 | # | Judul kartu | Nilai | Sub |
 |---|---|---|---|
-| 1 | Produktivitas | "{n} Ton/Ha" | "per tahun — produksi ÷ luas lahan terdata" |
+| 1 | Produktivitas | "{n} Ton/Ha/tahun" | "produksi disetahunkan ÷ luas lahan terdata" — **disetahunkan** (owner 2026-10-08): per Lembaga per tahun, produksi × 12 ÷ bulan ber-data (`bmpAnnualizeFactor`, dari seri bulanan snapshot; 1 bila 12 bulan), lalu Σ ÷ Σ luas terdata; berlaku juga di Top 10, Ex-Plasma vs Swadaya, per umur tanaman, dan detail snapshot. Total Produksi tetap angka tercatat |
 | 2 | Total Produksi | "{n} Ton" | "{persen} dari total luas — {n} Ha terdata ({label tahun})" — persen hilang bila snapshot lama tanpa `totalLuasHa` |
 | 3 | Luasan | "{terdata} Ha" | "{persen} dari total {total} Ha luas ({label tahun})" — snapshot lama: "luas lahan terdata ({label tahun})" |
 | 4 | Petani Terdata | "{terdata}" | "{persen} dari total {total} petani ({label tahun})" |
@@ -102,8 +102,8 @@ Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}", ditambah "
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Heading kartu | "Produktivitas per Lembaga — Top 10 ({label tahun})" + legend warna kategori |
-| Bar | Bar horizontal per lembaga | Ton/Ha (`bmpGroupRanking` — hanya lembaga ber-luas terdata, desc, maks 10); warna `#0d9488` Ex-Plasma / `#f59e0b` Swadaya |
-| Catatan | Teks | "Ton/Ha = Σ produksi ÷ Σ luas terdata lembaga ybs; warna mengikuti kategori (Ex-Plasma/Swadaya)." |
+| Bar | Bar horizontal per lembaga | Ton/Ha/tahun (`bmpGroupRanking` — hanya lembaga ber-luas terdata, desc, maks 10); warna `#0d9488` Ex-Plasma / `#f59e0b` Swadaya |
+| Catatan | Teks | "Ton/Ha/tahun = Σ produksi disetahunkan (× 12 ÷ bulan ber-data tiap tahun) ÷ Σ luas terdata lembaga ybs; warna mengikuti kategori (Ex-Plasma/Swadaya)." |
 | Empty state | Teks | "Belum ada lembaga dengan luas terdata." |
 
 ## Card Ex-Plasma vs Swadaya (`BmpCategoryPanel`, #191 — menggantikan panel Ketersediaan Data Produksi)
@@ -111,9 +111,9 @@ Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}", ditambah "
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Heading kartu | "Ex-Plasma vs Swadaya — {label tahun}" + legend warna kategori (`CategoryLegend`) |
-| Ringkasan 3 metrik | Grid 3 kolom | Total Produksi (Ton), Produktivitas (Ton/Ha), Luas Terdata (Ha) — dua nilai berwarna per metrik |
-| "Produksi per Distrik (Ton)" | Bar horizontal berpasangan | Dua bar (Ex-Plasma/Swadaya) per distrik dalam scope filter |
-| "Produktivitas per Umur Tanaman (Ton/Ha)" | Bar horizontal berpasangan | Bucket `bmpAgeSeries` mengikuti fase kurva hasil sawit: "< 4 thn (TBM)", "4–8 thn (TM muda)", "9–15 thn (TM prima)", "16–25 thn (TM tua)", "> 25 thn (renta)", "Tanpa thn tanam" (hanya bila ber-data); umur = tahun produksi − tahun tanam |
+| Ringkasan 3 metrik | Grid 3 kolom | Total Produksi (Ton), Produktivitas (Ton/Ha/tahun, disetahunkan), Luas Terdata (Ha) — dua nilai berwarna per metrik, masing-masing berlabel kecil "Ex-Plasma" / "Swadaya" di bawahnya |
+| "Produktivitas per Distrik (Ton/Ha/tahun)" | Tabel pembanding (`CompareTable`, owner 2026-10-08 — dulu Produksi per Distrik (Ton)) | Baris = distrik dalam scope filter; kolom Ex-Plasma · Swadaya, sel = `sumBmpGroups(…).produktivitasTonHa` (disetahunkan) + mini bar satu skala per tabel; luas terdata 0 → "—" + catatan "— = belum ada lahan terdata yang melapor produksi"; tooltip sel "Luas terdata {n} Ha" |
+| "Produktivitas per Umur Tanaman (Ton/Ha/tahun)" | Tabel pembanding (`CompareTable`) | Sel tanpa luas terdata → "—" (bukan 0,00), tooltip sel "Luas terdata {n} Ha"; bucket `bmpAgeSeries` mengikuti fase kurva hasil sawit: "< 4 thn (TBM)", "4–8 thn (TM muda)", "9–15 thn (TM prima)", "16–25 thn (TM tua)", "> 25 thn (renta)", "Tanpa thn tanam" (hanya bila ber-data); umur = tahun produksi − tahun tanam |
 | Empty state umur | Teks | "Snapshot ini belum memuat data umur tanaman — generate ulang snapshot BMP melalui menu Tools untuk mengisi analisa ini." |
 | Catatan | Teks | "Mengikuti filter aktif kecuali filter Kategori. Umur tanaman dihitung pada tahun produksinya…" |
 

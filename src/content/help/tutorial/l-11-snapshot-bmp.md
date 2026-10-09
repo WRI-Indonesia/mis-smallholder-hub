@@ -30,7 +30,7 @@ Membuat snapshot butuh izin CREATE pada menu Tools — secara bawaan hanya ADMIN
 + Tiga kolom tengah ditulis sebagai perbandingan `terdata/total` — mis. `412/559` lahan — supaya kelengkapan data terbaca tanpa membuka dashboard. Pada snapshot lama yang belum menyimpan total luas, kolom Luas Terdata hanya menampilkan satu angka. Kolom **Distrik** mati bawaan; nyalakan lewat tombol **Kolom** bila Anda memang mengelola snapshot per distrik lama.
 5. Buka BMP Dashboard dan pastikan angkanya sudah berubah.
 6. Untuk menelusuri rekaman lama, klik aksi **Lihat** pada barisnya.
-+ Halaman detail menampilkan Informasi Snapshot (tanggal, filter distrik, pembuat), kartu skor BMP kumulatif semua tahun, dan tabel **Ringkasan per Lembaga Petani** — nama, kategori Ex-Plasma/Swadaya, distrik, produksi, produktivitas Ton/Ha, serta ketiga angka kelengkapan tadi. Tabel itu bisa diunduh ke Excel bila akun Anda punya izin EXPORT. Inilah cara membandingkan kondisi dua periode tanpa mengubah apa pun.
++ Halaman detail menampilkan Informasi Snapshot (tanggal, filter distrik, pembuat), kartu skor BMP kumulatif semua tahun, dan tabel **Ringkasan per Lembaga Petani** — nama, kategori Ex-Plasma/Swadaya, distrik, produksi, produktivitas Ton/Ha/tahun (disetahunkan — tahun yang belum 12 bulan diproyeksikan, lihat BMP Dashboard), serta ketiga angka kelengkapan tadi. Tabel itu bisa diunduh ke Excel bila akun Anda punya izin EXPORT. Inilah cara membandingkan kondisi dua periode tanpa mengubah apa pun.
 
 > [!penting] BMP Dashboard selalu memakai snapshot **aktif terbaru**. Menonaktifkan snapshot teratas berarti dashboard mundur ke rekaman sebelum itu — periksa dulu tanggalnya sebelum menekan Nonaktifkan.
 

@@ -6,6 +6,7 @@ import type { ParcelPassport } from "@/types/map";
 import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel } from "@/lib/parcel-neighbor";
 import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_TYPE_LABELS, labelOf } from "@/lib/land-marker";
 import { drawGraticule } from "@/lib/layer-report-pdf";
+import { annualizeFactorFor } from "@/lib/productivity-annualize";
 
 // Konstanta & helper tata letak diekspor (#343) supaya Profil Petani
 // (`farmer-profile-pdf.ts`) memakai gaya yang sama persis, bukan menyalin.
@@ -406,7 +407,7 @@ export function drawFarmPassport(doc: jsPDF, data: ParcelPassport, opts: { appen
   // ── Komposisi (#298, rombak total atas masukan owner "terlalu rapat"):
   //   hal. 1 — header ber-ID besar, 4 kartu ringkasan (cermin halaman web),
   //            peta (kiri) + Informasi Lahan & Pemilik (kanan), Legalitas & Dokumen
-  //   hal. 2 — Pelatihan, Produksi (dengan Ton/Ha)
+  //   hal. 2 — Pelatihan, Produksi (dengan Ton/Ha/tahun)
   //   Footer + nomor halaman di semua halaman; tabel boleh pecah halaman.
   const tableCommon = passportTableCommon();
   const now = new Date();
@@ -795,10 +796,17 @@ export function drawFarmPassport(doc: jsPDF, data: ParcelPassport, opts: { appen
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const monthCols: Record<number, any> = {};
     for (let i = 1; i <= 12; i++) monthCols[i] = { halign: "right" };
-    const tonHa = (kg: number) => (parcel.area && parcel.area > 0 ? new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(kg / 1000 / parcel.area) : "—");
+    // Ton/Ha/tahun: produksi disetahunkan × 12 ÷ bulan ber-data Lembaga (owner 2026-10-08) —
+    // sama dengan detail Lahan/Petani dan Bagian A Profil Petani.
+    const tonHa = (kg: number, year: number) =>
+      parcel.area && parcel.area > 0
+        ? new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(
+            (kg * annualizeFactorFor(production.dataMonthsByYear, year)) / 1000 / parcel.area
+          )
+        : "—";
     autoTable(doc, {
-      head: [["Tahun", ...MONTHS_ID, "Total (kg)", "Ton/Ha"]],
-      body: production.byYear.map((yr) => [String(yr.year), ...yr.monthly.map(cell), fmtNum(yr.total), tonHa(yr.total)]),
+      head: [["Tahun", ...MONTHS_ID, "Total (kg)", "Ton/Ha/thn"]],
+      body: production.byYear.map((yr) => [String(yr.year), ...yr.monthly.map(cell), fmtNum(yr.total), tonHa(yr.total, yr.year)]),
       startY: y,
       theme: "grid",
       headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 7, fontStyle: "bold", halign: "right" },
@@ -812,7 +820,7 @@ export function drawFarmPassport(doc: jsPDF, data: ParcelPassport, opts: { appen
     y = (doc as any).lastAutoTable.finalY + 4;
     doc.setFontSize(7.5);
     doc.setTextColor(...SLATE_400);
-    doc.text(`Ton/Ha = produksi tahun tsb ÷ luas lahan (${fmtArea(parcel.area)}).`, MARGIN, y + 2);
+    doc.text(`Ton/Ha/thn = produksi tahun tsb × 12 ÷ bulan ber-data Lembaga, ÷ luas lahan (${fmtArea(parcel.area)}).`, MARGIN, y + 2);
   }
 }
 

@@ -47,7 +47,7 @@ const actions = await import("@/server/actions/land-parcel");
 
 const BY_DISTRICT = { mode: "BY_DISTRICT", ids: ["1401"] };
 const BY_GROUP = { mode: "BY_FARMER_GROUP", ids: ["kt-1"] };
-const EXISTING = { id: "lp-1", farmerId: "f-1", parcelId: "HJP.0001.A", parcelUid: "uid-1", revision: 3, isActive: true };
+const EXISTING = { id: "lp-1", farmerId: "f-1", parcelId: "HJP.0001.A", parcelUid: "uid-1", revision: 3, isActive: true, farmer: { farmerGroupId: "kt-1" } };
 const parcelInput = (o: Record<string, unknown> = {}) => ({
   farmerId: "f-1", parcelId: "HJP.0001.A", cropType: "Kelapa Sawit", area: 2, ...o,
 });
@@ -69,6 +69,7 @@ beforeEach(() => {
   db.landParcelIdentity.findUnique.mockResolvedValue(null);
   db.landParcelIdentity.update.mockResolvedValue({});
   db.productionRecord.findMany.mockResolvedValue([]);
+  db.productionRecord.groupBy.mockResolvedValue([]);
   db.tree.groupBy.mockResolvedValue([]);
   db.tree.updateMany.mockResolvedValue({ count: 0 });
   for (const m of [db.landParcelDocument, db.landParcelStdb, db.landParcelExternalId, db.landParcelProgram]) m.findMany.mockResolvedValue([]);
@@ -139,6 +140,20 @@ describe("scope — baca & target mutasi lewat farmerRelationAccessFilter", () =
     expect(db.landParcel.findMany.mock.calls[0][0].where).not.toHaveProperty("isActive");
   });
 
+  it("produksi Detail Lahan: bulan ber-data Lembaga pemilik + record petani & lahan ini → Ton/Ha/tahun (owner 2026-10-08)", async () => {
+    db.productionRecord.findMany.mockResolvedValue([{ period: "2026-01", yieldKg: 4000 }]);
+    db.productionRecord.groupBy.mockResolvedValue(
+      ["01", "02", "03", "04"].map((m) => ({ period: `2026-${m}`, _sum: { yieldKg: 9000 }, _count: { parcelId: 2 } }))
+    );
+    const res = await actions.getLandParcelProduction("lp-1");
+    expect(res!.totalKg).toBe(4000);
+    expect(res!.dataMonthsByYear).toEqual({ "2026": 4 });
+    expect(db.productionRecord.groupBy.mock.calls[0][0].where).toEqual({
+      isActive: true,
+      OR: [{ farmer: { isActive: true, farmerGroup: { id: "kt-1" } } }, { farmerId: "f-1" }, { parcel: { farmerId: "f-1" } }],
+    });
+  });
+
   it("baca by-id (detail, produksi, satelit, tetangga, lahan saudara) membawa scope", async () => {
     getAccessContext.mockResolvedValue(BY_GROUP);
     db.landParcel.findFirst.mockResolvedValue(null);
@@ -149,8 +164,9 @@ describe("scope — baca & target mutasi lewat farmerRelationAccessFilter", () =
     for (const [args] of db.landParcel.findFirst.mock.calls) {
       expect(args.where).toMatchObject({ id: "lp-9", farmer: { farmerGroupId: { in: ["kt-1"] } } });
     }
-    // Lahan di luar scope: turunannya tak pernah dibaca.
+    // Lahan di luar scope: turunannya tak pernah dibaca (termasuk bulan ber-data Lembaga).
     expect(db.productionRecord.findMany).not.toHaveBeenCalled();
+    expect(db.productionRecord.groupBy).not.toHaveBeenCalled();
     expect(db.landParcelDocument.findMany).not.toHaveBeenCalled();
     expect(helpers.fetchParcelNeighbors).not.toHaveBeenCalled();
 

@@ -162,6 +162,40 @@ describe("buildFarmerDetail (#172)", () => {
     expect(ghost.excluded).toBe(true);
   });
 
+  it("produktivitas disetahunkan per bulan ber-data LEMBAGA (owner 2026-10-08): tahun, rincian lahan, Exclude, terakhir", () => {
+    const d = buildFarmerDetail(
+      {
+        ...baseFarmer,
+        landParcels: [parcel("p1", 2), parcel("p2", 1, { isPsr: true })],
+        productionRecords: [
+          { parcelId: "p1", period: "2026-01", yieldKg: 3000 },
+          { parcelId: "p2", period: "2026-02", yieldKg: 1000 },
+          { parcelId: null, period: "2026-03", yieldKg: 500 },
+        ],
+        // Lembaga ber-data 2026 = 6 bulan (petani ini hanya 3) → faktor 2.
+        groupDataMonths: { "2026": 6 },
+      },
+      PACKAGES,
+      2026
+    );
+    const y = d.produksi.all.perYear[0];
+    expect(y.totalKg).toBe(4500); // produksi tetap tercatat
+    expect(y.productivityTonHa).toBe(3); // 4,5 Ton × 2 ÷ 3 Ha
+    expect(d.summary.lastProductivity).toEqual({ year: 2026, tonHa: 3 });
+    // Exclude membuang lahan PSR p2 + record-nya; faktor tetap bulan Lembaga.
+    expect(d.produksi.exclude.perYear[0].productivityTonHa).toBe(3.5); // 3,5 Ton × 2 ÷ 2 Ha
+    expect(d.produksi.parcelBreakdown.find((r) => r.parcelKey === "p1")!.productivityTonHa).toBe(3); // 3 Ton × 2 ÷ 2 Ha
+  });
+
+  it("tanpa groupDataMonths → tidak disetahunkan (angka tahun kalender)", () => {
+    const d = buildFarmerDetail(
+      { ...baseFarmer, landParcels: [parcel("p1", 2)], productionRecords: [{ parcelId: "p1", period: "2026-01", yieldKg: 3000 }] },
+      PACKAGES,
+      2026
+    );
+    expect(d.produksi.all.perYear[0].productivityTonHa).toBe(1.5);
+  });
+
   it("tanpa produksi → lastProductivity null; ketersediaan semua NONE", () => {
     const d = buildFarmerDetail(
       { ...baseFarmer, landParcels: [parcel("p1", 1)] },

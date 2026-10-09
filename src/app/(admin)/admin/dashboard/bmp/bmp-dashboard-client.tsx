@@ -22,7 +22,7 @@ import { BmpTrendChart } from "./bmp-trend-chart";
 import { BmpCategoryPanel, type BmpComparisonRow } from "./bmp-category-panel";
 import { BmpRankingChart } from "./bmp-ranking-chart";
 import type { BmpDataMode, BmpFarmerGroupCategory, BmpSnapshotView } from "@/types/dashboard";
-import { formatGeneratedAt } from "@/lib/format";
+import { formatArea, formatGeneratedAt } from "@/lib/format";
 
 interface Props {
   initialView: BmpSnapshotView | null;
@@ -94,30 +94,49 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
     const exGroups = groupsFor("EX_PLASMA");
     const swGroups = groupsFor("SWADAYA");
 
-    // Produksi per distrik (Ton) — dua nilai per distrik yang ber-lembaga di scope.
+    // Produktivitas per distrik (Ton/Ha/tahun, disetahunkan; owner 2026-10-08 — dulu
+    // produksi Ton) — dua nilai per distrik yang ber-lembaga di scope.
     const districtNames = new Map<string, string>();
     for (const g of [...exGroups, ...swGroups]) {
       if (g.districtId) districtNames.set(g.districtId, g.districtName ?? g.districtId);
     }
     const districtRows: BmpComparisonRow[] = [...districtNames.entries()]
       .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([id, name]) => ({
-        label: name,
-        exPlasma: sumBmpGroups(exGroups.filter((g) => g.districtId === id), year, dataMode)
-          .totals.produksiTon,
-        swadaya: sumBmpGroups(swGroups.filter((g) => g.districtId === id), year, dataMode)
-          .totals.produksiTon,
-      }));
+      .map(([id, name]) => {
+        // Tanpa luas terdata = belum ada data → null ("—"), bukan bar kosong; luas di tooltip.
+        const cell = (gs: typeof exGroups) => {
+          const s = sumBmpGroups(gs.filter((g) => g.districtId === id), year, dataMode);
+          return s.totals.luasMelaporHa > 0
+            ? { value: s.produktivitasTonHa, title: `Luas terdata ${formatArea(s.totals.luasMelaporHa)} Ha` }
+            : { value: null, title: undefined };
+        };
+        const ex = cell(exGroups);
+        const sw = cell(swGroups);
+        return { label: name, exPlasma: ex.value, swadaya: sw.value, exPlasmaTitle: ex.title, swadayaTitle: sw.title };
+      });
 
-    // Produktivitas per umur tanaman (Ton/Ha).
+    // Produktivitas per umur tanaman (Ton/Ha/tahun, disetahunkan).
     const exAge = bmpAgeSeries(exGroups, year, dataMode);
     const swAge = bmpAgeSeries(swGroups, year, dataMode);
     const ageKeys = [...new Set([...exAge, ...swAge].map((a) => a.key))];
-    const ageRows: BmpComparisonRow[] = ageKeys.map((key) => ({
-      label: (exAge.find((a) => a.key === key) ?? swAge.find((a) => a.key === key))!.label,
-      exPlasma: exAge.find((a) => a.key === key)?.produktivitasTonHa ?? 0,
-      swadaya: swAge.find((a) => a.key === key)?.produktivitasTonHa ?? 0,
-    }));
+    // Bucket tanpa luas terdata = belum ada data → null ("—"); luas di tooltip sel.
+    const ageCell = (series: typeof exAge, key: string) => {
+      const a = series.find((s) => s.key === key);
+      return a && a.luasMelaporHa > 0
+        ? { value: a.produktivitasTonHa, title: `Luas terdata ${formatArea(a.luasMelaporHa)} Ha` }
+        : { value: null, title: undefined };
+    };
+    const ageRows: BmpComparisonRow[] = ageKeys.map((key) => {
+      const ex = ageCell(exAge, key);
+      const sw = ageCell(swAge, key);
+      return {
+        label: (exAge.find((a) => a.key === key) ?? swAge.find((a) => a.key === key))!.label,
+        exPlasma: ex.value,
+        swadaya: sw.value,
+        exPlasmaTitle: ex.title,
+        swadayaTitle: sw.title,
+      };
+    });
     const hasAgeData = [...exGroups, ...swGroups].some(
       (g) => Object.keys(g.byYearAge ?? {}).length > 0
     );

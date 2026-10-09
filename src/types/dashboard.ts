@@ -218,7 +218,7 @@ export interface BmpSlicedStats {
   totals: BmpGroupTotals;
   availability: BmpAvailabilityCounts;
   monthly: Record<string, BmpMonthlyStat>;
-  /** Ton/Ha per tahun: Σ produksi ÷ Σ luas melapor pada tahun-tahun terpilih. */
+  /** Ton/Ha/tahun: Σ produksi disetahunkan per Lembaga (`bmpAnnualizeFactor`) ÷ Σ luas melapor pada tahun-tahun terpilih. */
   produktivitasTonHa: number;
 }
 
@@ -298,6 +298,16 @@ export interface TrainingGroupEntry {
   /** Denominator cakupan: seluruh petani aktif di Lembaga ini. */
   totalFarmers: number;
   activities: TrainingActivityEntry[];
+}
+
+/** Petani aktif untuk sheet Detail ekspor Training Benefit per year (#402). */
+export interface TrainingBenefitFarmer {
+  /** CUID — kunci yang sama dengan `TrainingParticipantEntry.farmerId`. */
+  id: string;
+  /** ID Petani (kode lapangan). */
+  farmerId: string;
+  gender: "M" | "F";
+  farmerGroupId: string;
 }
 
 export interface TrainingDashboardData {

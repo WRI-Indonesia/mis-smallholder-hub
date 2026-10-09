@@ -446,6 +446,12 @@ describe("buildBmpMapData", () => {
     expect(result.counts.none).toBe(1);
   });
 
+  it("bulan ber-data Lembaga ikut payload dan utuh setelah expand (penyetahunan Peta BMP)", () => {
+    const result = buildBmpMapData([], [parcel({ id: "p1" })], production({ p1: months(2026, 1, 7) }), { "2026": 7 });
+    expect(result.monthsByYear).toEqual({ "2026": 7 });
+    expect(expandBmpMapData(result).monthsByYear).toEqual({ "2026": 7 });
+  });
+
   it("skips parcels with null geometry without affecting counts", () => {
     const result = buildBmpMapData(
       [],
@@ -520,6 +526,18 @@ describe("parcelProductivity", () => {
     expect(parcelProductivity({}, 2, "AVG").tonHa).toBeNull();
   });
 
+  it("disetahunkan per bulan ber-data Lembaga (owner 2026-10-08); bulan persil tetap miliknya", () => {
+    // Lembaga ber-data 2025 = 6 bulan → × 2; 2024 = 12 bulan → × 1.
+    const months = { "2024": 12, "2025": 6 };
+    const r = parcelProductivity(production, 2, 2025, { monthsByYear: months });
+    expect(r.tonHa).toBeCloseTo(24, 5); // 24 ton × 12/6 ÷ 2 ha
+    expect(r.monthsReported).toBe(2);
+    // AVG = rata-rata tahunan yang sudah disetahunkan: (12 × 1 + 24 × 2) ton ÷ 2 tahun ÷ 2 ha
+    expect(parcelProductivity(production, 2, "AVG", { monthsByYear: months }).tonHa).toBeCloseTo(15, 5);
+    // Tahun tanpa entri bulan → tidak disetahunkan.
+    expect(parcelProductivity(production, 2, 2025, { monthsByYear: { "2024": 12 } }).tonHa).toBeCloseTo(12, 5);
+  });
+
   it("entri tahun typo diabaikan — AVG tak terdilusi tahun bogus", () => {
     const withTypo = { "2025-01": 24_000, "2924-05": 24_000 };
     const r = parcelProductivity(withTypo, 2, "AVG");
@@ -569,6 +587,12 @@ describe("buildBmpProductivityView", () => {
     expect(view.view).toBe(2025);
   });
 
+  it("kelas warna mengikuti angka disetahunkan (12 Ton/Ha × 12/8 = 18 → SEDANG)", () => {
+    const view = buildBmpProductivityView(parcels, 2025, { "2025": 8 });
+    expect(view.byParcel.pRendah.tonHa).toBeCloseTo(18, 5);
+    expect(view.byParcel.pRendah.cls).toBe("SEDANG");
+  });
+
   it("mode AVG merata-rata antar tahun melapor per persil", () => {
     const view = buildBmpProductivityView(parcels, "AVG");
     // pRendah: 52.000 kg ÷ 2 tahun ÷ 1 ha = 26 Ton/Ha → TINGGI
@@ -613,6 +637,12 @@ describe("buildBmpProductivityMatrix", () => {
     expect(citra.tonHaByYear["2024"]).toBeNull(); // tak melapor 2024
     expect(citra.tonHaByYear["2025"]).toBeCloseTo(12, 5);
     expect(citra.avg).toBeCloseTo(12, 5);
+  });
+
+  it("cetak/Excel memakai penyetahunan yang sama dengan peta", () => {
+    const m = buildBmpProductivityMatrix(parcels, { "2025": 6 });
+    expect(m.rows[0].tonHaByYear["2025"]).toBeCloseTo(60, 5); // 30 ton × 2 ÷ 1 ha
+    expect(m.rows[0].avg).toBeCloseTo(35, 5); // (10 + 60) ÷ 2
   });
 
   it("luas null → semua nilai null (baris tetap tampil)", () => {

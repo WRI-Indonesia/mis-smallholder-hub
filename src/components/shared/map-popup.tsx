@@ -32,6 +32,16 @@ export const POPUP_VIEW_PAD = 12;
 type EdgeRect = { left: number; top: number; right: number; bottom: number };
 
 /**
+ * Area peta tempat popup boleh berada: tepi kiri digeser `insetLeft` (panel melayang),
+ * kecuali sisa lebarnya tak cukup untuk popup — popup lalu boleh menimpa panel
+ * daripada terdorong keluar tepi kanan (layar sempit / ponsel).
+ */
+export function popupViewRect(box: EdgeRect, popupWidth: number, insetLeft: number, pad = POPUP_VIEW_PAD): EdgeRect {
+  const fits = box.right - box.left - insetLeft >= popupWidth + 2 * pad;
+  return { ...box, left: box.left + (fits ? insetLeft : 0) };
+}
+
+/**
  * Pergeseran `panBy` (px) agar rect popup masuk viewport peta; `[0, 0]` bila
  * sudah utuh. Popup lebih besar dari viewport → prioritaskan tepi kiri/atas
  * (header + tombol close tetap terlihat; sisanya di-scroll internal).
@@ -54,7 +64,12 @@ export function computePopupPan(mapRect: EdgeRect, popupRect: EdgeRect, pad = PO
  * memotong animasi easeTo/fitBounds pemanggil. Kartu juga diberi max-height
  * setinggi viewport peta (scroll internal) sebagai pengaman viewport pendek.
  */
-export function useMapPopupAutoPan(mapRef: RefObject<MapRef | null>, popupKey: string | null) {
+export function useMapPopupAutoPan(
+  mapRef: RefObject<MapRef | null>,
+  popupKey: string | null,
+  /** Lebar (px) panel yang menutupi tepi kiri peta (mis. panel filter melayang) — popup dijaga di kanannya. */
+  insetLeft = 0
+) {
   useEffect(() => {
     if (popupKey == null) return;
     const map = mapRef.current?.getMap();
@@ -67,10 +82,11 @@ export function useMapPopupAutoPan(mapRef: RefObject<MapRef | null>, popupKey: s
       const el = container.querySelector<HTMLElement>(".map-parcel-popup");
       const content = el?.querySelector<HTMLElement>(".maplibregl-popup-content");
       if (!el || !content) return;
-      const mapRect = container.getBoundingClientRect();
-      if (mapRect.height === 0) return;
-      content.style.maxHeight = `${Math.max(160, mapRect.height - 2 * POPUP_VIEW_PAD - 24)}px`;
-      const [dx, dy] = computePopupPan(mapRect, el.getBoundingClientRect());
+      const box = container.getBoundingClientRect();
+      if (box.height === 0) return;
+      content.style.maxHeight = `${Math.max(160, box.height - 2 * POPUP_VIEW_PAD - 24)}px`;
+      const popupRect = el.getBoundingClientRect();
+      const [dx, dy] = computePopupPan(popupViewRect(box, popupRect.width, insetLeft), popupRect);
       if (dx !== 0 || dy !== 0) map.panBy([dx, dy], { duration: 250 });
     };
 
@@ -105,7 +121,7 @@ export function useMapPopupAutoPan(mapRef: RefObject<MapRef | null>, popupKey: s
       observer?.disconnect();
       map.off("idle", clamp);
     };
-  }, [mapRef, popupKey]);
+  }, [mapRef, popupKey, insetLeft]);
 }
 
 /** Offset dasar `MAP_POPUP_PROPS.offset` (anchor bottom) dalam bentuk titik. */
@@ -198,11 +214,14 @@ export function MapPopupHeader({
   accent = "blue",
   icon,
   title,
+  badge,
   rows,
 }: {
   accent?: MapPopupAccent;
   icon: ReactNode;
   title: string;
+  /** Penanda kecil di samping judul (mis. badge UL Mill pemasok). */
+  badge?: ReactNode;
   rows?: { label: string; value: ReactNode; mono?: boolean }[];
 }) {
   return (
@@ -211,7 +230,11 @@ export function MapPopupHeader({
         {icon}
       </div>
       <div className="min-w-0 space-y-0.5">
-        <p className="truncate text-sm font-semibold leading-tight">{title}</p>
+        <div className="flex min-w-0 items-center gap-1.5">
+          {/* Nama panjang (mis. "Perusahaan · Mill") turun ke baris kedua, bukan terpotong satu baris. */}
+          <p className="line-clamp-2 break-words text-sm font-semibold leading-tight" title={title}>{title}</p>
+          {badge && <span className="shrink-0">{badge}</span>}
+        </div>
         {rows && rows.length > 0 && (
           <div className="space-y-0.5 text-[11px] text-muted-foreground">
             {rows.map((r) => (
@@ -237,7 +260,15 @@ export function MapPopupHighlight({ label, value }: { label: string; value: stri
   );
 }
 
-export type MapPopupRow = { label: string; value: unknown; mono?: boolean };
+export type MapPopupRow = {
+  label: string;
+  value: unknown;
+  mono?: boolean;
+  /** Kunci baris bila label bisa kembar (bawaan: label). */
+  id?: string;
+  /** Penanda kecil di samping label (mis. badge UL Mill pemasok). */
+  badge?: ReactNode;
+};
 
 /** Daftar atribut label ↔ nilai (nilai kosong → "—", nilai panjang wrap). */
 export function MapPopupRows({ rows, className }: { rows: MapPopupRow[]; className?: string }) {
@@ -246,9 +277,13 @@ export function MapPopupRows({ rows, className }: { rows: MapPopupRow[]; classNa
       {rows.map((r) => {
         const display = r.value === null || r.value === undefined || r.value === "" ? "—" : String(r.value);
         return (
-          <div key={r.label} className="flex items-start justify-between gap-3">
-            <dt className="shrink-0 text-xs text-muted-foreground">{r.label}</dt>
-            <dd className={cn("min-w-0 break-words text-right text-xs font-medium", r.mono && "font-mono")}>{display}</dd>
+          <div key={r.id ?? r.label} className="flex items-start justify-between gap-3">
+            {/* Baris ber-badge = daftar nama (Mill) + angka pendek: nama yang mengalah/wrap, angka utuh. */}
+            <dt className={cn("flex items-center gap-1.5 text-xs text-muted-foreground", r.badge ? "min-w-0 flex-wrap" : "shrink-0")}>
+              {r.label}
+              {r.badge}
+            </dt>
+            <dd className={cn("break-words text-right text-xs font-medium", r.badge ? "shrink-0" : "min-w-0", r.mono && "font-mono")}>{display}</dd>
           </div>
         );
       })}

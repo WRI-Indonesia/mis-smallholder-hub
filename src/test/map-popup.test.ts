@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computePopupPan, POPUP_VIEW_PAD } from "@/components/shared/map-popup";
+import { computePopupPan, popupViewRect, POPUP_VIEW_PAD } from "@/components/shared/map-popup";
 
 /** Viewport peta 800×600 di origin. */
 const MAP = { left: 0, top: 0, right: 800, bottom: 600 };
@@ -55,5 +55,20 @@ describe("computePopupPan (#222 — popup harus utuh di viewport peta)", () => {
     const [dx, dy] = computePopupPan(map, rect(60, 20, 280, 300));
     expect(dx).toBe(60 - (100 + POPUP_VIEW_PAD));
     expect(dy).toBe(20 - (50 + POPUP_VIEW_PAD));
+  });
+});
+
+describe("popupViewRect — panel melayang menutupi tepi kiri peta", () => {
+  it("sisa lebar cukup → tepi kiri digeser selebar panel, popup didorong ke kanan panel", () => {
+    const view = popupViewRect(MAP, 300, 352);
+    expect(view.left).toBe(352);
+    const [dx] = computePopupPan(view, rect(200, 200, 300, 280));
+    expect(dx).toBe(200 - (352 + POPUP_VIEW_PAD));
+  });
+
+  it("peta sempit (sisa < popup + padding) → abaikan panel agar popup tak terdorong keluar tepi kanan", () => {
+    const narrow = { left: 0, top: 0, right: 600, bottom: 600 };
+    expect(popupViewRect(narrow, 300, 352).left).toBe(0);
+    expect(computePopupPan(popupViewRect(narrow, 300, 352), rect(100, 200, 300, 280))).toEqual([0, 0]);
   });
 });

@@ -30,6 +30,7 @@ const db = vi.hoisted(() => {
     productionRecord: { updateMany: vi.fn() },
     tree: { updateMany: vi.fn() },
     $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
   };
   return m;
 });
@@ -165,5 +166,72 @@ describe("bulkCreateLandParcels — revisi", () => {
     expect(res.success).toBe(true);
     expect(db.landParcel.update).toHaveBeenCalledWith({ where: { id: "lp-1" }, data: { isActive: false } });
     expect(db.landParcel.create.mock.calls.map((c) => c[0].data.revision)).toEqual([0, 1]);
+  });
+});
+
+describe("checkUploadParcelOverlaps — guard tumpang tindih upload (#317 Fase 3)", () => {
+  const poly = JSON.stringify(GEOM_A);
+  const cand = (o: Record<string, unknown> = {}) => ({ rowNum: 2, farmerId: "f-1", parcelId: "HJP.0001.A", geometry: poly, ...o });
+  const raw = (o: Record<string, unknown> = {}) => ({
+    rowNum: 2, source: "DB", otherRowNum: null, intersectionM2: "5000", rowAreaM2: "5000", rowFarmerId: "f-1", rowGroupId: "g-1",
+    otherParcelId: "HJP.0009.A", otherAreaM2: "5000", otherFarmerId: "f-9", otherFarmerCode: "HJP-0009", otherFarmerName: "Petani Fiktif",
+    otherGroupId: "g-2", otherGroupName: "Lembaga Lain", ...o,
+  });
+
+  it("tanpa izin VIEW → ditolak sebelum kueri", async () => {
+    hasPermission.mockResolvedValue(false);
+    const res = await actions.checkUploadParcelOverlaps([cand()]);
+    expect(res.success).toBe(false);
+    expect(hasPermission).toHaveBeenCalledWith("bulk-upload-parcels", "VIEW");
+    expect(db.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("geometri bukan poligon ditolak validasi, tidak sampai ke PostGIS", async () => {
+    const res = await actions.checkUploadParcelOverlaps([cand({ geometry: JSON.stringify({ type: "Point", coordinates: [101, 0] }) })]);
+    expect(res.success).toBe(false);
+    expect(db.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("kueri mengecualikan revisi lahan sendiri & menerapkan scope petani; hasil = pesan per baris", async () => {
+    db.$queryRaw.mockResolvedValue([raw(), raw({ rowNum: 3, intersectionM2: "50", rowAreaM2: "20000", otherAreaM2: "20000" })]);
+    const res = await actions.checkUploadParcelOverlaps([cand(), cand({ rowNum: 3, parcelId: "HJP.0002.A" })]);
+    const sql = (db.$queryRaw.mock.calls[0][0] as TemplateStringsArray).join("?");
+    // Lahan DB yang direvisi baris MANA PUN di berkas tidak diadu (poligon lamanya akan hilang).
+    // Pengecualian revisi dari SEMUA baris valid (cand), termasuk yang geometrinya kosong setelah dibersihkan (review rentang v1.5.0).
+    expect(sql).toContain("NOT EXISTS (SELECT 1 FROM cand r WHERE r.farmer_id = b.farmer_id AND r.parcel_id = b.parcel_id)");
+    expect(sql).toContain("o.row_num > a.row_num");
+    expect(res.success).toBe(true);
+    if (!res.success) return;
+    // Baris 3: irisan 50 m² (< 100 m² dan < 1%) dibuang ambang laporan.
+    expect(Object.keys(res.data!)).toEqual(["2"]);
+    expect(res.data![2][0]).toMatch(/^Tumpang tindih 100% — Duplikat, Lintas Lembaga — dengan lahan HJP\.0009\.A/);
+  });
+
+  it("tanpa izin laporan Tumpang Tindih Lahan: lahan lawan di luar scope disamarkan", async () => {
+    hasPermission.mockImplementation(async (menu: string) => menu === "bulk-upload-parcels");
+    db.$queryRaw.mockResolvedValue([raw({ otherVisible: false })]);
+    const res = await actions.checkUploadParcelOverlaps([cand()]);
+    expect(res.success && res.data![2][0]).toMatch(/dengan lahan terdaftar di Lembaga Lain \(di luar wilayah akses Anda\)$/);
+    expect(JSON.stringify(res)).not.toContain("Petani Fiktif");
+  });
+
+  it("parcelId panjang (DBF 254 karakter) tidak menggagalkan cek; galat validasi menyebut nomor baris", async () => {
+    db.$queryRaw.mockResolvedValue([]);
+    expect((await actions.checkUploadParcelOverlaps([cand({ parcelId: "X".repeat(254) })])).success).toBe(true);
+    const bad = await actions.checkUploadParcelOverlaps([cand({ rowNum: 9, geometry: "{}" })]);
+    expect(bad).toEqual({ success: false, error: "Data cek tumpang tindih tidak valid (baris 9)" });
+  });
+
+  it("galat PostGIS (GeoJSON rusak) → success false tanpa melempar, simpan tetap boleh", async () => {
+    db.$queryRaw.mockRejectedValue(new Error("invalid GeoJSON representation"));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await actions.checkUploadParcelOverlaps([cand()]);
+    expect(res).toEqual({ success: false, error: expect.stringMatching(/tetap bisa disimpan/) });
+    spy.mockRestore();
+  });
+
+  it("daftar kosong → tanpa kueri", async () => {
+    expect(await actions.checkUploadParcelOverlaps([])).toEqual({ success: true, data: {} });
+    expect(db.$queryRaw).not.toHaveBeenCalled();
   });
 });

@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame, Minimize2, MapPinned, Download, Printer, Crosshair } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame, Minimize2, MapPinned, Download, Printer, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { ANCHOR_POPOVER_WIDTH, FilterCombobox } from "@/components/shared/filter-combobox";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { MapData, MapSelectOption, MapGroupOption } from "@/types/map";
 import { MAP_OVERLAYS, type OverlayDef, type OverlayState, type CustomLayer } from "./map-overlays";
 import {
@@ -92,90 +91,6 @@ interface Props {
   /** Titik patok sedang dimuat malas (#331) — spinner di dua baris patok. */
   markerLoading?: boolean;
   helpSlot?: React.ReactNode;
-}
-
-interface ComboboxProps {
-  label: string;
-  required?: boolean;
-  placeholder: string;
-  emptyText: string;
-  options: { id: string; name: string }[];
-  value: string | null;
-  onChange: (val: string | null) => void;
-  /** Filter opsional: item teratas "Semua …" untuk mengosongkan pilihan
-   *  (tanpa ini, pilihan yang sudah dibuat tak bisa dibatalkan). */
-  allLabel?: string;
-  disabled?: boolean;
-}
-
-function FilterCombobox({ label, required, placeholder, emptyText, options, value, onChange, allLabel, disabled }: ComboboxProps) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((o) => o.id === value);
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              disabled={disabled}
-              className="w-full justify-between h-9 font-normal text-left"
-            >
-              {selected ? (
-                <span className="truncate">{selected.name}</span>
-              ) : allLabel && value === null ? (
-                <span className="truncate">{allLabel}</span>
-              ) : (
-                <span className="text-muted-foreground">{placeholder}</span>
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent className="w-[var(--anchor-width)] min-w-[240px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder={placeholder} />
-            <CommandList>
-              <CommandEmpty>{emptyText}</CommandEmpty>
-              <CommandGroup>
-                {allLabel && (
-                  <CommandItem
-                    value={allLabel}
-                    onSelect={() => {
-                      onChange(null);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check className={cn("mr-2 h-4 w-4", value === null ? "opacity-100" : "opacity-0")} />
-                    {allLabel}
-                  </CommandItem>
-                )}
-                {options.map((o) => (
-                  <CommandItem
-                    key={o.id}
-                    value={o.name}
-                    onSelect={() => {
-                      onChange(o.id);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check className={cn("mr-2 h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")} />
-                    {o.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
 }
 
 interface LegendRowProps {
@@ -393,31 +308,37 @@ export function MapControlPanel(props: Props) {
         <CollapsibleContent>
           <div className="flex flex-col gap-3 px-4 pb-4">
             <FilterCombobox
+              widthClass="w-full"
+              popoverWidthClass={ANCHOR_POPOVER_WIDTH}
               label="Provinsi"
               placeholder="Pilih Provinsi"
               allLabel="Semua Provinsi"
-              emptyText="Provinsi tidak ditemukan."
+              emptyLabel="Provinsi tidak ditemukan."
               options={provinces}
               value={provinceId}
-              onChange={onProvinceChange}
+              onSelect={onProvinceChange}
             />
             <FilterCombobox
+              widthClass="w-full"
+              popoverWidthClass={ANCHOR_POPOVER_WIDTH}
               label="Distrik"
               required
               placeholder="Pilih Distrik"
-              emptyText="Distrik tidak ditemukan."
+              emptyLabel="Distrik tidak ditemukan."
               options={districts}
               value={districtId}
-              onChange={onDistrictChange}
+              onSelect={onDistrictChange}
             />
             <FilterCombobox
+              widthClass="w-full"
+              popoverWidthClass={ANCHOR_POPOVER_WIDTH}
               label="Lembaga Petani"
               placeholder="Pilih Lembaga Petani"
               allLabel="Semua Lembaga Petani"
-              emptyText="Lembaga Petani tidak ditemukan."
+              emptyLabel="Lembaga Petani tidak ditemukan."
               options={farmerGroups}
               value={farmerGroupId}
-              onChange={onFarmerGroupChange}
+              onSelect={onFarmerGroupChange}
               disabled={!districtId}
             />
             <Button onClick={onLoad} disabled={isLoading || !districtId} className="mt-1 w-full">

@@ -40,7 +40,7 @@ import { buildLayerReportDoc } from "@/lib/layer-report-pdf";
 import { parseBmpImportRows, resolveBmpImportRows, type BmpImportRawRow } from "@/lib/bmp-assessment";
 import { matchFarmerName, recomputeBmpScore, type BmpIndicatorRef } from "@/lib/bmp-survey-form";
 import { filterPointsWithinAreas } from "@/lib/fire-alert";
-import { buildOverlapRows, filterOverlapRows, overlapFilterOptions, pairCountByParcel, type OverlapRaw } from "@/lib/parcel-overlap";
+import { buildOverlapRows, buildUploadOverlapWarnings, filterOverlapRows, overlapFilterOptions, pairCountByParcel, uploadOverlapMessages, type OverlapRaw, type UploadOverlapRaw } from "@/lib/parcel-overlap";
 import {
   bmpMonevActivityProfile,
   bmpMonevGroupProfiles,
@@ -1278,5 +1278,20 @@ describe("Performance - #317 Tumpang Tindih Lahan (pure logic)", () => {
     expect(rows.length).toBeGreaterThan(15_000);
     expect(options.groups).toHaveLength(60);
     expect(counts.size).toBe(rows.length * 2);
+  });
+
+  // #317 Fase 3: guard bulk upload — berkas 5.000 lahan (batas input) dengan irisan
+  // DB + sesama berkas rata-rata 4 per baris, jauh di atas temuan nyata (83 dari 2.000).
+  it("upload overlap warnings for 20k raw pairs (5k rows) under 100ms", () => {
+    const raws: UploadOverlapRaw[] = Array.from({ length: 20_000 }, (_, i) => ({
+      rowNum: (i % 5_000) + 1, intersectionM2: 50 + ((i * 37) % 9_000), rowAreaM2: 5_000 + (i % 20_000),
+      rowFarmerId: `f${i % 4_000}`, rowGroupId: `g${i % 60}`, source: i % 3 === 0 ? "FILE" : "DB", otherRowNum: i % 3 === 0 ? (i % 4_999) + 1 : null,
+      otherParcelId: `L-${i}`, otherAreaM2: 5_000 + ((i * 13) % 20_000), otherFarmerId: `f${(i * 7) % 4_000}`, otherFarmerCode: `SH-${i}`,
+      otherFarmerName: `Petani ${i}`, otherGroupId: `g${(i * 7) % 60}`, otherGroupName: `Lembaga ${(i * 7) % 60}`,
+    }));
+    const { value: messages, ms: duration } = minTime(() => [...buildUploadOverlapWarnings(raws).values()].map(uploadOverlapMessages));
+    console.log(`  upload overlap warnings (${raws.length} pasangan → ${messages.length} baris): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(100);
+    expect(messages.length).toBe(5_000);
   });
 });

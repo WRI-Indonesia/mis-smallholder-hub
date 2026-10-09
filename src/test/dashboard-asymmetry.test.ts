@@ -228,9 +228,10 @@ describe("Invarian cakupan — BMP Dashboard", () => {
     const { totals } = build();
 
     expect(totals.produksiTon).toBe(10); // 2 + 5 + 3 ton — seluruhnya
-    expect(bmpProductivity(entry)).toBe(5); // 10 ÷ 2 ha
-    // Bila hanya tonase ter-atribusi yang dihitung, angkanya 2 ÷ 2 = 1 Ton/Ha.
-    expect(bmpProductivity(entry)).toBeGreaterThan(1);
+    // 10 ÷ 2 ha = 5, disetahunkan ×12/3 (data 3 bulan, owner 2026-10-08) = 20 Ton/Ha/tahun.
+    expect(bmpProductivity(entry)).toBe(20);
+    // Bila hanya tonase ter-atribusi yang dihitung, angkanya 2 ÷ 2 × 4 = 4 Ton/Ha/tahun.
+    expect(bmpProductivity(entry)).toBeGreaterThan(4);
   });
 
   it("tanpa record bermasalah, produktivitas = tonase ÷ luas yang benar", () => {
@@ -238,7 +239,7 @@ describe("Invarian cakupan — BMP Dashboard", () => {
       { farmerId: "f1", parcelId: "p1", period: "2025-01", kg: 2000 },
     ];
     const entry = buildBmpSnapshotData(bmpGroups, bmpFarmers, bmpParcels, clean).groups[0];
-    expect(bmpProductivity(entry)).toBe(1); // 2 ton ÷ 2 ha
+    expect(bmpProductivity(entry)).toBe(12); // 2 ton ÷ 2 ha, disetahunkan ×12 (data 1 bulan)
   });
 });
 

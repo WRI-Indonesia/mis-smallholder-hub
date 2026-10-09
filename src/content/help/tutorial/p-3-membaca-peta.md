@@ -22,12 +22,12 @@ Hanya lahan yang berasal dari unggahan shapefile yang muncul di peta.
 1. Buka menu **Map → Peta BMP**.
 2. Pilih **Lembaga Petani** pada panel kiri, lalu klik **Muat Data**.
 + Lembaga wajib dipilih karena memuat seluruh poligon sekaligus akan berat. Distrik dan provinsi hanya membantu menyaring daftar lembaganya.
-3. Pilih layer: **Ketersediaan Data Produksi** atau **Produktivitas (Ton/Ha)**.
+3. Pilih layer: **Ketersediaan Data Produksi** atau **Produktivitas (Ton/Ha/tahun)**.
 + Layer pertama menjawab "lahan mana yang datanya lengkap", layer kedua "lahan mana yang hasilnya tinggi". Keduanya memakai data yang sama, hanya cara membacanya berbeda.
 4. Untuk layer Ketersediaan, baca empat kategori warnanya.
 + Kategori dihitung dari berapa bulan berturut-turut sebuah lahan punya catatan produksi: Baik lebih dari dua tahun, Cukup minimal satu tahun, Kurang di bawah satu tahun, dan abu-abu tanpa data sama sekali. Lahan abu-abu adalah daftar kerja pengumpulan data Anda berikutnya.
 5. Untuk layer Produktivitas, pilih **Tahun** atau rata-rata.
-+ Produktivitas dihitung sebagai total produksi tahun itu dibagi luas persil. Lahan yang sedang PSR wajar bernilai rendah atau nol.
++ Produktivitas dihitung sebagai produksi tahun itu yang **disetahunkan**, dibagi luas persil. Disetahunkan artinya tahun yang datanya belum 12 bulan diproyeksikan: produksi × 12 ÷ jumlah bulan yang ada datanya di **Lembaga** itu (mis. data Jan–Jul dikali 12/7) — aturan yang sama dengan BMP Dashboard, jadi angka sebuah lahan di peta bisa dibandingkan langsung dengan Top 10 Lembaga di sana. Lahan yang melapor lebih sedikit bulan daripada Lembaganya tidak ikut diproyeksikan penuh, sehingga tetap terlihat rendah. Lahan yang sedang PSR wajar bernilai rendah atau nol.
 6. Klik sebuah poligon untuk melihat detailnya.
 7. Klik **Cetak Peta …** untuk PDF, atau **Download … (Excel)** untuk tabelnya.
 + Label tombolnya mengikuti layer aktif (mis. **Cetak Peta dan Matriks Ketersediaan Data** / **Download Produktivitas (Excel)**), begitu pula isi keluarannya — termasuk legenda dan tabel datanya, jadi periksa layernya sudah benar sebelum mencetak. Tombol Cetak hanya tampil bila akun Anda punya izin **Print**, dan Download bila punya izin **Export**, pada menu ini.

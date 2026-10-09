@@ -94,6 +94,28 @@ describe("farmerNameFromFileName — nama petani dari nama berkas (identitas uta
     expect(farmerNameFromFileName("FPSSSMBMP - 2026 - Hendri.xlsx")).toBe("Hendri");
     expect(farmerNameFromFileName("folder/Monev  2026 - ASPEK KRE_ Aen Karnila.xlsx")).toBe("Aen Karnila");
   });
+
+  it("pola Kampar: tanpa tahun, '_' tanpa awalan Lembaga = alias/apostrof, '-' tanpa spasi, sisa 'xlsx'", () => {
+    expect(farmerNameFromFileName("Monev BMP - Tegar Pratama.xlsx")).toBe("Tegar Pratama");
+    expect(farmerNameFromFileName(" Monev BMP - Tegar Pratama.xlsx")).toBe("Tegar Pratama");
+    expect(farmerNameFromFileName("Monev BMP -Tegar Pratama.xlsx")).toBe("Tegar Pratama");
+    expect(farmerNameFromFileName("Monev BMP - Joko_Wardani.xlsx")).toBe("Joko/Wardani");
+    expect(farmerNameFromFileName("Monev BMP - Anto_Bayuxlsx.xlsx")).toBe("Anto/Bayu");
+    expect(farmerNameFromFileName("Monev BMP - Zul_ah.xlsx")).toBe("Zul'ah");
+    expect(farmerNameFromFileName("Monev BMP - Ratno_Ahmad Rofi_i.xlsx")).toBe("Ratno/Ahmad Rofi'i");
+    // Temuan review c707365: huruf kapital semua, apostrof berekor panjang, "(1)" sesudah sisa "xlsx", awalan berangka.
+    expect(farmerNameFromFileName("Monev BMP - JOKO_WARDANI.xlsx")).toBe("JOKO/WARDANI");
+    // Review rentang v1.5.0: awalan kode Lembaga + nama huruf besar berspasi tetap dibuang.
+    expect(farmerNameFromFileName("Monev BMP - IM_JOKO WARDANI.xlsx")).toBe("JOKO WARDANI");
+    expect(farmerNameFromFileName("Monev BMP - ASPEK RAS_EDDI MARTUAH.xlsx")).toBe("EDDI MARTUAH");
+    expect(farmerNameFromFileName("Monev BMP - JOKO_WARDANI ADI.xlsx")).toBe("JOKO/WARDANI ADI");
+    expect(farmerNameFromFileName("Monev BMP - ZUL_AH.xlsx")).toBe("ZUL'AH");
+    expect(farmerNameFromFileName("Monev BMP - Ma_ruf.xlsx")).toBe("Ma'ruf");
+    expect(farmerNameFromFileName("Monev BMP - Ade_Budi.xlsx")).toBe("Ade/Budi");
+    expect(farmerNameFromFileName("Monev BMP - Anto_Bayuxlsx(1).xlsx")).toBe("Anto/Bayu");
+    expect(farmerNameFromFileName("Budi Santoso.xlsx(1).xlsx")).toBe("Budi Santoso");
+    expect(farmerNameFromFileName("Monev_2026_Budi Santoso.xlsx")).toBe("Budi Santoso");
+  });
 });
 
 describe("parseBmpSurveyForm", () => {
@@ -147,6 +169,27 @@ describe("parseBmpSurveyForm", () => {
     );
     expect(p.individu.map((x) => [x.code, x.score])).toEqual([["1.2.3.1", null], ["1.2.3.2", null]]);
     expect(p.warnings.filter((w) => w.includes("tidak masuk akal"))).toHaveLength(2);
+  });
+
+  it("template Kampar: sheet individu bernama petani (bukan 'Form Survey Individu') tetap terbaca", () => {
+    const renamed = sheets().map((sh) => (sh.name === "Form Survey Individu" ? { ...sh, name: "Budi Santoso" } : sh));
+    const p = parseBmpSurveyForm("Monev BMP - Budi Santoso.xlsx", renamed, INDICATORS);
+    expect(p.individu.map((x) => [x.code, x.score])).toEqual([["1.1.1.1", 2], ["1.2.3.1", 2], ["1.2.3.2", 2]]);
+    expect(p.warnings).toEqual(['Sheet individu dibaca dari sheet "Budi Santoso"']);
+    // Salinan sheet Lembaga tidak pernah dianggap sheet individu.
+    const lemCopy = sheets().filter((sh) => sh.name !== "Form Survey Individu");
+    lemCopy.push({ ...lemCopy.find((sh) => sh.name === "Form Survey Lembaga")!, name: "Form Survey Lembaga (2)" });
+    expect(parseBmpSurveyForm("Monev BMP - Budi Santoso.xlsx", lemCopy, INDICATORS).individu).toEqual([]);
+    // Dua sheet tak dikenal yang sama-sama berisi kode kriteria → tidak menebak.
+    const twoUnknown = [...renamed, { ...renamed.find((sh) => sh.name === "Budi Santoso")!, name: "Salinan" }];
+    expect(parseBmpSurveyForm("Monev BMP - Budi Santoso.xlsx", twoUnknown, INDICATORS).individu).toEqual([]);
+  });
+
+  it("nama berkas alias 'A/B': header yang cocok salah satu alias bukan konflik", () => {
+    const p = parseBmpSurveyForm("Monev BMP - Joko_Budi Santoso.xlsx", sheets(), INDICATORS);
+    expect(p.fileFarmerName).toBe("Joko/Budi Santoso");
+    expect(p.warnings.some((w) => w.startsWith("Nama di header"))).toBe(false);
+    expect(parseBmpSurveyForm("Monev BMP - Joko_Wardani.xlsx", sheets(), INDICATORS).warnings.some((w) => w.startsWith("Nama di header"))).toBe(true);
   });
 
   it("indikator master yang tak ada di sheet dilaporkan; sheet hilang dilaporkan", () => {
@@ -246,5 +289,20 @@ describe("pencocokan nama petani", () => {
     expect(matchFarmerName("Suparman", twins, { preferIds: new Set(["w1", "w2"]) })).toMatchObject({ farmerDbId: null, confidence: "AMBIGUOUS" });
     expect(matchFarmerName("Zulkifli Nasution", farmers)).toMatchObject({ farmerDbId: null, confidence: "NONE" });
     expect(matchFarmerName(null, farmers)).toMatchObject({ farmerDbId: null, confidence: "NONE" });
+  });
+
+  it("alias 'A/B' dari nama berkas Kampar: alias yang EXACT menang; dua alias EXACT beda petani → AMBIGUOUS; tak ada → NONE", () => {
+    expect(matchFarmerName("Joko/Sri Wahyuni", farmers)).toMatchObject({ farmerDbId: "g", confidence: "EXACT" });
+    // Review rentang v1.5.0: alias dicoba dulu sebagai SATU nama — "Sri/Wahyuni" = "Sri Wahyuni",
+    // bukan petani lain bernama "Sri" saja.
+    const withSri = [...farmers, { farmerDbId: "s", name: "Sri", farmerCode: "X.9" }];
+    expect(matchFarmerName("Sri/Wahyuni", withSri)).toMatchObject({ farmerDbId: "g", confidence: "EXACT" });
+    expect(matchFarmerName("Joko/Rusdhi", farmers)).toMatchObject({ farmerDbId: "a", confidence: "FUZZY" });
+    expect(matchFarmerName("Rusdi/Sri Wahyuni", farmers)).toMatchObject({ farmerDbId: null, confidence: "AMBIGUOUS" });
+    expect(matchFarmerName("Joko/Zulkifli Nasution", farmers)).toMatchObject({ farmerDbId: null, confidence: "NONE" });
+    // Temuan review c707365: alias lain yang menunjuk petani lain / ganda tidak boleh dibuang.
+    expect(matchFarmerName("Sri Wahyuni/Rusdhi", farmers)).toMatchObject({ farmerDbId: null, confidence: "AMBIGUOUS" });
+    expect(matchFarmerName("Hendra/Rusdhi", farmers)).toMatchObject({ farmerDbId: null, confidence: "AMBIGUOUS" });
+    expect(matchFarmerName("Sri Wahyuni/Sri wahyuni", farmers)).toMatchObject({ farmerDbId: "g", confidence: "EXACT" });
   });
 });
