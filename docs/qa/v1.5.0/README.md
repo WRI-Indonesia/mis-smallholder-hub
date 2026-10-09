@@ -11,11 +11,20 @@
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v1.5.0`)
 
-_(belum ada run)_
+| Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
+|---|---|---:|---:|---:|---:|---:|
+| 2026-10-09-local.md | Smoke | 12 | 0 | 2 | 1 | 0 |
+| 2026-10-09-local.md | Kasus uji | 8 | 0 | 2 | 0 | 0 |
+| 2026-10-09-local.md | Regresi | 0 | 0 | 3 | 0 | 0 |
+| 2026-10-09-staging.md | Smoke | 0 | 0 | 0 | 0 | 35 |
+| 2026-10-09-staging.md | Kasus uji | 0 | 0 | 0 | 0 | 19 |
+| 2026-10-09-staging.md | Regresi | 0 | 0 | 0 | 0 | 9 |
+
+Run lokal (P0, SUPERADMIN, `mis-dev`): Blocked = butuh login OPERATOR/DONOR (SM-28/29, TC-317-04), unduhan Excel (TC-402-04), dan regresi area tak tersentuh — semuanya dialihkan ke run staging oleh owner.
 
 ## Keputusan
 
-**Go / No-go:** … (tanggal, oleh siapa) — syarat: run staging semua P0 Pass; pembaca dashboard diberi tahu bahwa angka produktivitas berubah (Ton/Ha → Ton/Ha/tahun).
+**Go** (2026-10-09, owner) — atas dasar run lokal P0 (20 Pass · 0 Fail · 7 Blocked) + data-qc staging ✓ + deploy staging hijau; uji browser staging peran OPERATOR/DONOR **tidak dijalankan** — kasus Blocked dibawa ke run prod `--only P0`. Syarat: pembaca dashboard diberi tahu bahwa angka produktivitas berubah (Ton/Ha → Ton/Ha/tahun).
 
 ## Known issues yang dibawa
 

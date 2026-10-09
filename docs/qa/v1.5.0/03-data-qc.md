@@ -18,6 +18,6 @@ Berkas ini hanya menjelaskan **maksud** tiap cek dan harapannya; bila cek beruba
 | C1 | Izin | menu & izin baru rilis ini ter-seed (cek per menu di `data-qc.ts`) | = `menu.csv` / `role-permissions.csv` | ✓ |
 | — | Izin | seluruh izin seed ↔ DB | `npm run rbac:compare` 0 selisih (atau selisih yang disengaja tercatat) | manual (skrip terpisah) |
 
-v1.5.0 **tanpa migrasi & tanpa seed** — tidak ada cek baru. Jalankan bagian B (angka bisnis tak berubah oleh deploy) dan ulangi H (izin v1.4.0 tetap utuh). Catatan run lokal 2026-10-09 (`mis-dev`): **B9 ✗** (counter patok ≠ nomor terbesar di 30 awalan) dan **H6 ✗** (`map-supply-chain` 17 izin, harapan 16) — keadaan data DB lokal, bukan kode rentang ini; periksa ulang di staging.
+v1.5.0 **tanpa migrasi & tanpa seed** — tidak ada cek baru. Jalankan bagian B (angka bisnis tak berubah oleh deploy) dan ulangi H (izin v1.4.0 tetap utuh). Run 2026-10-09: **staging semua ✓**. **B9** diubah ekspektasinya menjadi *counter ≥ nomor terbesar* (syarat keamanan: tak ada kode patok bentrok) — sebelumnya menuntut "sama" sehingga ✗ palsu pada celah nomor yang sah (1 awalan, sisa wipe APKASDU 2026-10-02 yang sengaja mempertahankan counter). **H6** ✗ hanya di `mis-dev` lokal (17 izin `map-supply-chain`, staging 16) — drift DB lokal, bukan kode.
 
 Jalankan: `npx dotenv -e .env.<env> -- npx tsx scripts/qa/data-qc.ts --section B,H` (B = angka bisnis tak berubah).
