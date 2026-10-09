@@ -14,6 +14,7 @@ import {
 } from "@/lib/access-context";
 import { getFarmerOptions } from "@/lib/select-options";
 import { summarizeProduction } from "@/lib/map-data";
+import { fetchFarmerDataMonths } from "@/lib/production-data-months-query";
 import { fetchParcelPassport } from "@/lib/parcel-passport-query";
 import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
 import type { ActionResult } from "@/types/action-result";
@@ -147,16 +148,20 @@ export async function getLandParcelProduction(id: string): Promise<ProductionSum
 
   const parcel = await prisma.landParcel.findFirst({
     where: { id, ...farmerRelationAccessFilter(access) },
-    select: { id: true },
+    select: { id: true, farmerId: true, farmer: { select: { farmerGroupId: true } } },
   });
   if (!parcel) return null;
 
-  const records = await prisma.productionRecord.findMany({
-    where: { parcelId: id, isActive: true },
-    select: { period: true, yieldKg: true },
-  });
+  const [records, dataMonthsByYear] = await Promise.all([
+    prisma.productionRecord.findMany({
+      where: { parcelId: id, isActive: true },
+      select: { period: true, yieldKg: true },
+    }),
+    // Ton/Ha/tahun (owner 2026-10-08): definisi bulan yang sama dengan detail/Profil Petani.
+    fetchFarmerDataMonths(parcel.farmer.farmerGroupId, parcel.farmerId),
+  ]);
 
-  return summarizeProduction(records);
+  return { ...summarizeProduction(records), dataMonthsByYear };
 }
 
 /**

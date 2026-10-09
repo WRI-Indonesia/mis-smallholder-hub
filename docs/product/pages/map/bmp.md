@@ -12,7 +12,7 @@ Halaman: Peta BMP (/admin/map/bmp)
 │   ├── Empty state: Petunjuk awal
 │   ├── Layer: Ketersediaan Data Produksi (radio)
 │   │   └── Legenda ketersediaan: Baik · Cukup · Kurang · Tidak ada data
-│   ├── Layer: Produktivitas (Ton/Ha) (radio)
+│   ├── Layer: Produktivitas (Ton/Ha/tahun) (radio)
 │   │   ├── Filter: Tahun
 │   │   └── Legenda produktivitas: Tinggi · Sedang · Rendah · Sangat Rendah · Tidak ada data
 │   └── Tombol: Cetak Peta (PDF) · Download Excel
@@ -59,11 +59,11 @@ Halaman: Peta BMP (/admin/map/bmp)
 | Petunjuk awal | Empty state | Sebelum data dimuat: "Pilih Lembaga Petani lalu klik Muat Data untuk menampilkan peta." |
 | Ketersediaan Data Produksi | Layer tematik (radio) | Section dengan radio "Aktifkan layer ini"; mewarnai poligon persil berdasarkan kategori |
 | Legenda ketersediaan | Legend | Baik (> 2 tahun) `#22c55e`, Cukup (min. 1 tahun) `#eab308`, Kurang (< 1 tahun) `#f97316`, Tidak ada data `#9ca3af` (outline saja); tiap baris checkbox filter + jumlah persil; catatan "Kategori dihitung dari run bulan berturut-turut produksi yang tertaut ke lahan." |
-| Produktivitas (Ton/Ha) | Layer tematik (radio) | Section alternatif pewarnaan poligon yang sama |
+| Produktivitas (Ton/Ha/tahun) | Layer tematik (radio) | Section alternatif pewarnaan poligon yang sama. Nilai per persil = Σ kg tahun itu × 12 ÷ bulan ber-data **Lembaga** tahun itu ÷ luas (`parcelProductivity` + `monthsByYear` dari `getBmpMapData` → `fetchGroupDataMonths`; aturan `productivity-annualize.ts` = BMP Dashboard, owner 2026-10-08). Rata-rata = rata-rata antar tahun terdata dari nilai yang sudah disetahunkan |
 | Tahun | Filter (select) | "Rata-rata" atau tahun tersedia |
-| Legenda produktivitas | Legend | Tinggi (min. 20 Ton/Ha) `#16a34a`, Sedang (15–20 Ton/Ha) `#eab308`, Rendah (10–15 Ton/Ha) `#f97316`, Sangat Rendah (< 10 Ton/Ha) `#dc2626`, Tidak ada data `#9ca3af`; checkbox filter + jumlah; catatan "Produktivitas = produksi tahun terpilih ÷ luas persil (Rata-rata = rata-rata antar tahun terdata). Produksi tanpa tautan lahan tidak dihitung." |
+| Legenda produktivitas | Legend | Tinggi (min. 20 Ton/Ha) `#16a34a`, Sedang (15–20 Ton/Ha) `#eab308`, Rendah (10–15 Ton/Ha) `#f97316`, Sangat Rendah (< 10 Ton/Ha) `#dc2626`, Tidak ada data `#9ca3af`; checkbox filter + jumlah; ambang kelas dalam Ton/Ha/tahun; catatan "Produktivitas = produksi tahun terpilih disetahunkan (× 12 ÷ bulan ber-data Lembaga pada tahun itu, sama dengan BMP Dashboard) ÷ luas persil; Rata-rata = rata-rata antar tahun terdata. Produksi tanpa tautan lahan tidak dihitung." |
 | Cetak Peta dan Matriks Ketersediaan Data / Cetak Peta dan Tabel Produktivitas | Tombol | Label mengikuti layer aktif; snapshot canvas peta + legenda + halaman data → PDF (`generateBmpMapPdf`), file `peta-bmp-{kt}.pdf` / `peta-bmp-produktivitas-{kt}.pdf`; gagal capture → "Gagal mengambil gambar peta. Coba basemap StreetMap/Light/Dark (bukan Satellite/Hybrid)." — digate izin `PRINT` (#245) |
-| Download Ketersediaan Data (Excel) / Download Produktivitas (Excel) | Tombol | Label mengikuti layer aktif; ekspor `exportToExcel` — sheet "Ketersediaan Data" (Nama, ID Petani, ID Lahan, Status Ketersediaan Data, Luas Lahan (Ha), kolom per bulan) atau "Produktivitas" (Nama, ID Petani, ID Lahan, Luas Lahan (Ha), kolom per tahun Ton/Ha, Rata-rata) — digate izin `EXPORT` (#245) |
+| Download Ketersediaan Data (Excel) / Download Produktivitas (Excel) | Tombol | Label mengikuti layer aktif; ekspor `exportToExcel` — sheet "Ketersediaan Data" (Nama, ID Petani, ID Lahan, Status Ketersediaan Data, Luas Lahan (Ha), kolom per bulan) atau "Produktivitas" (Nama, ID Petani, ID Lahan, Luas Lahan (Ha), kolom per tahun `{tahun} (Ton/Ha/tahun)`, `Rata-rata (Ton/Ha/tahun)` — disetahunkan sama dengan peta) — digate izin `EXPORT` (#245) |
 | Area lahan | Layer peta | Hanya poligon (fill + outline) sesuai warna layer aktif; kategori "Tidak ada data" outline saja; tanpa layer titik centroid |
 | Label nama petani | Layer peta | Nama petani di dalam poligon bila muat pada zoom saat itu |
 | Ketersediaan Data per Lahan | Panel matriks (kanan atas) | Default minimize (tombol "Buka tabel ketersediaan data"); judul + jumlah persil; tombol "Minimalkan" |
@@ -75,7 +75,7 @@ Halaman: Peta BMP (/admin/map/bmp)
 | Popup Lahan BMP | Popup | Header hijau ikon `Sprout`: nama petani, ID Petani, ID Lahan, Lembaga Petani; bisa digeser via pegangan drag di puncak kartu (`useMapPopupDrag`/`MapPopupDragHandle`, pola Peta Lahan) |
 | Popup › Ketersediaan Data | Baris popup | Badge kategori (Baik/Cukup/Kurang/Tidak ada data) |
 | Popup › Produktivitas | Baris popup | Badge kelas produktivitas + label tampilan (tahun / rata-rata); hanya bila layer produktivitas dihitung |
-| Popup › Detail Lahan | Section popup | Terbuka default: Luas, Tahun Tanam, Komoditas, Status Lahan, Run Bulan Berturut, Periode Awal, Periode Akhir, Produktivitas (Ton/Ha), dan Tahun Terdata (mode rata-rata) atau Bulan Terdata `n/12` |
+| Popup › Detail Lahan | Section popup | Terbuka default: Luas, Tahun Tanam, Komoditas, Status Lahan, Run Bulan Berturut, Periode Awal, Periode Akhir, Produktivitas (Ton/Ha/tahun), dan Tahun Terdata (mode rata-rata) atau Bulan Terdata `n/12` |
 | Popup › Produksi Bulanan | Section popup | Grafik dari data per periode yang sudah tertanam di fitur (tanpa fetch tambahan) |
 | Catatan kaki popup | Teks | "Kategori dari run bulan berturut-turut produksi yang tertaut ke lahan." |
 | Aksi popup Lahan BMP | Footer popup | `ParcelPopupActions`: tombol "Lihat Detail" (link `/admin/master-data/parcels/{id}`, gate `hasPermission("master-data-parcels", "VIEW")`) dan "Edit Lahan" (gate EDIT, membuka modal edit); footer tak dirender bila keduanya false |

@@ -4,6 +4,7 @@ import { centroid } from "@turf/turf";
 import type { Polygon, MultiPolygon } from "geojson";
 import { prisma } from "@/lib/prisma";
 import { fetchFarmerMarkerPoints, fetchFarmerMarkerStats, type MarkerPoint } from "@/lib/land-marker-query";
+import { fetchFarmerDataMonths } from "@/lib/production-data-months-query";
 import { nktAffectedStatusWhere, summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
@@ -221,7 +222,11 @@ export async function getFarmerDetail(id: string) {
   if (!farmer) return null;
   // Patok (#331/#335): hitungan KPI SESUDAH scope lolos — dulu kueri titik tanpa scope
   // jalan sejajar lalu dibuang untuk id di luar cakupan (review #339). Titik dimuat malas.
-  const markerStats = await fetchFarmerMarkerStats(farmer.id);
+  // Bulan ber-data Lembaga petani ini — penyetahunan produktivitas (owner 2026-10-08).
+  const [markerStats, groupDataMonths] = await Promise.all([
+    fetchFarmerMarkerStats(farmer.id),
+    fetchFarmerDataMonths(farmer.farmerGroupId, farmer.id),
+  ]);
 
   const detail = buildFarmerDetail(
     {
@@ -252,6 +257,7 @@ export async function getFarmerDetail(id: string) {
         postTestScore: tp.postTestScore,
       })),
       productionRecords: farmer.productionRecords,
+      groupDataMonths,
     },
     trainingPackages,
   );
@@ -367,6 +373,7 @@ export async function getFarmerProfilePassport(
         isActive: true,
         createdAt: true,
         modifiedAt: true,
+        farmerGroupId: true,
         farmerGroup: {
           select: {
             name: true,
@@ -431,12 +438,16 @@ export async function getFarmerProfilePassport(
   const parcelIds = farmer.landParcels.map((p) => p.id);
   const parcelUids = farmer.landParcels.map((p) => p.parcelUid);
   // Pohon & patok per lahan: hitungan groupBy (pola #335) — jangan memuat titiknya.
-  const [treeCounts, markerCounts] = parcelIds.length
-    ? await Promise.all([
-        prisma.tree.groupBy({ by: ["landParcelId"], where: { landParcelId: { in: parcelIds }, isActive: true }, _count: { _all: true } }),
-        prisma.landParcelMarker.groupBy({ by: ["parcelUid"], where: { parcelUid: { in: parcelUids }, isActive: true }, _count: { _all: true } }),
-      ])
-    : [[], []];
+  const [[treeCounts, markerCounts], groupDataMonths] = await Promise.all([
+    parcelIds.length
+      ? Promise.all([
+          prisma.tree.groupBy({ by: ["landParcelId"], where: { landParcelId: { in: parcelIds }, isActive: true }, _count: { _all: true } }),
+          prisma.landParcelMarker.groupBy({ by: ["parcelUid"], where: { parcelUid: { in: parcelUids }, isActive: true }, _count: { _all: true } }),
+        ])
+      : Promise.resolve([[], []] as const),
+    // Bulan ber-data Lembaga — penyetahunan produktivitas, sama dengan layar (owner 2026-10-08).
+    fetchFarmerDataMonths(farmer.farmerGroupId, farmer.id),
+  ]);
   const treeCountByParcel = new Map(treeCounts.map((r) => [r.landParcelId, r._count._all]));
   const markerCountByUid = new Map(markerCounts.map((r) => [r.parcelUid, r._count._all]));
 
@@ -469,6 +480,7 @@ export async function getFarmerProfilePassport(
         postTestScore: tp.postTestScore,
       })),
       productionRecords: farmer.productionRecords,
+      groupDataMonths,
     },
     trainingPackages,
   );
@@ -528,7 +540,7 @@ export async function getFarmerProfilePassport(
       const training = await computeFarmerTrainingItems(farmer.id);
       for (let i = 0; i < mapped.length; i += PROFILE_PASSPORT_CONCURRENCY) {
         const chunk = mapped.slice(i, i + PROFILE_PASSPORT_CONCURRENCY);
-        const results = await Promise.all(chunk.map((p) => fetchParcelPassport(p.id, true, { access, training, includeInactiveFarmer: superAdmin && !farmer.isActive })));
+        const results = await Promise.all(chunk.map((p) => fetchParcelPassport(p.id, true, { access, training, includeInactiveFarmer: superAdmin && !farmer.isActive, groupDataMonths })));
         for (const r of results) {
           if (!r.success || !r.data) return { success: false, error: r.success ? "Data lahan tidak ditemukan" : r.error };
           parcelPassports.push(r.data);

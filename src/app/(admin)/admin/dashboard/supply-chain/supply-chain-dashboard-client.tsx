@@ -34,6 +34,7 @@ import {
 import { SupplyChainSankey, channelColor, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { SupplyChainFilterBar } from "./supply-chain-filter-bar";
 import { useSupplyChainFilters } from "./use-supply-chain-filters";
+import { UlBadge } from "./ul-badge";
 
 const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 const pct = (part: number, total: number) => (total > 0 ? `${formatPct(Math.round((part / total) * 1000) / 10)}%` : "—");
@@ -156,7 +157,7 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
 
   const cards = [
     {
-      title: "TBS Dideklarasikan",
+      title: "TBS",
       value: fmtTon(summary.totalTon),
       sub: <>dari <StatEmph kind="total">{formatNumber(summary.groupCount)}</StatEmph> Lembaga · survei {f.year ?? "—"}</>,
       icon: Weight,
@@ -165,7 +166,7 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
     {
       title: "Ke Mill Pemasok UL",
       value: fmtTon(summary.ulTon),
-      sub: <><StatEmph kind="percent">{pct(summary.ulTon, summary.totalTon)}</StatEmph> dari tonase dideklarasikan</>,
+      sub: <><StatEmph kind="percent">{pct(summary.ulTon, summary.totalTon)}</StatEmph> dari TBS</>,
       icon: Factory,
       iconClass: "text-sky-600",
     },
@@ -461,7 +462,8 @@ function MillTable({ rows, total, onSelect }: { rows: MillVolumeRow[]; total: nu
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">
               <th className="py-2 pr-3 font-medium">Mill</th>
-              <th className="py-2 pr-3 font-medium w-[38%]">Tonase</th>
+              <th className="py-2 pr-3 font-medium">Distrik</th>
+              <th className="py-2 pr-3 font-medium w-[34%]">Tonase</th>
               <th className="py-2 pr-3 text-right font-medium">Porsi</th>
               <th className="py-2 pr-3 text-right font-medium">Lembaga</th>
               <th className="py-2 text-right font-medium">Offtaker</th>
@@ -481,9 +483,10 @@ function MillTable({ rows, total, onSelect }: { rows: MillVolumeRow[]; total: nu
                     <span className="inline-flex items-center gap-1.5">
                       <Icon className={cn("h-3.5 w-3.5 shrink-0", className)} aria-label={MILL_STATUS_LABEL[m.status]} />
                       <span className="font-medium group-hover:text-primary">{m.name}</span>
-                      {m.isUl && <Badge className="h-4 px-1.5 text-[10px]">UL</Badge>}
+                      {m.isUl && <UlBadge />}
                     </span>
                   </td>
+                  <td className="whitespace-nowrap py-1.5 pr-3 text-muted-foreground">{m.district ?? "—"}</td>
                   <td className="py-1.5 pr-3">
                     {m.ton > 0 ? (
                       <div className="flex items-center gap-2">

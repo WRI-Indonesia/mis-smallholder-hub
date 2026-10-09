@@ -10,7 +10,7 @@ import {
   xmlEscape,
 } from "@/lib/training-benefit-chart";
 import { buildTrainingBenefitWorkbook, type BenefitExcelInput } from "@/lib/training-benefit-xlsx";
-import type { TrainingBenefitRow, TrainingBenefitYear } from "@/lib/training-dashboard-aggregation";
+import { trainingBenefitDetailRows, type TrainingBenefitRow, type TrainingBenefitYear } from "@/lib/training-dashboard-aggregation";
 import type { TrainingGroupEntry, TrainingPackageCode } from "@/types/dashboard";
 
 // Angka fiktif — BUKAN angka kontrak sebenarnya (repo publik).
@@ -92,11 +92,49 @@ describe("SVG ekspor", () => {
   });
 });
 
-describe("Workbook Training Benefit (2 sheet: Capaian · Kontrak)", () => {
+describe("trainingBenefitDetailRows — tahun dilatih per petani (sheet Detail)", () => {
+  // ID & nama fiktif (repo publik).
+  const g2: TrainingGroupEntry = {
+    id: "g2", name: "Lembaga B", code: "B", category: "SWADAYA", districtId: "d2", districtName: "Kampar", totalFarmers: 3,
+    activities: [
+      act("PAKET_2_MK", "2024-05-01", ["x"]),
+      act("PAKET_2_MK", "2026-01-10", ["x"]),
+      act("PAKET_2_MK", "2026-03-10", ["x"]), // tahun sama → satu kali
+      act("PAKET_1_BMP_PC_RSPO_NKT", "2027-01-01", ["x"]), // setelah tahun berjalan → diabaikan
+      act("LAINNYA" as TrainingPackageCode, "2025-01-01", ["y"]), // paket di luar 4 kolom
+    ],
+  };
+  const farmers = [
+    { id: "y", farmerId: "B-0002", gender: "F" as const, farmerGroupId: "g2" },
+    { id: "x", farmerId: "B-0010", gender: "M" as const, farmerGroupId: "g2" },
+    { id: "z", farmerId: "B-0003", gender: "F" as const, farmerGroupId: "g2" },
+    { id: "a", farmerId: "A-0001", gender: "M" as const, farmerGroupId: "g" },
+    { id: "q", farmerId: "Q-1", gender: "M" as const, farmerGroupId: "luar-scope" },
+  ];
+  const detail = trainingBenefitDetailRows([g2, ...groups], farmers, 2026);
+
+  it("semua petani aktif (termasuk belum dilatih), urut Distrik → Lembaga → ID Petani (numerik)", () => {
+    expect(detail.map((r) => r.farmerCode)).toEqual(["A-0001", "B-0002", "B-0003", "B-0010"]);
+    expect(detail[0]).toMatchObject({ district: "D", group: "g" });
+  });
+
+  it("tahun unik & urut per paket; > tahun berjalan dan paket lain diabaikan", () => {
+    const x = detail.find((r) => r.farmerCode === "B-0010")!;
+    expect(x.years).toEqual([[], [2024, 2026], [], []]);
+    expect(detail.find((r) => r.farmerCode === "B-0002")!.years).toEqual([[], [], [], []]);
+    expect(detail.find((r) => r.farmerCode === "A-0001")!.years[0]).toEqual([2025]);
+  });
+});
+
+describe("Workbook Training Benefit (3 sheet: Capaian · Kontrak · Detail)", () => {
   const base: BenefitExcelInput = {
     years, rows, any, currentYear: 2026, filterActive: true,
     contract: { baselineYear: grid.baselineYear, years: grid.years, rows: contractRows },
     images: {},
+    detail: [
+      { district: "Kampar", group: "Lembaga B", farmerCode: "B-0010", gender: "M", years: [[], [2024, 2026], [], [2025]] },
+      { district: "Kampar", group: "Lembaga B", farmerCode: "B-0002", gender: "F", years: [[], [], [], []] },
+    ],
   };
   const roundTrip = async (input: BenefitExcelInput) => {
     const wb = new ExcelJS.Workbook();
@@ -104,9 +142,9 @@ describe("Workbook Training Benefit (2 sheet: Capaian · Kontrak)", () => {
     return wb;
   };
 
-  it("sheet Capaian · Kontrak (owner 2026-10-07), tabel mulai di baris 1", async () => {
+  it("sheet Capaian · Kontrak · Detail (owner 2026-10-07/08), tabel mulai di baris 1", async () => {
     const wb = await roundTrip(base);
-    expect(wb.worksheets.map((w) => w.name)).toEqual(["Capaian", "Kontrak"]);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Capaian", "Kontrak", "Detail"]);
     const ws = wb.getWorksheet("Capaian")!;
     expect(ws.getRow(1).getCell(1).value).toBe("Package");
     expect(ws.getRow(3).values).toEqual([undefined, "P1 | BMP, P&C RSPO, HCV", 50, 50, 20, 70, 10, 80]);
@@ -122,6 +160,19 @@ describe("Workbook Training Benefit (2 sheet: Capaian · Kontrak)", () => {
     expect(texts.some((t) => t.startsWith("Filter Distrik/Lembaga aktif"))).toBe(true);
   });
 
+  it("Detail: satu tahun = angka, lebih dari satu dipisah \"; \", \"-\" = belum, header + filter", async () => {
+    const ws = (await roundTrip(base)).getWorksheet("Detail")!;
+    expect(ws.getRow(1).values).toEqual([undefined, "Distrik", "Lembaga", "ID Petani", "Gender", "P1", "P2-GroupDynamic", "P2-HSE", "P3&4"]);
+    expect(ws.getRow(2).values).toEqual([undefined, "Kampar", "Lembaga B", "B-0010", "Laki-laki", "-", "2024; 2026", "-", 2025]);
+    expect(ws.getRow(3).values).toEqual([undefined, "Kampar", "Lembaga B", "B-0002", "Perempuan", "-", "-", "-", "-"]);
+    expect(ws.autoFilter).toBeTruthy();
+  });
+
+  it("daftar petani gagal dimuat → sheet Detail berisi pesan", async () => {
+    const ws = (await roundTrip({ ...base, detail: null })).getWorksheet("Detail")!;
+    expect(String(ws.getRow(1).getCell(1).value)).toMatch(/gagal dimuat/);
+  });
+
   it("tanpa target → sheet Kontrak berisi pesan", async () => {
     const ws = (await roundTrip({ ...base, contract: null })).getWorksheet("Kontrak")!;
     expect(String(ws.getRow(1).getCell(1).value)).toMatch(/^Belum ada target kontrak/);
@@ -135,5 +186,15 @@ describe("Workbook Training Benefit (2 sheet: Capaian · Kontrak)", () => {
     expect(img.range.tl.nativeRow).toBeGreaterThanOrEqual(capaian.rowCount - 1);
     expect(img.range.tl.nativeRow).toBeGreaterThan(4); // 2 baris header + 3 baris data
     expect(wb.getWorksheet("Kontrak")!.getImages()).toHaveLength(1);
+  });
+});
+
+describe("trainingBenefitFarmersSchema — input Server Action sheet Detail", () => {
+  it("buang duplikat, tolak array raksasa & bukan string", async () => {
+    const { trainingBenefitFarmersSchema } = await import("@/validations/dashboard-training.schema");
+    expect(trainingBenefitFarmersSchema.parse(["a", "b", "a"])).toEqual(["a", "b"]);
+    expect(trainingBenefitFarmersSchema.safeParse(Array.from({ length: 501 }, (_, i) => `g${i}`)).success).toBe(false);
+    expect(trainingBenefitFarmersSchema.safeParse([1]).success).toBe(false);
+    expect(trainingBenefitFarmersSchema.safeParse("g").success).toBe(false);
   });
 });

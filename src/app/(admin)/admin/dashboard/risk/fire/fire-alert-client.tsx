@@ -29,6 +29,7 @@ import {
   formatHotspotMonth,
   formatHotspotRange,
   hotspotWindowStart,
+  gibsImageryDate,
   indexBoundaries,
   multiPolygonBbox,
   summarizeByNamedArea,
@@ -130,6 +131,9 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
   // Cakupan periode dari proxy (sumber SP/NRT, tanggal kosong) — hanya mode Bulan.
   const [coverage, setCoverage] = useState<HotspotCoverage | null>(null);
   const [classified, setClassified] = useState<FeatureCollection | null>(null);
+  // Tanggal latar GIBS (#290) — dihitung bersama data yang BARU termuat (bukan memo
+  // atas `month` + `classified` lama: selama bulan baru dimuat, keduanya tak sepadan).
+  const [gibsDate, setGibsDate] = useState(() => gibsImageryDate(null, { now: new Date(), month: null }));
   const [loading, setLoading] = useState(true);
   const [printScope, setPrintScope] = useState<FirePrintScope>("riau");
   const [printing, setPrinting] = useState(false);
@@ -156,13 +160,17 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
         });
     load
       .then((fc) => {
-        setClassified(classifyHotspots(filterPointsWithinAreas(fc, clipAreas), indexed));
+        const next = classifyHotspots(filterPointsWithinAreas(fc, clipAreas), indexed);
+        setClassified(next);
+        setGibsDate(gibsImageryDate(next, { now: new Date(), month }));
         setLoading(false);
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
         console.warn("Fire alert fetch failed:", err);
         setClassified(null);
+        // Tanggal GIBS ikut periode yang DIPILIH, bukan periode terakhir yang berhasil dimuat.
+        setGibsDate(gibsImageryDate(null, { now: new Date(), month }));
         // Tanpa ini, sumber & daftar tanggal kosong milik bulan SEBELUMNYA
         // tetap tercetak di bawah label bulan yang baru dipilih.
         setCoverage(null);
@@ -524,6 +532,7 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
           registerZoomTo={registerZoomTo}
           selectedGroupId={selectedGroupId}
           onSelectGroup={setSelectedGroupId}
+          gibsDate={gibsDate}
         />
       </div>
       {/* 1/4 panel info */}

@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 import { TRAINING_PACKAGE_ORDER } from "@/lib/training-dashboard-aggregation";
+import { trainingBenefitFarmersSchema } from "@/validations/dashboard-training.schema";
+import type { ActionResult } from "@/types/action-result";
 import type {
+  TrainingBenefitFarmer,
   TrainingDashboardView,
   TrainingGroupEntry,
   TrainingPackageCode,
@@ -214,4 +217,32 @@ export async function getUntrainedFarmers(
     ...f,
     lastTrainedOtherYear: lastYearByFarmer.get(f.id) ?? null,
   }));
+}
+
+/**
+ * Petani aktif Lembaga-Lembaga terpilih untuk sheet "Detail" ekspor Training Benefit
+ * per year: ID Petani + jenis kelamin, termasuk yang belum pernah dilatih (semua sel "-").
+ * Tahun pelatihan dihitung di client dari payload dashboard (satu sumber dengan tabel).
+ * Diambil saat ekspor saja agar payload awal tetap ramping; gate EXPORT karena hasilnya
+ * daftar per petani. Nama & NIK tidak ikut.
+ */
+export async function getTrainingBenefitFarmers(farmerGroupIds: string[]): Promise<ActionResult<TrainingBenefitFarmer[]>> {
+  if (!(await hasPermission("dashboard-training", "EXPORT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengekspor data ini" };
+  }
+  const parsed = trainingBenefitFarmersSchema.safeParse(farmerGroupIds);
+  if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Daftar Lembaga tidak valid" };
+  if (parsed.data.length === 0) return { success: true, data: [] };
+
+  const access = await getAccessContext();
+  const farmers = await prisma.farmer.findMany({
+    where: {
+      isActive: true,
+      farmerGroupId: { in: parsed.data },
+      // Scope digabung lewat AND (pitfall key-collision `id`, lih. getUntrainedFarmers).
+      farmerGroup: { isActive: true, AND: farmerGroupAccessFilter(access) },
+    },
+    select: { id: true, farmerId: true, gender: true, farmerGroupId: true },
+  });
+  return { success: true, data: farmers };
 }

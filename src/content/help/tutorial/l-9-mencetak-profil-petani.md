@@ -28,7 +28,7 @@ goal: Satu berkas PDF berisi seluruh data seorang petani — identitas, ringkasa
 
 ## Memastikan berhasil
 
-Buka PDF-nya: nomor pada penanda bulat di **Peta Sebaran Lahan** sama dengan kolom **No** di Daftar Lahan dan dengan tulisan *Lampiran n dari N* di pojok kanan atas tiap lampiran. Kartu ringkasan (Lahan, Produksi, Pelatihan, Kelengkapan Profil, Produktivitas) menampilkan angka yang sama dengan halaman Detail Petani.
+Buka PDF-nya: nomor pada penanda bulat di **Peta Sebaran Lahan** sama dengan kolom **No** di Daftar Lahan dan dengan tulisan *Lampiran n dari N* di pojok kanan atas tiap lampiran. Kartu ringkasan (Lahan, Produksi, Pelatihan, Kelengkapan Profil, Produktivitas) menampilkan angka yang sama dengan halaman Detail Petani. Produktivitas di halaman utama maupun lampiran Profil Lahan dalam Ton/Ha/tahun: tahun yang datanya belum 12 bulan diproyeksikan dengan jumlah bulan ber-data Lembaga, sama dengan BMP Dashboard.
 
 + Peta sebaran sengaja hanya menggambar **penanda bulat bernomor** di titik tengah tiap lahan; bentuk poligonnya ikut digambar tetapi baru terbaca bila lahan-lahannya berdekatan. Lahan petani bisa tersebar sampai puluhan kilometer, dan pada skala itu satu hektare hanya setitik di kertas — bentuk dan batas tiap lahan ada di lampirannya. Penanda **merah** menandai lahan NKT.
 

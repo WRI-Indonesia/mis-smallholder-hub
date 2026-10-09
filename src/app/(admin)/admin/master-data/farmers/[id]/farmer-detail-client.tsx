@@ -356,7 +356,7 @@ export function FarmerDetailClient({
           title="Produktivitas Terakhir"
           value={
             summary.lastProductivity
-              ? `${formatDecimal(summary.lastProductivity.tonHa)} Ton/Ha`
+              ? `${formatDecimal(summary.lastProductivity.tonHa)} Ton/Ha/tahun`
               : "—"
           }
           sub={

@@ -37,6 +37,7 @@ const db = vi.hoisted(() => ({
   tree: { groupBy: vi.fn() },
   landParcelMarker: { groupBy: vi.fn() },
   landParcel: { groupBy: vi.fn() },
+  productionRecord: { groupBy: vi.fn() },
   bmpAssessment: { findMany: vi.fn() },
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
@@ -56,6 +57,7 @@ const parcelRow = (i: number, geometry: unknown = square(i)) => ({
 const farmerRow = (parcels: ReturnType<typeof parcelRow>[]) => ({
   id: "f-1", name: "Abdul", farmerId: "HJP.0001", gender: "M", nik: "1408011501800001", address: null, birthPlace: null, birthDate: null,
   joinedYear: 2020, isActive: true, createdAt: new Date("2025-01-01"), modifiedAt: new Date("2026-01-01"),
+  farmerGroupId: "g-1",
   farmerGroup: { name: "HJP", code: "ISH-1401-03", district: { name: "Kampar", province: { name: "Riau" } } },
   landParcels: parcels,
   trainingParticipants: [
@@ -74,6 +76,7 @@ beforeEach(() => {
   db.trainingPackage.findMany.mockResolvedValue([{ code: "PAKET_1_BMP_PC_RSPO_NKT", name: "BMP" }, { code: "PAKET_2_MK", name: "MK" }]);
   db.tree.groupBy.mockResolvedValue([]);
   db.landParcelMarker.groupBy.mockResolvedValue([]);
+  db.productionRecord.groupBy.mockResolvedValue([]);
   db.bmpAssessment.findMany.mockResolvedValue([]);
   passportQuery.computeFarmerTrainingItems.mockResolvedValue([{ code: "PAKET_1_BMP_PC_RSPO_NKT", label: "Paket 1 - BMP", completed: true, date: null }]);
   passportQuery.fetchParcelPassport.mockImplementation(async (id: string) => ({ success: true, data: passportOf(id) }));
@@ -153,7 +156,7 @@ describe("Bagian A + lampiran", () => {
     expect(getAccessContext).toHaveBeenCalledTimes(1);
     for (const call of passportQuery.fetchParcelPassport.mock.calls) {
       expect(call[1]).toBe(true);
-      expect(call[2]).toEqual({ access: { mode: "ALL", ids: [] }, training: expect.any(Array), includeInactiveFarmer: false });
+      expect(call[2]).toEqual({ access: { mode: "ALL", ids: [] }, training: expect.any(Array), includeInactiveFarmer: false, groupDataMonths: {} });
     }
     // Bagian A = buildFarmerDetail: angka identik dengan Detail Petani.
     expect(d.summary.totalParcels).toBe(3);
@@ -166,6 +169,25 @@ describe("Bagian A + lampiran", () => {
     expect(d.production.parcelBreakdown).toHaveLength(1);
     expect(d.farmer.nik).toBe("1408011501800001");
     expect(d.group).toEqual({ name: "HJP", code: "ISH-1401-03", districtName: "Kampar", provinceName: "Riau" });
+  });
+
+  it("produktivitas Bagian A disetahunkan per bulan ber-data LEMBAGA (owner 2026-10-08), sama dengan Detail Petani", async () => {
+    db.farmer.findFirst.mockResolvedValue(farmerRow([parcelRow(1)]));
+    // Lembaga ber-data Jan–Jun 2025 (6 bulan) walau petani ini hanya melapor Januari.
+    db.productionRecord.groupBy.mockResolvedValue(
+      ["01", "02", "03", "04", "05", "06"].map((m) => ({ period: `2025-${m}`, _sum: { yieldKg: 5000 }, _count: { parcelId: 3 } }))
+    );
+    const res = await getFarmerProfilePassport("f-1", { includeParcels: false });
+    expect(res.success).toBe(true);
+    if (!res.success) return;
+    const where = db.productionRecord.groupBy.mock.calls[0][0].where;
+    // + record petani ini (nonaktif dibuka SUPERADMIN) + record di lahan-lahannya atas nama
+    // pemilik lain — definisi sama dengan detail/Profil Lahan (review rentang v1.5.0).
+    expect(where).toEqual({ isActive: true, OR: [{ farmer: { isActive: true, farmerGroup: { id: "g-1" } } }, { farmerId: "f-1" }, { parcel: { farmerId: "f-1" } }] });
+    // 1 Ton × 12/6 ÷ 2 Ha = 1 Ton/Ha/tahun; total produksi tetap tercatat.
+    expect(res.data!.production.all.perYear[0]).toMatchObject({ year: 2025, totalKg: 1000, productivityTonHa: 1 });
+    expect(res.data!.summary.lastProductivity).toEqual({ year: 2025, tonHa: 1 });
+    expect(res.data!.production.parcelBreakdown[0].productivityTonHa).toBe(1);
   });
 
   it("includeParcels:false (Ringkasan saja) → Bagian A lengkap, tanpa satu pun kueri lahan berat", async () => {

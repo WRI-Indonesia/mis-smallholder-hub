@@ -10,19 +10,20 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupHighlight, MapPopupRows } from "@/components/shared/map-popup";
+import { MAP_POPUP_PROPS, MapPopupDragHandle, MapPopupHeader, MapPopupHighlight, MapPopupRows, useMapPopupAutoPan, useMapPopupDrag } from "@/components/shared/map-popup";
 import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
 import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { formatNumber, formatPct } from "@/lib/format";
 import {
   CHANNEL_LABEL,
   CHANNEL_ORDER,
-  MILL_BASIS_LABEL,
-  MILL_STATUS_LABEL,
   OFFTAKER_TYPE_LABEL,
   buildFlowSegments,
   flowSegmentKey,
+  isUlMill,
+  millDistrict,
   millLabel,
+  millVolumes,
   recordChannel,
   type SankeyMode,
   type ScRecord,
@@ -31,6 +32,7 @@ import {
 import { channelColor, useChartDark } from "../../dashboard/supply-chain/supply-chain-sankey";
 import { ModeToggle } from "../../dashboard/supply-chain/supply-chain-dashboard-client";
 import { SupplyChainFilterBar } from "../../dashboard/supply-chain/supply-chain-filter-bar";
+import { UlBadge } from "../../dashboard/supply-chain/ul-badge";
 import { useSupplyChainFilters } from "../../dashboard/supply-chain/use-supply-chain-filters";
 
 const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
@@ -104,6 +106,12 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
   const [showParcels, setShowParcels] = useState(true);
   const [showParcelLines, setShowParcelLines] = useState(false);
   const [selected, setSelected] = useState<Selected>(null);
+  // Popup standar peta (#222): auto-pan agar kartu utuh di viewport (di kanan panel
+  // melayang) + bisa digeser. Titik memakai koordinat fiturnya (lihat onClick), jadi
+  // klik ulang entitas yang sama tidak me-reset geseran; garis tetap berjangkar di
+  // titik klik sehingga klik di bagian lain garis memicu auto-pan lagi.
+  const popupKey = selected ? `${selected.kind}:${selected.id}:${selected.lng},${selected.lat}` : null;
+  useMapPopupAutoPan(mapRef, popupKey, panelOpen ? PANEL_W + 12 : 0);
 
   const groupByCode = useMemo(() => new globalThis.Map(view.data.groups.map((g) => [g.code, g])), [view.data.groups]);
   const { segments, undrawn } = useMemo(() => buildFlowSegments(view.data, records, { viaOfftakers: detail }), [view.data, records, detail]);
@@ -165,7 +173,7 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
         if (m?.lat != null && m.lon != null)
           feats.push({
             type: "Feature",
-            properties: { kind: "mill", id, label: millLabel(m), ton, on, icon: m.buyerPrograms.includes("UL") ? "sc-mill-ul" : "sc-mill" },
+            properties: { kind: "mill", id, label: millLabel(m), ton, on, icon: isUlMill(m) ? "sc-mill-ul" : "sc-mill" },
             geometry: { type: "Point", coordinates: [m.lon, m.lat] },
           });
       }
@@ -238,7 +246,8 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
     const ft = [...(e.features ?? [])].sort((a, b) => rank(a.properties?.kind) - rank(b.properties?.kind))[0];
     if (!ft) return setSelected(null);
     const p = ft.properties as { kind: string; id: string };
-    setSelected({ lng: e.lngLat.lng, lat: e.lngLat.lat, kind: p.kind, id: String(p.id) });
+    const [lng, lat] = ft.geometry.type === "Point" ? (ft.geometry.coordinates as [number, number]) : [e.lngLat.lng, e.lngLat.lat];
+    setSelected({ lng, lat, kind: p.kind, id: String(p.id) });
   };
 
   const totalTon = records.reduce((a, r) => a + (r.supplyTon ?? 0), 0);
@@ -346,9 +355,9 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
         </Source>
 
         {selected && (
-          <Popup {...MAP_POPUP_PROPS} longitude={selected.lng} latitude={selected.lat} onClose={() => setSelected(null)}>
+          <SelectedPopup key={popupKey} popupKey={popupKey!} selected={selected} onClose={() => setSelected(null)}>
             <SelectedCard selected={selected} view={view} records={records} segments={segments} />
-          </Popup>
+          </SelectedPopup>
         )}
       </Map>
 
@@ -416,7 +425,7 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
               )}
             </TabsContent>
             <TabsContent value="ringkasan" className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3 text-xs">
-              <Row label="Tonase dideklarasikan" value={fmtTon(totalTon)} />
+              <Row label="TBS" value={fmtTon(totalTon)} />
               <Row label="Tergambar sampai Mill" value={`${fmtTon(drawnTon)} (${totalTon > 0 ? formatPct((drawnTon / totalTon) * 100) : "—"}%)`} />
               <div className="pt-2 font-medium">Tidak tergambar</div>
               <Row label="Mill tidak diketahui" value={fmtTon(undrawn.unknownMillTon)} />
@@ -487,6 +496,21 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * <Popup> + state geser dipisah ke komponen sendiri: tiap pointermove saat menggeser
+ * hanya me-render popup ini, bukan seluruh peta. Isi kartu (`children`) dibuat induk,
+ * jadi tidak dihitung ulang selama digeser.
+ */
+function SelectedPopup({ popupKey, selected, onClose, children }: { popupKey: string; selected: NonNullable<Selected>; onClose: () => void; children: React.ReactNode }) {
+  const drag = useMapPopupDrag(popupKey);
+  return (
+    <Popup {...MAP_POPUP_PROPS} offset={drag.offset} longitude={selected.lng} latitude={selected.lat} onClose={onClose}>
+      <MapPopupDragHandle {...drag.handleProps} />
+      {children}
+    </Popup>
+  );
+}
+
 function topBy<T>(items: T[], key: (t: T) => string, val: (t: T) => number, n = 5) {
   const m = new globalThis.Map<string, number>();
   for (const it of items) m.set(key(it), (m.get(key(it)) ?? 0) + val(it));
@@ -510,20 +534,23 @@ function SelectedCard({
   const millName = (id: string | null) => (id && mills.get(id) ? millLabel(mills.get(id)!) : "Mill tidak diketahui");
   const ton = (rs: ScRecord[]) => rs.reduce((a, r) => a + (r.supplyTon ?? 0), 0);
   const list = (rows: [string, number][]) => rows.map(([k, v]) => ({ label: k, value: fmtTon(v) }));
+  // Mill tujuan = agregasi yang sama dengan tabel Volume per Mill (Mill tak diketahui satu baris).
+  const millRows = (rs: ScRecord[]) =>
+    millVolumes(rs, mills).slice(0, 5).map((m) => ({ id: m.millId ?? "?", label: m.name, value: fmtTon(m.ton), badge: m.isUl && <UlBadge /> }));
 
   let body: React.ReactNode = null;
   if (selected.kind === "mill") {
     const m = mills.get(selected.id);
     const rs = records.filter((r) => r.millId === selected.id);
-    const strongest = rs.some((r) => r.millStatus === "PKS_PASTI") ? "PKS_PASTI" : (rs[0]?.millStatus ?? "PKS_BELUM_PASTI");
+    const otherPrograms = m ? m.buyerPrograms.filter((p) => p !== "UL") : [];
     body = m && (
       <>
-        <MapPopupHeader accent="blue" icon={<Factory className="h-5 w-5" />} title={millLabel(m)} rows={[{ label: "UML ID", value: m.umlId ?? "— (manual)", mono: true }]} />
-        <MapPopupHighlight label="TBS dideklarasikan" value={fmtTon(ton(rs))} />
+        <MapPopupHeader accent="blue" icon={<Factory className="h-5 w-5" />} title={millLabel(m)} badge={isUlMill(m) && <UlBadge />} rows={[{ label: "UML ID", value: m.umlId ?? "— (manual)", mono: true }, { label: "Distrik", value: millDistrict(m) ?? "—" }]} />
+        <MapPopupHighlight label="TBS" value={fmtTon(ton(rs))} />
         <div className="space-y-2 px-3.5 py-2.5">
+          {/* UL sudah diwakili badge di header; program buyer lain (bila kelak ada) tetap tampil. */}
           <MapPopupRows rows={[
-            { label: "Status", value: `${MILL_STATUS_LABEL[strongest]}${rs[0] ? ` — ${MILL_BASIS_LABEL[rs[0].millBasis] ?? rs[0].millBasis}` : ""}` },
-            { label: "Program buyer", value: m.buyerPrograms.length ? m.buyerPrograms.join(", ") : "—" },
+            ...(otherPrograms.length ? [{ label: "Program buyer lain", value: otherPrograms.join(", ") }] : []),
             { label: "RSPO", value: m.rspoStatus },
           ]} />
           <div className="text-[11px] font-medium text-muted-foreground">Lembaga pemasok teratas</div>
@@ -537,10 +564,10 @@ function SelectedCard({
     body = g && (
       <>
         <MapPopupHeader accent="emerald" icon={<Building2 className="h-5 w-5" />} title={g.name} rows={[{ label: "Kode", value: g.code, mono: true }, { label: "Distrik", value: g.districtName }]} />
-        <MapPopupHighlight label="TBS dideklarasikan" value={fmtTon(ton(rs))} />
+        <MapPopupHighlight label="TBS" value={fmtTon(ton(rs))} />
         <div className="space-y-2 px-3.5 py-2.5">
           <div className="text-[11px] font-medium text-muted-foreground">Mill tujuan teratas</div>
-          <MapPopupRows rows={list(topBy(rs, (r) => millName(r.millId), (r) => r.supplyTon ?? 0))} />
+          <MapPopupRows rows={millRows(rs)} />
         </div>
       </>
     );
@@ -553,7 +580,7 @@ function SelectedCard({
         <MapPopupHighlight label="TBS melewati" value={fmtTon(ton(rs))} />
         <div className="space-y-2 px-3.5 py-2.5">
           <div className="text-[11px] font-medium text-muted-foreground">Mill tujuan</div>
-          <MapPopupRows rows={list(topBy(rs, (r) => millName(r.millId), (r) => r.supplyTon ?? 0))} />
+          <MapPopupRows rows={millRows(rs)} />
         </div>
       </>
     );
@@ -565,7 +592,7 @@ function SelectedCard({
         <MapPopupHeader accent="emerald" icon={<Sprout className="h-5 w-5" />} title={p.farmerName ?? "Lahan"} rows={[{ label: "Parcel ID", value: p.parcelId ?? "—", mono: true }, { label: "Lembaga", value: groups.get(p.groupCode)?.abrv ?? p.groupCode }]} />
         <MapPopupHighlight label="Produksi TBS (survei)" value={p.ffbTon == null ? "—" : fmtTon(p.ffbTon)} />
         <div className="space-y-2 px-3.5 py-2.5">
-          <MapPopupRows rows={rs.map((r) => ({ label: `${r.offtakerId ? offs.get(r.offtakerId)?.name ?? r.offtakerId : "Langsung"} → ${millName(r.millId)}`, value: r.supplyTon == null ? "—" : fmtTon(r.supplyTon) }))} />
+          <MapPopupRows rows={rs.map((r) => ({ id: r.id, label: `${r.offtakerId ? offs.get(r.offtakerId)?.name ?? r.offtakerId : "Langsung"} → ${millName(r.millId)}`, value: r.supplyTon == null ? "—" : fmtTon(r.supplyTon) }))} />
           <p className="text-[11px] text-muted-foreground">Titik: {p.pointSource === "POLIGON" ? "titik dalam poligon lahan MIS" : "koordinat survei (lahan tak cocok/tanpa poligon di MIS)"}</p>
         </div>
       </>

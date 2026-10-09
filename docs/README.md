@@ -49,7 +49,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [qa/README.md](./qa/README.md) | Proses QA/QC manual: kapan (setelah deploy staging, sebelum PR `staging → main`), siapa, aturan bukti (gitignored — repo publik) |
 | [qa/_template/](./qa/_template/) | Master per rilis: scope (akun & persiapan data) · smoke `SM-nn` · kasus uji `TC-<issue>-nn` ber-tag P0/P1/P2 · QC data · temuan · sign-off · template lembar run |
 | [qa/regression.md](./qa/regression.md) | Kasus `[regresi]` yang ikut setiap rilis (lahir dari temuan review/bug) |
-| [qa/v1.0.0/](./qa/v1.0.0/) · [v1.1.0](./qa/v1.1.0/) · [v1.2.0](./qa/v1.2.0/) | Paket QA tiga rilis terakhir (00–05 + `runs/`) |
+| [qa/v1.2.0/](./qa/v1.2.0/) · [v1.3.0](./qa/v1.3.0/) · [v1.4.0](./qa/v1.4.0/) | Paket QA tiga rilis terakhir (00–05 + `runs/`); lebih lama di [qa/archive/](./qa/archive/) |
 | [qa/archive/](./qa/archive/) | Paket QA rilis lebih lama (v0.35.0 — rilis pertama proses ini — s.d. v0.38.0) |
 | [qa/v1.3.0/](./qa/v1.3.0/) | Rilis berjalan — baru `02-test-cases.md` (kasus uji ditulis saat issue ditutup) |
 | `scripts/qa/` | `data-qc.ts` (cek DB read-only → tabel markdown) · `new-run.mjs` (lembar run dari spesifikasi) · `summary.mjs` (rekap Pass/Fail per run) |

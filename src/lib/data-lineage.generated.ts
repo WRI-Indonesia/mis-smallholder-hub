@@ -311,6 +311,7 @@ export const DATA_LINEAGE: DataLineage = [
       "province": "R"
     },
     "modules": [
+      "src/lib/production-data-months-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/land-parcel.ts",
       "src/server/actions/map.ts"
@@ -335,6 +336,7 @@ export const DATA_LINEAGE: DataLineage = [
     "modules": [
       "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
+      "src/lib/production-data-months-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/fire-boundary.ts",
       "src/server/actions/land-marker.ts",
@@ -399,6 +401,7 @@ export const DATA_LINEAGE: DataLineage = [
     "modules": [
       "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
+      "src/lib/production-data-months-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/bmp-assessment-detail.ts",
       "src/server/actions/bmp-assessment.ts",
@@ -453,6 +456,7 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/land-parcel-identity.ts",
       "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
+      "src/lib/production-data-months-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
       "src/server/actions/land-marker.ts",

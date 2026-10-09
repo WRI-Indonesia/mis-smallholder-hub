@@ -20,7 +20,7 @@ Dashboard ini masih **prototipe** untuk bahan diskusi. Datanya berasal dari **fo
 1. Buka **Dashboard → Dashboard Rantai Pasok**.
 2. Atur filter di kotak atas. Baris **Lingkup**: Distrik, Kategori (Swadaya / Ex-Plasma), dan UL & Non-UL. Baris **Rantai**: Lembaga → Agen → RAMP → Mill, mengikuti arah aliran TBS. Filter yang aktif diberi bingkai berwarna.
 + Pilihan tiap dropdown menyesuaikan filter lain. Setelah satu Lembaga dipilih, misalnya, daftar Agen, RAMP, dan Mill hanya berisi yang terhubung dengannya. Filter tersimpan di alamat halaman, jadi tampilan bisa di-bookmark atau dikirim ke rekan.
-3. Baca empat kartu ringkasan: **TBS Dideklarasikan**, **Ke Mill Pemasok UL**, **Sampai PKS Pasti** (berapa yang PKS-nya jelas), dan **Offtaker** (jumlah agen, RAMP, dan KT/koperasi).
+3. Baca empat kartu ringkasan: **TBS**, **Ke Mill Pemasok UL**, **Sampai PKS Pasti** (berapa yang PKS-nya jelas), dan **Offtaker** (jumlah agen, RAMP, dan KT/koperasi).
 4. Baca batang **Jalur TBS dari petani**: porsi lewat Agen, langsung ke RAMP, lewat KT/Koperasi, dan langsung ke Mill. Warnanya dipakai juga di diagram dan peta.
 5. Baca diagram **Aliran TBS**: Lembaga → Offtaker → Mill. Agen, RAMP, dan KT/koperasi berada di satu bagian **Offtaker**; TBS yang lewat agen lalu RAMP tampil sebagai satu node rantai "Agen → RAMP". Tebal pita sebanding dengan tonase. **Arahkan kursor** ke sebuah Lembaga atau Mill untuk menyalakan seluruh jalurnya, dari hulu sampai hilir. **Klik node** untuk menjadikannya filter.
 6. Atur tampilan diagram dengan empat tombol di kanan atasnya:

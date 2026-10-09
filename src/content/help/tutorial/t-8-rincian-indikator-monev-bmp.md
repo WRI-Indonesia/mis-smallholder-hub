@@ -15,13 +15,13 @@ Selain skor akhir, Monev BMP punya **rincian**: 5 kegiatan berbobot (Knowledge 0
 
 + Enam indikator Lembaga (standar teknis kerja, infrastruktur panen, transportasi, taksasi produksi, catatan produksi, …) ikut masuk ke skor akhir **setiap petani** Lembaga itu. Karena itu penilaian Lembaga disimpan sekali per Lembaga per tahun, bukan diulang di tiap petani.
 
-Sumbernya adalah **form survei per petani** (`.xlsx`, empat sheet: Form Penilaian Gabungan, Form Survey Lembaga, Form Survey Individu, Panduan) — satu berkas per petani, dikelompokkan per Lembaga.
+Sumbernya adalah **form survei per petani** (`.xlsx`, empat sheet: Form Penilaian Gabungan, Form Survey Lembaga, Form Survey Individu, Panduan) — satu berkas per petani, dikelompokkan per Lembaga. Sheet individu yang dinamai dengan nama petani (bukan "Form Survey Individu") juga dikenali, asalkan hanya ada satu sheet seperti itu — kolom peringatan menyebut sheet mana yang dibaca.
 
 ## Langkah — mengimpor form survei
 
 1. Buka **Master Data → Monev BMP**, klik **Import Excel**, pilih **Lembaga Petani**, lalu buka tab **Form survei per petani (banyak berkas)**.
 2. Pilih semua berkas `.xlsx` satu Lembaga sekaligus (boleh puluhan). Tiap berkas dibaca: skor indikator dari sheet Survey Lembaga & Survey Individu; skor akhir **dihitung ulang** dari rincian itu (total raport di form hanya pembanding).
-+ Nama petani diambil dari **nama berkas**, bukan dari header di dalam form — form sering di-copy dari petani lain dan headernya lupa diganti. Bila keduanya berbeda, baris ditandai dan nama berkaslah yang dipakai.
++ Nama petani diambil dari **nama berkas**, bukan dari header di dalam form — form sering di-copy dari petani lain dan headernya lupa diganti. Bila keduanya berbeda, baris ditandai dan nama berkaslah yang dipakai. Dua nama dipisah garis bawah tanpa kode Lembaga di depannya (`… - Joko_Wardani.xlsx`) dibaca sebagai dua nama alternatif — yang cocok persis dengan master yang dipakai.
 3. Periksa kolom **Cocok**: **Yakin** (nama persis), **Ragu** (beda ejaan kecil — periksa sekilas), **Ganda** atau **Tak ditemukan** (pilih petaninya dari dropdown). Petani yang sama tidak boleh dipakai dua form untuk tahun yang sama.
 + Form tidak memuat ID Petani, jadi pencocokan hanya lewat nama. Petani yang belum terdaftar di MIS harus didaftarkan dulu di Master Data → Petani.
 4. Baca kolom **Status / peringatan**: **Baru** atau **Perbarui** (petani sudah punya skor tahun itu — skor & rinciannya ditimpa dari form), plus peringatan: skor di luar 0–3, periode tak terbaca, dan catatan "Total di form X — disimpan hasil hitung ulang".
@@ -40,7 +40,7 @@ Sumbernya adalah **form survei per petani** (`.xlsx`, empat sheet: Form Penilaia
 
 ## Kalau bermasalah
 
-**Semua berkas "Tak ditemukan".** Lembaga yang dipilih tidak sesuai dengan folder berkas, atau nama berkas tidak memuat nama petani (pola yang dikenali: `… - Nama.xlsx` atau `…_Nama.xlsx`).
+**Semua berkas "Tak ditemukan".** Lembaga yang dipilih tidak sesuai dengan folder berkas, atau nama berkas tidak memuat nama petani (pola yang dikenali: `… - Nama.xlsx`, `…_Nama.xlsx` dengan kode Lembaga di depan garis bawah, atau `… - NamaA_NamaB.xlsx` untuk dua nama).
 
 **"Sheet Form Survey Lembaga tidak ditemukan".** Berkas bukan form survei (mis. rekap Lembaga) — pakai tab Rekap skor untuk berkas rekap.
 

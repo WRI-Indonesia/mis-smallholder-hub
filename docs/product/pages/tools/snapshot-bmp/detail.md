@@ -16,7 +16,7 @@ Halaman: Detail Snapshot BMP (/admin/tools/snapshot-bmp/[id])
 ├── Heading: Ringkasan per Lembaga Petani
 └── Tabel: per Lembaga (DataTable)
     ├── Kolom: Nama · Kategori · Distrik
-    ├── Kolom: Produksi (Ton) · Produktivitas (Ton/Ha)
+    ├── Kolom: Produksi (Ton) · Produktivitas (Ton/Ha/tahun)
     └── Kolom: Lahan Ber-data · Luas Terdata (Ha) · Petani Terdata
 ```
 
@@ -37,14 +37,14 @@ Halaman: Detail Snapshot BMP (/admin/tools/snapshot-bmp/[id])
 | Snapshot BMP — {tanggal} | Heading | `h1` + deskripsi "Data historis dashboard BMP yang tersimpan" |
 | Kembali | Tombol | Kembali ke `/admin/tools/snapshot-bmp` |
 | Informasi Snapshot | Card metadata | 3 field: Tanggal Snapshot, Filter Distrik (`null` → "Semua Distrik"), Dibuat Oleh |
-| Kartu skor BMP | Kartu KPI (`BmpScoreCards`, komposisi #191) | Produktivitas (Ton/Ha), Total Produksi (Ton), Luasan (Ha terdata; + % dari total bila snapshot memuat `totalLuasHa`), Petani Terdata; label periode "kumulatif semua tahun" |
+| Kartu skor BMP | Kartu KPI (`BmpScoreCards`, komposisi #191) | Produktivitas (Ton/Ha/tahun), Total Produksi (Ton), Luasan (Ha terdata; + % dari total bila snapshot memuat `totalLuasHa`), Petani Terdata; label periode "kumulatif semua tahun" |
 | Ringkasan per Lembaga Petani | Heading `h2` | Judul tabel di bawahnya |
 | Tabel per Lembaga | Tabel (`DataTable`) | Search `name`, placeholder "Cari lembaga petani...", empty "Tidak ada data lembaga petani.", export `snapshot-bmp-{id}` — tombol Excel digate izin `EXPORT` (#245) |
 | Kolom: Nama Lembaga Petani | Kolom tabel | Nama lembaga |
 | Kolom: Kategori | Kolom tabel | `EX_PLASMA` → "Ex-Plasma", `SWADAYA` → "Swadaya" |
 | Kolom: Distrik | Kolom tabel | `null` → "—" |
 | Kolom: Produksi (Ton) | Kolom tabel | Format `id-ID`, 2 desimal |
-| Kolom: Produktivitas (Ton/Ha) | Kolom tabel | Dihitung `bmpProductivity(row)` |
+| Kolom: Produktivitas (Ton/Ha/tahun) | Kolom tabel | Dihitung `bmpProductivity(row)` (disetahunkan per bulan ber-data Lembaga) |
 | Kolom: Lahan Ber-data | Kolom tabel | `lahanBerData/totalLahan` |
 | Kolom: Luas Terdata (Ha) | Kolom tabel | `totals.luasMelaporHa/totals.totalLuasHa` (#191); snapshot lama → luas terdata saja |
 | Kolom: Petani Terdata | Kolom tabel | `petaniMelapor/totalPetani` |

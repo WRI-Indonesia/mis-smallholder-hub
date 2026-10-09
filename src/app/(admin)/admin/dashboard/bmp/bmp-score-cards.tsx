@@ -36,8 +36,9 @@ export function BmpScoreCards({
   const cards: CardConfig[] = [
     {
       title: "Produktivitas",
-      value: `${formatTon(produktivitas)} Ton/Ha`,
-      sub: "per tahun — produksi ÷ luas lahan terdata",
+      value: `${formatTon(produktivitas)} Ton/Ha/tahun`,
+      // Disetahunkan (owner 2026-10-08): tahun yang belum 12 bulan diproyeksikan per Lembaga.
+      sub: "produksi disetahunkan ÷ luas lahan terdata",
       icon: Activity,
       iconClass: "text-orange-600",
     },

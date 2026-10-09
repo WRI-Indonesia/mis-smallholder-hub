@@ -431,18 +431,18 @@ describe("buildLandParcelReport — ringkasan legalitas (#305)", () => {
 
 describe("describeLegalFilters — filter aktif ikut tercetak (#305)", () => {
   it("cakupan pendataan SELALU tercetak, walau 'semua'", () => {
-    expect(describeLegalFilters({}).map((f) => f.label)).toEqual(["Cakupan Pendataan"]);
+    expect(describeLegalFilters({ coverage: "all" }).map((f) => f.label)).toEqual(["Cakupan Pendataan"]);
     expect(describeLegalFilters({ coverage: "all" })[0].value).toContain("Semua lahan");
     expect(describeLegalFilters({ coverage: "mapped" })[0].value).toContain("sudah didata");
   });
 
   it("menyebut 'punya minimal satu' pada filter jenis surat", () => {
-    const d = describeLegalFilters({ documentTypes: ["SHM", "SKT"] });
+    const d = describeLegalFilters({ coverage: "mapped", documentTypes: ["SHM", "SKT"] });
     expect(d.find((f) => f.label === "Jenis Surat")!.value).toBe("SHM, SKT (punya minimal satu)");
   });
 
   it("tahap STDB dan selisih luas ikut terbaca", () => {
-    const d = describeLegalFilters({ stdbStatus: "PENGAJUAN", areaDiff: "gte", documentStatus: "without" });
+    const d = describeLegalFilters({ coverage: "mapped", stdbStatus: "PENGAJUAN", areaDiff: "gte", documentStatus: "without" });
     expect(d.find((f) => f.label === "Status STDB")!.value).toBe("Tahap Pengajuan");
     expect(d.find((f) => f.label === "Status Surat")!.value).toContain("Tanpa surat");
     // Ditulis gaya Indonesia, sama dengan yang tampil di filter layar (#305).
@@ -462,30 +462,30 @@ describe("describeLegalSummary", () => {
   });
 
   it("persen SELALU membawa penyebutnya, bukan angka polos", () => {
-    const d = describeLegalSummary(S({ totalLahan: 1500, totalDidata: 1204, totalAdaSurat: 903 }));
+    const d = describeLegalSummary(S({ totalLahan: 1500, totalDidata: 1204, totalAdaSurat: 903 }), { coverage: "mapped" });
     const surat = d.find((x) => x.label === "Ada Surat")!;
     expect(surat.value).toBe("903");
     expect(surat.note).toBe("75% dari 1.204 lahan yang sudah didata");
   });
 
   it("KPI STDB menyebut satuannya — per persil, bukan per petani", () => {
-    const d = describeLegalSummary(S({ totalDidata: 10, totalAdaStdb: 3 }));
+    const d = describeLegalSummary(S({ totalDidata: 10, totalAdaStdb: 3 }), { coverage: "mapped" });
     expect(d.find((x) => x.label === "Ada STDB")!.note).toContain("per persil, bukan per petani");
   });
 
   it("penyebut 0 tidak menghasilkan NaN%", () => {
-    const d = describeLegalSummary(S({ totalLahan: 5, totalDidata: 0, totalAdaSurat: 0 }));
+    const d = describeLegalSummary(S({ totalLahan: 5, totalDidata: 0, totalAdaSurat: 0 }), { coverage: "mapped" });
     expect(d.find((x) => x.label === "Ada Surat")!.note).toBe("— dari 0 lahan yang sudah didata");
   });
 
   it("enam kartu (NKT sejak #328, Patok sejak #331), ambang selisih ikut nama labelnya", () => {
-    const d = describeLegalSummary(S({}));
+    const d = describeLegalSummary(S({}), { coverage: "mapped" });
     expect(d).toHaveLength(6);
     expect(d[3].label).toBe("Selisih Luas ≥ 0,50 Ha");
     expect(d[4].label).toBe("Termasuk/terdampak NKT");
     expect(d[4].note).toBe("belum ada lahan yang dinilai NKT");
     expect(d[5].label).toBe("Ada Patok");
-    expect(describeLegalSummary(S({ totalLahan: 4, totalAdaPatok: 3, totalPatok: 12 }))[5].note).toBe("75% dari 4 lahan hasil filter · 12 tautan patok");
+    expect(describeLegalSummary(S({ totalLahan: 4, totalAdaPatok: 3, totalPatok: 12 }), { coverage: "mapped" })[5].note).toBe("75% dari 4 lahan hasil filter · 12 tautan patok");
   });
 });
 
@@ -533,7 +533,7 @@ describe("NKT di Laporan Lahan (#328)", () => {
       raw({ id: "p1", nkt: { status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, assessedAt: "2025-03-12", assessor: "HJP" } }),
       raw({ id: "p2", parcelCode: "LHN-2", nkt: { status: "NOT_AFFECTED", categories: [], affectedAreaHa: null, assessedAt: null, assessor: null } }),
       raw({ id: "p3", parcelCode: "LHN-3" }),
-    ], { coverage: "all" });
+    ]);
     const byId = Object.fromEntries(res.rows.map((r) => [r.id, r]));
     expect(byId.p1.nkt).toBe("Terdampak NKT — NKT 4 (asesmen 2025-03-12, HJP)");
     expect(byId.p1.luasNkt).toBe(0.088);
@@ -552,7 +552,7 @@ describe("NKT di Laporan Lahan (#328)", () => {
       raw({ id: "p1", markerConditions: ["PRESENT", "PRESENT", "MISSING", "NOT_INSTALLED"] }),
       raw({ id: "p2", parcelCode: "LHN-2", markerConditions: [] }),
       raw({ id: "p3", parcelCode: "LHN-3" }),
-    ], { coverage: "all" });
+    ]);
     const byId = Object.fromEntries(res.rows.map((r) => [r.id, r]));
     expect(byId.p1.patok).toBe(4);
     expect(byId.p1.patokKondisi).toBe("2 ada · 1 hilang · 1 belum dipasang");

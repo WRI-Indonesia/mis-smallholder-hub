@@ -23,7 +23,7 @@ icon: Map
 
 **Zoom lewat panel kiri** — Klik ikon **bidik** (⌖) di kanan tiap baris Legenda atau teks labelnya (Point Lembaga Petani, Point/Area Lahan Petani, Lahan NKT, Patok), atau label "Tampilkan titik api" untuk langsung zoom ke sebaran data layer tersebut; kotak centangnya tetap untuk menampilkan/menyembunyikan layer.
 
-**Peta BMP** — Peta tematik: pilih layer Ketersediaan Data Produksi atau Produktivitas (Ton/Ha). Pilih Lembaga terlebih dulu, lalu klik Muat Data.
+**Peta BMP** — Peta tematik: pilih layer Ketersediaan Data Produksi atau Produktivitas (Ton/Ha/tahun, disetahunkan seperti BMP Dashboard). Pilih Lembaga terlebih dulu, lalu klik Muat Data.
 
 **Cetak peta** — Tombol Cetak menghasilkan PDF sesuai tampilan layer aktif (peta, legenda, dan tabel data), dan tersedia juga unduhan Excel. Tombol Cetak hanya tampil bila akun Anda punya izin **Print**, dan unduhan Excel bila punya izin **Export**, pada menu peta tersebut.
 

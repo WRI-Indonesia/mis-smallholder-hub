@@ -38,6 +38,7 @@ import {
   type Projector,
 } from "@/lib/farm-passport";
 import { drawGraticule } from "@/lib/layer-report-pdf";
+import { parcelAverageTonHa } from "@/lib/productivity-annualize";
 import { isNktAffected, landNktStatusLabel } from "@/lib/land-parcel-satellite-format";
 import { BMP_ASSESSMENT_CATEGORIES, BMP_SCORE_MAX, bmpActivityShortName, bmpAssessmentCategory, formatScore, formatUtcDate } from "@/lib/bmp-assessment";
 import type { FarmerProfileBmpActivity, FarmerProfileParcel, FarmerProfilePassport } from "@/types/farmer-profile";
@@ -404,10 +405,11 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
       sub: summary.profile.missing.length > 0 ? `Belum: ${summary.profile.missing.join(", ")}` : "Lengkap",
     },
     {
-      // Judul layar "Produktivitas Terakhir" tak muat 33 mm — "terakhir" pindah ke sub-teks.
+      // Judul layar "Produktivitas Terakhir" tak muat 33 mm — "terakhir" pindah ke sub-teks;
+      // satuan Ton/Ha/tahun juga (nilai + satuan ± 32 mm > 28 mm ruang teks kartu).
       title: "PRODUKTIVITAS",
-      value: summary.lastProductivity ? `${fmtDec(summary.lastProductivity.tonHa)} Ton/Ha` : "—",
-      sub: summary.lastProductivity ? `terakhir · tahun ${summary.lastProductivity.year}` : "Belum ada data",
+      value: summary.lastProductivity ? fmtDec(summary.lastProductivity.tonHa) : "—",
+      sub: summary.lastProductivity ? `Ton/Ha/tahun · terakhir ${summary.lastProductivity.year}` : "Belum ada data",
     },
   ];
   const cardGap = 3;
@@ -601,7 +603,7 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
   const monthCols: Record<number, any> = {};
   for (let i = 2; i <= 13; i++) monthCols[i] = { halign: "right" };
   autoTable(doc, {
-    head: [["Tahun", "Luas Terdata (Ha)", ...MONTHS_ID, "Total (kg)", "Ton/Ha"]],
+    head: [["Tahun", "Luas Terdata (Ha)", ...MONTHS_ID, "Total (kg)", "Ton/Ha/thn"]],
     body: production.all.perYear.map((yr) => {
       const byMonth = new Map(yr.months.map((m) => [parseInt(m.period.slice(5, 7), 10), m.totalKg]));
       return [
@@ -626,15 +628,15 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_400);
-  doc.text("Ton/Ha = produksi tahun tsb ÷ total luas lahan yang melapor tahun itu (Luas Terdata) — sama dengan tab Produksi di layar.", MARGIN, y + 2);
+  doc.text("Ton/Ha/thn = produksi tahun tsb × 12 ÷ bulan ber-data Lembaga, ÷ luas lahan yang melapor tahun itu (Luas Terdata) — sama dengan tab Produksi di layar.", MARGIN, y + 2, { maxWidth: CONTENT_W });
   y += 9;
 
   // Rekap per lahan per tahun — rincian bulanan per lahan TIDAK diulang (ada di lampiran).
   // Bentuk KELOMPOK per lahan (owner 2026-09-22: pivot ke samping "tidak bagus
   // kalau nanti punya data 10 tahun"): satu baris kepala per lahan — ID · Luas ·
-  // Umur/PSR · Σ produksi · rata-rata Ton/Ha tahunan · jumlah tahun — lalu
+  // Umur/PSR · Σ produksi · rata-rata Ton/Ha/tahun · jumlah tahun — lalu
   // baris tahun di bawahnya (terbaru dulu). Sama dengan mode "Lahan › Tahun"
-  // di layar (`ParcelAgg`: avgTonHa = Σ kg ÷ 1000 ÷ luas ÷ tahun ber-data);
+  // di layar (`parcelAverageTonHa`: rata-rata Ton/Ha/tahun antar tahun ber-data);
   // tinggi tumbuh ke bawah, lebar tetap berapa pun tahunnya.
   const umur = (r: { isPsr: boolean; plantingYear: number | null }) =>
     r.isPsr ? "PSR" : r.plantingYear != null ? `${production.currentYear - r.plantingYear} thn` : "—";
@@ -655,12 +657,12 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
   const body: (string | { content: string; styles: Record<string, unknown> })[][] = [];
   for (const g of groups) {
     groupRows.add(body.length);
-    const avg = g.area != null && g.area > 0 && g.rows.length > 0 ? g.totalKg / 1000 / g.area / g.rows.length : 0;
+    const avg = parcelAverageTonHa(g.area, g.rows);
     body.push([g.label, g.area != null ? fmtDec(g.area) : "—", umur(g), fmtNum(g.totalKg), tonHa(avg), `${g.rows.length} thn`]);
     for (const r of g.rows) body.push([`      ${r.year}`, "", "", fmtNum(r.totalKg), tonHa(r.productivityTonHa), monthsFilled(r)]);
   }
   autoTable(doc, {
-    head: [["Lahan / Tahun", "Luas (Ha)", "Umur/PSR", "Produksi (kg)", "Ton/Ha", "Bulan"]],
+    head: [["Lahan / Tahun", "Luas (Ha)", "Umur/PSR", "Produksi (kg)", "Ton/Ha/thn", "Bulan"]],
     body,
     foot: [["Total", fmtDec(production.all.totalArea), "", fmtNum(groups.reduce((sum, g) => sum + g.totalKg, 0)), "", ""]],
     startY: y,
@@ -702,7 +704,7 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_400);
-  doc.text("Baris lahan: total produksi & rata-rata Ton/Ha per tahun ber-data; baris tahun: produksi ÷ luas lahan, Bulan = bulan ber-data dari 12. Rincian bulanan tiap lahan ada di lampiran Profil Lahan.", MARGIN, y + 2, { maxWidth: CONTENT_W });
+  doc.text("Baris lahan: total produksi & rata-rata Ton/Ha/thn antar tahun ber-data; baris tahun: produksi disetahunkan (× 12 ÷ bulan ber-data Lembaga) ÷ luas lahan, Bulan = bulan ber-data lahan dari 12. Rincian bulanan tiap lahan ada di lampiran Profil Lahan.", MARGIN, y + 2, { maxWidth: CONTENT_W });
   y += 6;
   return drawBmpSection(doc, data, y + SECTION_GAP);
 }

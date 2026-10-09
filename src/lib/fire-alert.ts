@@ -606,6 +606,43 @@ export function hotspotWindowStart(now: Date, dayRange: number): Date {
   return utcMidnightDaysAgo(now, dayRange - 1);
 }
 
+/**
+ * Jam UTC sejak citra GIBS NOAA-20 hari ini dianggap utuh di atas Riau: lintasan
+ * siang ±06 UTC (13 WIB) + pemrosesan ±3 jam. Uji 2026-10-08 11.55 UTC: utuh.
+ */
+const GIBS_READY_UTC_HOUR = 10;
+
+/**
+ * Tanggal citra GIBS (#290) — "YYYY-MM-DD", citra harian satu lintasan siang:
+ * - ada titik api → tanggal **WIB** titik api terbaru. Deteksi malam (mis. 18.10 UTC
+ *   = 01.10 WIB esoknya) memakai citra siang hari WIB itu — sesudah apinya, jadi
+ *   asapnya bisa terlihat; tanggal UTC-nya justru citra ±12 jam SEBELUM api;
+ * - tanpa titik api → hari terakhir bulan (mode Bulan) atau hari ini (rentang live);
+ * - keduanya dibatasi tanggal citra terakhir yang sudah utuh: hari ini UTC setelah
+ *   `GIBS_READY_UTC_HOUR`, sebelum itu kemarin — tile yang belum diproses tampil hitam.
+ * `month` = "YYYY-MM" yang sudah divalidasi pemanggil (`parseHotspotMonth`).
+ */
+export function gibsImageryDate(
+  hotspots: FeatureCollection | null,
+  opts: { now: Date; month: string | null }
+): string {
+  const ready = utcMidnightDaysAgo(opts.now, opts.now.getUTCHours() >= GIBS_READY_UTC_HOUR ? 0 : 1);
+  const readyDay = ready.toISOString().slice(0, 10);
+  let latest: string | null = null;
+  for (const f of hotspots?.features ?? []) {
+    const t = Date.parse(String(f.properties?.acqDatetime ?? ""));
+    if (Number.isNaN(t)) continue;
+    const wibDay = new Date(t + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    if (!latest || wibDay > latest) latest = wibDay;
+  }
+  const wanted =
+    latest ??
+    (opts.month
+      ? new Date(Date.UTC(Number(opts.month.slice(0, 4)), Number(opts.month.slice(5, 7)), 0)).toISOString().slice(0, 10)
+      : readyDay);
+  return wanted < readyDay ? wanted : readyDay;
+}
+
 /** Komponen hari/bulan/tahun sebuah Date menurut WIB (bukan zona browser). */
 function wibDateParts(d: Date): { day: number; month: number; year: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {

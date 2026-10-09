@@ -29,7 +29,7 @@ Halaman: Upload Data Lahan (/admin/bulk-upload/parcels)
 │   └── Tabel preview (kolom: No, ID Lahan, ID Petani (Asal),
 │       Nama Petani (DB), Luas (ha), Status Kepemilikan, Komoditas,
 │       Tahun Tanam, Kelompok Tani, Blok, Revisi,
-│       Status, Detail Error)
+│       Status, Keterangan) — Status Peringatan kuning = tumpang tindih (#317 Fase 3)
 └── Tombol simpan "Simpan N Lahan Valid" (hijau, hanya permission CREATE)
 ```
 
@@ -73,12 +73,13 @@ Halaman: Upload Data Lahan (/admin/bulk-upload/parcels)
 | Filter hasil | 3 tombol | *"Semua (N)"*, *"Valid (N)"*, *"Error (N)"* |
 | "Download Semua Data" / "Download Data Error Saja" | Tombol | `bulk_upload_lahan_full.xlsx` / `bulk_upload_lahan_error_only.xlsx` (sheet `Data Lahan`) |
 | "Simpan N Lahan Valid" | Tombol (hijau) | Hanya bila permission `CREATE` |
-| Peta preview | MapLibre (`ParcelBulkUploadMap`) | Tinggi 384px; poligon diwarnai hijau bila valid, merah bila error; mengikuti filter aktif; disembunyikan bila tidak ada geometri. Basemap ikut set 5 pilihan bersama (#307, `MAP_STYLES`) |
+| Peta preview | MapLibre (`ParcelBulkUploadMap`) | Tinggi 384px; poligon diwarnai hijau bila valid, **kuning bila valid tetapi bertumpang tindih** (#317 Fase 3, popup menyebut lawannya), merah bila error; mengikuti filter aktif; disembunyikan bila tidak ada geometri. Basemap ikut set 5 pilihan bersama (#307, `MAP_STYLES`) |
 | Basemap switcher | Overlay tombol | `STREET`, `LIGHT`, `DARK`, `SAT`, `HYBRID` (`MAP_STYLE_LABELS[key].short`, `src/lib/map-style.ts`; default `HYBRID`) |
 | "Fokus Semua" | Tombol overlay peta | Title *"Fokus ke Semua Lahan"* — memusatkan viewport ke rata-rata koordinat |
 | Popup peta | Popup | Judul *"Detail Lahan"* + badge `Valid`/`Error`, baris `ID:`, `Petani:`, dan `Error Detail:` bila ada |
-| Tabel preview | Tabel | Kolom: `No`, `ID Lahan`, `ID Petani (Asal)`, `Nama Petani (DB)`, `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Tahun Tanam`, `Kelompok Tani`, `Blok`, `Revisi`, `Status`, `Detail Error` |
-| Kolom ekspor Excel | 18 kolom | `Baris Asal`, `ID Lahan`, `ID Petani Asal`, `Nama Petani`, `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Tahun Tanam`, `Kelompok Tani`, `Blok`, `Revisi`, `Catatan`, `Sepadan Utara`, `Sepadan Timur`, `Sepadan Selatan`, `Sepadan Barat`, `Status Validasi`, `Detail Error` |
+| Tabel preview | Tabel | Kolom: `No`, `ID Lahan`, `ID Petani (Asal)`, `Nama Petani (DB)`, `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Tahun Tanam`, `Kelompok Tani`, `Blok`, `Revisi`, `Status`, `Keterangan` (error merah + peringatan tumpang tindih kuning, maks 3 per baris + "+N lainnya") |
+| Cek tumpang tindih (#317 Fase 3) | Otomatis sesudah validasi | `checkUploadParcelOverlaps` (`bulk-upload-parcel.ts`, izin VIEW): baris valid → PostGIS `ST_GeomFromGeoJSON` (ekspresi = kolom generated `geom`) diadu ke lahan aktif DB (GiST) **dan** sesama baris berkas; ambang/label = laporan Tumpang Tindih Lahan (`buildUploadOverlapWarnings`); lahan DB yang direvisi baris mana pun di berkas (petani + ID Lahan persis, = simpan) tidak diadu; pasangan dalam berkas dihitung sekali; petani di luar scope dibuang; lahan lawan di DB dicari di seluruh data, identitasnya (ID Lahan, nama & kode petani) hanya disebut bila dalam scope atau user berizin VIEW `data-analyst-parcel-overlap` — selain itu hanya nama Lembaga. **Peringatan, tidak memblokir simpan**; gagal cek → pemberitahuan, simpan tetap boleh. Pill jumlah + tombol filter **Tumpang Tindih (N)**. Terukur lokal: 2.000 poligon (0,7 MB) 396 ms |
+| Kolom ekspor Excel | 19 kolom | `Baris Asal`, `ID Lahan`, `ID Petani Asal`, `Nama Petani`, `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Tahun Tanam`, `Kelompok Tani`, `Blok`, `Revisi`, `Catatan`, `Sepadan Utara`, `Sepadan Timur`, `Sepadan Selatan`, `Sepadan Barat`, `Status Validasi`, `Detail Error`, `Peringatan Tumpang Tindih` |
 
 ## Aturan validasi & pesan error (client)
 
@@ -101,7 +102,7 @@ Halaman: Upload Data Lahan (/admin/bulk-upload/parcels)
 2. Kunci properti fitur pertama dipakai sebagai daftar header → auto-match ke target field via `autoMatchColumns()`.
 3. Perbaiki pemetaan kolom pada kartu "2. Petakan Atribut Kolom".
 4. Klik **Validasi Data Shapefile** → validasi atribut + geometri, cek duplikat dalam file dan di database (perbandingan geometri lewat `isGeometryEqual`), penentuan nomor revisi.
-5. Tinjau hasil di peta preview dan tabel; filter Semua/Valid/Error; unduh hasil bila perlu.
+5. Tinjau hasil di peta preview dan tabel; cek tumpang tindih berjalan otomatis (peringatan kuning, tidak memblokir); filter Semua/Valid/Tumpang Tindih/Error; unduh hasil bila perlu.
 6. Klik **Simpan N Lahan Valid** → `bulkCreateLandParcels()`: guard `CREATE` → cek scope access-context semua `farmerId` → validasi Zod `landParcelSchema` → dalam satu `prisma.$transaction`, untuk tiap baris: jika ada duplikat aktif dengan geometri sama → gagal; jika geometri berbeda → baris lama di-`isActive: false` dan baris baru dibuat dengan `revision + 1`; selain itu insert biasa dengan `createdBy`. Tiap baris juga meng-upsert `LandParcelIdentity` (identitas stabil antar revisi, `parcelUid`) dan — bila ada sisi sepadan terisi — `LandParcelBorder` (hanya sisi terisi yang ditimpa). Pada revisi, `productionRecord` dan `tree` (semua revisi) di-repoint dari id baris lama ke id baris baru.
 7. Sukses → toast *"Berhasil menyimpan N data lahan"* + redirect ke daftar lahan.
 
