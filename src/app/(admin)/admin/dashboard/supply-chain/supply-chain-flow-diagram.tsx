@@ -20,10 +20,10 @@ import "@xyflow/react/dist/style.css";
 import { Pause, Play, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { formatNumber, formatPct } from "@/lib/format";
+import { formatPct } from "@/lib/format";
 import { CHANNEL_LABEL, SANKEY_COLUMNS, layoutSankey, sankeyLinkKey, type SankeyGraph, type SankeyNode, type SupplyChannel } from "@/lib/supply-chain-flow";
-import { dodgeLabels, spreadEdgeEnds } from "@/lib/supply-chain-views";
-import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { bezierPointAtX, dodgeLabels, spreadEdgeEnds } from "@/lib/supply-chain-views";
+import { channelColor, fmtTon, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 
 /**
  * Tab Diagram Alur (owner 2026-10-09): graf yang sama dengan Sankey, digambar
@@ -43,7 +43,6 @@ const COL_GAP = 170;
  * pertama: 28 Lembaga → zoom ~0,45).
  */
 const FIT_VIEW = { padding: 0.04, minZoom: 0.8, maxZoom: 1 } as const;
-const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 
 type FlowNodeData = {
   node: SankeyNode;
@@ -146,15 +145,38 @@ const edgeTypes = { sc: FlowEdge };
 export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: SankeyGraph; unit: SankeyUnit; onSelectNode: (n: SankeyNode) => void }) {
   const dark = useChartDark();
   const [selected, setSelected] = useState<string | null>(null);
+  // Node terpilih hilang dari graf (difilter keluar) → lepas sorotan, supaya tidak menyala
+  // lagi diam-diam saat filter dilepas (set-state-during-render, bukan efek).
+  const [prevGraph, setPrevGraph] = useState(graph);
+  if (graph !== prevGraph) {
+    setPrevGraph(graph);
+    if (selected && !graph.nodes.some((n) => n.id === selected)) setSelected(null);
+  }
   const [hoverEdge, setHoverEdge] = useState<string | null>(null);
   const [animate, setAnimate] = useState(true);
-  // `fitView` (prop) hanya berlaku saat inisialisasi → pasang ulang viewport tiap graf
-  // berubah dengan tinggi kanvas sama (filter); tinggi berubah ditangani `key` ReactFlow.
+  // `fitView` (prop) hanya berlaku saat inisialisasi. Tinggi kanvas ikut jumlah node
+  // (Lembaga → Distrik: ~1.900 → 360 px); fitView harus menunggu React Flow mengukur
+  // ukuran baru — kalau tidak, viewport lama tertinggal dan diagram tampak kosong.
+  // Maka: pasang ulang tiap wadah berubah ukuran (ResizeObserver) dan tiap graf berubah.
   const instance = useRef<ReactFlowInstance | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const empty = graph.nodes.length === 0;
   useEffect(() => {
-    const id = requestAnimationFrame(() => instance.current?.fitView(FIT_VIEW));
-    return () => cancelAnimationFrame(id);
-  }, [graph]);
+    const el = wrapRef.current;
+    if (!el) return;
+    let raf = 0;
+    const refit = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => instance.current?.fitView(FIT_VIEW));
+    };
+    const ro = new ResizeObserver(refit);
+    ro.observe(el);
+    refit();
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [empty, graph]);
   const total = graph.totalTon;
   const fmtValue = useCallback((v: number) => (unit === "PCT" ? `${total > 0 ? formatPct((v / total) * 100) : "0"}%` : fmtTon(v)), [unit, total]);
 
@@ -246,9 +268,13 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
       const s = placed.pos.get(l.source);
       const t = placed.pos.get(l.target);
       if (!s || !t) continue;
+      const sx = s.x + NODE_W;
       const sy = s.y + NODE_H / 2 + (ends.sourceOffset.get(k) ?? 0);
       const ty = t.y + NODE_H / 2 + (ends.targetOffset.get(k) ?? 0);
-      items.push({ key: k, x: (s.x + NODE_W + t.x) / 2, y: (sy + ty) / 2 });
+      // Garis yang melompati kolom tengah (Lembaga langsung ke Mill): label di celah
+      // pertama, bukan di titik tengah kurva yang jatuh di atas kotak offtaker.
+      const skips = t.x - sx > COL_GAP + NODE_W;
+      items.push({ key: k, ...(skips ? bezierPointAtX(sx, sy, t.x, ty, sx + COL_GAP / 2) : { x: (sx + t.x) / 2, y: (sy + ty) / 2 }) });
     }
     return dodgeLabels(items, 22);
   }, [graph.links, lit, hoverEdge, placed, ends]);
@@ -297,11 +323,8 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
         Klik kotak untuk menyorot seluruh jalurnya. Tebal garis = tonase, titik bergerak = arah aliran TBS. Seret untuk menggeser; zoom dengan tombol +/− atau
         Ctrl/⌘ + gulir.
       </p>
-      <div className="overflow-hidden rounded-lg border border-border/60" style={{ height }}>
+      <div ref={wrapRef} className="overflow-hidden rounded-lg border border-border/60" style={{ height }}>
         <ReactFlow
-          // Tinggi kanvas berubah (mis. Lembaga → Distrik) → pasang ulang: fitView di efek
-          // berjalan sebelum React Flow mengukur tinggi baru dan menyisakan viewport lama.
-          key={height}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}

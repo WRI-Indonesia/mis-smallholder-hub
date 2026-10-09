@@ -6,11 +6,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatNumber, formatPct } from "@/lib/format";
 import { CHANNEL_LABEL, type SankeyGraph, type SankeyNode } from "@/lib/supply-chain-flow";
-import { DIRECT_PATH_LABEL, buildPathRows, sortPathRows, type PathSortKey, type SortDir } from "@/lib/supply-chain-views";
-import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { DIRECT_LABEL, buildPathRows, sortPathRows, type PathSortKey, type SortDir } from "@/lib/supply-chain-views";
+import { channelColor, fmtTon, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 
 const ROWS_COLLAPSED = 20;
-const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 
 /**
  * Tab Jalur: satu baris per jalur utuh asal → offtaker → tujuan, urut tonase.
@@ -35,7 +34,7 @@ export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: Sank
   const visible = showAll ? rows : rows.slice(0, ROWS_COLLAPSED);
 
   const step = (n: SankeyNode | undefined) => {
-    if (!n) return <span className="text-xs italic text-muted-foreground">{DIRECT_PATH_LABEL}</span>;
+    if (!n) return <span className="text-xs italic text-muted-foreground">{DIRECT_LABEL}</span>;
     const clickable = isFilterableNode(n) || isGroupNode(n);
     const text = (
       <>
@@ -82,7 +81,7 @@ export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: Sank
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
-        {formatNumber(rows.length)} jalur, {sortText} — klik judul kolom untuk mengurutkan. Kolom # = peringkat tonase. Warna batang = jalur pertama TBS dari petani.
+        {formatNumber(rows.length)} jalur, {sortText} — klik judul kolom untuk mengurutkan (Porsi ikut Tonase). Kolom # = peringkat tonase. Warna batang = jalur pertama TBS dari petani.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
@@ -95,7 +94,7 @@ export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: Sank
               <th className="w-4" />
               {sortHead("DEST", graph.nodes.some((n) => n.id.startsWith("U:")) ? "UL / Non-UL" : "Mill", "py-2 pr-2")}
               {sortHead("TON", "Tonase", "py-2 pr-2 w-[26%]")}
-              {sortHead("TON", "Porsi", "py-2 text-right")}
+              <th className="py-2 text-right font-medium">Porsi</th>
             </tr>
           </thead>
           <tbody>

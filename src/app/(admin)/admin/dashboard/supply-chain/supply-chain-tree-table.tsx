@@ -16,10 +16,9 @@ import {
   type TreeDirection,
   type TreeLevel,
 } from "@/lib/supply-chain-views";
-import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { channelColor, fmtTon, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { UlBadge } from "./ul-badge";
 
-const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 const LEVEL_COLUMN: Record<TreeLevel, 0 | 1 | 3> = { DISTRIK: 0, LEMBAGA: 0, OFFTAKER: 1, UL: 3, MILL: 3 };
 
 /** Node pohon → bentuk node Sankey, supaya klik-filter memakai penangan yang sama dengan diagram. */
@@ -52,11 +51,13 @@ export function SupplyChainTreeTable({
 }) {
   const dark = useChartDark();
   const tree = useMemo(() => buildSupplyChainTree(graph, groups, { direction, byDistrict, byUl }), [graph, groups, direction, byDistrict, byUl]);
-  const levels = useMemo(() => {
-    const out: TreeLevel[] = [];
-    for (let nodes = tree; nodes.length > 0; nodes = nodes.flatMap((n) => n.children)) out.push(nodes[0].level);
-    return out;
-  }, [tree]);
+  // Susunan tingkat dari pilihan, bukan dari data: satu kedalaman bisa memuat dua tingkat
+  // (cabang "Mill tidak diketahui" melompati tingkat UL).
+  const levels: TreeLevel[] = (
+    direction === "HULU"
+      ? [byDistrict && "DISTRIK", "LEMBAGA", "OFFTAKER", byUl && "UL", "MILL"]
+      : [byUl && "UL", "MILL", "OFFTAKER", byDistrict && "DISTRIK", "LEMBAGA"]
+  ).filter((l): l is TreeLevel => !!l);
 
   // Bawaan: tingkat pertama terbuka. Kunci = jalur id dari akar → tetap berlaku saat filter
   // berubah; susunan tingkat berubah (arah / Distrik / UL) → kembali ke bawaan.
@@ -89,7 +90,10 @@ export function SupplyChainTreeTable({
       const hasKids = n.children.length > 0;
       const sn = asSankeyNode(n);
       const filterable = n.nodeId !== DIRECT_NODE_ID && (isFilterableNode(sn) || isGroupNode(sn));
-      const childLevel = hasKids ? TREE_LEVEL_LABEL[n.children[0].level] : null;
+      // Hitung anak per tingkat: "2 UL / Non-UL · 1 Mill" bila cabang Mill tak diketahui ikut.
+      const childCounts = new Map<TreeLevel, number>();
+      for (const c of n.children) childCounts.set(c.level, (childCounts.get(c.level) ?? 0) + 1);
+      const childText = [...childCounts].map(([l, c]) => `${formatNumber(c)} ${TREE_LEVEL_LABEL[l]}`).join(" · ");
       rows.push(
         <tr key={n.key} className={cn("group border-b last:border-0 hover:bg-muted/40", depth === 0 && "bg-muted/20 font-medium")}>
           <td className="py-1.5 pr-2">
@@ -131,7 +135,7 @@ export function SupplyChainTreeTable({
             </div>
           </td>
           <td className="whitespace-nowrap py-1.5 pr-2 text-xs text-muted-foreground tabular-nums">
-            {hasKids ? `${formatNumber(n.children.length)} ${childLevel}` : ""}
+            {childText}
           </td>
           <td className="py-1.5 pr-2">
             <div className="flex items-center gap-2">

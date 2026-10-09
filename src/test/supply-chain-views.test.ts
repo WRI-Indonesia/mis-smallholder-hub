@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSupplyChainSankey, type ScRecord, type SupplyChainData } from "@/lib/supply-chain-flow";
-import { DIRECT_NODE_ID, buildPathRows, buildSupplyChainTree, dodgeLabels, sortPathRows, spreadEdgeEnds, treeBranchKeys, type SupplyTreeNode } from "@/lib/supply-chain-views";
+import { DIRECT_NODE_ID, buildPathRows, buildSupplyChainTree, bezierPointAtX, dodgeLabels, sortPathRows, spreadEdgeEnds, treeBranchKeys, type SupplyTreeNode } from "@/lib/supply-chain-views";
 
 const rec = (over: Partial<ScRecord>): ScRecord => ({
   id: "r", year: 2025, level: "LAHAN", groupCode: "G1", surveyId: null, offtakerId: null, nextOfftakerId: null,
@@ -103,7 +103,9 @@ describe("sortPathRows (header tab Jalur)", () => {
   });
   it("per nama; seri diurut tonase terbesar; jalur tanpa offtaker = 'langsung ke Mill'", () => {
     expect(sortPathRows(rows, "ORIGIN", "asc").map((r) => [r.steps[0].label, r.ton])).toEqual([["L1", 40], ["L2", 20], ["L3", 5], ["L3", 4]]);
-    expect(sortPathRows(rows, "OFFTAKER", "desc").map((r) => r.ton)).toEqual([20, 5, 4, 40]);
+    // Tanpa offtaker (L3 → Mill) selalu paling bawah, arah apa pun.
+    expect(sortPathRows(rows, "OFFTAKER", "asc").map((r) => r.ton)).toEqual([40, 20, 5, 4]);
+    expect(sortPathRows(rows, "OFFTAKER", "desc").map((r) => r.ton)).toEqual([20, 40, 5, 4]);
     expect(sortPathRows(rows, "DEST", "asc").map((r) => r.steps[r.steps.length - 1].label)[0]).toBe("Karya Cipta");
   });
 });
@@ -119,6 +121,14 @@ describe("tata letak Diagram Alur", () => {
     const { sourceOffset, targetOffset } = spreadEdgeEnds(links, (id) => y[id], 20);
     expect([sourceOffset.get("b"), sourceOffset.get("a"), sourceOffset.get("c")]).toEqual([-10, 10, 0]);
     expect([targetOffset.get("b"), targetOffset.get("c"), targetOffset.get("a")]).toEqual([-10, 10, 0]);
+  });
+  it("bezierPointAtX: ujung kurva = ujung garis; tengah x = tengah y", () => {
+    expect(bezierPointAtX(0, 10, 100, 50, 0).y).toBeCloseTo(10);
+    expect(bezierPointAtX(0, 10, 100, 50, 100).y).toBeCloseTo(50);
+    expect(bezierPointAtX(0, 10, 100, 50, 50).y).toBeCloseTo(30);
+    const q = bezierPointAtX(0, 10, 100, 50, 20).y;
+    expect(q).toBeGreaterThan(10);
+    expect(q).toBeLessThan(30);
   });
   it("dodgeLabels: label satu kolom berjarak ≥ gap dan tetap berpusat; kolom lain tak tersentuh", () => {
     const out = dodgeLabels([{ key: "a", x: 100, y: 50 }, { key: "b", x: 101, y: 52 }, { key: "c", x: 400, y: 50 }], 20);

@@ -22,14 +22,13 @@ import {
   type SupplyChainSummary,
   type SupplyChainView,
 } from "@/lib/supply-chain-flow";
-import { channelColor, useChartDark } from "./supply-chain-sankey";
+import { channelColor, fmtTon, useChartDark } from "./supply-chain-sankey";
 import { CollapsibleCard } from "./collapsible-card";
 import { SupplyChainFlowCard } from "./supply-chain-flow-card";
 import { SupplyChainFilterBar } from "./supply-chain-filter-bar";
 import { useSupplyChainFilters } from "./use-supply-chain-filters";
 import { UlBadge } from "./ul-badge";
 
-const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 const pct = (part: number, total: number) => (total > 0 ? `${formatPct(Math.round((part / total) * 1000) / 10)}%` : "—");
 const MILL_ROWS_COLLAPSED = 10;
 

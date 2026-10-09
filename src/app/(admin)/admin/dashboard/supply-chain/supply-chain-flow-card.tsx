@@ -62,9 +62,13 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
   const [destination, setDestination] = useState<SankeyDestination>("MILL");
   const [direction, setDirection] = useState<TreeDirection>("HULU");
 
+  // Tiap graf hanya dibangun untuk tab yang memakainya.
   const graph = useMemo(
-    () => buildSupplyChainSankey(view.data, records, { mode, origin, destination, maxPerColumn: mode === "RINGKAS" ? RINGKAS_MILLS : Number(top) }),
-    [view.data, records, mode, origin, destination, top],
+    () =>
+      tab === "POHON"
+        ? null
+        : buildSupplyChainSankey(view.data, records, { mode, origin, destination, maxPerColumn: mode === "RINGKAS" ? RINGKAS_MILLS : Number(top) }),
+    [tab, view.data, records, mode, origin, destination, top],
   );
   // Tabel pohon: per Lembaga & per Mill tanpa pelipatan — tingkat Distrik/UL ditambahkan pohon.
   const treeGraph = useMemo(
@@ -252,9 +256,9 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
         </div>
 
         <div className="overflow-x-auto">
-          {tab === "SANKEY" && <SupplyChainSankey graph={graph} unit={unit} onSelectNode={selectNode} />}
-          {tab === "ALUR" && <SupplyChainFlowDiagram graph={graph} unit={unit} onSelectNode={selectNode} />}
-          {tab === "JALUR" && <SupplyChainPathList graph={graph} unit={unit} onSelectNode={selectNode} />}
+          {tab === "SANKEY" && graph && <SupplyChainSankey graph={graph} unit={unit} onSelectNode={selectNode} />}
+          {tab === "ALUR" && graph && <SupplyChainFlowDiagram graph={graph} unit={unit} onSelectNode={selectNode} />}
+          {tab === "JALUR" && graph && <SupplyChainPathList graph={graph} unit={unit} onSelectNode={selectNode} />}
           {tab === "POHON" && treeGraph && (
             <SupplyChainTreeTable
               graph={treeGraph}

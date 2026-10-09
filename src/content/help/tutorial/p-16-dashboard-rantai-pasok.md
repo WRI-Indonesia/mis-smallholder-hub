@@ -44,7 +44,7 @@ Dashboard ini masih **prototipe** untuk bahan diskusi. Datanya berasal dari **fo
 
 **Tertulis "Data prototipe rantai pasok belum tersedia".** Tabel survei belum diunggah ke server ini. Hubungi admin aplikasi.
 
-**Diagram kosong setelah memilih filter.** Kombinasi filter tidak punya aliran bertonase, misalnya agen yang tidak memasok Mill terpilih. Hapus chip filter di kartu Aliran TBS, atau tekan **Hapus semua**.
+**Diagram kosong setelah memilih filter.** Kombinasi filter tidak punya aliran bertonase, misalnya agen yang tidak memasok Mill terpilih. Hapus chip filter (✕) di kartu Aliran TBS. Bila ada beberapa chip, **Hapus semua** melepas semuanya sekaligus.
 
 **Sankey sulit dibaca karena pitanya saling menimpa.** Pakai tab **Jalur** atau **Tabel Pohon**: angkanya sama, tanpa garis yang bersilangan.
 

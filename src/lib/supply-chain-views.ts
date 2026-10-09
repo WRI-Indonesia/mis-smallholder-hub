@@ -33,21 +33,23 @@ export function buildPathRows(graph: SankeyGraph): PathRow[] {
 
 export type PathSortKey = "ORIGIN" | "OFFTAKER" | "DEST" | "TON";
 export type SortDir = "asc" | "desc";
-/** Label kolom Offtaker untuk jalur tanpa offtaker (langsung ke Mill). */
-export const DIRECT_PATH_LABEL = "langsung ke Mill";
+/** Label tingkat Offtaker untuk TBS tanpa offtaker — satu konstanta untuk tab Jalur & Tabel Pohon. */
+export const DIRECT_LABEL = "Langsung ke Mill";
 
 const pathStepLabel = (r: PathRow, key: Exclude<PathSortKey, "TON">) =>
-  key === "ORIGIN" ? r.steps[0]?.label ?? "" : key === "DEST" ? r.steps[r.steps.length - 1]?.label ?? "" : r.steps.length === 3 ? r.steps[1].label : DIRECT_PATH_LABEL;
+  key === "ORIGIN" ? r.steps[0]?.label ?? "" : key === "DEST" ? r.steps[r.steps.length - 1]?.label ?? "" : r.steps.length === 3 ? r.steps[1].label : "";
 
 /**
  * Urut baris tab Jalur per kolom (header bisa diklik, owner 2026-10-09). Seri nama
  * diurut tonase terbesar dulu, jadi "Lembaga A–Z" tetap menampilkan jalur terbesar tiap
- * Lembaga di atas. `rows` diasumsikan sudah urut tonase (`buildPathRows`).
+ * Lembaga di atas. Jalur tanpa offtaker selalu paling bawah saat diurut per Offtaker —
+ * sama dengan Tabel Pohon (bukan nama offtaker yang ikut abjad).
  */
 export function sortPathRows(rows: PathRow[], key: PathSortKey, dir: SortDir): PathRow[] {
   const sign = dir === "asc" ? 1 : -1;
   if (key === "TON") return [...rows].sort((a, b) => sign * (a.ton - b.ton) || a.key.localeCompare(b.key));
-  return [...rows].sort((a, b) => sign * pathStepLabel(a, key).localeCompare(pathStepLabel(b, key), "id") || b.ton - a.ton);
+  const direct = (r: PathRow) => (key === "OFFTAKER" && r.steps.length < 3 ? 1 : 0);
+  return [...rows].sort((a, b) => direct(a) - direct(b) || sign * pathStepLabel(a, key).localeCompare(pathStepLabel(b, key), "id") || b.ton - a.ton);
 }
 
 export type TreeDirection = "HULU" | "HILIR";
@@ -125,7 +127,7 @@ export function buildSupplyChainTree(graph: SankeyGraph, groups: ScGroup[], opts
     const dist: Step = { nodeId: `D:${districtName}`, level: "DISTRIK", label: districtName, sub: "", isUl: false, groupCode: null };
     const off: Step = mid
       ? fromNode(mid, "OFFTAKER")
-      : { nodeId: DIRECT_NODE_ID, level: "OFFTAKER", label: "Langsung ke Mill", sub: "tanpa offtaker", isUl: false, groupCode: null };
+      : { nodeId: DIRECT_NODE_ID, level: "OFFTAKER", label: DIRECT_LABEL, sub: "tanpa offtaker", isUl: false, groupCode: null };
     const mill = fromNode(dest, "MILL");
     const ulStep = (u: UlFilter): Step => ({ nodeId: `U:${u}`, level: "UL", label: UL_FILTER_LABEL[u], sub: "", isUl: u === "UL", groupCode: null });
     // Mill tak diketahui tidak punya status UL yang bermakna — sama dengan Sankey, tetap terpisah.
@@ -171,7 +173,11 @@ export function spreadEdgeEnds<L extends { key: string; source: string; target: 
   const spread = (side: "source" | "target") => {
     const other = side === "source" ? "target" : "source";
     const groups = new Map<string, L[]>();
-    for (const l of links) groups.set(l[side], [...(groups.get(l[side]) ?? []), l]);
+    for (const l of links) {
+      let g = groups.get(l[side]);
+      if (!g) groups.set(l[side], (g = []));
+      g.push(l);
+    }
     const out = new Map<string, number>();
     for (const ls of groups.values()) {
       ls.sort((a, b) => centerY(a[other]) - centerY(b[other]) || b.value - a.value || a.key.localeCompare(b.key));
@@ -190,7 +196,12 @@ export function spreadEdgeEnds<L extends { key: string; source: string; target: 
 export function dodgeLabels(items: { key: string; x: number; y: number }[], gap: number): Map<string, { x: number; y: number }> {
   const out = new Map<string, { x: number; y: number }>();
   const byX = new Map<number, { key: string; x: number; y: number }[]>();
-  for (const it of items) byX.set(Math.round(it.x / 8), [...(byX.get(Math.round(it.x / 8)) ?? []), it]);
+  for (const it of items) {
+    const k = Math.round(it.x / 8);
+    let col = byX.get(k);
+    if (!col) byX.set(k, (col = []));
+    col.push(it);
+  }
   for (const col of byX.values()) {
     col.sort((a, b) => a.y - b.y || a.key.localeCompare(b.key));
     const ys: number[] = [];
@@ -199,4 +210,23 @@ export function dodgeLabels(items: { key: string; x: number; y: number }[], gap:
     col.forEach((it, i) => out.set(it.key, { x: it.x, y: ys[i] - drift }));
   }
   return out;
+}
+
+/**
+ * Titik pada kurva bezier React Flow (sisi kanan → kiri: titik kendali di x tengah,
+ * y masing-masing ujung) di posisi `x` — untuk label garis yang melompati kolom
+ * (Lembaga langsung ke Mill) agar tidak jatuh di atas kotak kolom tengah.
+ */
+export function bezierPointAtX(sx: number, sy: number, tx: number, ty: number, x: number): { x: number; y: number } {
+  const xm = (sx + tx) / 2;
+  const bx = (t: number) => (1 - t) ** 3 * sx + 3 * (1 - t) ** 2 * t * xm + 3 * (1 - t) * t ** 2 * xm + t ** 3 * tx;
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2;
+    if (bx(mid) < x) lo = mid;
+    else hi = mid;
+  }
+  const t = (lo + hi) / 2;
+  return { x, y: (1 - t) ** 3 * sy + 3 * (1 - t) ** 2 * t * sy + 3 * (1 - t) * t ** 2 * ty + t ** 3 * ty };
 }
