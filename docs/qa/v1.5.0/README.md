@@ -24,7 +24,7 @@ Run lokal (P0, SUPERADMIN, `mis-dev`): Blocked = butuh login OPERATOR/DONOR (SM-
 
 ## Keputusan
 
-**Go / No-go:** … (tanggal, oleh siapa) — syarat: run staging semua P0 Pass; pembaca dashboard diberi tahu bahwa angka produktivitas berubah (Ton/Ha → Ton/Ha/tahun).
+**Go** (2026-10-09, owner) — atas dasar run lokal P0 (20 Pass · 0 Fail · 7 Blocked) + data-qc staging ✓ + deploy staging hijau; uji browser staging peran OPERATOR/DONOR **tidak dijalankan** — kasus Blocked dibawa ke run prod `--only P0`. Syarat: pembaca dashboard diberi tahu bahwa angka produktivitas berubah (Ton/Ha → Ton/Ha/tahun).
 
 ## Known issues yang dibawa
 

@@ -4,9 +4,9 @@
 
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
-| Developer | | | Go / No-go | gate lokal hijau; `02` lengkap; temuan blocker/major diperbaiki |
-| QA | | | Go / No-go | run staging: semua P0 Pass; Fail tersisa hanya minor ber-issue |
-| Owner | | | Go / No-go | known issues diterima |
+| Developer | Claude | 2026-10-09 | Go | gate lokal hijau (2.621 test, build); `02` lengkap (19 kasus); review rentang penuh: 7 dari 10 temuan diperbaiki, 3 → TD-055/pola aksi baca |
+| QA | Claude (run lokal) | 2026-10-09 | Go terbatas | run lokal P0: 20 Pass · 0 Fail · 7 Blocked; data-qc staging ✓; run staging browser tidak dijalankan |
+| Owner | Sofyan | 2026-10-09 | Go | minta push `mvp` + PR `staging → main`; known issues (README) diterima |
 
 ## Setelah perbaikan temuan — apa yang diulang
 

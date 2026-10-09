@@ -119,7 +119,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | SC-01       | Supply Chain: master Mill/Offtaker + import survei         | 🔲 Not Started | Now     | inti      |
 | SC-02       | Supply Chain: peta rantai pasok + report                   | 🔲 Not Started | Now     | inti      |
 | SC-03       | Supply Chain: analisa volume, jarak & risiko Mill          | 🔲 Not Started | Now     | pendukung |
-| GIS-01      | Fire Alert siap musim kemarau 2027                         | 🔲 Not Started | Next    | inti      |
+| GIS-01      | Fire Alert siap musim kemarau 2027                         | 🟠 Partial     | Next    | inti      |
 | DA-05       | Deteksi anomali data produksi                              | 🔲 Planned     | Next    | pendukung |
 | MD-08       | HCV/NKT: area NKT & patok NKT                              | 🟠 Partial     | Next    | inti      |
 | DA-08       | Ketersediaan data lanjutan                                 | 🔲 Planned     | Next    | pendukung |
@@ -217,10 +217,10 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 #### Semester 1 2027 — Next
 
 <details>
-<summary><strong>GIS-01</strong> · 🔲 Not Started — Fire Alert siap musim kemarau 2027</summary>
+<summary><strong>GIS-01</strong> · 🟠 Partial — Fire Alert siap musim kemarau 2027</summary>
 
-- **Evidence:** Fire Alert live (DASH-07 arsip); laporan bulanan dari arsip FIRMS SP (#365, dirilis v1.0.0, diverifikasi owner & ditutup 2026-09-30). Rentang 30 hari masih bergantung cache Next (>2 MB) dan payload tanpa batas (#286 butir 1 & 3).
-- **Next step:** basemap harian NASA GIBS mengikuti tanggal titik api (#290) ✅ 2026-10-08 di `mvp` (ikut **v1.5.0**). K1 2027: cache FIRMS sendiri + batas payload rentang 30 hari (#286), basemap Sentinel-2 10 m via CDSE dengan cache wajib karena kuota (#291). #286 dan #291 dirancang bersama.
+- **Evidence:** Fire Alert live (DASH-07 arsip); laporan bulanan dari arsip FIRMS SP (#365, dirilis v1.0.0, diverifikasi owner & ditutup 2026-09-30); latar satelit harian NASA GIBS (#290, VIIRS NOAA-20, tanggal = titik api terbaru) dirilis **v1.5.0** 2026-10-09 → fase 🟠. Rentang 30 hari masih bergantung cache Next (>2 MB) dan payload tanpa batas (#286 butir 1 & 3).
+- **Next step:** K1 2027: cache FIRMS sendiri + batas payload rentang 30 hari (#286), basemap Sentinel-2 10 m via CDSE dengan cache wajib karena kuota (#291). #286 dan #291 dirancang bersama.
 - **Selesai bila:** tiga issue ditutup **sebelum musim kemarau 2027** dan uji beban rentang 30 hari tercatat.
 
 </details>
