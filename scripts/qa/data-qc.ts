@@ -121,9 +121,13 @@ const CHECKS: Check[] = [
     expect: (_v, rows) => Number(rows[0]?.total) === Number(rows[0]?.distinct_code), expectLabel: "total = kode unik",
   },
   {
-    id: "B9", section: "B", purpose: "counter = nomor terbesar per awalan",
-    sql: `select coalesce(bool_and(c.last_no = m.max_no), true) as ok, count(*)::int as prefixes from tbl_land_marker_counter c join (select split_part(code,'-PTK-',1) as prefix, max(split_part(code,'-PTK-',2)::int) as max_no from tbl_land_marker group by 1) m on m.prefix=c.prefix`,
-    pick: (r) => `${r[0]?.ok ? "sama" : "BEDA"} (${r[0]?.prefixes} awalan)`, expect: (_v, rows) => rows[0]?.ok === true, expectLabel: "sama",
+    // Syarat keamanan = counter ≥ nomor terbesar (counter < terbesar → kode berikutnya bentrok).
+    // Counter > terbesar = celah nomor yang sah: patok dihapus permanen sementara counter
+    // sengaja dipertahankan (wipe APKASDU 2026-10-02) — dulu cek ini menuntut "sama" (✗ palsu).
+    id: "B9", section: "B", purpose: "counter ≥ nomor terbesar per awalan (tak ada kode bentrok)",
+    sql: `select sum((c.last_no < m.max_no)::int)::int as below, sum((c.last_no > m.max_no)::int)::int as gap, count(*)::int as prefixes from tbl_land_marker_counter c join (select split_part(code,'-PTK-',1) as prefix, max(split_part(code,'-PTK-',2)::int) as max_no from tbl_land_marker group by 1) m on m.prefix=c.prefix`,
+    pick: (r) => `${r[0]?.below ?? 0} awalan counter < terbesar · ${r[0]?.gap ?? 0} bercelah · ${r[0]?.prefixes} awalan`,
+    expect: (_v, rows) => Number(rows[0]?.below ?? 0) === 0, expectLabel: "0 awalan counter < terbesar (celah boleh)",
   },
   {
     id: "C2", section: "C", purpose: "menu report-marker + izin per peran",
