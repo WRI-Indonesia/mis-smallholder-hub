@@ -30,7 +30,7 @@ import {
   type SupplyChainMapView,
 } from "@/lib/supply-chain-flow";
 import { channelColor, useChartDark } from "../../dashboard/supply-chain/supply-chain-sankey";
-import { ModeToggle } from "../../dashboard/supply-chain/supply-chain-dashboard-client";
+import { ModeToggle } from "../../dashboard/supply-chain/segment-toggle";
 import { SupplyChainFilterBar } from "../../dashboard/supply-chain/supply-chain-filter-bar";
 import { UlBadge } from "../../dashboard/supply-chain/ul-badge";
 import { useSupplyChainFilters } from "../../dashboard/supply-chain/use-supply-chain-filters";

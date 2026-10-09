@@ -421,14 +421,24 @@ export interface SankeyLink {
   value: number;
 }
 
+export interface SankeyPath {
+  nodes: string[];
+  links: string[];
+  channel: SupplyChannel;
+  ton: number;
+  toUlTon: number;
+}
+
 export interface SankeyGraph {
   nodes: SankeyNode[];
   links: SankeyLink[];
   /**
    * Jalur utuh (unik) Lembaga → … → Mill: id node & kunci pita yang dilewati.
-   * Dipakai menyorot seluruh hulu-hilir saat satu node/pita disorot.
+   * Dipakai menyorot seluruh hulu-hilir saat satu node/pita disorot, dan
+   * sebagai baris tab Jalur / Tabel Pohon (`ton` = tonase jalur itu, `toUlTon` =
+   * bagian dari record bertanda "Supply to UL" — definisi node Ke Mill UL).
    */
-  paths: { nodes: string[]; links: string[] }[];
+  paths: SankeyPath[];
   totalTon: number;
   /** Record yang tidak ikut (tanpa tonase). */
   skippedRecords: number;
@@ -542,7 +552,7 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
 
   const nodes = new Map<string, SankeyNode>();
   const links = new Map<string, SankeyLink>();
-  const pathIndex = new Map<string, { nodes: string[]; links: string[] }>();
+  const pathIndex = new Map<string, SankeyPath>();
   const ensureNode = (id: string, column: 0 | 1 | 2 | 3, record: ScRecord) => {
     let n = nodes.get(id);
     if (n) return n;
@@ -601,7 +611,10 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
       linkKeys.push(k);
     }
     const pk = linkKeys.join("|");
-    if (!pathIndex.has(pk)) pathIndex.set(pk, { nodes: steps.map((x) => x.id), links: linkKeys });
+    const path = pathIndex.get(pk) ?? { nodes: steps.map((x) => x.id), links: linkKeys, channel: p.channel, ton: 0, toUlTon: 0 };
+    path.ton += p.ton;
+    if (p.record.toUl) path.toUlTon += p.ton;
+    pathIndex.set(pk, path);
   }
   // Nilai node = max(masuk, keluar) — kolom 0 hanya keluar, kolom 3 hanya masuk.
   const inSum = new Map<string, number>();

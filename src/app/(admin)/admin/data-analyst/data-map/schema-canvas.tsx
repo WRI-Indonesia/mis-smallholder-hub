@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 import type { CanvasSchema } from "@/types/data-schema";
 
 /**
- * Kanvas ERD (DA-07, #256) — satu-satunya tempat React Flow dipakai di aplikasi
- * ini, dan sengaja begitu: 22 entitas dengan 28 relasi ber-arah adalah graf
+ * Kanvas ERD (DA-07, #256) — React Flow dipakai di sini dan di tab Diagram Alur
+ * Dashboard Rantai Pasok, dan sengaja begitu: 22 entitas dengan 28 relasi ber-arah adalah graf
  * padat yang memang butuh pan/zoom dan sorot tetangga. Struktur berhierarki
  * (mis. pohon menu Bantuan) tidak dipasang di sini — bentuk pohon lebih baik
  * dirender sebagai pohon.
