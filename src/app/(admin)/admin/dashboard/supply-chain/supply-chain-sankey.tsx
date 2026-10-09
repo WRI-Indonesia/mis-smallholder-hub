@@ -50,7 +50,8 @@ const LABEL_GAP = 6;
 const LEFT_MARGIN = 130;
 const RIGHT_MARGIN = 270;
 const MAX_LABEL = 30;
-const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
+/** Tonase bulat bersatuan "t" — dipakai juga tab Diagram Alur, Jalur, Tabel Pohon. */
+export const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 const clip = (s: string, n = MAX_LABEL) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 type Hover = { kind: "node"; node: LaidOutNode } | { kind: "link"; link: LaidOutLink } | null;

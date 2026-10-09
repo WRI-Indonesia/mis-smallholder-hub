@@ -24,7 +24,7 @@ Run lokal (P0, SUPERADMIN, `mis-dev`): Blocked = butuh login OPERATOR/DONOR (SM-
 
 ## Keputusan
 
-**Go** (2026-10-09, owner) — atas dasar run lokal P0 (20 Pass · 0 Fail · 7 Blocked) + data-qc staging ✓ + deploy staging hijau; uji browser staging peran OPERATOR/DONOR **tidak dijalankan** — kasus Blocked dibawa ke run prod `--only P0`. Syarat: pembaca dashboard diberi tahu bahwa angka produktivitas berubah (Ton/Ha → Ton/Ha/tahun).
+**Go** (2026-10-09, owner) — atas dasar run lokal P0 (20 Pass · 0 Fail · 7 Blocked) + data-qc staging ✓ + deploy staging hijau; uji browser staging peran OPERATOR/DONOR **tidak dijalankan** — kasus Blocked dibawa ke run prod `--only P0`. **Dirilis 2026-10-09:** PR #405 merge `81d0747` → deploy prod `37866588686` hijau 3m42s (guard migrasi lolos) → tag `v1.5.0` + GitHub Release. Syarat: pembaca dashboard diberi tahu bahwa angka produktivitas berubah (Ton/Ha → Ton/Ha/tahun).
 
 ## Known issues yang dibawa
 

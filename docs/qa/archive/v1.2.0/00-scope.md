@@ -1,6 +1,6 @@
 # 00 · Lingkup rilis v1.2.0
 
-> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../../README.md) · Paket: [README.md](README.md)
 
 Sumber: `git log v1.1.0..HEAD`, `gh issue list --state closed`, `docs/project/changelog/2026-09.md`.
 
