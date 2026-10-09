@@ -303,7 +303,9 @@ export async function checkUploadParcelOverlaps(
        AND ST_Intersects(c.geom, b.geom) AND NOT ST_Touches(c.geom, b.geom)
       JOIN tbl_farmer fb ON fb.id = b.farmer_id AND fb.is_active
       JOIN tbl_farmer_group gb ON gb.id = fb.farmer_group_id AND gb.is_active
-      WHERE NOT EXISTS (SELECT 1 FROM cand_ok r WHERE r.farmer_id = b.farmer_id AND r.parcel_id = b.parcel_id)
+      -- Pengecualian revisi dari SEMUA baris valid (cand), bukan hanya yang geometrinya
+      -- tak kosong: simpan merevisi lahan lama untuk tiap baris valid (review rentang v1.5.0).
+      WHERE NOT EXISTS (SELECT 1 FROM cand r WHERE r.farmer_id = b.farmer_id AND r.parcel_id = b.parcel_id)
       UNION ALL
       SELECT a.row_num, 'FILE', o.row_num, a.parcel_id,
              ST_Area(ST_Intersection(a.geom, o.geom)::geography),

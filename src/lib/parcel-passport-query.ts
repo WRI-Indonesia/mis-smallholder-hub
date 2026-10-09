@@ -8,7 +8,7 @@ import type { Polygon, MultiPolygon } from "geojson";
 import { prisma } from "@/lib/prisma";
 import { getAccessContext, farmerGroupAccessFilter, type AccessContext } from "@/lib/access-context";
 import { summarizeProduction } from "@/lib/map-data";
-import { fetchGroupDataMonths } from "@/lib/production-data-months-query";
+import { fetchFarmerDataMonths } from "@/lib/production-data-months-query";
 import type { DataMonthsByYear } from "@/lib/productivity-annualize";
 import { fetchParcelNeighbors } from "@/lib/parcel-neighbor-query";
 import { NEIGHBOR_LIMIT_PDF } from "@/lib/parcel-neighbor";
@@ -192,10 +192,10 @@ export async function fetchParcelPassport(
     prisma.tree.count({ where: { landParcelId, isActive: true } }),
     // Lahan tetangga (#327) — cap PDF; scope sudah diterapkan di dalamnya.
     fetchParcelNeighbors(landParcelId, NEIGHBOR_LIMIT_PDF, access),
-    // Penyetahunan Ton/Ha (owner 2026-10-08): bulan Lembaga + record petani & lahan ini.
+    // Penyetahunan Ton/Ha (owner 2026-10-08): definisi bulan yang sama dengan detail/Profil Petani.
     includeProduction
       ? (shared.groupDataMonths ??
-        fetchGroupDataMonths({ id: farmer.farmerGroupId }, [{ farmerId: farmer.id }, { parcelId: landParcelId }]))
+        fetchFarmerDataMonths(farmer.farmerGroupId, farmer.id))
       : Promise.resolve(undefined),
   ]);
 

@@ -150,7 +150,7 @@ describe("scope — baca & target mutasi lewat farmerRelationAccessFilter", () =
     expect(res!.dataMonthsByYear).toEqual({ "2026": 4 });
     expect(db.productionRecord.groupBy.mock.calls[0][0].where).toEqual({
       isActive: true,
-      OR: [{ farmer: { isActive: true, farmerGroup: { id: "kt-1" } } }, { farmerId: "f-1" }, { parcelId: "lp-1" }],
+      OR: [{ farmer: { isActive: true, farmerGroup: { id: "kt-1" } } }, { farmerId: "f-1" }, { parcel: { farmerId: "f-1" } }],
     });
   });
 

@@ -529,13 +529,13 @@ describe("parcelProductivity", () => {
   it("disetahunkan per bulan ber-data Lembaga (owner 2026-10-08); bulan persil tetap miliknya", () => {
     // Lembaga ber-data 2025 = 6 bulan → × 2; 2024 = 12 bulan → × 1.
     const months = { "2024": 12, "2025": 6 };
-    const r = parcelProductivity(production, 2, 2025, months);
+    const r = parcelProductivity(production, 2, 2025, { monthsByYear: months });
     expect(r.tonHa).toBeCloseTo(24, 5); // 24 ton × 12/6 ÷ 2 ha
     expect(r.monthsReported).toBe(2);
     // AVG = rata-rata tahunan yang sudah disetahunkan: (12 × 1 + 24 × 2) ton ÷ 2 tahun ÷ 2 ha
-    expect(parcelProductivity(production, 2, "AVG", months).tonHa).toBeCloseTo(15, 5);
+    expect(parcelProductivity(production, 2, "AVG", { monthsByYear: months }).tonHa).toBeCloseTo(15, 5);
     // Tahun tanpa entri bulan → tidak disetahunkan.
-    expect(parcelProductivity(production, 2, 2025, { "2024": 12 }).tonHa).toBeCloseTo(12, 5);
+    expect(parcelProductivity(production, 2, 2025, { monthsByYear: { "2024": 12 } }).tonHa).toBeCloseTo(12, 5);
   });
 
   it("entri tahun typo diabaikan — AVG tak terdilusi tahun bogus", () => {

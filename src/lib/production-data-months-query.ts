@@ -24,3 +24,14 @@ export async function fetchGroupDataMonths(
   });
   return dataMonthsPerYear(rows.map((r) => ({ period: r.period, kg: r._sum.yieldKg ?? 0, linked: r._count.parcelId })));
 }
+
+/**
+ * Bulan ber-data untuk halaman SATU petani (detail Petani & Lahan, Profil Petani &
+ * Profil Lahan): populasi Lembaga + record petani itu sendiri (nonaktif dibuka
+ * SUPERADMIN) + record di lahan-lahannya yang tercatat atas nama pemilik lain.
+ * Satu definisi untuk keempat tempat → lahan & tahun yang sama selalu memakai faktor
+ * yang sama (review rentang v1.5.0: Profil Petani sempat tanpa record lahannya).
+ */
+export function fetchFarmerDataMonths(farmerGroupId: string, farmerId: string): Promise<DataMonthsByYear> {
+  return fetchGroupDataMonths({ id: farmerGroupId }, [{ farmerId }, { parcel: { farmerId } }]);
+}

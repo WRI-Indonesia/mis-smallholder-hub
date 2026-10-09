@@ -486,9 +486,10 @@ export function parcelProductivity(
   production: Record<string, number>,
   area: number | null,
   view: number | "AVG",
-  monthsByYear?: DataMonthsByYear,
-  maxYear = defaultMaxProductionYear()
+  /** Objek, bukan argumen posisi: dulu `maxYear` di posisi ke-4 (review rentang v1.5.0). */
+  opts: { monthsByYear?: DataMonthsByYear; maxYear?: number } = {}
 ): Omit<BmpParcelProductivity, "cls"> {
+  const { monthsByYear, maxYear = defaultMaxProductionYear() } = opts;
   // Typo years are excluded here too so AVG isn't diluted by a bogus year.
   const entries = Object.entries(production).filter(([period]) =>
     isSaneProductionYear(Number.parseInt(period.slice(0, 4), 10), maxYear)
@@ -533,7 +534,7 @@ export function buildBmpProductivityView(
     NO_DATA: 0,
   };
   for (const p of parcels) {
-    const base = parcelProductivity(p.production, p.area, view, monthsByYear);
+    const base = parcelProductivity(p.production, p.area, view, { monthsByYear });
     const cls = productivityClass(base.tonHa);
     byParcel[p.id] = { ...base, cls };
     counts[cls]++;
@@ -559,7 +560,7 @@ export function buildBmpProductivityMatrix(
     .map((p) => {
       const tonHaByYear: Record<string, number | null> = {};
       for (const year of years) {
-        tonHaByYear[String(year)] = parcelProductivity(p.production, p.area, year, monthsByYear).tonHa;
+        tonHaByYear[String(year)] = parcelProductivity(p.production, p.area, year, { monthsByYear }).tonHa;
       }
       return {
         id: p.id,
@@ -568,7 +569,7 @@ export function buildBmpProductivityMatrix(
         parcelId: p.parcelId,
         area: p.area,
         tonHaByYear,
-        avg: parcelProductivity(p.production, p.area, "AVG", monthsByYear).tonHa,
+        avg: parcelProductivity(p.production, p.area, "AVG", { monthsByYear }).tonHa,
       };
     });
   return { years, rows };

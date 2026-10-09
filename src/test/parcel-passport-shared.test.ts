@@ -71,7 +71,7 @@ describe("fetchParcelPassport — parameter `shared`", () => {
     const own = await fetchParcelPassport("lp-1", true);
     expect(db.productionRecord.groupBy.mock.calls[0][0].where).toEqual({
       isActive: true,
-      OR: [{ farmer: { isActive: true, farmerGroup: { id: "kt-1" } } }, { farmerId: "f-1" }, { parcelId: "lp-1" }],
+      OR: [{ farmer: { isActive: true, farmerGroup: { id: "kt-1" } } }, { farmerId: "f-1" }, { parcel: { farmerId: "f-1" } }],
     });
     if (own.success) expect(own.data!.production.dataMonthsByYear).toEqual({ "2026": 1 });
 

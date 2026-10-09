@@ -181,8 +181,9 @@ describe("Bagian A + lampiran", () => {
     expect(res.success).toBe(true);
     if (!res.success) return;
     const where = db.productionRecord.groupBy.mock.calls[0][0].where;
-    // + record petani ini sendiri (nonaktif dibuka SUPERADMIN tetap terhitung, review 7cbf0f1).
-    expect(where).toEqual({ isActive: true, OR: [{ farmer: { isActive: true, farmerGroup: { id: "g-1" } } }, { farmerId: "f-1" }] });
+    // + record petani ini (nonaktif dibuka SUPERADMIN) + record di lahan-lahannya atas nama
+    // pemilik lain — definisi sama dengan detail/Profil Lahan (review rentang v1.5.0).
+    expect(where).toEqual({ isActive: true, OR: [{ farmer: { isActive: true, farmerGroup: { id: "g-1" } } }, { farmerId: "f-1" }, { parcel: { farmerId: "f-1" } }] });
     // 1 Ton × 12/6 ÷ 2 Ha = 1 Ton/Ha/tahun; total produksi tetap tercatat.
     expect(res.data!.production.all.perYear[0]).toMatchObject({ year: 2025, totalKg: 1000, productivityTonHa: 1 });
     expect(res.data!.summary.lastProductivity).toEqual({ year: 2025, tonHa: 1 });

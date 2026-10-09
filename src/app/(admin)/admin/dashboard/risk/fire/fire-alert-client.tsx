@@ -169,6 +169,8 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
         if (controller.signal.aborted) return;
         console.warn("Fire alert fetch failed:", err);
         setClassified(null);
+        // Tanggal GIBS ikut periode yang DIPILIH, bukan periode terakhir yang berhasil dimuat.
+        setGibsDate(gibsImageryDate(null, { now: new Date(), month }));
         // Tanpa ini, sumber & daftar tanggal kosong milik bulan SEBELUMNYA
         // tetap tercetak di bawah label bulan yang baru dipilih.
         setCoverage(null);

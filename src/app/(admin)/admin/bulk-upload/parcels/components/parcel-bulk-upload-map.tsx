@@ -224,8 +224,8 @@ export function ParcelBulkUploadMap({ data }: Props) {
                 {popupInfo.warnings.length > 0 && (
                   <div className="border-t pt-1 mt-1 text-[11px] max-w-[260px] leading-tight text-amber-700 dark:text-amber-400">
                     <strong className="text-foreground block mb-0.5 text-xs">Peringatan:</strong>
-                    {popupInfo.warnings.map((w) => (
-                      <p key={w}>{w}</p>
+                    {popupInfo.warnings.map((w, i) => (
+                      <p key={`${i}-${w}`}>{w}</p>
                     ))}
                   </div>
                 )}

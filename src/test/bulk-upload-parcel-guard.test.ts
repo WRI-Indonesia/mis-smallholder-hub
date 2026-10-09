@@ -197,7 +197,8 @@ describe("checkUploadParcelOverlaps — guard tumpang tindih upload (#317 Fase 3
     const res = await actions.checkUploadParcelOverlaps([cand(), cand({ rowNum: 3, parcelId: "HJP.0002.A" })]);
     const sql = (db.$queryRaw.mock.calls[0][0] as TemplateStringsArray).join("?");
     // Lahan DB yang direvisi baris MANA PUN di berkas tidak diadu (poligon lamanya akan hilang).
-    expect(sql).toContain("NOT EXISTS (SELECT 1 FROM cand_ok r WHERE r.farmer_id = b.farmer_id AND r.parcel_id = b.parcel_id)");
+    // Pengecualian revisi dari SEMUA baris valid (cand), termasuk yang geometrinya kosong setelah dibersihkan (review rentang v1.5.0).
+    expect(sql).toContain("NOT EXISTS (SELECT 1 FROM cand r WHERE r.farmer_id = b.farmer_id AND r.parcel_id = b.parcel_id)");
     expect(sql).toContain("o.row_num > a.row_num");
     expect(res.success).toBe(true);
     if (!res.success) return;

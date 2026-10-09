@@ -88,7 +88,13 @@ export function farmerNameFromFileName(fileName: string): string | null {
   const us = last.indexOf("_");
   if (us >= 0) {
     const tail = last.slice(last.lastIndexOf("_") + 1).trim();
-    if (/\b[A-Z]{2,}\b/.test(last.slice(0, us)) && /[a-z]/.test(tail)) last = tail;
+    // Awalan kode Lembaga ("IM_…") dibuang bila ekornya nama penuh: ber-huruf kecil
+    // ("IM_Joko"), ATAU — nama huruf besar lazim di berkas fasilitator (review rentang
+    // v1.5.0) — ekornya berspasi dan awalannya jelas kode Lembaga: ≥ 2 kata ("ASPEK RAS")
+    // atau satu kata ≤ 3 huruf ("IM_JOKO WARDANI"). "JOKO_WARDANI" = alias.
+    const prefix = last.slice(0, us).trim();
+    const codeLike = /\s/.test(prefix) || prefix.length <= 3;
+    if (/\b[A-Z]{2,}\b/.test(prefix) && (/[a-z]/.test(tail) || (/\s/.test(tail) && codeLike))) last = tail;
     else {
       // Apostrof: ekor ≤ 2 huruf ("Syafi_i") atau awalan ≤ 3 huruf + ekor huruf kecil ("Mas_ud").
       last = last.replace(/(\b[A-Za-z]{1,3}|[A-Za-z]+)_([A-Za-z]+)\b/g, (m, a: string, b: string) => (b.length <= 2 || (a.length <= 3 && /^[a-z]/.test(b)) ? `${a}'${b}` : m));
@@ -328,6 +334,11 @@ export function matchFarmerName(
   // alias EXACT dan alias lain tidak menunjuk petani lain; alias yang ragu/ganda → Ganda.
   const aliases = aliasesOf(name);
   if (aliases.length > 1) {
+    // Coba dulu sebagai SATU nama ("Siti_Aminah" → "Siti Aminah"): tanpa ini alias
+    // "Siti" EXACT ke petani lain bernama "Siti" sementara "Aminah" NONE → form masuk
+    // ke petani yang salah tanpa ditandai (review rentang v1.5.0).
+    const joined = matchFarmerName(aliases.join(" "), farmers, options);
+    if (joined.confidence === "EXACT") return joined;
     const results = aliases.map((a) => matchFarmerName(a, farmers, options));
     const suggestions = [...new Map(results.flatMap((r) => r.suggestions).map((f) => [f.farmerDbId, f])).values()].slice(0, 5);
     const exact = [...new Set(results.filter((r) => r.confidence === "EXACT").map((r) => r.farmerDbId))];

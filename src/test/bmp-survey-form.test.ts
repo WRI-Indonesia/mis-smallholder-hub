@@ -105,6 +105,10 @@ describe("farmerNameFromFileName — nama petani dari nama berkas (identitas uta
     expect(farmerNameFromFileName("Monev BMP - Ratno_Ahmad Rofi_i.xlsx")).toBe("Ratno/Ahmad Rofi'i");
     // Temuan review c707365: huruf kapital semua, apostrof berekor panjang, "(1)" sesudah sisa "xlsx", awalan berangka.
     expect(farmerNameFromFileName("Monev BMP - JOKO_WARDANI.xlsx")).toBe("JOKO/WARDANI");
+    // Review rentang v1.5.0: awalan kode Lembaga + nama huruf besar berspasi tetap dibuang.
+    expect(farmerNameFromFileName("Monev BMP - IM_JOKO WARDANI.xlsx")).toBe("JOKO WARDANI");
+    expect(farmerNameFromFileName("Monev BMP - ASPEK RAS_EDDI MARTUAH.xlsx")).toBe("EDDI MARTUAH");
+    expect(farmerNameFromFileName("Monev BMP - JOKO_WARDANI ADI.xlsx")).toBe("JOKO/WARDANI ADI");
     expect(farmerNameFromFileName("Monev BMP - ZUL_AH.xlsx")).toBe("ZUL'AH");
     expect(farmerNameFromFileName("Monev BMP - Ma_ruf.xlsx")).toBe("Ma'ruf");
     expect(farmerNameFromFileName("Monev BMP - Ade_Budi.xlsx")).toBe("Ade/Budi");
@@ -289,6 +293,10 @@ describe("pencocokan nama petani", () => {
 
   it("alias 'A/B' dari nama berkas Kampar: alias yang EXACT menang; dua alias EXACT beda petani → AMBIGUOUS; tak ada → NONE", () => {
     expect(matchFarmerName("Joko/Sri Wahyuni", farmers)).toMatchObject({ farmerDbId: "g", confidence: "EXACT" });
+    // Review rentang v1.5.0: alias dicoba dulu sebagai SATU nama — "Sri/Wahyuni" = "Sri Wahyuni",
+    // bukan petani lain bernama "Sri" saja.
+    const withSri = [...farmers, { farmerDbId: "s", name: "Sri", farmerCode: "X.9" }];
+    expect(matchFarmerName("Sri/Wahyuni", withSri)).toMatchObject({ farmerDbId: "g", confidence: "EXACT" });
     expect(matchFarmerName("Joko/Rusdhi", farmers)).toMatchObject({ farmerDbId: "a", confidence: "FUZZY" });
     expect(matchFarmerName("Rusdi/Sri Wahyuni", farmers)).toMatchObject({ farmerDbId: null, confidence: "AMBIGUOUS" });
     expect(matchFarmerName("Joko/Zulkifli Nasution", farmers)).toMatchObject({ farmerDbId: null, confidence: "NONE" });

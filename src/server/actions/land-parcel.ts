@@ -14,7 +14,7 @@ import {
 } from "@/lib/access-context";
 import { getFarmerOptions } from "@/lib/select-options";
 import { summarizeProduction } from "@/lib/map-data";
-import { fetchGroupDataMonths } from "@/lib/production-data-months-query";
+import { fetchFarmerDataMonths } from "@/lib/production-data-months-query";
 import { fetchParcelPassport } from "@/lib/parcel-passport-query";
 import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
 import type { ActionResult } from "@/types/action-result";
@@ -157,8 +157,8 @@ export async function getLandParcelProduction(id: string): Promise<ProductionSum
       where: { parcelId: id, isActive: true },
       select: { period: true, yieldKg: true },
     }),
-    // Ton/Ha/tahun (owner 2026-10-08): bulan ber-data Lembaga pemilik + record petani & lahan ini.
-    fetchGroupDataMonths({ id: parcel.farmer.farmerGroupId }, [{ farmerId: parcel.farmerId }, { parcelId: id }]),
+    // Ton/Ha/tahun (owner 2026-10-08): definisi bulan yang sama dengan detail/Profil Petani.
+    fetchFarmerDataMonths(parcel.farmer.farmerGroupId, parcel.farmerId),
   ]);
 
   return { ...summarizeProduction(records), dataMonthsByYear };

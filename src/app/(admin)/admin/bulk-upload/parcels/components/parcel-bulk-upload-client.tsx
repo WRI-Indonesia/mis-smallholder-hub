@@ -843,8 +843,8 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                         {row._errors.length > 0 && <p className="text-destructive">{row._errors.join("; ")}</p>}
                         {hasWarning(row) && (
                           <ul className="space-y-0.5 text-amber-700 dark:text-amber-400">
-                            {row._warnings!.map((w) => (
-                              <li key={w}>{w}</li>
+                            {row._warnings!.map((w, i) => (
+                              <li key={`${i}-${w}`}>{w}</li>
                             ))}
                           </ul>
                         )}

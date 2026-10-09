@@ -4,7 +4,7 @@ import { centroid } from "@turf/turf";
 import type { Polygon, MultiPolygon } from "geojson";
 import { prisma } from "@/lib/prisma";
 import { fetchFarmerMarkerPoints, fetchFarmerMarkerStats, type MarkerPoint } from "@/lib/land-marker-query";
-import { fetchGroupDataMonths } from "@/lib/production-data-months-query";
+import { fetchFarmerDataMonths } from "@/lib/production-data-months-query";
 import { nktAffectedStatusWhere, summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
@@ -225,8 +225,7 @@ export async function getFarmerDetail(id: string) {
   // Bulan ber-data Lembaga petani ini — penyetahunan produktivitas (owner 2026-10-08).
   const [markerStats, groupDataMonths] = await Promise.all([
     fetchFarmerMarkerStats(farmer.id),
-    // + record petani ini sendiri: petani nonaktif (dibuka SUPERADMIN) di luar populasi Lembaga (review 7cbf0f1).
-    fetchGroupDataMonths({ id: farmer.farmerGroupId }, [{ farmerId: farmer.id }]),
+    fetchFarmerDataMonths(farmer.farmerGroupId, farmer.id),
   ]);
 
   const detail = buildFarmerDetail(
@@ -447,8 +446,7 @@ export async function getFarmerProfilePassport(
         ])
       : Promise.resolve([[], []] as const),
     // Bulan ber-data Lembaga — penyetahunan produktivitas, sama dengan layar (owner 2026-10-08).
-    // + record petani ini sendiri: petani nonaktif (dibuka SUPERADMIN) di luar populasi Lembaga (review 7cbf0f1).
-    fetchGroupDataMonths({ id: farmer.farmerGroupId }, [{ farmerId: farmer.id }]),
+    fetchFarmerDataMonths(farmer.farmerGroupId, farmer.id),
   ]);
   const treeCountByParcel = new Map(treeCounts.map((r) => [r.landParcelId, r._count._all]));
   const markerCountByUid = new Map(markerCounts.map((r) => [r.parcelUid, r._count._all]));
