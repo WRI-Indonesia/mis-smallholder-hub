@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ScRecord, SupplyChainData } from "@/lib/supply-chain-flow";
 import { UNKNOWN_MILL_FILTER } from "@/lib/supply-chain-flow";
-import { ALL_KEY, distanceStats, groupVolumes, millKey, recordDistanceKm, supplyChainInsights } from "@/lib/supply-chain-insights";
+import { ALL_KEY, UNCERTAIN_THRESHOLD, distanceStats, groupVolumes, isMostlyUncertain, millKey, recordDistanceKm, supplyChainInsights } from "@/lib/supply-chain-insights";
 import { supplyChainExportFilename, supplyChainExportSheets } from "@/lib/supply-chain-xlsx";
 
 const rec = (over: Partial<ScRecord>): ScRecord => ({
@@ -205,6 +205,44 @@ describe("review 2026-10-10", () => {
     ], data)[0].data;
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ statusMill: "PKS pasti", basisMill: "teks survei menyebut PKS" });
+  });
+});
+
+describe("review 2026-10-10 putaran 2", () => {
+  const d3: SupplyChainData = {
+    ...data,
+    offtakers: [
+      ...data.offtakers,
+      { id: "KOP-G1", name: "L1", type: "KOPERASI", district: "Siak", lat: null, lon: null, farmerGroupCode: "G1" },
+    ],
+  };
+  it("ketergantungan melihat pembeli luar di belakang koperasi Lembaga sendiri", () => {
+    // G1 menjual 100% lewat koperasinya sendiri, dan koperasi menjual semuanya ke satu RAMP.
+    const records = [rec({ id: "a", offtakerId: "KOP-G1", nextOfftakerId: "RMP-1", supplyTon: 50 })];
+    const g = groupVolumes(records, d3)[0];
+    expect(g.mainOfftaker).toMatchObject({ id: "KOP-G1", isSelf: true });
+    expect(g.mainExternal).toMatchObject({ id: "RMP-1", name: "RAMP C", ton: 50 });
+    const dep = supplyChainInsights(records, d3).find((i) => i.kind === "KETERGANTUNGAN");
+    if (dep?.kind !== "KETERGANTUNGAN") throw new Error();
+    expect(dep.groups).toEqual([{ code: "G1", abrv: "L1", offtakerName: "RAMP C", share: 1 }]);
+  });
+  it("koperasi sendiri langsung ke Mill: tak ada pembeli luar, bukan ketergantungan", () => {
+    const records = [rec({ id: "a", offtakerId: "KOP-G1", supplyTon: 50 })];
+    expect(groupVolumes(records, d3)[0].mainExternal).toBeNull();
+    const dep = supplyChainInsights(records, d3).find((i) => i.kind === "KETERGANTUNGAN");
+    if (dep?.kind !== "KETERGANTUNGAN") throw new Error();
+    expect(dep.groups).toEqual([]);
+  });
+  it("Lembaga tepat 50% PKS pasti: Sorotan dan tabel memakai batas yang sama", () => {
+    const records = [rec({ id: "a", supplyTon: 5 }), rec({ id: "b", millStatus: "PKS_BELUM_PASTI", supplyTon: 5 })];
+    const g = groupVolumes(records, data)[0];
+    expect(isMostlyUncertain(g)).toBe(true);
+    const k = supplyChainInsights(records, data).find((i) => i.kind === "KEPASTIAN");
+    if (k?.kind !== "KEPASTIAN") throw new Error();
+    expect(k.groups.map((x) => x.code)).toEqual(["G1"]);
+    expect(k.threshold).toBe(UNCERTAIN_THRESHOLD);
+    expect(isMostlyUncertain({ ton: 10, pastiTon: 6 })).toBe(false);
+    expect(isMostlyUncertain({ ton: 0, pastiTon: 0 })).toBe(false);
   });
 });
 

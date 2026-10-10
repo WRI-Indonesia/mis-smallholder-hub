@@ -6,7 +6,7 @@ import { AlertTriangle, Map as MapIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { OFFTAKER_TYPE_LABEL } from "@/lib/supply-chain-flow";
-import { DEPENDENCY_THRESHOLD, type GroupVolumeRow } from "@/lib/supply-chain-insights";
+import { DEPENDENCY_THRESHOLD, externalShare, isMostlyUncertain, type GroupVolumeRow } from "@/lib/supply-chain-insights";
 import { fmtKm, fmtTon, pctOf } from "@/lib/supply-chain-format";
 import { CollapsibleCard } from "./collapsible-card";
 import { SortHead, sortRows, type SortState } from "./sort-head";
@@ -59,8 +59,8 @@ export function SupplyChainGroupTable({
         : key === "TON" ? r.ton
         : key === "UL" ? share(r.ulTon, r.ton)
         : key === "PASTI" ? share(r.pastiTon, r.ton)
-        // Koperasi Lembaga sendiri bukan ketergantungan pada pihak luar → paling bawah, sama dengan Sorotan.
-        : key === "OFFTAKER" ? (r.mainOfftaker && !r.mainOfftaker.isSelf ? share(r.mainOfftaker.ton, r.ton) : null)
+        // Porsi pembeli luar (koperasi Lembaga sendiri dilewati, pembeli di belakangnya dihitung) — sama dengan Sorotan.
+        : key === "OFFTAKER" ? externalShare(r)
         : key === "MILL" ? (r.mainMill ? share(r.mainMill.ton, r.ton) : null)
         : r.avgKm,
       ),
@@ -97,7 +97,7 @@ export function SupplyChainGroupTable({
               <SortHead sortKey="TON" sort={sort} onToggle={onToggleSort} label="Tonase" className="w-[22%]" />
               <SortHead sortKey="UL" sort={sort} onToggle={onToggleSort} label="ke UL" className="text-right" title="Porsi tonase Lembaga yang ke Mill pemasok UL" />
               <SortHead sortKey="PASTI" sort={sort} onToggle={onToggleSort} label="PKS pasti" className="text-right" title="Porsi tonase yang PKS-nya pasti (disebut di survei atau dipetakan dari nama PT)" />
-              <SortHead sortKey="OFFTAKER" sort={sort} onToggle={onToggleSort} label="Offtaker utama" title="Offtaker pertama dengan tonase terbesar dan porsinya; koperasi Lembaga sendiri diurut paling bawah" />
+              <SortHead sortKey="OFFTAKER" sort={sort} onToggle={onToggleSort} label="Offtaker utama" title="Offtaker pertama dengan tonase terbesar dan porsinya; diurut menurut porsi pembeli luar (koperasi Lembaga sendiri dilewati, pembeli di belakangnya dihitung)" />
               <SortHead sortKey="MILL" sort={sort} onToggle={onToggleSort} label="Mill utama" title="Mill dengan tonase terbesar dan porsinya" />
               <SortHead sortKey="KM" sort={sort} onToggle={onToggleSort} label="Jarak" className="text-right" title="Rata-rata garis lurus Lembaga → offtaker → Mill, tertimbang tonase (bukan jarak tempuh jalan)" />
               <th className="w-8" />
@@ -106,8 +106,9 @@ export function SupplyChainGroupTable({
           <tbody>
             {visible.map((g) => {
               const selected = selectedCode === g.code;
-              const offShare = g.mainOfftaker ? share(g.mainOfftaker.ton, g.ton) : 0;
-              const dependent = g.mainOfftaker != null && !g.mainOfftaker.isSelf && offShare >= DEPENDENCY_THRESHOLD;
+              const dependent = (externalShare(g) ?? 0) >= DEPENDENCY_THRESHOLD;
+              // Lewat koperasi sendiri lalu ke pembeli luar: sebut pembeli luarnya di tooltip.
+              const viaSelf = g.mainOfftaker?.isSelf && g.mainExternal ? ` → ${g.mainExternal.name} ${pctOf(g.mainExternal.ton, g.ton)}` : "";
               return (
                 <tr
                   key={g.code}
@@ -131,13 +132,13 @@ export function SupplyChainGroupTable({
                     </div>
                   </td>
                   <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">{pctOf(g.ulTon, g.ton)}</td>
-                  <td className={cn("py-1.5 pr-3 text-right tabular-nums", share(g.pastiTon, g.ton) < 0.5 ? "text-amber-700 dark:text-amber-500" : "text-muted-foreground")}>
+                  <td className={cn("py-1.5 pr-3 text-right tabular-nums", isMostlyUncertain(g) ? "text-amber-700 dark:text-amber-500" : "text-muted-foreground")}>
                     {pctOf(g.pastiTon, g.ton)}
                   </td>
                   <td className="max-w-[220px] py-1.5 pr-3">
                     {g.mainOfftaker ? (
-                      <span className="inline-flex max-w-full items-center gap-1.5" title={`${g.mainOfftaker.name} · ${OFFTAKER_TYPE_LABEL[g.mainOfftaker.type]}${g.mainOfftaker.isSelf ? " (koperasi Lembaga sendiri)" : ""} · ${fmtTon(g.mainOfftaker.ton)}`}>
-                        {dependent && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-label={`≥ ${thresholdPct}% lewat satu offtaker`} />}
+                      <span className="inline-flex max-w-full items-center gap-1.5" title={`${g.mainOfftaker.name} · ${OFFTAKER_TYPE_LABEL[g.mainOfftaker.type]}${g.mainOfftaker.isSelf ? " (koperasi Lembaga sendiri)" : ""} · ${fmtTon(g.mainOfftaker.ton)}${viaSelf}`}>
+                        {dependent && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-label={`≥ ${thresholdPct}% lewat satu offtaker luar`} />}
                         <span className="truncate">{g.mainOfftaker.name}</span>
                         <span className={cn("shrink-0 tabular-nums text-xs", dependent ? "font-semibold text-amber-700 dark:text-amber-500" : "text-muted-foreground")}>{pctOf(g.mainOfftaker.ton, g.ton)}</span>
                       </span>

@@ -42,7 +42,7 @@ export function SupplyChainMillTable({
   /** ID Mill filter aktif (atau `UNKNOWN_MILL_FILTER`); null = tak ada. */
   selectedMillId: string | null;
   onSelect: (row: MillVolumeRow) => void;
-  mapHref: (millId: string | null) => string;
+  mapHref: (millId: string) => string;
 }) {
   const [showAll, setShowAll] = useState(false);
   const { sort, toggle } = useTableSort<SortKey>({ key: "TON", dir: "desc" }, defaultDir);
@@ -132,6 +132,8 @@ export function SupplyChainMillTable({
                 <td className="py-1.5 pr-3 text-right tabular-nums">{m.offtakerCount}</td>
                 <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">{fmtKm(km(m))}</td>
                 <td className="py-1.5 text-right">
+                  {/* Mill tidak diketahui tak pernah digambar di peta → tanpa tautan (review 2026-10-10). */}
+                  {m.millId != null && (
                   <Link
                     href={mapHref(m.millId)}
                     onClick={(e) => e.stopPropagation()}
@@ -141,6 +143,7 @@ export function SupplyChainMillTable({
                   >
                     <MapIcon className="h-4 w-4" />
                   </Link>
+                  )}
                 </td>
               </tr>
             );

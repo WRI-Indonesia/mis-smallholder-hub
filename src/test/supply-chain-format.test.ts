@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtKm, fmtTon, pctOf } from "@/lib/supply-chain-format";
+import { fmtKm, fmtShare, fmtTon, pctOf } from "@/lib/supply-chain-format";
 import { sortRows } from "@/app/(admin)/admin/dashboard/supply-chain/sort-head";
 
 describe("supply-chain-format", () => {
@@ -10,6 +10,11 @@ describe("supply-chain-format", () => {
   it("pctOf: 1 desimal koma; total 0 → —", () => {
     expect(pctOf(1, 3)).toBe("33,3%");
     expect(pctOf(5, 0)).toBe("—");
+  });
+  it("fmtShare: porsi 0–1 dengan aturan pembulatan yang sama dengan pctOf", () => {
+    expect(fmtShare(1 / 3)).toBe("33,3%");
+    expect(fmtShare(0.85)).toBe("85%");
+    expect(fmtShare(1 / 3)).toBe(pctOf(1, 3));
   });
   it("fmtKm: 1 desimal; null → —", () => {
     expect(fmtKm(82.06)).toBe("82,1 km");

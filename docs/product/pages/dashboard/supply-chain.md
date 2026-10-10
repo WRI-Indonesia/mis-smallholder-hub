@@ -13,15 +13,15 @@ Halaman: Dashboard Rantai Pasok (/admin/dashboard/supply-chain)
 │   ├── Lingkup: Distrik · Kategori (Swadaya/Ex-Plasma) · UL & Non-UL · Tahun
 │   └── Rantai: Lembaga › Agen·KT/Koperasi › RAMP › Mill (pilihan faset) — Reset hanya di panel Peta (vertikal)
 ├── Kartu KPI: TBS · Ke Mill Pemasok UL · Sampai PKS Pasti (sub: % disebut langsung) · Offtaker
-├── Kartu lipat* "Sorotan" — 4 ubin dari filter aktif (`supplyChainInsights`): Konsentrasi ke Mill (Mill bernama saja; dilewati bila tak ada) · Ketergantungan offtaker (≥ 80%, koperasi Lembaga sendiri dikecualikan) · Mill belum pasti (Lembaga ≥ 50% tak pasti) · Jarak garis lurus (K8) — nama = tombol filter, "+N lagi" = buka kartu Lembaga (walau terlipat) + tampilkan semua + gulir, terurut
+├── Kartu lipat* "Sorotan" — 4 ubin dari filter aktif (`supplyChainInsights`): Konsentrasi ke Mill (Mill bernama saja; dilewati bila tak ada) · Ketergantungan offtaker (≥ 80% ke satu pembeli **luar** = `mainExternal`; koperasi Lembaga sendiri dilewati, pembeli di belakangnya dihitung) · Mill belum pasti (Lembaga ≥ 50% tak pasti) · Jarak garis lurus (K8) — nama = tombol filter, "+N lagi" = buka kartu Lembaga (walau terlipat) + tampilkan semua + gulir, terurut
 ├── Kartu lipat* "Jalur TBS & Kepastian Mill" — dua batang 100%: Jalur (= legenda warna) · Kepastian Mill (disebut · dipetakan · belum pasti · tak diketahui → klik = filter)
 ├── Kartu lipat* "Aliran TBS": Lembaga/Distrik → Offtaker (Agen · RAMP · KT/Koperasi · rantai Agen → RAMP satu node) → Mill/UL-Non-UL
 │   ├── Tab (diingat*): Sankey · Diagram Alur (React Flow, garis beranimasi) · Jalur (baris per jalur) · Tabel Pohon (Arah Hulu→Hilir | Hilir→Hulu)
 │   ├── Toolbar lepasan berlabel (bawaan = pilihan kiri): Arah Hulu→Hilir|Hilir→Hulu (Pohon) · Dari Distrik|Lembaga · Ke UL/Non-UL|Mill · Offtaker Per jenis|Satu per satu (+ N teratas) · Angka Ton|% · tombol Tampilan bawaan (hanya bila ada yang diubah)
 │   ├── Kalimat "Menampilkan …"
 │   └── Hover/klik = sorot jalur penuh · klik node/ikon corong = filter (toast singkat) / turun ke rincian
-├── Kartu lipat* "Volume per Mill" — kolom bisa diurut, baris Mill terfilter disorot, kolom Jarak (rata-rata garis lurus, tertimbang tonase), ikon peta per baris (hover), top 10 + tampilkan semua
-├── Kartu lipat* "Volume per Lembaga" (`groupVolumes`) — Tonase (porsi UL) · % ke UL · % PKS pasti (amber < 50%) · Offtaker utama + % (⚠ ≥ 80% offtaker luar; `isSelf` diurut paling bawah) · Mill utama + % · Jarak; urut, lipat & tampilkan-semua dikendalikan Dashboard (Sorotan), klik baris = filter, ikon peta
+├── Kartu lipat* "Volume per Mill" — kolom bisa diurut, baris Mill terfilter disorot, kolom Jarak (rata-rata garis lurus, tertimbang tonase), ikon peta per baris (hover; tidak untuk Mill tidak diketahui), top 10 + tampilkan semua
+├── Kartu lipat* "Volume per Lembaga" (`groupVolumes`) — Tonase (porsi UL) · % ke UL · % PKS pasti (amber bila ≤ 50% = `isMostlyUncertain`, batas sama dengan Sorotan) · Offtaker utama + % (⚠ & urutan = porsi pembeli luar `externalShare`; tooltip menyebut pembeli di belakang koperasi sendiri) · Mill utama + % · Jarak; urut, lipat & tampilkan-semua dikendalikan Dashboard (Sorotan), klik baris = filter, ikon peta
 └── Banner "Catatan data" (bisa dilipat) — dipindah ke bawah agar tidak memotong alur baca
 
 * posisi lipat & tab terakhir disimpan di localStorage browser (`sc-dashboard:*`), bukan URL

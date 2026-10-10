@@ -32,13 +32,21 @@ describe("tebal garis & legenda", () => {
     expect(niceTon(25347)).toBe(30000);
     expect(niceTon(0)).toBe(0);
   });
-  it("widthScaleSamples: tiga contoh unik naik, lebar terbesar = 13,5", () => {
+  it("widthScaleSamples: tiga contoh unik naik; contoh terbesar = tonase maksimum sebenarnya (lebar 13,5)", () => {
     const s = widthScaleSamples(25347);
-    expect(s.map((x) => x.ton)).toEqual([1000, 6000, 30000]);
+    expect(s.map((x) => x.ton)).toEqual([1000, 6000, 25347]);
     expect(s[2].width).toBe(13.5);
     expect(widthScaleSamples(0)).toEqual([]);
-    // Tonase kecil: duplikat setelah pembulatan dibuang.
     expect(widthScaleSamples(30).map((x) => x.ton)).toEqual([2, 8, 30]);
+  });
+  it("widthScaleSamples: label tak pernah melebihi maksimum dan tak ada contoh yang tampil '0 t'", () => {
+    // 8.700 t dulu berlabel 9.000 t; 1,2 t dulu memunculkan contoh 0,06 t ("0 t").
+    expect(widthScaleSamples(8700).map((x) => x.ton)).toEqual([400, 2000, 8700]);
+    expect(widthScaleSamples(1.2).map((x) => x.ton)).toEqual([1.2]);
+    for (const max of [1.2, 30, 8700, 25347]) for (const x of widthScaleSamples(max)) {
+      expect(x.ton).toBeLessThanOrEqual(max);
+      expect(Math.round(x.ton)).toBeGreaterThanOrEqual(1);
+    }
   });
 });
 

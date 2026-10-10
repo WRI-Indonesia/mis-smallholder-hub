@@ -218,7 +218,7 @@ export function SupplyChainDashboardClient({ view, helpSlot, canExport = false }
         distances={millDist}
         selectedMillId={f.filter.millId}
         onSelect={(m) => filterMill(m.millId, m.name)}
-        mapHref={(millId) => mapHref({ mill: millId ?? UNKNOWN_MILL_FILTER })}
+        mapHref={(millId) => mapHref({ mill: millId })}
       />
 
       <SupplyChainGroupTable

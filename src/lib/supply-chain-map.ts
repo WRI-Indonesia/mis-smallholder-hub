@@ -43,11 +43,16 @@ export function niceTon(n: number): number {
   return Math.round(n / mag) * mag;
 }
 
-/** Tiga contoh tebal garis untuk legenda: kecil · sedang · terbesar. */
+/**
+ * Tiga contoh tebal garis untuk legenda: kecil · sedang (dibulatkan) · terbesar
+ * (= tonase segmen terbesar apa adanya, tak pernah melebihi garis mana pun di peta).
+ * Contoh yang tampil "0 t" (< 0,5 t) atau ≥ maksimum dibuang (review 2026-10-10).
+ */
 export function widthScaleSamples(maxTon: number): { ton: number; width: number }[] {
   if (!(maxTon > 0)) return [];
-  const tons = [...new Set([niceTon(maxTon / 20), niceTon(maxTon / 4), niceTon(maxTon)].filter((t) => t > 0))];
-  return tons.map((ton) => ({ ton, width: flowLineWidth(Math.min(ton, maxTon), maxTon) }));
+  const small = [niceTon(maxTon / 20), niceTon(maxTon / 4)].filter((t) => Math.round(t) >= 1 && t < maxTon);
+  const tons = [...new Set([...small, maxTon])];
+  return tons.map((ton) => ({ ton, width: flowLineWidth(ton, maxTon) }));
 }
 
 export interface UndrawnEntities {

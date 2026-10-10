@@ -20,6 +20,7 @@ import {
   recordUlTon,
   type ScRecord,
   type SupplyChainData,
+  type SupplyChannel,
 } from "@/lib/supply-chain-flow";
 import { UNKNOWN_MILL_NAME, distanceStats, groupVolumes, millKey, recordDistanceKm } from "@/lib/supply-chain-insights";
 
@@ -35,11 +36,11 @@ export function supplyChainExportSheets(records: ScRecord[], data: Pick<SupplyCh
   const lk = { groups, offtakers, mills };
 
   // Sheet Jalur: agregasi per Lembaga × offtaker 1 × offtaker 2 × Mill.
-  type Path = { groupCode: string; offtakerId: string | null; nextOfftakerId: string | null; millId: string | null; status: ScRecord["millStatus"]; basis: string; toUl: boolean; ton: number; ulTon: number; rows: number; tonKm: number; tonWithKm: number };
+  type Path = { groupCode: string; offtakerId: string | null; nextOfftakerId: string | null; millId: string | null; channel: SupplyChannel; status: ScRecord["millStatus"]; basis: string; toUl: boolean; ton: number; ulTon: number; rows: number; tonKm: number; tonWithKm: number };
   const paths = new Map<string, Path>();
   for (const r of records) {
     const key = [r.groupCode, r.offtakerId ?? "", r.nextOfftakerId ?? "", r.millId ?? "", r.toUl ? "UL" : ""].join("|");
-    const p = paths.get(key) ?? { groupCode: r.groupCode, offtakerId: r.offtakerId, nextOfftakerId: r.nextOfftakerId, millId: r.millId, status: r.millStatus, basis: r.millBasis, toUl: r.toUl, ton: 0, ulTon: 0, rows: 0, tonKm: 0, tonWithKm: 0 };
+    const p = paths.get(key) ?? { groupCode: r.groupCode, offtakerId: r.offtakerId, nextOfftakerId: r.nextOfftakerId, millId: r.millId, channel: recordChannel(r, offtakers), status: r.millStatus, basis: r.millBasis, toUl: r.toUl, ton: 0, ulTon: 0, rows: 0, tonKm: 0, tonWithKm: 0 };
     const ton = r.supplyTon ?? 0;
     p.ton += ton;
     p.ulTon += recordUlTon(r);
@@ -64,13 +65,12 @@ export function supplyChainExportSheets(records: ScRecord[], data: Pick<SupplyCh
       const o1 = off(p.offtakerId);
       const o2 = off(p.nextOfftakerId);
       const m = p.millId ? mills.get(p.millId) : undefined;
-      const sample: ScRecord = { id: "", year: 0, level: "LAHAN", groupCode: p.groupCode, surveyId: null, offtakerId: p.offtakerId, nextOfftakerId: p.nextOfftakerId, millText: null, millId: p.millId, millStatus: p.status, millBasis: p.basis, supplyTon: p.ton, toUl: p.toUl, ulTon: null, flags: [] };
       return {
         distrik: g?.districtName ?? "",
         kodeLembaga: p.groupCode,
         lembaga: g?.name ?? p.groupCode,
         kategori: g ? GROUP_CATEGORY_LABEL[g.category] : "",
-        jalur: CHANNEL_LABEL[recordChannel(sample, offtakers)],
+        jalur: CHANNEL_LABEL[p.channel],
         offtaker1Kode: p.offtakerId ?? "",
         offtaker1: o1?.name ?? "",
         offtaker1Tipe: o1 ? OFFTAKER_TYPE_LABEL[o1.type] : "",

@@ -113,6 +113,13 @@ export interface GroupVolumeRow {
    * `isSelf` = koperasi Lembaga itu sendiri (penjualan kolektif) — bukan ketergantungan pada pihak luar.
    */
   mainOfftaker: { id: string; name: string; type: OfftakerType; ton: number; isSelf: boolean } | null;
+  /**
+   * Pembeli **luar** terbesar: offtaker pertama di jalur yang bukan koperasi Lembaga itu
+   * sendiri (`recordWaypointOfftakers`), jadi rantai koperasi sendiri → RAMP terhitung ke
+   * RAMP-nya. null bila semua TBS langsung ke Mill atau lewat koperasi sendiri langsung ke
+   * Mill. Dasar ketergantungan (review 2026-10-10 putaran 2).
+   */
+  mainExternal: { id: string; name: string; type: OfftakerType; ton: number } | null;
   /** Mill terbesar, termasuk "Mill tidak diketahui" (millId null). */
   mainMill: { millId: string | null; name: string; isUl: boolean; ton: number } | null;
   avgKm: number | null;
@@ -123,8 +130,9 @@ export interface GroupVolumeRow {
 export function groupVolumes(records: ScRecord[], data: Pick<SupplyChainData, "groups" | "offtakers" | "mills">): GroupVolumeRow[] {
   const lk = lookups(data);
   const dist = distanceStats(records, data, (r) => r.groupCode);
-  type Acc = Omit<GroupVolumeRow, "offtakerCount" | "millCount" | "mainOfftaker" | "mainMill" | "avgKm" | "maxKm"> & {
+  type Acc = Omit<GroupVolumeRow, "offtakerCount" | "millCount" | "mainOfftaker" | "mainExternal" | "mainMill" | "avgKm" | "maxKm"> & {
     offs: Map<string, number>;
+    external: Map<string, number>;
     millsTon: Map<string, number>;
     millIds: Set<string>;
   };
@@ -135,7 +143,7 @@ export function groupVolumes(records: ScRecord[], data: Pick<SupplyChainData, "g
       const g = lk.groups.get(r.groupCode);
       a = {
         code: r.groupCode, abrv: g?.abrv ?? r.groupCode, name: g?.name ?? r.groupCode, district: g?.districtName ?? "?", category: g?.category ?? "SWADAYA",
-        ton: 0, ulTon: 0, pastiTon: 0, offs: new Map(), millsTon: new Map(), millIds: new Set(),
+        ton: 0, ulTon: 0, pastiTon: 0, offs: new Map(), external: new Map(), millsTon: new Map(), millIds: new Set(),
       };
       acc.set(r.groupCode, a);
     }
@@ -145,6 +153,8 @@ export function groupVolumes(records: ScRecord[], data: Pick<SupplyChainData, "g
     if (r.millStatus === "PKS_PASTI") a.pastiTon += ton;
     if (r.offtakerId) a.offs.set(r.offtakerId, (a.offs.get(r.offtakerId) ?? 0) + ton);
     if (r.nextOfftakerId && !a.offs.has(r.nextOfftakerId)) a.offs.set(r.nextOfftakerId, 0);
+    const ext = recordWaypointOfftakers(r, lk.offtakers)[0];
+    if (ext) a.external.set(ext.id, (a.external.get(ext.id) ?? 0) + ton);
     const mk = r.millId ?? UNKNOWN_MILL_FILTER;
     a.millsTon.set(mk, (a.millsTon.get(mk) ?? 0) + ton);
     if (r.millId) a.millIds.add(r.millId);
@@ -155,9 +165,11 @@ export function groupVolumes(records: ScRecord[], data: Pick<SupplyChainData, "g
     return best;
   };
   return [...acc.values()]
-    .map(({ offs, millsTon, millIds, ...row }) => {
+    .map(({ offs, external, millsTon, millIds, ...row }) => {
       const o = top(offs);
       const off = o ? lk.offtakers.get(o[0]) : undefined;
+      const x = top(external);
+      const xOff = x ? lk.offtakers.get(x[0]) : undefined;
       const mm = top(millsTon);
       const mill = mm && mm[0] !== UNKNOWN_MILL_FILTER ? lk.mills.get(mm[0]) : undefined;
       const d = dist.get(row.code);
@@ -166,6 +178,7 @@ export function groupVolumes(records: ScRecord[], data: Pick<SupplyChainData, "g
         offtakerCount: offs.size,
         millCount: millIds.size,
         mainOfftaker: o && o[1] > 0 ? { id: o[0], name: off?.name ?? o[0], type: off?.type ?? "AGEN", ton: o[1], isSelf: off?.farmerGroupCode === row.code } : null,
+        mainExternal: x && x[1] > 0 ? { id: x[0], name: xOff?.name ?? x[0], type: xOff?.type ?? "AGEN", ton: x[1] } : null,
         mainMill: mm ? { millId: mm[0] === UNKNOWN_MILL_FILTER ? null : mm[0], name: mill ? millLabel(mill) : UNKNOWN_MILL_NAME, isUl: !!mill && isUlMill(mill), ton: mm[1] } : null,
         avgKm: d?.avgKm ?? null,
         maxKm: d?.maxKm ?? null,
@@ -183,10 +196,17 @@ export const DEPENDENCY_THRESHOLD = 0.8;
 /** Lembaga "sebagian besar tak pasti" bila ≥ 50% tonasenya tanpa PKS pasti. */
 export const UNCERTAIN_THRESHOLD = 0.5;
 
+/** Satu batas untuk Sorotan Kepastian dan sorotan kuning kolom PKS pasti di tabel Lembaga. */
+export const isMostlyUncertain = (g: Pick<GroupVolumeRow, "ton" | "pastiTon">, threshold = UNCERTAIN_THRESHOLD) =>
+  g.ton > 0 && (g.ton - g.pastiTon) / g.ton >= threshold;
+
+/** Porsi pembeli luar terbesar (0–1); null bila tak ada pembeli luar. Dasar ⚠ ketergantungan. */
+export const externalShare = (g: Pick<GroupVolumeRow, "ton" | "mainExternal">) => (g.ton > 0 && g.mainExternal ? g.mainExternal.ton / g.ton : null);
+
 export type SupplyChainInsight =
   | { kind: "KONSENTRASI"; topMill: { millId: string; name: string; isUl: boolean }; topShare: number; top3Share: number; millCount: number }
   | { kind: "KETERGANTUNGAN"; threshold: number; groups: { code: string; abrv: string; offtakerName: string; share: number }[] }
-  | { kind: "KEPASTIAN"; uncertainShare: number; unknownShare: number; groups: { code: string; abrv: string; share: number }[] }
+  | { kind: "KEPASTIAN"; threshold: number; uncertainShare: number; unknownShare: number; groups: { code: string; abrv: string; share: number }[] }
   | { kind: "JARAK"; avgKm: number | null; coveredShare: number; farthestMill: { millId: string; name: string; avgKm: number } | null };
 
 /**
@@ -223,13 +243,14 @@ export function supplyChainInsights(
   // Ketergantungan & kepastian per Lembaga.
   const groups = groupVolumes(records, data);
   const dependent = groups
-    .filter((g) => g.ton > 0 && g.mainOfftaker && !g.mainOfftaker.isSelf && g.mainOfftaker.ton / g.ton >= dependencyThreshold)
-    .map((g) => ({ code: g.code, abrv: g.abrv, offtakerName: g.mainOfftaker!.name, share: g.mainOfftaker!.ton / g.ton }))
+    // Pembeli luar (koperasi Lembaga sendiri dilewati, pembeli di belakangnya terhitung).
+    .filter((g) => (externalShare(g) ?? 0) >= dependencyThreshold)
+    .map((g) => ({ code: g.code, abrv: g.abrv, offtakerName: g.mainExternal!.name, share: externalShare(g)! }))
     .sort((a, b) => b.share - a.share || a.abrv.localeCompare(b.abrv));
   const uncertainTon = records.filter((r) => r.millStatus !== "PKS_PASTI").reduce((a, r) => a + (r.supplyTon ?? 0), 0);
   const unknownTon = records.filter((r) => r.millStatus === "TIDAK_DIKETAHUI").reduce((a, r) => a + (r.supplyTon ?? 0), 0);
   const uncertainGroups = groups
-    .filter((g) => g.ton > 0 && (g.ton - g.pastiTon) / g.ton >= uncertainThreshold)
+    .filter((g) => isMostlyUncertain(g, uncertainThreshold))
     .map((g) => ({ code: g.code, abrv: g.abrv, share: (g.ton - g.pastiTon) / g.ton }))
     .sort((a, b) => b.share - a.share || a.abrv.localeCompare(b.abrv));
 
@@ -245,7 +266,7 @@ export function supplyChainInsights(
   return [
     ...(konsentrasi ? [konsentrasi] : []),
     { kind: "KETERGANTUNGAN", threshold: dependencyThreshold, groups: dependent },
-    { kind: "KEPASTIAN", uncertainShare: uncertainTon / total, unknownShare: unknownTon / total, groups: uncertainGroups },
+    { kind: "KEPASTIAN", threshold: uncertainThreshold, uncertainShare: uncertainTon / total, unknownShare: unknownTon / total, groups: uncertainGroups },
     { kind: "JARAK", avgKm: all.avgKm, coveredShare: all.tonWithDistance / total, farthestMill: farthest },
   ];
 }

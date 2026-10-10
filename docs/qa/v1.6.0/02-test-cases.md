@@ -36,7 +36,7 @@ Langkah:
 Harapan:
 - Urutan mengikuti kolom (nama A–Z; angka menurun; "—" selalu di bawah).
 - Baris Mill yang sedang difilter berlatar berwarna.
-- Ikon peta membuka Peta Rantai Pasok dengan filter Mill yang sama.
+- Ikon peta membuka Peta Rantai Pasok dengan filter Mill yang sama; baris **Mill tidak diketahui** tidak punya ikon peta.
 
 ### TC-381-04 · Unduh Excel 3 sheet [P0] [regresi] (5 mnt)
 Prasyarat: akun berizin EXPORT (SUPERADMIN/ADMIN/MANAGEMENT/OPERATOR) dan akun DONOR.
@@ -98,7 +98,7 @@ Langkah:
 Harapan:
 - Empat ubin: Konsentrasi ke Mill · Ketergantungan offtaker · Mill belum pasti · Jarak garis lurus; nama = tombol filter.
 - Konsentrasi tidak pernah menampilkan "Mill tidak diketahui" sebagai Mill terbesar.
-- Ketergantungan (≥ 80%) **tidak** memuat Lembaga yang menjual lewat koperasinya sendiri (`ISH-1408-04` 100% lewat koperasinya → tidak tercantum).
+- Ketergantungan (≥ 80%) dihitung terhadap pembeli **luar**: Lembaga yang menjual lewat koperasinya sendiri langsung ke Mill **tidak** tercantum (`ISH-1408-04` 100% lewat koperasinya → tidak tercantum); bila koperasi itu menjual ke satu pembeli, pembeli itulah yang dihitung.
 Baseline dev: Konsentrasi 12,9% · Ketergantungan 2 Lembaga · Mill belum pasti 1,3% · Jarak 20,7 km (98,4% TBS berkoordinat).
 
 ### TC-382-02 · Volume per Lembaga [P1] (3 mnt)
@@ -106,8 +106,8 @@ Langkah:
 1. Kartu **Volume per Lembaga** → urutkan **Offtaker utama**, lalu **PKS pasti**.
 2. Lipat kartu, muat ulang, lalu buka lagi.
 Harapan:
-- Ikon ⚠ hanya pada Lembaga ≥ 80% lewat satu offtaker **luar**; koperasi Lembaga sendiri tanpa ikon dan diurut paling bawah.
-- PKS pasti < 50% berwarna kuning.
+- Ikon ⚠ hanya pada Lembaga ≥ 80% lewat satu pembeli **luar** — daftar Lembaga ber-⚠ sama dengan daftar di Sorotan Ketergantungan; urut Offtaker utama mengikuti porsi pembeli luar.
+- PKS pasti ≤ 50% berwarna kuning — Lembaga yang sama dengan daftar Sorotan "≥ 50% tak pasti".
 - Posisi lipat diingat setelah muat ulang.
 
 ### TC-382-03 · Jarak konsisten antar tampilan [P1] (2 mnt)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Map, { Layer, Popup, Source, type MapLayerMouseEvent, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -111,6 +111,21 @@ const DASH_SEQUENCE: number[][] = [
 ];
 const ANIM_STEP_MS = 55;
 
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+const subscribeReducedMotion = (cb: () => void) => {
+  const mq = window.matchMedia?.(REDUCED_MOTION);
+  mq?.addEventListener("change", cb);
+  return () => mq?.removeEventListener("change", cb);
+};
+/**
+ * Preferensi "kurangi gerak" OS, aman hydration: render server & render awal klien
+ * selalu `false`, lalu menyesuaikan setelah mount (dulu dibaca saat render → HTML
+ * server ≠ klien bagi pengguna reduce-motion; review 2026-10-10).
+ */
+function useReducedMotion() {
+  return useSyncExternalStore(subscribeReducedMotion, () => !!window.matchMedia?.(REDUCED_MOTION).matches, () => false);
+}
+
 const BOOL_STATES = ["on", "off"] as const;
 /** Saklar lapisan yang diingat per browser (kunci `sc-dashboard:map:*`). */
 function useLayerSwitch(key: string, initial: boolean) {
@@ -147,7 +162,7 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
   const [showParcels, setShowParcels] = useLayerSwitch("parcels", true);
   const [showParcelLines, setShowParcelLines] = useLayerSwitch("parcel-lines", false);
   // Animasi bawaan nyala, kecuali OS meminta gerak dikurangi; pilihan pengguna diingat.
-  const reducedMotion = useMemo(() => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches, []);
+  const reducedMotion = useReducedMotion();
   const [animateStored, setAnimateStored] = useLayerSwitch("animate", true);
   const animate = animateStored && !reducedMotion;
   const [legendStored, setLegendStored] = useLayerSwitch("legend-strip", true);
@@ -372,7 +387,7 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
     e.target.getCanvas().style.cursor = ft ? "pointer" : "";
     if (!ft) {
       setHoverFeature(null);
-      setHover((h) => (h ? null : h));
+      if (!selected) setHover((h) => (h ? null : h));
       return;
     }
     const p = ft.properties as { kind: string; id: string; fid?: string; label?: string; ton?: number };
@@ -393,6 +408,8 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
     } else if (p.kind === "mill") sub = `Mill · ${sub}`;
     else if (p.kind === "lembaga") sub = `Lembaga · ${sub}`;
     else if (p.kind === "offtaker") sub = `${OFFTAKER_TYPE_LABEL[offById.get(p.id)?.type ?? "AGEN"]} · ${sub}`;
+    // Popup terbuka → tooltip disembunyikan; jangan ubah state (render ulang menghitung ulang isi popup).
+    if (selected) return;
     const [lng, lat] = ft.geometry.type === "Point" ? (ft.geometry.coordinates as [number, number]) : [e.lngLat.lng, e.lngLat.lat];
     // Jangkar tetap selama kursor di fitur yang sama (garis juga) → state tak berubah tiap gerak, peta tak di-render ulang.
     const key = `${ref.source}:${ref.id}`;
@@ -782,17 +799,18 @@ function PanelSection({
   );
 }
 
-function Legend({ dark, detail, scale, animate, compact = false }: { dark: boolean; detail: boolean; scale: { ton: number; width: number }[]; animate: boolean; compact?: boolean }) {
+/** Legenda lengkap di bagian Legenda panel (strip ringkas di peta digambar terpisah). */
+function Legend({ dark, detail, scale, animate }: { dark: boolean; detail: boolean; scale: { ton: number; width: number }[]; animate: boolean }) {
   return (
-    <div className={cn("text-xs", compact ? "space-y-1" : "space-y-3")}>
+    <div className="space-y-3 text-xs">
       <div className="space-y-1.5">
-        {!compact && <div className="font-medium">Jalur TBS (warna garis)</div>}
+        <div className="font-medium">Jalur TBS (warna garis)</div>
         {CHANNEL_ORDER.map((c) => (
           <div key={c} className="flex items-center gap-2 text-muted-foreground">
             <span className="inline-block h-1.5 w-6 rounded" style={{ background: channelColor(c, dark) }} /> {CHANNEL_LABEL[c]}
           </div>
         ))}
-        {!compact && <div className="text-muted-foreground">{animate ? "titik bergerak" : "panah"} = arah TBS</div>}
+        <div className="text-muted-foreground">{animate ? "titik bergerak" : "panah"} = arah TBS</div>
       </div>
       {scale.length > 0 && (
         <div className="space-y-1.5 border-t pt-2">
@@ -807,15 +825,15 @@ function Legend({ dark, detail, scale, animate, compact = false }: { dark: boole
           </div>
         </div>
       )}
-      <div className={cn("space-y-1.5", !compact && "border-t pt-2")}>
-        {!compact && <div className="font-medium">Titik</div>}
+      <div className="space-y-1.5 border-t pt-2">
+        <div className="font-medium">Titik</div>
         <div className="flex items-center gap-2 text-muted-foreground"><span className="inline-block h-3 w-3 rounded-full border-2 border-white bg-emerald-600" /> Lembaga</div>
         {detail && <div className="flex items-center gap-2 text-muted-foreground"><span className="inline-block h-3 w-3 rounded-full border-2 border-white bg-amber-600" /> Agen / RAMP / KUD berkoordinat</div>}
         <div className="flex items-center gap-2 text-muted-foreground"><Factory className="h-4 w-4" style={{ color: MILL_UL_COLOR }} /> Mill pemasok UL</div>
         <div className="flex items-center gap-2 text-muted-foreground"><Factory className="h-4 w-4" style={{ color: MILL_COLOR }} /> Mill lain</div>
         <div className="flex items-center gap-2 text-muted-foreground"><Factory className="h-4 w-4" style={{ color: MILL_UNCERTAIN_COLOR }} /> {MILL_STATUS_LABEL.PKS_BELUM_PASTI}</div>
-        {!compact && <div className="text-muted-foreground">Lingkaran di bawah ikon ∝ tonase Mill</div>}
-        {detail && !compact && <div className="flex items-center gap-2 text-muted-foreground"><span className="inline-block h-2.5 w-2.5 rounded-full border border-foreground bg-muted" /> Titik lahan dari koordinat survei</div>}
+        <div className="text-muted-foreground">Lingkaran di bawah ikon ∝ tonase Mill</div>
+        {detail && <div className="flex items-center gap-2 text-muted-foreground"><span className="inline-block h-2.5 w-2.5 rounded-full border border-foreground bg-muted" /> Titik lahan dari koordinat survei</div>}
       </div>
     </div>
   );

@@ -2,14 +2,13 @@
 
 import { Factory, Lightbulb, Route, ShieldQuestion, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatNumber, formatPct } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import type { SupplyChainInsight } from "@/lib/supply-chain-insights";
 import { CollapsibleCard } from "./collapsible-card";
 import type { GroupSortKey } from "./supply-chain-group-table";
-import { fmtKm } from "@/lib/supply-chain-format";
+import { fmtKm, fmtShare } from "@/lib/supply-chain-format";
 import { UlBadge } from "./ul-badge";
 
-const pct = (share: number) => `${formatPct(Math.round(share * 1000) / 10)}%`;
 const MAX_NAMES = 3;
 
 /** Tombol kecil bergaya chip — nama entitas yang bisa dijadikan filter. */
@@ -67,7 +66,7 @@ export function SupplyChainInsightsCard({
           key: ins.kind,
           icon: Factory,
           caption: "Konsentrasi ke Mill",
-          value: pct(ins.topShare),
+          value: fmtShare(ins.topShare),
           body: (
             <>
               TBS ke{" "}
@@ -75,7 +74,7 @@ export function SupplyChainInsightsCard({
                 <span className="truncate">{ins.topMill.name}</span>
                 {ins.topMill.isUl && <UlBadge />}
               </Chip>
-              . Tiga Mill terbesar menampung <span className="font-medium text-foreground">{pct(ins.top3Share)}</span> dari {formatNumber(ins.millCount)} Mill.
+              . Tiga Mill terbesar menampung <span className="font-medium text-foreground">{fmtShare(ins.top3Share)}</span> dari {formatNumber(ins.millCount)} Mill.
             </>
           ),
         };
@@ -91,7 +90,7 @@ export function SupplyChainInsightsCard({
             ) : (
               <>
                 ≥ {Math.round(ins.threshold * 100)}% tonasenya lewat satu offtaker luar:{" "}
-                {names(ins.groups.map((g) => ({ code: g.code, abrv: g.abrv, title: `${pct(g.share)} lewat ${g.offtakerName} — klik untuk memfilter` })), "OFFTAKER")}
+                {names(ins.groups.map((g) => ({ code: g.code, abrv: g.abrv, title: `${fmtShare(g.share)} lewat ${g.offtakerName} — klik untuk memfilter` })), "OFFTAKER")}
               </>
             ),
         };
@@ -100,14 +99,14 @@ export function SupplyChainInsightsCard({
           key: ins.kind,
           icon: ShieldQuestion,
           caption: "Mill belum pasti",
-          value: pct(ins.uncertainShare),
+          value: fmtShare(ins.uncertainShare),
           body: (
             <>
-              TBS tanpa PKS pasti; <span className="font-medium text-foreground">{pct(ins.unknownShare)}</span> tak diketahui sama sekali.
+              TBS tanpa PKS pasti; <span className="font-medium text-foreground">{fmtShare(ins.unknownShare)}</span> tak diketahui sama sekali.
               {ins.groups.length > 0 && (
                 <>
                   {" "}
-                  {formatNumber(ins.groups.length)} Lembaga ≥ 50% tak pasti: {names(ins.groups.map((g) => ({ code: g.code, abrv: g.abrv, title: `${pct(g.share)} tak pasti — klik untuk memfilter` })), "PASTI")}
+                  {formatNumber(ins.groups.length)} Lembaga ≥ {Math.round(ins.threshold * 100)}% tak pasti: {names(ins.groups.map((g) => ({ code: g.code, abrv: g.abrv, title: `${fmtShare(g.share)} tak pasti — klik untuk memfilter` })), "PASTI")}
                 </>
               )}
             </>
@@ -124,7 +123,7 @@ export function SupplyChainInsightsCard({
               <>Tidak ada Lembaga dan Mill yang sama-sama berkoordinat.</>
             ) : (
               <>
-                rata-rata Lembaga → Mill tertimbang tonase ({pct(ins.coveredShare)} TBS berkoordinat).
+                rata-rata Lembaga → Mill tertimbang tonase ({fmtShare(ins.coveredShare)} TBS berkoordinat).
                 {ins.farthestMill && (
                   <>
                     {" "}
