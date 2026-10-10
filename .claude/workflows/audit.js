@@ -58,7 +58,7 @@ Usulan test baru = action "perbaiki" dengan suggestion: fungsi target, apa yang 
     title: 'Materi Bantuan',
     prompt: `Area: materi Bantuan src/content/help/** (frontmatter menuKey, permission, href). Boleh \`npx vitest run src/test/help-registry.test.ts\` (tulis hasilnya di summary beserta cakupan menu daun).
 1. menuKey ↔ prisma/seeds/data/menu.csv: key tak dikenal, href ≠ route, menu daun (punya route, tanpa anak) tanpa materi.
-2. Izin: frontmatter permission dan kalimat soal peran ("hanya akun berizin Export", "DONOR tidak melihat …") ↔ prisma/seeds/data/role-permissions.csv. Kontradiksi = tinggi.
+2. Izin: frontmatter permission dan kalimat soal peran ("hanya akun berizin Export", "DONOR tidak melihat …") ↔ prisma/seeds/data/role-permissions.csv. Izin EFEKTIF = baris menu itu DIGABUNG baris semua induknya di prisma/seeds/data/menu.csv (kaskade union, src/lib/rbac.ts) — mis. VIEW di 'master-data' membuka semua submenu Master Data; jangan simpulkan "peran X tak punya akses" dari baris anak saja. Kontradiksi = tinggi.
 3. Ketepatan UI: label tombol/tab/kolom/jalur menu yang ditebalkan di teks ↔ komponen halaman di src/app/(admin)/admin/<route>/**. Label yang sudah tak ada/berganti = sedang. Prioritaskan halaman yang berubah 14 hari terakhir: \`git log --since="14 days ago" --name-only --format= -- 'src/app/(admin)/**' | sort -u\`.
 4. Fitur yang sudah tidak ada, langkah yang bertentangan dengan perilaku sekarang (tinggi).
 5. Istilah: UI memakai "petani terdaftar" (bukan "petani aktif") untuk pembagi cakupan — rendah.

@@ -47,7 +47,8 @@ Langkah:
 Harapan:
 - Berkas `rantai-pasok_2025.xlsx` / `rantai-pasok_2025_siak.xlsx`, sheet **Jalur · Mill · Lembaga**.
 - **Tidak ada kolom kosong**; jumlah kolom Tonase sheet Mill dan Lembaga = kartu **TBS** pada filter yang sama (sheet Jalur boleh selisih ≤ 1 t karena pembulatan per baris).
-- Baris Status "PKS pasti" tidak berbasis "PKS milik PT yang terdekat dari Lembaga" (status & basis tak bertentangan).
+- Status dan Basis tiap baris tak bertentangan: "Mill tidak diketahui" hanya berbasis "kolom Mill kosong" / "beberapa PT dalam satu sel"; "PKS pasti" berbasis teks survei, satu PKS di UML, **PKS milik PT yang terdekat dari Lembaga** (keputusan owner 2026-10-06: pemetaan nama PT = pasti), atau koordinat survei.
+- Kolom yang hanya terisi untuk rantai tertentu (mis. **Offtaker 2** = Agen → RAMP, hanya Rokan Hulu) boleh kosong pada filter distrik tanpa rantai itu.
 - DONOR **tidak** melihat tombol Unduh Excel.
 Baseline dev: Jalur 244 · Mill 37 · Lembaga 27 baris; 0 kolom kosong.
 
