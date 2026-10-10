@@ -100,6 +100,19 @@ Keputusan owner 2026-10-10: batch prototipe di `mvp` sejak v1.5.0 (ada `feat:` �
 | 3 | **#406** Istilah "petani aktif" → "petani terdaftar" | Kerapian | S | Teks UI, judul kolom Excel Monev BMP, Bantuan, docs. **✅ 2026-10-10** (`c473eef`, ditutup dengan retro) | ✅ Selesai | — |
 | 4 | **Rilis v1.6.0** | Rilis | M | Tanpa migrasi/seed/menu baru. `mvp → staging` 2026-10-10 → QA `docs/qa/v1.6.0/` → bump → PR `staging → main` → tag. ✅ 2026-10-10: ikut audit `/audit` penuh (Bantuan 25, docs, TD, 126 test guard) + perbaikan auto-pan popup peta; run staging smoke 17 · kasus 11 Pass · 0 Fail (OPERATOR & DONOR login oleh owner) | ✅ Selesai | ✅ Diputuskan 2026-10-10: Go hari ini (pengecualian 1 rilis/hari, Decision Log) |
 
+#### Rilis v1.6.1 · 2026-10-11 → 2026-10-25 — PATCH: celah RBAC laten & kerapian TD
+
+Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semula di v1.8.0 dikerjakan lebih awal sebagai PATCH, bersama batch TD cepat. Tanpa fitur baru.
+
+| # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
+| - | ----- | -------- | ---- | ------ | ------ | ------------------ |
+| 1 | **#409** Buat/ubah Lembaga Petani tak memeriksa distrik tujuan dalam scope | Keamanan | S | Distrik tujuan wajib dalam scope (pola `createFarmer`) + test guard semantik | 🔲 Todo | — |
+| 2 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | Keamanan | M | Sisa butir 2: tolak role di atas pemanggil & ubah role/status diri sendiri; penugasan wilayah `user-data-access` dalam batas pemanggil (komentar 2026-10-10) | 🔲 Todo | — |
+| 3 | **#384** Peta BMP: filter memakai guard `map-parcel` | Keamanan | S | Helper filter peta menerima `map-parcel` ATAU `map-bmp` + test; hapus catatan keterbatasan `docs/product/pages/map/bmp.md` | 🔲 Todo | — |
+| 4 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | Kerapian | S | Butir 1 `getMenuItems` wajib sesi (duplikat #410 ditutup) + butir 2–7 (butir 5 & 7 = keputusan revisi lahan) | 🔲 Todo | Butir 5/7: revisi lahan lewat form & produksi revisi lama |
+| 5 | **#412** Batch 10 TD cepat (TD-008·026·032·044·046·049·051·053·054·059) | Kerapian | M | Tiap TD → Arsip `tech-debt.md` dengan bukti commit | 🔲 Todo | — |
+| 6 | **Rilis v1.6.1** | Rilis | S | Semua butir di atas → staging → QA → prod | 🔲 Todo | Go rilis |
+
 #### Rilis v1.7.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
@@ -117,9 +130,9 @@ Keputusan owner 2026-10-10: batch prototipe di `mvp` sejak v1.5.0 (ada `feat:` �
 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
-| 1 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | Keamanan | M | Menutup fase roadmap PLATFORM-08 bersama #342/#390 (v1.3.0). Butir 1 (filter menimpa scope) ✅ hotfix v1.5.1 (#408, 2026-10-10); sisa butir 2 eskalasi role | 🔲 Todo | — |
-| 2 | **#384** Peta BMP: filter memakai guard `map-parcel` | Keamanan | S | Guard filter Peta BMP memakai `map-bmp`; PLATFORM-08 | 🔲 Todo | — |
-| 3 | **#409** Buat/ubah Lembaga Petani tak memeriksa distrik tujuan dalam scope | Keamanan | S | Dari audit `/audit` 2026-10-10 (owner: masuk v1.8.0 bersama #386); PLATFORM-08 | 🔲 Todo | — |
+| 1 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | Keamanan | M | Menutup fase roadmap PLATFORM-08 bersama #342/#390 (v1.3.0). Butir 1 (filter menimpa scope) ✅ hotfix v1.5.1 (#408, 2026-10-10); sisa butir 2 eskalasi role | ⏭️ Digeser | ✅ Diputuskan 2026-10-10: → v1.6.1 |
+| 2 | **#384** Peta BMP: filter memakai guard `map-parcel` | Keamanan | S | Guard filter Peta BMP memakai `map-bmp`; PLATFORM-08 | ⏭️ Digeser | ✅ Diputuskan 2026-10-10: → v1.6.1 |
+| 3 | **#409** Buat/ubah Lembaga Petani tak memeriksa distrik tujuan dalam scope | Keamanan | S | Dari audit `/audit` 2026-10-10 (owner: masuk v1.8.0 bersama #386); PLATFORM-08 | ⏭️ Digeser | ✅ Diputuskan 2026-10-10: → v1.6.1 |
 | 4 | **#317** Tumpang tindih lahan — Fase 4 layer Peta Lahan | Fitur | M | Layer tumpang tindih di Peta Lahan → #317 & fase DA-09 tuntas | 🔲 Todo | — |
 | 5 | Concept note **GIS-02 Deforestation** | Fitur | S | Sumber data tutupan hutan + lisensi, tahun *cut-off*, ambang luas, butuh GeoServer (GIS-04) atau tidak → issue induk | 🔲 Todo | Sumber data & cut-off |
 | 6 | Concept note **MD-12 Certification** | Fitur | S | Skema (RSPO/ISPO), unit sertifikasi Lembaga vs petani, siklus audit & temuan, dokumen S3 → issue induk | 🔲 Todo | Cakupan skema |
@@ -139,7 +152,8 @@ Keputusan owner 2026-10-10: batch prototipe di `mvp` sejak v1.5.0 (ada `feat:` �
 | 3 | **#356** Bobot cakupan modul ke Index | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
 | 3 | **#358** DA-03 peta kesiapan data per Lembaga | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
 | 3 | **#258** Peta aplikasi (sitemap) di Bantuan | 🔲 Todo | — |
-| 3 | **#410** `getMenuItems` tanpa pemeriksaan sesi | 🔲 Todo | Dari audit `/audit` 2026-10-10; rendah (hanya pohon menu), kerjakan menumpang saat menyentuh `menu.ts` |
+| 3 | **#413** Test cermin → modul asli + judul perf + test hot-path import (TS-7/9/11, TD-050) | 🔲 Todo | Dari audit `/audit` 2026-10-10 |
+| 3 | **#414** `ActionResult`: pisahkan `error` (string) dan `fieldErrors` (TD-010) | 🔲 Todo | Kontrak lintas ±10 form — satu PR berlingkup jelas |
 | 3 | **#203** Detail Lahan: riwayat revisi lahan | 🔲 Todo | — |
 | 4 | **#308** Seragamkan selektor kolom di semua menu | 🔲 Todo | Kerapian |
 | 4 | **#259** Peta Data: pisahkan kolom audit dari kolom domain | 🔲 Todo | Kerapian |
@@ -149,7 +163,6 @@ Keputusan owner 2026-10-10: batch prototipe di `mvp` sejak v1.5.0 (ada `feat:` �
 | 5 | **#261** Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ✅ Selesai | ✅ Diputuskan 2026-09-30: tetap sampel; indeks `Tree` baru dibahas bila cakupannya diperluas (ditutup) |
 | 5 | **#192** Epic API layer & offline sync aplikasi mobile | 🔲 Todo | Parkir roadmap (terkait FORM-01). ✅ Diputuskan 2026-09-30: tetap parkir |
 | 5 | **#124** Peta Lahan: overlay citra Planet NICFI | ✅ Selesai | ✅ Diputuskan 2026-09-30: close *not planned* (GIS-01 memakai GIBS #290 + Sentinel-2 #291) |
-| 6 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | 🔲 Todo | Audit 2026-09-29 |
 | 6 | **TD-049** Auto-fit kolom Excel | 🔲 Todo | Tech debt, audit 2026-09-29 |
 | 6 | **TD-050** 2 test RBAC menyalin logika | 🔲 Todo | Tech debt, audit 2026-09-29 |
 | 6 | **TD-054** Dua memo in-process ber-TTL, memo role tanpa batas ukuran | 🔲 Todo | Tech debt, wrap-up v1.3.0 2026-09-30 |

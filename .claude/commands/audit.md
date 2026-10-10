@@ -33,7 +33,7 @@ Tulis (lokal, gitignored — boleh memuat path rinci). Struktur:
 ## Langkah 3 — Sajikan & tanya (BERHENTI di sini pada Mode Mingguan)
 Ringkasan ≤ 1 layar: angka per area, delta, lalu temuan tinggi/sedang (≤ 10 baris, sisanya "+N di laporan"). Lalu `AskUserQuestion` bertahap (≤ 2 pertanyaan per tahap, opsi pertama `(Recommended)`, akibat/biaya per opsi):
 - **Tahap A:** apa yang dikerjakan sekarang — perbaikan kecil yang aman (multiSelect per kelompok), penghapusan/rename (selalu terpisah, destructive).
-- **Tahap B:** temuan `action: issue` → draf judul + body (tampilkan) → buat yang disetujui. Temuan `td` → baris TD baru di `docs/project/tech-debt.md`. TD yang terbukti selesai → pindah ke Arsip.
+- **Tahap B:** temuan `action: issue` → **cari dulu issue terbuka yang sudah memuatnya** (`gh issue list --state open --search "<nama fungsi/berkas>"`, termasuk issue kumpulan seperti "Temuan kecil audit") — bila ada, tambahkan komentar di sana, jangan issue baru (#410 = duplikat #387) → draf judul + body (tampilkan) → buat yang disetujui. Temuan `td` → baris TD baru di `docs/project/tech-debt.md`. TD yang terbukti selesai → pindah ke Arsip.
 Pertanyaan yang jawabannya jelas dari docs/memori bukan keputusan — pilih default, sebut di laporan.
 
 ## Langkah 4 — Kerjakan yang disetujui
