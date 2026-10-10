@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  */
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
-vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "admin-1" } }) }));
+vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "admin-1", role: "SUPERADMIN" } }) }));
 
 const db = vi.hoisted(() => {
   const rp = {

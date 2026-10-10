@@ -30,6 +30,10 @@ interface User {
 interface Props {
   initialUsers: User[];
   permissions: string[];
+  /** Akun yang sedang login — status, cakupan, & override akun sendiri tak bisa diubah (#386). */
+  currentUserId?: string | null;
+  /** Hanya SUPERADMIN yang bisa mengubah akun SUPERADMIN / memberi role SUPERADMIN (#386). */
+  isSuperAdmin?: boolean;
 }
 // ─── Access Summary Cell ──────────────────────────────────────────────────────
 
@@ -61,7 +65,7 @@ function AccessSummaryCell({ user }: { user: User }) {
   );
 }
 
-export function UserListClient({ initialUsers, permissions }: Props) {
+export function UserListClient({ initialUsers, permissions, currentUserId = null, isSuperAdmin = false }: Props) {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -207,26 +211,30 @@ export function UserListClient({ initialUsers, permissions }: Props) {
           exportFilename="data-users"
           canExport={permissions.includes("EXPORT")}
           getExportRow={getExportRow}
-          renderActions={(user) => (
+          renderActions={(user) => {
+            const isSelf = user.id === currentUserId;
+            // Akun SUPERADMIN hanya bisa diubah SUPERADMIN; akun sendiri tak bisa diubah status/cakupan/override (#386).
+            const lockedTarget = user.role === "SUPERADMIN" && !isSuperAdmin;
+            return (
             <div className="flex items-center">
               <TableActions
                 permissions={permissions}
                 actions={[
-                  {
-                    type: "edit",
+                  ...(lockedTarget ? [] : [{
+                    type: "edit" as const,
                     onClick: () => {
                       setEditUser(user);
                       setShowForm(true);
                     },
-                  },
-                  {
-                    type: "delete",
+                  }]),
+                  ...(isSelf || lockedTarget ? [] : [{
+                    type: "delete" as const,
                     isActive: user.isActive,
                     onClick: () => handleToggleActive(user.id),
-                  },
+                  }]),
                 ]}
               />
-              {permissions.includes("EDIT") && (
+              {permissions.includes("EDIT") && !isSelf && !lockedTarget && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -236,7 +244,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
                   <Database className="h-4 w-4" />
                 </Button>
               )}
-              {permissions.includes("EDIT") && user.role !== "SUPERADMIN" && (
+              {permissions.includes("EDIT") && user.role !== "SUPERADMIN" && !isSelf && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -247,7 +255,8 @@ export function UserListClient({ initialUsers, permissions }: Props) {
                 </Button>
               )}
             </div>
-          )}
+            );
+          }}
         />
       </Card>
 
@@ -256,6 +265,8 @@ export function UserListClient({ initialUsers, permissions }: Props) {
         open={showForm}
         onClose={() => { setShowForm(false); setEditUser(null); }}
         user={editUser}
+        lockRole={!!editUser && editUser.id === currentUserId}
+        canGrantSuperAdmin={isSuperAdmin}
       />
 
       {accessUser && (

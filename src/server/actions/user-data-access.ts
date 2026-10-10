@@ -4,37 +4,28 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
-import { canGrantDataAccess, userTargetError, type DataAccessGrant } from "@/lib/user-admin-guard";
+import { userAdminScopeError, userTargetError } from "@/lib/user-admin-guard";
 
 /**
- * Anti-eskalasi penugasan (#386 butir 2): akun sendiri & akun SUPERADMIN (bagi non-
- * SUPERADMIN) terkunci; wilayah/Lembaga hanya dalam scope pemanggil; pemanggil ber-scope
- * tak boleh mencabut penugasan terakhir (akun tanpa penugasan = akses SEMUA data).
- * Mengembalikan `{ error }` bila ditolak, atau `{ actorId }` bila boleh.
+ * Anti-eskalasi penugasan (#386 butir 2): hanya pemanggil tanpa batasan wilayah;
+ * akun sendiri & akun SUPERADMIN (bagi non-SUPERADMIN) terkunci. Saat memberi,
+ * wilayah/Lembaga tujuan harus ada & aktif. `{ error }` = ditolak, `{ actorId }` = boleh.
  */
-async function guardDataAccessChange(userId: string, grant: DataAccessGrant | null, removing: boolean): Promise<{ error: string } | { actorId: string | null }> {
-  if (!grant) return { error: "Lembaga Petani tidak ditemukan" };
+async function guardDataAccessChange(userId: string, targetExists?: () => Promise<boolean>): Promise<{ error: string } | { actorId: string | null }> {
+  const scopeError = userAdminScopeError(await getAccessContext());
+  if (scopeError) return { error: scopeError };
   const session = await auth();
   const actor = { id: session?.user?.id ?? "", role: session?.user?.role ?? "" };
   const target = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true } });
   const targetError = userTargetError(actor, target);
   if (targetError) return { error: targetError };
-  const access = await getAccessContext();
-  if (!canGrantDataAccess(access, grant)) return { error: "Wilayah atau Lembaga di luar akses Anda" };
-  if (removing && access.mode !== "ALL") {
-    const [p, d, g] = await Promise.all([
-      prisma.userProvince.count({ where: { userId } }),
-      prisma.userDistrict.count({ where: { userId } }),
-      prisma.userFarmerGroup.count({ where: { userId } }),
-    ]);
-    if (p + d + g <= 1) return { error: "Tidak dapat mencabut penugasan terakhir — akun tanpa penugasan dapat melihat semua data" };
-  }
+  if (targetExists && !(await targetExists())) return { error: "Wilayah atau Lembaga tidak ditemukan atau nonaktif" };
   return { actorId: session?.user?.id ?? null };
 }
 
-async function groupGrant(farmerGroupId: string): Promise<DataAccessGrant | null> {
-  const group = await prisma.farmerGroup.findUnique({ where: { id: farmerGroupId }, select: { districtId: true } });
-  return group ? { kind: "group", groupId: farmerGroupId, districtId: group.districtId } : null;
+async function requireUserAdminScope() {
+  const scopeError = userAdminScopeError(await getAccessContext());
+  if (scopeError) throw new Error(scopeError);
 }
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -43,6 +34,7 @@ export async function getUserDataAccess(userId: string) {
   if (!(await hasPermission("settings-users", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+  await requireUserAdminScope();
 
   return prisma.user.findUnique({
     where: { id: userId },
@@ -64,6 +56,7 @@ export async function getRegionsForSelect() {
   if (!(await hasPermission("settings-users", "EDIT"))) {
     throw new Error("Tidak memiliki izin");
   }
+  await requireUserAdminScope();
 
   const [provinces, districts, farmerGroups] = await Promise.all([
     prisma.province.findMany({
@@ -93,7 +86,7 @@ export async function assignUserProvince(userId: string, provinceId: string) {
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const guard = await guardDataAccessChange(userId, { kind: "province" }, false);
+  const guard = await guardDataAccessChange(userId, () => prisma.province.findFirst({ where: { id: provinceId, isActive: true }, select: { id: true } }).then(Boolean));
   if ("error" in guard) return { success: false, error: guard.error };
 
   try {
@@ -109,7 +102,7 @@ export async function removeUserProvince(userId: string, provinceId: string) {
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const guard = await guardDataAccessChange(userId, { kind: "province" }, true);
+  const guard = await guardDataAccessChange(userId);
   if ("error" in guard) return { success: false, error: guard.error };
 
   await prisma.userProvince.deleteMany({ where: { userId, provinceId } });
@@ -123,7 +116,7 @@ export async function assignUserDistrict(userId: string, districtId: string) {
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const guard = await guardDataAccessChange(userId, { kind: "district", districtId }, false);
+  const guard = await guardDataAccessChange(userId, () => prisma.district.findFirst({ where: { id: districtId, isActive: true }, select: { id: true } }).then(Boolean));
   if ("error" in guard) return { success: false, error: guard.error };
 
   try {
@@ -139,7 +132,7 @@ export async function removeUserDistrict(userId: string, districtId: string) {
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const guard = await guardDataAccessChange(userId, { kind: "district", districtId }, true);
+  const guard = await guardDataAccessChange(userId);
   if ("error" in guard) return { success: false, error: guard.error };
 
   await prisma.userDistrict.deleteMany({ where: { userId, districtId } });
@@ -153,7 +146,7 @@ export async function assignUserFarmerGroup(userId: string, farmerGroupId: strin
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const guard = await guardDataAccessChange(userId, await groupGrant(farmerGroupId), false);
+  const guard = await guardDataAccessChange(userId, () => prisma.farmerGroup.findFirst({ where: { id: farmerGroupId, isActive: true }, select: { id: true } }).then(Boolean));
   if ("error" in guard) return { success: false, error: guard.error };
 
   try {
@@ -169,7 +162,7 @@ export async function removeUserFarmerGroup(userId: string, farmerGroupId: strin
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const guard = await guardDataAccessChange(userId, await groupGrant(farmerGroupId), true);
+  const guard = await guardDataAccessChange(userId);
   if ("error" in guard) return { success: false, error: guard.error };
 
   await prisma.userFarmerGroup.deleteMany({ where: { userId, farmerGroupId } });

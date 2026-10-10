@@ -6,7 +6,8 @@ import bcrypt from "bcryptjs";
 import { createUserSchema, updateUserSchema } from "@/validations/user.schema";
 import type { CreateUserInput, UpdateUserInput } from "@/validations/user.schema";
 import { hasPermission } from "@/lib/rbac";
-import { roleGrantError, userTargetError, type UserRef } from "@/lib/user-admin-guard";
+import { getAccessContext } from "@/lib/access-context";
+import { roleGrantError, userAdminScopeError, userTargetError, type UserRef } from "@/lib/user-admin-guard";
 
 /** Pemanggil dari sesi — dasar aturan anti-eskalasi (#386 butir 2). */
 async function sessionActor(): Promise<UserRef & { sessionId: string | null }> {
@@ -14,10 +15,21 @@ async function sessionActor(): Promise<UserRef & { sessionId: string | null }> {
   return { id: session?.user?.id ?? "", role: session?.user?.role ?? "", sessionId: session?.user?.id ?? null };
 }
 
+/** Email sudah dipakai akun lain? Banding tanpa beda huruf besar — login juga tak membedakan (`auth.ts`). */
+async function emailTaken(email: string, exceptId?: string): Promise<boolean> {
+  const found = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" }, ...(exceptId ? { NOT: { id: exceptId } } : {}) },
+    select: { id: true },
+  });
+  return !!found;
+}
+
 export async function getUsers(search?: string) {
   if (!(await hasPermission("settings-users", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+  const scopeError = userAdminScopeError(await getAccessContext());
+  if (scopeError) throw new Error(scopeError);
 
   const where = {
     ...(search
@@ -57,11 +69,10 @@ export async function createUser(input: CreateUserInput) {
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
   const actor = await sessionActor();
-  const roleError = roleGrantError(actor, parsed.data.role);
-  if (roleError) return { success: false, error: roleError };
+  const guardError = userAdminScopeError(await getAccessContext()) ?? roleGrantError(actor, parsed.data.role);
+  if (guardError) return { success: false, error: guardError };
 
-  const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-  if (existing) return { success: false, error: { email: ["Email sudah terdaftar"] } };
+  if (await emailTaken(parsed.data.email)) return { success: false, error: { email: ["Email sudah terdaftar"] } };
 
   const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
 
@@ -91,10 +102,12 @@ export async function updateUser(input: UpdateUserInput) {
   const actor = await sessionActor();
   const target = await prisma.user.findUnique({ where: { id: parsed.data.id }, select: { id: true, role: true } });
   const guardError =
+    userAdminScopeError(await getAccessContext()) ??
     userTargetError(actor, target, { allowSelf: true }) ??
     roleGrantError(actor, parsed.data.role) ??
     (target && target.id === actor.id && target.role !== parsed.data.role ? "Tidak dapat mengubah role akun Anda sendiri" : null);
   if (guardError) return { success: false, error: guardError };
+  if (await emailTaken(parsed.data.email, parsed.data.id)) return { success: false, error: { email: ["Email sudah terdaftar"] } };
 
   const data: Record<string, unknown> = {
     name: parsed.data.name,
@@ -119,7 +132,7 @@ export async function toggleUserActive(id: string) {
 
   const user = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true, isActive: true } });
   const actor = await sessionActor();
-  const guardError = userTargetError(actor, user);
+  const guardError = userAdminScopeError(await getAccessContext()) ?? userTargetError(actor, user);
   if (guardError || !user) return { success: false, error: guardError ?? "User tidak ditemukan" };
 
   await prisma.user.update({

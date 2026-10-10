@@ -35,9 +35,13 @@ interface Props {
   open: boolean;
   onClose: () => void;
   user: User | null;
+  /** Role akun sendiri tak bisa diubah (#386) — tampil teks + nilai tersembunyi. */
+  lockRole?: boolean;
+  /** Opsi role SUPERADMIN hanya untuk SUPERADMIN (#386). */
+  canGrantSuperAdmin?: boolean;
 }
 
-export function UserFormModal({ open, onClose, user }: Props) {
+export function UserFormModal({ open, onClose, user, lockRole = false, canGrantSuperAdmin = false }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const router = useRouter();
@@ -114,16 +118,23 @@ export function UserFormModal({ open, onClose, user }: Props) {
 
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select name="role" defaultValue={user?.role ?? "OPERATOR"}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ROLES.map((role) => (
-                  <SelectItem key={role} value={role}>{role}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {lockRole && user ? (
+              <>
+                <input type="hidden" name="role" value={user.role} />
+                <p className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm" title="Role akun Anda sendiri tidak bisa diubah">{user.role}</p>
+              </>
+            ) : (
+              <Select name="role" defaultValue={user?.role ?? "OPERATOR"}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.filter((role) => role !== "SUPERADMIN" || canGrantSuperAdmin || user?.role === "SUPERADMIN").map((role) => (
+                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">

@@ -15,7 +15,7 @@ const getAccessContext = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/access-context", () => ({ getAccessContext }));
 
 const db = vi.hoisted(() => {
-  const model = () => ({ findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), deleteMany: vi.fn(), count: vi.fn() });
+  const model = () => ({ findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), deleteMany: vi.fn(), count: vi.fn() });
   return {
     user: model(), province: model(), district: model(), farmerGroup: model(),
     userProvince: model(), userDistrict: model(), userFarmerGroup: model(),
@@ -41,6 +41,7 @@ beforeEach(() => {
     m.create.mockResolvedValue({});
     m.deleteMany.mockResolvedValue({ count: 1 });
     m.count.mockResolvedValue(2);
+    m.findFirst.mockResolvedValue({ id: "t-1" });
   }
   getAccessContext.mockResolvedValue({ mode: "ALL" });
   db.user.findUnique.mockResolvedValue({ id: "u-1", role: "OPERATOR" });

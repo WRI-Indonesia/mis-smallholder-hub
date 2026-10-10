@@ -95,13 +95,14 @@ Untuk melakukan override permission menu per user (grant/revoke):
 
 ### Anti-eskalasi pengelolaan pengguna (#386 butir 2)
 
-Keputusan owner 2026-10-10 — dijaga `src/lib/user-admin-guard.ts` (helper murni) di `user.ts`, `user-data-access.ts`, `user-menu-access.ts`; test `src/test/user-escalation-guard.test.ts`:
+Keputusan owner 2026-10-10 (diperketat sesudah review `61d002a`) — dijaga `src/lib/user-admin-guard.ts` (helper murni) di `user.ts`, `user-data-access.ts`, `user-menu-access.ts`, `role-permission.ts`; test `src/test/user-escalation-guard.test.ts`:
 
-1. **SUPERADMIN hanya oleh SUPERADMIN** — memberi role SUPERADMIN, mengubah, atau menonaktifkan akun SUPERADMIN. Override izin menu tidak bisa dipasang di akun SUPERADMIN sama sekali.
-2. **Akun sendiri terkunci** — role, status aktif, penugasan wilayah/Lembaga, dan override izin akun sendiri tidak bisa diubah (nama, email, password boleh).
-3. **Penugasan dalam scope pemanggil** — `BY_DISTRICT` hanya distrik scope atau Lembaga di distrik scope (provinsi ditolak); `BY_FARMER_GROUP` hanya Lembaga scope. Pemanggil ber-scope tidak boleh mencabut penugasan **terakhir** seseorang, karena user tanpa penugasan = `ALL`.
+1. **Kelola pengguna hanya oleh pemanggil tanpa batasan wilayah** (`getAccessContext` = ALL) — baca daftar pengguna/penugasan/wilayah/izin efektif, buat, ubah (termasuk reset password), nonaktifkan, penugasan, override. Alasan: pengelola ber-scope bisa membuat akun tanpa penugasan (= `ALL`) atau me-reset password akun lain, jadi "penugasan dalam scope pemanggil" tidak cukup.
+2. **SUPERADMIN hanya oleh SUPERADMIN** — memberi role SUPERADMIN, mengubah, atau menonaktifkan akun SUPERADMIN. Override izin menu tidak bisa dipasang di akun SUPERADMIN sama sekali.
+3. **Akun sendiri terkunci** — role, status aktif, penugasan wilayah/Lembaga, dan override izin akun sendiri tidak bisa diubah (nama, email, password boleh). UI menyembunyikan kontrolnya di baris akun sendiri dan mengunci pilihan role.
+4. **Matriks Role & Permission hanya diubah SUPERADMIN** — pemegang izin ubah lainnya bisa menaikkan izin perannya sendiri.
 
-Saat ini `settings-users` hanya dimiliki SUPERADMIN (seed); aturan ini menjaga bila izinnya kelak diberikan ke peran/akun lain. Tidak ada urutan antar peran lain (ADMIN boleh memberi role ADMIN/OPERATOR/MANAGEMENT/DONOR).
+Email unik dibandingkan tanpa beda huruf besar (sama dengan login). Saat ini `settings-users` & `settings-roles` hanya dimiliki SUPERADMIN (seed); aturan ini menjaga bila izinnya kelak diberikan ke peran/akun lain.
 
 ### UI Matriks Role & Permission
 

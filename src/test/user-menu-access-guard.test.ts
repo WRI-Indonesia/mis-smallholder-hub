@@ -11,6 +11,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
 vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "admin-1" } }) }));
+vi.mock("@/lib/access-context", () => ({ getAccessContext: async () => ({ mode: "ALL" }) }));
 
 const db = vi.hoisted(() => {
   const model = () => ({ findUnique: vi.fn(), findMany: vi.fn(), upsert: vi.fn(), update: vi.fn(), delete: vi.fn(), deleteMany: vi.fn() });

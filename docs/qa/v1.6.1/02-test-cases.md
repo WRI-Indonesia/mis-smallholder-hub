@@ -6,6 +6,26 @@ Satu **blok** per kasus. Ditulis dev saat menutup issue; dijalankan QA di stagin
 
 Format: `### TC-<issue>-<nn> · <judul> [P0] [regresi] (<menit> mnt)` lalu `Prasyarat:` · `Langkah:` (bernomor) · `Harapan:` (bullet) · opsional `Baseline dev:`.
 
+## #386 — Anti-eskalasi Settings › Users & Role & Permission
+
+### TC-386-01 · Akun sendiri terkunci di User Management [P0] [regresi] (3 mnt)
+Prasyarat: login SUPERADMIN.
+Langkah:
+1. Settings › User Management → cari akun sendiri.
+2. Klik **Edit** pada akun sendiri.
+Harapan:
+- Baris akun sendiri hanya punya **Edit** (tanpa Nonaktifkan, Akses Data, Hak Akses Menu); baris akun lain lengkap.
+- Di form Edit, Role tampil sebagai teks terkunci; ubah nama lalu **Simpan** berhasil dan role tidak berubah.
+
+### TC-386-02 · Pengelola ber-scope & Role & Permission [P1] (4 mnt)
+Prasyarat: akun non-SUPERADMIN yang diberi izin Settings › Users / Role & Permission lewat override (opsional; bila tidak ada, cukup diwakili test `user-escalation-guard.test.ts`).
+Langkah:
+1. Akun ber-scope distrik membuka Settings › User Management.
+2. Akun ADMIN tanpa batasan wilayah mencoba mengubah satu sel di Role & Permission.
+Harapan:
+- Langkah 1: halaman gagal memuat daftar dengan pesan "Pengelolaan pengguna hanya untuk akun tanpa batasan wilayah".
+- Langkah 2: sel kembali seperti semula + pemberitahuan "Hanya SUPERADMIN yang dapat mengubah Role & Permission".
+
 ## #409 — Distrik tujuan Lembaga wajib dalam scope
 
 Prasyarat umum: akun **ADMIN** yang dibatasi per distrik (UserDistrict/UserProvince) dan akun **ADMIN** yang dibatasi per Lembaga (UserFarmerGroup), keduanya ber-izin CREATE/EDIT Master Data › Lembaga Petani. Login akun dilakukan owner.

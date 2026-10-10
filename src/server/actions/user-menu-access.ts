@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { getAccessContext } from "@/lib/access-context";
+import { userAdminScopeError } from "@/lib/user-admin-guard";
 import type { PermissionLevel } from "@prisma/client";
 
 // ─── Query active menu items ──────────────────────────────────────────────────
@@ -27,6 +29,8 @@ export async function getUserEffectivePermissions(userId: string) {
   if (!(await hasPermission("settings-users", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+  const scopeError = userAdminScopeError(await getAccessContext());
+  if (scopeError) throw new Error(scopeError);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -78,6 +82,9 @@ export async function setUserMenuOverride(
   if (!(await hasPermission("settings-users", "EDIT"))) {
     return { success: false, error: "Tidak memiliki izin" };
   }
+
+  const scopeError = userAdminScopeError(await getAccessContext());
+  if (scopeError) return { success: false, error: scopeError };
 
   // Prevent overriding SUPERADMIN
   const targetUser = await prisma.user.findUnique({
@@ -132,6 +139,8 @@ export async function removeUserMenuOverride(
     return { success: false, error: "Tidak memiliki izin" };
   }
 
+  const removeScopeError = userAdminScopeError(await getAccessContext());
+  if (removeScopeError) return { success: false, error: removeScopeError };
   if ((await auth())?.user?.id === userId) {
     return { success: false, error: "Tidak dapat mengubah akses akun Anda sendiri" };
   }

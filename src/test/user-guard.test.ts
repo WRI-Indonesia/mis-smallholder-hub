@@ -10,13 +10,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
 vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "admin-1" } }) }));
+vi.mock("@/lib/access-context", () => ({ getAccessContext: async () => ({ mode: "ALL" }) }));
 
 const bcrypt = vi.hoisted(() => ({ hash: vi.fn(async (p: string) => `hash(${p})`) }));
 vi.mock("bcryptjs", () => ({ default: bcrypt }));
 
 const db = vi.hoisted(() => ({
   user: {
-    findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(),
+    findMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(),
   },
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
@@ -33,6 +34,7 @@ beforeEach(() => {
   db.user.findMany.mockResolvedValue([]);
   // Lookup email (cek unik) → tak ada; lookup id (target #386) → akun OPERATOR biasa.
   db.user.findUnique.mockImplementation(async ({ where }: { where: { id?: string } }) => (where.id ? { id: where.id, role: "OPERATOR", isActive: true } : null));
+  db.user.findFirst.mockResolvedValue(null); // email belum dipakai (banding tanpa beda huruf)
   db.user.create.mockResolvedValue({ id: "u-new" });
   db.user.update.mockResolvedValue({});
 });
@@ -74,14 +76,18 @@ describe("createUser / updateUser — Zod, email unik, hash, audit", () => {
     expect(res.error).toHaveProperty("email");
     expect(res.error).toHaveProperty("password");
     expect(res.error).toHaveProperty("role");
-    expect(db.user.findUnique).not.toHaveBeenCalled();
+    expect(db.user.findFirst).not.toHaveBeenCalled();
     expect(db.user.create).not.toHaveBeenCalled();
   });
 
-  it("email sudah terdaftar → ditolak", async () => {
-    db.user.findUnique.mockResolvedValue({ id: "u-lain" });
-    expect((await actions.createUser(newUser())).error).toEqual({ email: ["Email sudah terdaftar"] });
+  it("email sudah terdaftar (tanpa beda huruf besar) → ditolak, juga saat update ke email akun lain", async () => {
+    db.user.findFirst.mockResolvedValue({ id: "u-lain" });
+    expect((await actions.createUser(newUser({ email: "OP@Example.org" }))).error).toEqual({ email: ["Email sudah terdaftar"] });
+    expect(db.user.findFirst.mock.calls[0][0].where).toEqual({ email: { equals: "OP@Example.org", mode: "insensitive" } });
     expect(db.user.create).not.toHaveBeenCalled();
+    expect((await actions.updateUser({ id: "u-1", ...newUser() })).error).toEqual({ email: ["Email sudah terdaftar"] });
+    expect(db.user.findFirst.mock.calls[1][0].where).toMatchObject({ NOT: { id: "u-1" } });
+    expect(db.user.update).not.toHaveBeenCalled();
   });
 
   it("create sukses → password di-hash, createdBy dari sesi", async () => {

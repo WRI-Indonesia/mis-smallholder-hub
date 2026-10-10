@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { rolePermissionEditError } from "@/lib/user-admin-guard";
 import type { Role, PermissionLevel } from "@prisma/client";
 import type { ActionResult } from "@/types/action-result";
 import { normalizeRolePermissionUpdates, type RolePermissionUpdate } from "@/lib/role-permission-updates";
@@ -34,6 +35,9 @@ export async function setRolePermissions(
   }
 
   const session = await auth();
+  // Anti-eskalasi (#386 butir 2): pemegang izin ini bisa menaikkan izin perannya sendiri → SUPERADMIN saja.
+  const editError = rolePermissionEditError({ id: session?.user?.id ?? "", role: session?.user?.role ?? "" });
+  if (editError) return { success: false, error: editError };
   const userId = session?.user?.id ?? null;
   const valid = normalizeRolePermissionUpdates(updates);
   if (valid.length === 0) return { success: true, data: { count: 0 } };

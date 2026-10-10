@@ -47,4 +47,6 @@ Menu ini hanya dipegang SUPERADMIN — peran lain, termasuk ADMIN, tidak punya i
 
 **Muncul "Hanya SUPERADMIN yang dapat …"** — memberi peran SUPERADMIN serta mengubah atau menonaktifkan akun SUPERADMIN hanya bisa dilakukan oleh SUPERADMIN.
 
-**Muncul "Wilayah atau Lembaga di luar akses Anda" / "Tidak dapat mencabut penugasan terakhir"** — pengelola yang wilayahnya dibatasi hanya bisa memberi cakupan di dalam wilayahnya sendiri, dan tidak bisa mencabut cakupan terakhir seseorang (pengguna tanpa cakupan justru melihat semua data).
+**Muncul "Pengelolaan pengguna hanya untuk akun tanpa batasan wilayah"** — akun yang cakupan datanya dibatasi (per distrik atau per Lembaga) tidak bisa mengelola pengguna, karena pengguna baru tanpa cakupan justru melihat semua data. Minta SUPERADMIN atau pengelola tanpa batasan wilayah.
+
+**Tombol ubah status, Akses Data, atau Hak Akses Menu tidak ada di baris akun Anda** — disengaja: cakupan, status, dan hak akses akun sendiri tidak bisa diubah sendiri. Role akun sendiri di form Edit juga tampil terkunci.
