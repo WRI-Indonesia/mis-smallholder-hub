@@ -16,10 +16,9 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
   const groups = await prisma.farmerGroup.findMany({
     where: {
       isActive: true,
-      ...accessFilter,
       ...(filters.districtId ? { districtId: filters.districtId } : {}),
-      // Wrapped in AND so it composes with (not overrides) the access filter's `id` scope.
-      ...(filters.farmerGroupId ? { AND: [{ id: filters.farmerGroupId }] } : {}),
+      // Access scope in AND so neither the district nor the Lembaga filter overrides it (BUG-007, audit 2026-10-10).
+      AND: [accessFilter, ...(filters.farmerGroupId ? [{ id: filters.farmerGroupId }] : [])],
     },
     select: {
       id: true,

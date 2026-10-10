@@ -73,14 +73,14 @@ describe("scope", () => {
   it("getFarmerGroupsForAnalyst BY_FARMER_GROUP + filter distrik → id Lembaga scope tetap ada", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-1"] });
     await actions.getFarmerGroupsForAnalyst("1401");
-    expect(db.farmerGroup.findMany.mock.calls[0][0].where).toEqual({ isActive: true, id: { in: ["kt-1"] }, districtId: "1401" });
+    expect(db.farmerGroup.findMany.mock.calls[0][0].where).toEqual({ isActive: true, districtId: "1401", AND: { id: { in: ["kt-1"] } } });
   });
 
   it("getFarmerSummary BY_DISTRICT + filter Lembaga → farmer aktif, Lembaga aktif dalam distrik scope", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["1401"] });
     await actions.getFarmerSummary({ farmerGroupId: "kt-1" });
     const args = db.farmer.findMany.mock.calls[0][0];
-    expect(args.where).toEqual({ isActive: true, farmerGroup: { isActive: true, districtId: { in: ["1401"] }, id: "kt-1" } });
+    expect(args.where).toEqual({ isActive: true, farmerGroup: { isActive: true, id: "kt-1", AND: { districtId: { in: ["1401"] } } } });
     // #253: tak ada nested landParcels (baris lahan ke Node) — hanya _count ber-filter aktif.
     expect(args.select.landParcels).toBeUndefined();
     expect(args.select._count.select.landParcels.where).toEqual({ isActive: true });
@@ -92,7 +92,7 @@ describe("scope", () => {
   it("getFarmersWithoutParcels BY_FARMER_GROUP + filter distrik → scope Lembaga; 'tanpa lahan' = tanpa lahan AKTIF", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-1"] });
     await actions.getFarmersWithoutParcels({ districtId: "1401" });
-    const scoped = { isActive: true, farmerGroup: { isActive: true, id: { in: ["kt-1"] }, districtId: "1401" } };
+    const scoped = { isActive: true, farmerGroup: { isActive: true, districtId: "1401", AND: { id: { in: ["kt-1"] } } } };
     expect(db.farmer.findMany.mock.calls[0][0].where).toEqual({ ...scoped, landParcels: { none: { isActive: true } } });
     expect(db.farmer.count.mock.calls[0][0].where).toEqual(scoped);
   });
