@@ -67,7 +67,8 @@ async function farmerGroupsForMenus(menuKeys: string[], districtId?: string | nu
     {};
 
   return prisma.farmerGroup.findMany({
-    where: { isActive: true, ...accessFilter, ...(districtId ? { districtId } : {}) },
+    // Scope di AND: filter distrik permintaan tak boleh menimpa `districtId: { in }` BY_DISTRICT (BUG-007, audit 2026-10-10).
+    where: { isActive: true, ...(districtId ? { districtId } : {}), AND: accessFilter },
     select: { id: true, name: true, code: true },
     orderBy: { name: "asc" },
   });
@@ -103,7 +104,8 @@ export async function getFarmerReport(filters: FarmerReportFilters): Promise<Far
       id: filters.farmerGroupId,
       districtId: filters.districtId,
       isActive: true,
-      ...accessFilter,
+      // Scope di AND: `...accessFilter` dulu menimpa `id` permintaan pada BY_FARMER_GROUP (BUG-007, audit 2026-10-10).
+      AND: accessFilter,
     },
   });
 
@@ -200,7 +202,8 @@ export async function getTrainingReport(filters: TrainingReportFilters): Promise
       id: filters.farmerGroupId,
       districtId: filters.districtId,
       isActive: true,
-      ...accessFilter,
+      // Scope di AND: `...accessFilter` dulu menimpa `id` permintaan pada BY_FARMER_GROUP (BUG-007, audit 2026-10-10).
+      AND: accessFilter,
     },
   });
 
@@ -405,7 +408,8 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
       id: filters.farmerGroupId,
       districtId: filters.districtId,
       isActive: true,
-      ...accessFilter,
+      // Scope di AND: `...accessFilter` dulu menimpa `id` permintaan pada BY_FARMER_GROUP (BUG-007, audit 2026-10-10).
+      AND: accessFilter,
     },
   });
 
@@ -636,7 +640,7 @@ export async function getLandParcelReportGeometries(
     access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
     {};
   const group = await prisma.farmerGroup.findFirst({
-    where: { id: farmerGroupId, isActive: true, ...accessFilter },
+    where: { id: farmerGroupId, isActive: true, AND: accessFilter }, // scope di AND (BUG-007, audit 2026-10-10)
     select: { id: true },
   });
   if (!group) {
@@ -687,7 +691,7 @@ export async function getKelompokTaniDetailReport(
     access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
     {};
   const group = await prisma.farmerGroup.findFirst({
-    where: { id: farmerGroupId, isActive: true, ...accessFilter },
+    where: { id: farmerGroupId, isActive: true, AND: accessFilter }, // scope di AND (BUG-007, audit 2026-10-10)
     select: { id: true, name: true },
   });
   if (!group) {
