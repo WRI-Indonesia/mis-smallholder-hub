@@ -39,4 +39,4 @@ Angka di sini **dibaca dari snapshot**, bukan dihitung ulang tiap halaman dibuka
 
 **Tertulis belum ada snapshot** — belum pernah ada snapshot dibuat. Lihat tutorial **Memperbarui angka dashboard**.
 
-**Cakupan pelatihan terasa lebih rendah dari perkiraan** — pembaginya adalah seluruh petani aktif, termasuk mereka di lembaga yang belum tersentuh pelatihan sama sekali.
+**Cakupan pelatihan terasa lebih rendah dari perkiraan** — pembaginya adalah seluruh petani terdaftar, termasuk mereka di lembaga yang belum tersentuh pelatihan sama sekali.

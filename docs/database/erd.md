@@ -123,7 +123,7 @@ Mengikuti [Roadmap 2026–2027](../project/roadmap.md) (belum ada skema; bentuk 
 
 ### Enum
 
-19 enum. Inti: `Role`, `PermissionLevel`, `FarmerGroupCategory`, `Gender`, `TrainingCategory`. Lembaga: `FarmerGroupType`, `RspoCertStatus`, `CertStatus`. Wilayah: `AdminBoundaryLevel`. Satelit lahan: `LandDocumentType`, `LandProgramType`, `LandProgramStatus`, `LandStdbStage`, `LandNktStatus`, `NktCategory`, `LandMarkerCondition`, `LandMarkerType`, `LandMarkerSource`. Monev BMP: `BmpIndicatorLevel`. (`ActivityStatus` yatim dihapus 2026-09-21, #353)
+21 enum (daftar turunan kode: [models.md](./models.md) blok GENERATED). Inti: `Role`, `PermissionLevel`, `FarmerGroupCategory`, `Gender`, `TrainingCategory`. Lembaga: `FarmerGroupType`, `RspoCertStatus`, `CertStatus`. Wilayah: `AdminBoundaryLevel`. Satelit lahan: `LandDocumentType`, `LandProgramType`, `LandProgramStatus`, `LandStdbStage`, `LandNktStatus`, `NktCategory`, `LandMarkerCondition`, `LandMarkerType`, `LandMarkerSource`. Monev BMP: `BmpIndicatorLevel`. Target program: `ProgramTargetIndicator`, `ProgramTargetPeriod`. (`ActivityStatus` yatim dihapus 2026-09-21, #353)
 
 ### Pola Umum
 

@@ -193,7 +193,7 @@ Urutan mengikuti Pre-Commit Gate di [`workflow.md`](../standards/workflow.md):
 5. ✅ **CI di PR hijau**: `gitleaks` & `semgrep` (lint/build/test **tidak** dijalankan CI — pastikan lokal)
 6. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
 7. ✅ **Code Review**: implementasi sesuai [`standards/`](../standards/code-standards.md)
-8. ✅ **Rule Compliance**: Semua kategori pada tabel "Audit Kepatuhan Kode" ([`roadmap-mvp.md`](./roadmap-mvp.md), arsip 2026-07-10) berstatus PASS
+8. ✅ **Rule Compliance**: sesuai [`standards/code-standards.md`](../standards/code-standards.md); audit berkala `/audit` (laporan lokal `audit-report/`) tidak menyisakan temuan tinggi yang belum ditindak
 9. ✅ **Alur rilis**: `mvp` → `staging` (deploy staging, QA `docs/qa/vX.Y.Z/`) → PR `staging` → `main` (deploy produksi) — lihat [`versioning.md`](../standards/versioning.md) §Alur Rilis
 
 #### Jebakan Umum & Perbaikannya

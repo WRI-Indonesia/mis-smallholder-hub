@@ -70,7 +70,7 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 | "Excel" | Tombol ekspor | Ikon `Download`; multi-sheet, nama file `analisa-ketersediaan-<kode atau nama>-<yyyyMMdd>` — digate izin `EXPORT` (#245) |
 | "Prioritas perbaikan" | Kartu | 6 tindakan berskor: nomor, label (klik → seksi), "+n poin", bar relatif, domain · n/total · Perbaiki lewat (tautan); bila kosong → kartu hijau "Semua check berskor sudah lengkap" |
 | "Buka semua / Tutup semua" | Tombol ghost | Mengatur state buka semua seksi |
-| Peringatan 0 petani | Kartu peringatan | "Lembaga Petani ini belum memiliki data petani aktif — domain Petani, Lahan, Pelatihan, dan Produksi kosong." |
+| Peringatan 0 petani | Kartu peringatan | "Lembaga Petani ini belum memiliki data petani terdaftar — domain Petani, Lahan, Pelatihan, dan Produksi kosong." |
 | Checklist | Daftar baris | Per domain: "n lengkap · n bermasalah · n belum berlaku" + legenda jenis; baris = chip jenis · label · badge sistemik · "bobot a/b" · bar % OK · status; klik baris bermasalah → daftar kerja |
 | "Per Kelompok Tani" | Collapsible tabel (seksi Lahan) | KT · Petani · Persil · Luas · Skor Lahan (bar) · Skor Petani (bar) · Persil Berproduksi; urut skor lahan terendah; "(tanpa Kelompok Tani)" dicetak miring |
 

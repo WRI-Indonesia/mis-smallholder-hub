@@ -41,13 +41,13 @@ STDB tidak lahir bernomor. Nomornya baru keluar dari dinas di tahap terakhir, ja
 
 + **Revisi bukan Ditolak.** Selama tahapnya *Revisi*, berkasnya masih dihitung sebagai pengajuan yang berjalan. *Ditolak* menutup berkas itu — pakai hanya bila memang tidak akan dilanjutkan dengan berkas tersebut. Keduanya wajib diberi **Catatan Tahap** (alasannya).
 + **Satu petani hanya boleh punya satu berkas yang sedang berjalan** (Persiapan Data / Pengajuan / Revisi). Lahan lain yang ikut dalam pengajuan yang sama ditautkan ke berkas itu, bukan dibuatkan berkas baru. Petani boleh punya banyak STDB yang sudah **Terbit**.
-+ Kolom **Nomor**, **Tanggal Terbit**, dan **Tahun Terbit** hanya muncul pada tahap *Terbit* — supaya baris pengajuan tidak pernah terbaca seolah STDB-nya sudah keluar.
++ Kolom **Nomor STDB** baru bisa diisi pada tahap *Terbit* (di tahap lain kolomnya terkunci), dan **Tanggal Terbit** serta **Tahun Terbit** hanya muncul pada tahap itu — supaya baris pengajuan tidak pernah terbaca seolah STDB-nya sudah keluar.
 + **UL Parcel Code** — satu lahan tidak boleh punya kode yang sama dua kali untuk pemeta yang sama. Kode yang **sudah dipakai lahan lain tetap diterima**: barisnya diberi tanda amber *"Juga dipakai …"* berisi ID lahan lain itu (bisa diklik bila lahan itu masuk cakupan akses Anda; di luar cakupan hanya tampil ID-nya), supaya klaim ganda bisa dicek silang lalu diperbaiki di lahan yang keliru.
 + **Program** — untuk saat ini hanya *Demplot PBU*; status Direncanakan / Berjalan / Selesai / Dibatalkan, tanggal selesai tidak boleh mendahului tanggal mulai.
 5. Untuk mengubah, klik ikon **pensil** di ujung baris; untuk menghapus, klik ikon **tempat sampah**, lalu konfirmasi.
 + Menghapus surat/kode/program hanya **menonaktifkan** (data tersimpan sebagai riwayat). Pada STDB ikonnya **lepas tautan**: STDB-nya tetap ada untuk petani dan lahan lain, hanya kaitan ke lahan ini yang dilepas.
 
-> [!penting] Dokumen yang masuk dari unggah Excel dengan jenis kosong tampil sebagai *"Lainnya (jenis belum diisi)"* — inilah tempat melengkapinya: klik pensil, pilih jenis yang benar, simpan.
+> [!penting] Dokumen yang masuk dari unggah Excel dengan jenis kosong tampil sebagai badge *"Jenis belum diisi"* (di PDF Profil Lahan: *"Lainnya (jenis belum diisi)"*) — inilah tempat melengkapinya: klik pensil, pilih jenis yang benar, simpan.
 
 ## Hasil
 

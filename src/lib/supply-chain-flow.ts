@@ -175,6 +175,21 @@ export function recordRampId(r: ScRecord, offtakers: Map<string, ScOfftaker>): s
   return o2?.type === "RAMP" ? o2.id : null;
 }
 
+/**
+ * Offtaker yang disinggahi garis peta satu record, urut arah TBS: `offtakerId`
+ * lalu `nextOfftakerId` apa pun tipenya; koperasi milik Lembaga itu sendiri
+ * dilewati (titiknya = titik Lembaga). Satu definisi untuk garis Peta, jarak
+ * garis lurus, dan daftar "tidak tergambar" (review 2026-10-10).
+ */
+export function recordWaypointOfftakers(r: ScRecord, offtakers: Map<string, ScOfftaker>): ScOfftaker[] {
+  const out: ScOfftaker[] = [];
+  for (const id of [r.offtakerId, r.nextOfftakerId]) {
+    const o = id ? offtakers.get(id) : undefined;
+    if (o && o.farmerGroupCode !== r.groupCode) out.push(o);
+  }
+  return out;
+}
+
 /** Nilai filter Mill untuk record tanpa Mill (kolom kosong / beberapa PT). */
 export const UNKNOWN_MILL_FILTER = "tidak-diketahui";
 
@@ -421,14 +436,24 @@ export interface SankeyLink {
   value: number;
 }
 
+export interface SankeyPath {
+  nodes: string[];
+  links: string[];
+  channel: SupplyChannel;
+  ton: number;
+  toUlTon: number;
+}
+
 export interface SankeyGraph {
   nodes: SankeyNode[];
   links: SankeyLink[];
   /**
    * Jalur utuh (unik) Lembaga → … → Mill: id node & kunci pita yang dilewati.
-   * Dipakai menyorot seluruh hulu-hilir saat satu node/pita disorot.
+   * Dipakai menyorot seluruh hulu-hilir saat satu node/pita disorot, dan
+   * sebagai baris tab Jalur / Tabel Pohon (`ton` = tonase jalur itu, `toUlTon` =
+   * bagian dari record bertanda "Supply to UL" — definisi node Ke Mill UL).
    */
-  paths: { nodes: string[]; links: string[] }[];
+  paths: SankeyPath[];
   totalTon: number;
   /** Record yang tidak ikut (tanpa tonase). */
   skippedRecords: number;
@@ -542,7 +567,7 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
 
   const nodes = new Map<string, SankeyNode>();
   const links = new Map<string, SankeyLink>();
-  const pathIndex = new Map<string, { nodes: string[]; links: string[] }>();
+  const pathIndex = new Map<string, SankeyPath>();
   const ensureNode = (id: string, column: 0 | 1 | 2 | 3, record: ScRecord) => {
     let n = nodes.get(id);
     if (n) return n;
@@ -601,7 +626,10 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
       linkKeys.push(k);
     }
     const pk = linkKeys.join("|");
-    if (!pathIndex.has(pk)) pathIndex.set(pk, { nodes: steps.map((x) => x.id), links: linkKeys });
+    const path = pathIndex.get(pk) ?? { nodes: steps.map((x) => x.id), links: linkKeys, channel: p.channel, ton: 0, toUlTon: 0 };
+    path.ton += p.ton;
+    if (p.record.toUl) path.toUlTon += p.ton;
+    pathIndex.set(pk, path);
   }
   // Nilai node = max(masuk, keluar) — kolom 0 hanya keluar, kolom 3 hanya masuk.
   const inSum = new Map<string, number>();
@@ -816,11 +844,8 @@ export function buildFlowSegments(
     const pts: FlowPoint[] = [{ key: `L:${g.code}`, kind: "LEMBAGA", lat: g.lat, lon: g.lon }];
     let skipped = false;
     // Mode Ringkas: garis langsung Lembaga → Mill, titik offtaker tidak disinggahi.
-    for (const oid of viaOfftakers ? [r.offtakerId, r.nextOfftakerId] : []) {
-      const o = oid ? offtakers.get(oid) : undefined;
-      if (!o) continue;
-      // Koperasi = Lembaga itu sendiri → titiknya sama, tak perlu segmen nol.
-      if (o.farmerGroupCode === g.code) continue;
+    // Koperasi = Lembaga itu sendiri dilewati `recordWaypointOfftakers` → tak ada segmen nol.
+    for (const o of viaOfftakers ? recordWaypointOfftakers(r, offtakers) : []) {
       if (o.lat == null || o.lon == null) {
         skipped = true;
         noPoint.add(o.id);

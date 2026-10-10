@@ -181,7 +181,16 @@ Grain diputuskan owner: **1 baris/lahan/bulan** → proyeksi ±900k baris 2028. 
 | Cek duplikat bulk upload — `farmer_id IN` 200 literal | 35 ms | 35 ms | Bitmap `farmer_id` (tanpanya 52 ms lewat unique) |
 | Insert 20k baris (median 7×, 2 putaran bergantian) | 434 / 469 ms | 479 / 519 ms | **±10% lebih lambat** — komposit (47 MB) lebih berat dari `parcel_id`+`is_active` tunggal; ≈ +2 dtk untuk import penuh 900k |
 
-`isActive` tunggal dibuang: tak satu pun rencana eksekusi memakainya (hampir semua baris aktif). Partial index `WHERE is_active` tidak dipakai karena Prisma 7 tak bisa mendeklarasikannya di schema — akan terus diusulkan DROP oleh `migrate dev` seperti GiST `*_geom_idx`. **Ukur ulang sesudah import besar pertama di prod** (#251) dan catat di sini.
+`isActive` tunggal dibuang: tak satu pun rencana eksekusi memakainya (hampir semua baris aktif). Partial index `WHERE is_active` tidak dipakai karena Prisma 7 tak bisa mendeklarasikannya di schema — akan terus diusulkan DROP oleh `migrate dev` seperti GiST `*_geom_idx`. Ukur ulang di prod dijadwalkan sesudah import besar pertama — hasilnya di bawah.
+
+**Ukur ulang mis-prod 2026-10-10** (READ ONLY, `EXPLAIN (ANALYZE, BUFFERS)`, sesudah import produksi besar 2026-10-08): **36.653** baris aktif (≈ 4% proyeksi 2028). Lembaga dengan produksi terbanyak = 13.488 baris / 899 lahan aktif (≈ 37% tabel).
+
+| Query | Waktu | Rencana eksekusi |
+| --- | --- | --- |
+| Peta BMP — `parcel_id IN (899 literal) + aktif`, group by lahan+periode | **38 ms** | Seq Scan + HashAggregate — benar untuk 37% tabel (1.215 buffer, semua hit); indeks dipakai saat porsinya kecil |
+| Detail/Profil Lahan — `parcel_id = X + aktif` | < 1 ms (kueri inti; total 6,9 ms termasuk subkueri pemilih lahan) | Index Scan `(parcel_id, period)` |
+
+Sejalan dengan pengukuran sintetis 840k baris (116 ms untuk 2.192 lahan). Tidak perlu indeks tambahan sekarang; pantau lagi bila tabel mendekati ratusan ribu baris (#251 ditutup).
 
 ### Target Performa Query
 

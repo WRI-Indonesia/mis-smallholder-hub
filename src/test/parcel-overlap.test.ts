@@ -207,10 +207,7 @@ describe("buildUploadOverlapWarnings — guard bulk upload (#317 Fase 3)", () =>
 
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
 const getAccessContext = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/access-context", async () => ({
-  getAccessContext,
-  rawFarmerGroupScope: (await import("@/lib/access-scope")).rawFarmerGroupScope,
-}));
+vi.mock("@/lib/access-context", () => ({ getAccessContext }));
 const db = vi.hoisted(() => ({ $queryRaw: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 

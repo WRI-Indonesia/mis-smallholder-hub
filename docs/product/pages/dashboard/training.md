@@ -24,7 +24,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 ├── Card Training Benefit per year (full row, collapsible, #402; selalu tampil; tepat di bawah kartu KPI — owner 2026-10-07)
 │   ├── Subjudul berganti per tampilan (definisi Tabel · cara baca Grafis · cara baca vs Kontrak)
 │   ├── Toggle: Capaian [Tabel · Grafis] | vs Kontrak (state lokal, bawaan Tabel; tab (B) progres dihapus — owner 2026-10-07 memilih (A) trayektori) · ⓘ popover "Cara menghitung" (Tabel/Grafis: aturan hitung, padanan Capaian Paket per Distrik, chip filter) · tombol "Excel" (izin EXPORT; 2 sheet Capaian · Kontrak apa pun tab aktif — lihat baris Ekspor)
-│   ├── Grafis: bar bertumpuk per baris — panjang = kumulatif t, segmen ≤ t−2 (gelap) · baru t−1 · baru t (terang), angka di segmen bila ≥ 9% trek; trek abu netral; **trek penuh = total petani aktif** (Σ petani Lembaga tersaring) → sisa abu = belum dilatih, tanpa label angka (owner 2026-10-07; jumlahnya di tooltip) (garis acuan putus-putus + ruang 5% dihapus owner 2026-10-07: ruang di kanan garis tak bermakna)
+│   ├── Grafis: bar bertumpuk per baris — panjang = kumulatif t, segmen ≤ t−2 (gelap) · baru t−1 · baru t (terang), angka di segmen bila ≥ 9% trek; trek abu netral; **trek penuh = total petani terdaftar** (Σ petani Lembaga tersaring) → sisa abu = belum dilatih, tanpa label angka (owner 2026-10-07; jumlahnya di tooltip) (garis acuan putus-putus + ruang 5% dihapus owner 2026-10-07: ruang di kanan garis tak bermakna)
 │   ├── Tabel (format donor; header netral — tahun teks biasa, sub-kolom abu; kolom proporsional, rata tengah, Package 34%) paket (P1 · P2 Group Dynamic · P2 HSE · P3) + baris total "Petani pernah mengikuti pelatihan (minimal 1)" × kolom tahun ≤ t−2 · t−1 · t (masing-masing Actual · Kumulative); Kumulative t ditebalkan + latar netral; Actual kolom ≤ t−2 tanpa "+"
 │   └── vs Kontrak: 5 grafik kecil trayektori per paket; "≈ sesuai target" bila |selisih| < 1% target; titik target berimpit → cincin di sekeliling titik realisasi
 ├── Card Capaian Paket per Distrik (full row, collapsible, #198; tersembunyi saat filter Lembaga aktif)
@@ -104,7 +104,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 
 | # | Judul kartu | Nilai | Sub |
 |---|---|---|---|
-| 1 | Petani Terlatih | "{terlatih}" | "{persen} dari total {total petani} petani aktif pernah ikut ≥1 pelatihan ({label tahun})" |
+| 1 | Petani Terlatih | "{terlatih}" | "{persen} dari total {total petani} petani terdaftar pernah ikut ≥1 pelatihan ({label tahun})" |
 | 2 | Total Sesi | "{n}" | "sesi pelatihan ({label tahun})" |
 | 3 | Partisipasi Perempuan | persen | "{n} dari total {n} kehadiran ({label tahun})" |
 | 4 | Petani Lulus Post-Test | "{n}" atau "—" | "{persen} dari {n} petani terlatih mencapai post-test ≥ 60 ({label tahun})" / "belum ada peserta dengan pre & post terisi" |
@@ -118,7 +118,7 @@ Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmp
 | Judul | Collapsible trigger | "Capaian Paket per Distrik" (default terbuka; ringkasan saat dilipat: jumlah distrik + % pernah ikut pelatihan) + legend Sudah/Belum (kanan bawah). Card **disembunyikan saat filter Lembaga aktif** (roll-up distrik atas satu Lembaga tidak bermakna); kolom Total (Riau) disembunyikan bila hanya 1 distrik |
 | Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Pernah Ikut Pelatihan (baris agregat ber-latar `bg-muted/40` + pemisah atas tegas — pembeda struktural, bar tetap emerald konsisten legend); kolom = **Total (Riau)** (agregat scope, ber-border pemisah; disembunyikan bila hanya 1 distrik dalam scope) lalu distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
 | Sel | Stacked bar tebal | Persen di kiri luar bar; segmen hijau memuat jumlah sudah, segmen abu memuat jumlah belum; "muat"-nya label diukur dari lebar piksel segmen via container query (≥3rem), bukan persen (#205); distrik tanpa petani → "—" |
-| Tooltip sel | Tooltip terstruktur (Base UI) | Menggantikan `title` native (#205): judul "{paket} — {distrik / Total (Riau)}", baris per segmen (chip warna + label + jumlah + persen), footer "dari {n} petani aktif" — isi mengikuti mode tanpa/dengan filter Tahun |
+| Tooltip sel | Tooltip terstruktur (Base UI) | Menggantikan `title` native (#205): judul "{paket} — {distrik / Total (Riau)}", baris per segmen (chip warna + label + jumlah + persen), footer "dari {n} petani terdaftar" — isi mengikuti mode tanpa/dengan filter Tahun |
 | Sel saat filter Tahun aktif | Stacked bar 3 segmen | Hijau tua = dilatih **tahun terpilih** (persen kiri mengacu segmen ini), hijau muda = dilatih **hanya di tahun lain** (`byPackageOtherYears`/`anyPackageOtherYears` dari `trainingCoverageMatrix` — petani dilatih di kedua kelompok tahun dihitung sekali di "tahun ini"), abu = **belum pernah dilatih**. Legend & catatan kaki menyesuaikan ("Dilatih {tahun} · Tahun lain · Belum pernah"). Angka dilatih tahun terpilih selalu tampil: di dalam segmen hijau tua bila muat, bila sempit menempel tepat setelah batas segmen; angka "tahun lain" rata kanan segmennya dan butuh ruang lebih (≥6rem) agar tak bertabrakan (#205). Cakupan kumulatif — petani yang dilatih tahun lain tidak terhitung "belum" |
 | Empty state | Teks | "Tidak ada distrik pada filter ini." |
 
@@ -136,7 +136,7 @@ Label tahun: "semua tahun" atau "{YYYY}".
 | Filter | Distrik & Lembaga; filter Tahun diabaikan |
 | Baris total | "Petani pernah mengikuti pelatihan (minimal 1)" (permintaan owner 2026-10-07; label diganti owner hari yang sama, semula "Petani mengikuti ≥ 1 pelatihan"): tahun pertama petani ikut pelatihan **apa pun, termasuk Lainnya** — padanan baris "Pernah Ikut Pelatihan" |
 | Konsistensi | Kumulative t = Σ "sudah dilatih" per paket di Capaian Paket per Distrik tanpa filter tahun; baris total = "Pernah Ikut Pelatihan" (dikunci test) |
-| Ekspor | Berkas `training-benefit-per-year_<Lembaga\|Distrik\|semua>_<t>.xlsx`, **3 sheet** (owner 2026-10-07: Capaian · Kontrak; Detail ditambah 2026-10-08): **Capaian** (tabel format donor, header dua tingkat ber-merge, + gambar Grafis di bawahnya) · **Kontrak** (Package × Start/tahun [Target · Realisasi · %] + Total kontrak [Target · Realisasi s.d. t · % capaian], tahun mendatang tanpa realisasi, catatan definisi/filter + gambar 5 grafik; tanpa target → pesan) · **Detail** (per petani aktif termasuk yang belum dilatih: Distrik · Lembaga · ID Petani · Gender · P1 · P2-GroupDynamic · P2-HSE · P3&4 = tahun unik dilatih dipisah `; `, `-` = belum; ID & gender dari `getTrainingBenefitFarmers` [gate EXPORT, tanpa nama/NIK], tahun dari payload dashboard via `trainingBenefitDetailRows`, kegiatan > tahun berjalan diabaikan; gagal dimuat → pesan). Tabel mulai baris 1, gambar di bawah tabel. exceljs tak bisa membuat grafik Excel asli → PNG 2× dari SVG ekspor (`src/lib/training-benefit-chart.ts`, geometri trayektori = layar via `trajectoryLayout`); builder `src/lib/training-benefit-xlsx.ts` |
+| Ekspor | Berkas `training-benefit-per-year_<Lembaga\|Distrik\|semua>_<t>.xlsx`, **3 sheet** (owner 2026-10-07: Capaian · Kontrak; Detail ditambah 2026-10-08): **Capaian** (tabel format donor, header dua tingkat ber-merge, + gambar Grafis di bawahnya) · **Kontrak** (Package × Start/tahun [Target · Realisasi · %] + Total kontrak [Target · Realisasi s.d. t · % capaian], tahun mendatang tanpa realisasi, catatan definisi/filter + gambar 5 grafik; tanpa target → pesan) · **Detail** (per petani terdaftar termasuk yang belum dilatih: Distrik · Lembaga · ID Petani · Gender · P1 · P2-GroupDynamic · P2-HSE · P3&4 = tahun unik dilatih dipisah `; `, `-` = belum; ID & gender dari `getTrainingBenefitFarmers` [gate EXPORT, tanpa nama/NIK], tahun dari payload dashboard via `trainingBenefitDetailRows`, kegiatan > tahun berjalan diabaikan; gagal dimuat → pesan). Tabel mulai baris 1, gambar di bawah tabel. exceljs tak bisa membuat grafik Excel asli → PNG 2× dari SVG ekspor (`src/lib/training-benefit-chart.ts`, geometri trayektori = layar via `trajectoryLayout`); builder `src/lib/training-benefit-xlsx.ts` |
 | Fungsi | `trainingBenefitPerYear(groups, t)` · `trainingBenefitYears(t)` — `src/lib/training-dashboard-aggregation.ts` |
 
 Terverifikasi 2026-10-07 (mis-dev): Kumulative 2026 P1 8.279 · MK 7.769 · HSE 8.076 · P3 3.756 · ≥ 1 pelatihan 8.401 = Total Capaian Paket per Distrik.
@@ -156,15 +156,15 @@ Popover ⓘ "Cara menghitung" disembunyikan di tab ini. Tab (B) progres (bar men
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Collapsible trigger | "Capaian Paket per Lembaga" (ikon `Grid3x3`, default terbuka; judul final #198) |
-| Sub-judul (terbuka) | Teks | "% petani aktif Lembaga yang sudah mengikuti paket tersebut, dibaca terhadap target program. Klik judul kolom untuk mengurutkan; klik sel yang belum mencapai target untuk melihat daftar petaninya." |
+| Sub-judul (terbuka) | Teks | "% petani terdaftar Lembaga yang sudah mengikuti paket tersebut, dibaca terhadap target program. Klik judul kolom untuk mengurutkan; klik sel yang belum mencapai target untuk melihat daftar petaninya." |
 | Sub-judul (terlipat) | Ringkasan | "{n} Lembaga · {p}% petani terlatih" + " · {n} Lembaga belum tersentuh" (bila ada) + " · kurang {n} petani menuju target" (bila ada) |
 | Kolom "Lembaga Petani" | Kolom tabel (sortable) | Nama + baris kecil "{kode} · {distrik}" |
-| Kolom "Petani" | Kolom tabel (sortable) | Jumlah petani aktif Lembaga |
+| Kolom "Petani" | Kolom tabel (sortable) | Jumlah petani terdaftar Lembaga |
 | Kolom paket | Kolom tabel (sortable, dinamis) | Header ringkas: "Paket 1", "Paket 2 - MK", "Paket 2 - HSE", "Paket 3 & 4", "Lainnya" — hanya paket yang aktif pada irisan; sel = persen + jumlah petani; tooltip header = label paket lengkap |
 | Kolom "Pernah Ikut Pelatihan" | Kolom tabel (sortable) | Petani yang pernah mengikuti minimal 1 paket pelatihan (target 100%); sel diberi ring pembeda |
-| Heatmap sel | Skala warna | 0% (rose), <25%, 25–49%, 50–74%, 75–99%, 100% (gradasi emerald, 100%/tuntas paling tua — #194); Lembaga tanpa petani aktif = sel abu "—" |
-| Tooltip sel | Tooltip terstruktur (`StatTooltip`, #213) | Judul = label paket + subtitle nama Lembaga; baris chip+jumlah+persen: tanpa filter Tahun "Sudah ikut"/"Belum", dengan filter Tahun "Ikut {tahun}"/"Ikut tahun lain"/"Belum pernah" (#202, chip sinkron warna segmen bar Distrik); footer "dari {n} petani aktif" + baris target ("Kurang {n} menuju target {t}% — klik sel untuk daftar petaninya" / "Target {t}% tercapai" / "Di luar paket program — tanpa target"); Lembaga tanpa petani aktif → footer khusus |
-| Sel dapat diklik | Tombol | Aktif hanya bila Lembaga punya petani aktif dan masih ada kekurangan menuju target → membuka dialog drill-down |
+| Heatmap sel | Skala warna | 0% (rose), <25%, 25–49%, 50–74%, 75–99%, 100% (gradasi emerald, 100%/tuntas paling tua — #194); Lembaga tanpa petani terdaftar = sel abu "—" |
+| Tooltip sel | Tooltip terstruktur (`StatTooltipContent`, #213) | Judul = label paket + subtitle nama Lembaga; baris chip+jumlah+persen: tanpa filter Tahun "Sudah ikut"/"Belum", dengan filter Tahun "Ikut {tahun}"/"Ikut tahun lain"/"Belum pernah" (#202, chip sinkron warna segmen bar Distrik); footer "dari {n} petani terdaftar" + baris target ("Kurang {n} menuju target {t}% — klik sel untuk daftar petaninya" / "Target {t}% tercapai" / "Di luar paket program — tanpa target"); Lembaga tanpa petani terdaftar → footer khusus |
+| Sel dapat diklik | Tombol | Aktif hanya bila Lembaga punya petani terdaftar dan masih ada kekurangan menuju target → membuka dialog drill-down |
 | Legenda skala | Legend | "Skala:" 0% · <25% · 25–49% · 50–74% · 75–99% · 100% (catatan "Target program … kurang N petani" di kanan legenda dihapus — ambigu, #194) |
 | Empty state | Teks | "Tidak ada Lembaga Petani pada filter ini." |
 
@@ -182,7 +182,7 @@ Target cakupan per paket: `TRAINING_COVERAGE_TARGET` — Paket 1, Paket 2 - MK, 
 | Ringkasan | Teks | "{n} petani"; saat filter Tahun aktif + "· {x} pernah dilatih di tahun lain" bila ada |
 | Tombol "Salin" | Tombol | Salin baris `ID\tNama\tL/P` (+ kolom tahun lain saat filter Tahun aktif) ke clipboard; toast "{n} baris disalin" / "Gagal menyalin — izin clipboard ditolak browser" — digate izin `EXPORT` (menyalin dataset yang sama dengan Excel) |
 | Tombol "Excel" | Tombol | `exportToExcel` → `petani-{slug}-{nama-lembaga}.xlsx`, sheet "Belum Dilatih", kolom ID Petani / Nama Petani / L/P (+ "Dilatih Tahun Lain" saat filter Tahun aktif); toast "Excel diunduh" / "Gagal membuat file Excel" — digate izin `EXPORT` (#245) |
-| Empty state | Teks | "Semua petani aktif di Lembaga ini sudah mengikuti pelatihan tersebut." |
+| Empty state | Teks | "Semua petani terdaftar di Lembaga ini sudah mengikuti pelatihan tersebut." |
 
 ## Chart tren (`TrainingTrendChart`)
 

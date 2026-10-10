@@ -26,7 +26,7 @@ export function BmpMonevScoreCards({ totals, yearLabel }: { totals: BmpMonevTota
       sub: (
         <>
           <StatEmph kind="percent">{pct(totals.assessedFarmers, totals.totalFarmers)}</StatEmph> dari total{" "}
-          <StatEmph kind="total">{formatNumber(totals.totalFarmers)}</StatEmph> petani aktif dinilai ({yearLabel})
+          <StatEmph kind="total">{formatNumber(totals.totalFarmers)}</StatEmph> petani terdaftar dinilai ({yearLabel})
         </>
       ),
       icon: ClipboardCheck,

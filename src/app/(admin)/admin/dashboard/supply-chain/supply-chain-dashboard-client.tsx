@@ -1,47 +1,37 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, BadgeCheck, ChevronDown, CircleCheck, CircleDashed, CircleHelp, Factory, FlaskConical, Map as MapIcon, RotateCcw, Truck, Weight } from "lucide-react";
+import { AlertTriangle, BadgeCheck, ChevronDown, Download, Factory, FlaskConical, Loader2, Map as MapIcon, Truck, Weight } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatEmph } from "@/components/shared/stat-emph";
-import { formatNumber, formatPct } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import {
   CHANNEL_LABEL,
   CHANNEL_ORDER,
-  MILL_BASIS_LABEL,
-  MILL_STATUS_LABEL,
-  GROUP_CATEGORY_LABEL,
-  UL_FILTER_LABEL,
   UNKNOWN_MILL_FILTER,
-  buildSupplyChainSankey,
-  millLabel,
   millVolumes,
-  parseChainNodeId,
   summarizeSupplyChain,
-  type MillStatus,
-  type MillVolumeRow,
-  type SankeyMode,
-  type SankeyDestination,
-  type SankeyOrigin,
+  type ScRecord,
   type SupplyChainSummary,
   type SupplyChainView,
 } from "@/lib/supply-chain-flow";
-import { SupplyChainSankey, channelColor, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { distanceStats, groupVolumes, millKey, supplyChainInsights } from "@/lib/supply-chain-insights";
+import { fmtTon, pctOf } from "@/lib/supply-chain-format";
+import { channelColor, useChartDark } from "./supply-chain-sankey";
+import { CollapsibleCard, OPEN_STATES, useStoredChoice } from "./collapsible-card";
+import { SupplyChainFlowCard } from "./supply-chain-flow-card";
 import { SupplyChainFilterBar } from "./supply-chain-filter-bar";
-import { useSupplyChainFilters } from "./use-supply-chain-filters";
-import { UlBadge } from "./ul-badge";
-
-const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
-const pct = (part: number, total: number) => (total > 0 ? `${formatPct(Math.round((part / total) * 1000) / 10)}%` : "—");
-const TOP_OPTIONS = ["8", "12", "20", "999"] as const;
-const MILL_ROWS_COLLAPSED = 10;
-/** Mode Ringkas hanya melipat kolom Mill — kolom tengah sudah ≤ 3 node, jadi ada ruang untuk lebih banyak Mill. */
-const RINGKAS_MILLS = 15;
+import { SupplyChainFilterChips, notifyFilter } from "./supply-chain-filter-chips";
+import { SupplyChainInsightsCard } from "./supply-chain-insights-card";
+import { SupplyChainMillTable } from "./supply-chain-mill-table";
+import { GROUP_TABLE_ID, SupplyChainGroupTable, groupDefaultDir, type GroupSortKey } from "./supply-chain-group-table";
+import { useTableSort } from "./sort-head";
+import { useSupplyChainFilters, type ScFilterParam } from "./use-supply-chain-filters";
 
 /**
  * Keadaan kosong bila tabel CSV tidak ada di server ini. Detail teknis (path, bucket, skrip)
@@ -65,82 +55,23 @@ export function SupplyChainUnavailable({ tablesDir }: { tablesDir: string | null
   );
 }
 
-/** Tombol segmen kecil (pilihan tunggal) — dipakai untuk Ringkas | Detail dan Ton | %. */
-export function SegmentToggle<T extends string>({
-  value,
-  options,
-  onChange,
-  label,
-  className,
-}: {
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (v: T) => void;
-  label: string;
-  className?: string;
-}) {
-  return (
-    <div className={cn("inline-flex rounded-md border bg-muted/50 p-0.5 text-xs", className)} role="group" aria-label={label}>
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          aria-pressed={value === o.value}
-          onClick={() => onChange(o.value)}
-          className={cn("rounded px-3 py-1 font-medium transition-colors", value === o.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/** Tombol segmen Ringkas | Detail. */
-export function ModeToggle({ mode, onChange, className }: { mode: SankeyMode; onChange: (m: SankeyMode) => void; className?: string }) {
-  return (
-    <SegmentToggle
-      value={mode}
-      onChange={onChange}
-      label="Tingkat rincian"
-      className={className}
-      options={[{ value: "RINGKAS", label: "Ringkas" }, { value: "RINCI", label: "Detail" }]}
-    />
-  );
-}
-
-export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyChainView; helpSlot?: React.ReactNode }) {
+/**
+ * Susunan halaman (owner 2026-10-10): header (Unduh Excel · Lihat di Peta) →
+ * bar filter + chip filter global → kartu KPI → Sorotan → Jalur & Kepastian
+ * Mill → Aliran TBS → Volume per Mill → Volume per Lembaga → Catatan data.
+ */
+export function SupplyChainDashboardClient({ view, helpSlot, canExport = false }: { view: SupplyChainView; helpSlot?: React.ReactNode; canExport?: boolean }) {
   const f = useSupplyChainFilters(view);
   const { records, offtakers, millsById } = f;
-  const [mode, setMode] = useState<SankeyMode>("RINGKAS");
-  const [top, setTop] = useState<(typeof TOP_OPTIONS)[number]>("12");
-  const [unit, setUnit] = useState<SankeyUnit>("TON");
-  const [origin, setOrigin] = useState<SankeyOrigin>("LEMBAGA");
-  const [destination, setDestination] = useState<SankeyDestination>("MILL");
 
   const summary = useMemo(() => summarizeSupplyChain(records, offtakers), [records, offtakers]);
-
-  // Reset di kartu diagram: bar filter sudah di luar layar saat diagram dibaca.
-  const chipMill = f.filter.millId ? millsById.get(f.filter.millId) : undefined;
-  const activeFilters = [
-    f.district && `Distrik: ${f.district}`,
-    f.category && `Kategori: ${GROUP_CATEGORY_LABEL[f.category]}`,
-    f.filter.groupCode && `Lembaga: ${view.data.groups.find((g) => g.code === f.filter.groupCode)?.abrv ?? f.filter.groupCode}`,
-    f.filter.collectorId && `Agen: ${offtakers.get(f.filter.collectorId)?.name ?? f.filter.collectorId}`,
-    f.filter.rampId && `RAMP: ${offtakers.get(f.filter.rampId)?.name ?? f.filter.rampId}`,
-    f.filter.millId && (f.filter.millId === UNKNOWN_MILL_FILTER ? "Mill tidak diketahui" : `Mill: ${chipMill ? millLabel(chipMill) : f.filter.millId}`),
-    f.filter.ul && UL_FILTER_LABEL[f.filter.ul],
-  ].filter((x): x is string => !!x);
-  const viewChanged = mode !== "RINGKAS" || origin !== "LEMBAGA" || destination !== "MILL" || unit !== "TON";
-  const resetAll = () => {
-    f.reset();
-    setMode("RINGKAS");
-    setOrigin("LEMBAGA");
-    setDestination("MILL");
-    setUnit("TON");
-  };
-  const graph = useMemo(() => buildSupplyChainSankey(view.data, records, { mode, origin, destination, maxPerColumn: mode === "RINGKAS" ? RINGKAS_MILLS : Number(top) }), [view.data, records, mode, origin, destination, top]);
   const millRows = useMemo(() => millVolumes(records, millsById), [records, millsById]);
+  const millDist = useMemo(() => distanceStats(records, view.data, millKey), [records, view.data]);
+  const groupRows = useMemo(() => groupVolumes(records, view.data), [records, view.data]);
+  const insights = useMemo(() => supplyChainInsights(records, view.data), [records, view.data]);
+  const groupSort = useTableSort<GroupSortKey>({ key: "TON", dir: "desc" }, groupDefaultDir);
+  const [groupCard, setGroupCard] = useStoredChoice("card:lembaga", "open", OPEN_STATES);
+  const [groupShowAll, setGroupShowAll] = useState(false);
 
   // Asal PKS: disebut langsung di survei vs dipetakan dari nama PT lewat UML (dikonfirmasi owner 2026-10-06).
   const namedPksTon = useMemo(() => records.filter((r) => r.millBasis === "NAMA_PKS" && r.millStatus === "PKS_PASTI").reduce((a, r) => a + (r.supplyTon ?? 0), 0), [records]);
@@ -155,6 +86,46 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
     return c;
   }, [records, offtakers]);
 
+  /** Tautan ke Peta Rantai Pasok dengan filter aktif + tambahan. */
+  const mapHref = useCallback(
+    (patch: Partial<Record<ScFilterParam, string>> = {}) => {
+      const p = new URLSearchParams(f.query);
+      for (const [k, v] of Object.entries(patch)) p.set(k, v);
+      const q = p.toString();
+      return `/admin/map/supply-chain${q ? `?${q}` : ""}`;
+    },
+    [f.query],
+  );
+  const filterMill = (millId: string | null, label: string) => {
+    f.update({ mill: millId ?? UNKNOWN_MILL_FILTER });
+    notifyFilter(label);
+  };
+  const filterGroup = (code: string, label: string) => {
+    f.update({ lembaga: code });
+    notifyFilter(label);
+  };
+  const focusGroups = (key: GroupSortKey) => {
+    // Kartu bisa terlipat (diingat browser) dan hanya 10 baris → buka keduanya dulu, gulir setelah render.
+    groupSort.setSort({ key, dir: key === "PASTI" ? "asc" : "desc" });
+    setGroupCard("open");
+    setGroupShowAll(true);
+    requestAnimationFrame(() => document.getElementById(GROUP_TABLE_ID)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  const [exporting, setExporting] = useState(false);
+  const exportExcel = async () => {
+    setExporting(true);
+    try {
+      const [{ exportMultiSheetToExcel }, { supplyChainExportSheets, supplyChainExportFilename }] = await Promise.all([import("@/lib/xlsx"), import("@/lib/supply-chain-xlsx")]);
+      const parts = [f.district, f.category, f.filter.groupCode, f.filter.collectorId, f.filter.rampId, f.filter.millId, f.filter.ul].filter((x): x is string => !!x);
+      await exportMultiSheetToExcel({ filename: supplyChainExportFilename(f.year, parts), sheets: supplyChainExportSheets(records, view.data) });
+    } catch {
+      toast.error("Gagal membuat berkas Excel");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const cards = [
     {
       title: "TBS",
@@ -166,19 +137,14 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
     {
       title: "Ke Mill Pemasok UL",
       value: fmtTon(summary.ulTon),
-      sub: <><StatEmph kind="percent">{pct(summary.ulTon, summary.totalTon)}</StatEmph> dari TBS</>,
+      sub: <><StatEmph kind="percent">{pctOf(summary.ulTon, summary.totalTon)}</StatEmph> dari TBS</>,
       icon: Factory,
       iconClass: "text-sky-600",
     },
     {
       title: "Sampai PKS Pasti",
-      value: pct(summary.tonByStatus.PKS_PASTI, summary.totalTon),
-      sub: (
-        <>
-          {pct(namedPksTon, summary.totalTon)} disebut di survei · {pct(summary.tonByStatus.PKS_PASTI - namedPksTon, summary.totalTon)} dipetakan dari nama PT ·{" "}
-          {pct(summary.tonByStatus.TIDAK_DIKETAHUI, summary.totalTon)} tak diketahui
-        </>
-      ),
+      value: pctOf(summary.tonByStatus.PKS_PASTI, summary.totalTon),
+      sub: <><StatEmph kind="percent">{pctOf(namedPksTon, summary.totalTon)}</StatEmph> disebut langsung di survei · rinciannya di batang Kepastian Mill</>,
       icon: BadgeCheck,
       iconClass: "text-violet-600",
     },
@@ -205,12 +171,22 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
             bukti transaksi.
           </p>
         </div>
-        <Link href={`/admin/map/supply-chain${f.query ? `?${f.query}` : ""}`} className={cn(buttonVariants({ variant: "outline" }), "gap-2 shrink-0")}>
-          <MapIcon className="h-4 w-4" /> Lihat di Peta
-        </Link>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {canExport && (
+            <Button variant="outline" onClick={exportExcel} disabled={exporting || records.length === 0} className="gap-2" title="Unduh Excel: sheet Jalur · Mill · Lembaga mengikuti filter aktif">
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Unduh Excel
+            </Button>
+          )}
+          <Link href={mapHref()} className={cn(buttonVariants({ variant: "outline" }), "gap-2")}>
+            <MapIcon className="h-4 w-4" /> Lihat di Peta
+          </Link>
+        </div>
       </div>
 
-      <SupplyChainFilterBar f={f} years={view.years} />
+      <div className="space-y-2">
+        <SupplyChainFilterBar f={f} years={view.years} showReset={false} />
+        <SupplyChainFilterChips f={f} view={view} className="px-1" />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => {
@@ -230,144 +206,121 @@ export function SupplyChainDashboardClient({ view, helpSlot }: { view: SupplyCha
         })}
       </div>
 
-      <ChannelComposition summary={summary} />
+      <SupplyChainInsightsCard insights={insights} onFilterMill={filterMill} onFilterGroup={filterGroup} onFocusGroups={focusGroups} />
+
+      <ChannelComposition summary={summary} namedPksTon={namedPksTon} onSelectUnknown={() => filterMill(null, "Mill tidak diketahui")} />
+
+      <SupplyChainFlowCard view={view} f={f} />
+
+      <SupplyChainMillTable
+        rows={millRows}
+        total={summary.totalTon}
+        distances={millDist}
+        selectedMillId={f.filter.millId}
+        onSelect={(m) => filterMill(m.millId, m.name)}
+        mapHref={(millId) => mapHref({ mill: millId })}
+      />
+
+      <SupplyChainGroupTable
+        rows={groupRows}
+        sort={groupSort.sort}
+        onToggleSort={groupSort.toggle}
+        selectedCode={f.filter.groupCode}
+        onSelect={(g) => filterGroup(g.code, g.abrv)}
+        mapHref={(code) => mapHref({ lembaga: code })}
+        open={groupCard === "open"}
+        onOpenChange={(o) => setGroupCard(o ? "open" : "closed")}
+        showAll={groupShowAll}
+        onShowAllChange={setGroupShowAll}
+      />
+
       <DataNotes summary={summary} records={records} view={view} />
-
-      <Card className="border border-border/60 shadow-sm">
-        <CardHeader className="pb-2">
-          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-            <div>
-              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Aliran TBS: Lembaga → Offtaker → Mill</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                Arahkan kursor ke {origin === "DISTRIK" ? "Distrik" : "Lembaga"} atau Mill untuk menyalakan seluruh jalurnya. Klik node untuk memfilter
-                {mode === "RINGKAS" ? "; klik Agen / RAMP / KT/Koperasi untuk melihat per offtaker." : "."} Rantai Agen → RAMP tampil sebagai satu node.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
-              {(activeFilters.length > 0 || viewChanged) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={resetAll}
-                  title={activeFilters.length > 0 ? `Filter aktif — ${activeFilters.join(" · ")}` : "Kembalikan tampilan bawaan"}
-                  className="h-8 gap-1.5 text-xs"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" /> Reset
-                  {activeFilters.length > 0 && (
-                    <span className="rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">{activeFilters.length}</span>
-                  )}
-                </Button>
-              )}
-              {mode === "RINCI" && (
-                <Select value={top} onValueChange={(v) => setTop(v as (typeof TOP_OPTIONS)[number])}>
-                  <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {TOP_OPTIONS.map((t) => (
-                      <SelectItem key={t} value={t}>{t === "999" ? "Semua node" : `${t} teratas/kolom`}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <SegmentToggle
-                value={origin}
-                onChange={setOrigin}
-                label="Kelompok asal"
-                options={[{ value: "LEMBAGA", label: "Lembaga" }, { value: "DISTRIK", label: "Distrik" }]}
-              />
-              <SegmentToggle
-                value={destination}
-                onChange={setDestination}
-                label="Kelompok tujuan"
-                options={[{ value: "MILL", label: "Mill" }, { value: "UL", label: "UL / Non-UL" }]}
-              />
-              <SegmentToggle
-                value={unit}
-                onChange={setUnit}
-                label="Satuan label"
-                options={[{ value: "TON", label: "Ton" }, { value: "PCT", label: "%" }]}
-              />
-              <ModeToggle mode={mode} onChange={setMode} />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <SupplyChainSankey
-            graph={graph}
-            unit={unit}
-            onSelectNode={(n) => {
-              if (isGroupNode(n)) setMode("RINCI");
-              else if (n.id.startsWith("U:")) {
-                // Klik UL/Non-UL = filter UL lalu turun ke rincian per Mill.
-                f.update({ ul: n.id.slice(2) });
-                setDestination("MILL");
-              } else if (n.id.startsWith("D:")) {
-                // Klik Distrik = filter distrik lalu turun ke rincian per Lembaga.
-                f.update({ distrik: n.id.slice(2) });
-                setOrigin("LEMBAGA");
-              }
-              else if (n.column === 0 && n.groupCode) f.update({ lembaga: n.groupCode });
-              else if (n.column === 1) {
-                // Satu bagian offtaker: rantai → filter Agen + RAMP; tunggal → sesuai tipenya.
-                const chain = parseChainNodeId(n.id);
-                if (chain) f.update({ agen: chain.collectorId, ramp: chain.rampId });
-                else if (offtakers.get(n.id.slice(2))?.type === "RAMP") f.update({ ramp: n.id.slice(2) });
-                else f.update({ agen: n.id.slice(2) });
-              }
-              else f.update({ mill: n.id === "M:?" ? UNKNOWN_MILL_FILTER : n.id.slice(2) });
-            }}
-          />
-        </CardContent>
-      </Card>
-
-      <MillTable rows={millRows} total={summary.totalTon} onSelect={(id) => f.update({ mill: id ?? UNKNOWN_MILL_FILTER })} />
     </div>
   );
 }
 
-/** Komposisi jalur TBS (100%) — sekaligus legenda warna Sankey & peta. */
-function ChannelComposition({ summary }: { summary: SupplyChainSummary }) {
-  const dark = useChartDark();
-  const total = CHANNEL_ORDER.reduce((a, c) => a + summary.tonByChannel[c], 0);
+/** Satu batang 100% bersegmen + legenda di bawahnya. */
+function StackedBar({
+  label,
+  segments,
+  total,
+  ariaLabel,
+}: {
+  label: React.ReactNode;
+  /** `color` = warna inline (palet jalur); `colorClass` = kelas Tailwind (warna status). */
+  segments: { key: string; label: string; ton: number; color?: string; colorClass?: string; onClick?: () => void; title?: string }[];
+  total: number;
+  ariaLabel: string;
+}) {
   if (total <= 0) return null;
   return (
-    <Card className="border border-border/60 shadow-sm">
-      <CardContent className="py-4 space-y-2">
-        <div className="flex items-baseline justify-between">
-          <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Jalur TBS dari petani</span>
-          <span className="text-xs text-muted-foreground">warna ini dipakai di diagram &amp; peta</span>
-        </div>
-        <div className="flex h-7 w-full gap-0.5 overflow-hidden rounded-md" role="img" aria-label="Komposisi jalur TBS">
-          {CHANNEL_ORDER.map((c) => {
-            const share = summary.tonByChannel[c] / total;
-            if (share <= 0) return null;
-            return (
-              <div
-                key={c}
-                className="flex items-center justify-center text-[11px] font-semibold text-white"
-                style={{ width: `${share * 100}%`, background: channelColor(c, dark) }}
-                title={`${CHANNEL_LABEL[c]}: ${fmtTon(summary.tonByChannel[c])} (${pct(summary.tonByChannel[c], total)})`}
-              >
-                {share >= 0.07 && pct(summary.tonByChannel[c], total)}
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
-          {CHANNEL_ORDER.map((c) => (
-            <span key={c} className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: channelColor(c, dark) }} />
-              <span className="text-foreground">{CHANNEL_LABEL[c]}</span>
-              <span className="tabular-nums text-muted-foreground">{fmtTon(summary.tonByChannel[c])}</span>
-            </span>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-1.5">
+      <div className="text-xs font-medium text-foreground">{label}</div>
+      <div className="flex h-7 w-full gap-0.5 overflow-hidden rounded-md" role="img" aria-label={ariaLabel}>
+        {segments.map((s) => {
+          const share = s.ton / total;
+          if (share <= 0) return null;
+          const common = {
+            className: cn("flex items-center justify-center text-[11px] font-semibold text-white", s.colorClass, s.onClick && "cursor-pointer hover:brightness-110"),
+            style: { width: `${share * 100}%`, background: s.color },
+            title: s.title ?? `${s.label}: ${fmtTon(s.ton)} (${pctOf(s.ton, total)})`,
+          };
+          const text = share >= 0.07 && pctOf(s.ton, total);
+          return s.onClick ? (
+            <button key={s.key} type="button" onClick={s.onClick} {...common}>{text}</button>
+          ) : (
+            <div key={s.key} {...common}>{text}</div>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
+        {segments.map((s) => (
+          <span key={s.key} className="inline-flex items-center gap-1.5">
+            <span className={cn("inline-block h-2.5 w-2.5 rounded-sm", s.colorClass)} style={{ background: s.color }} />
+            <span className="text-foreground">{s.label}</span>
+            <span className="tabular-nums text-muted-foreground">{fmtTon(s.ton)}</span>
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
-/** Catatan kualitas data — satu baris ringkas, rincian dilipat. */
-function DataNotes({ summary, records, view }: { summary: SupplyChainSummary; records: SupplyChainView["data"]["records"]; view: SupplyChainView }) {
+/**
+ * Jalur TBS (100%) — sekaligus legenda warna Sankey & peta — dan batang
+ * Kepastian Mill (owner 2026-10-10: tiga persen di sub-teks kartu KPI sulit
+ * dibaca). Segmen "tak diketahui" bisa diklik → filter Mill tidak diketahui.
+ */
+function ChannelComposition({ summary, namedPksTon, onSelectUnknown }: { summary: SupplyChainSummary; namedPksTon: number; onSelectUnknown: () => void }) {
+  const dark = useChartDark();
+  const total = CHANNEL_ORDER.reduce((a, c) => a + summary.tonByChannel[c], 0);
+  if (total <= 0) return null;
+  const s = summary.tonByStatus;
+  return (
+    <CollapsibleCard id="jalur" title="Jalur TBS & Kepastian Mill" aside={<span className="text-xs text-muted-foreground">warna jalur dipakai di diagram &amp; peta</span>} contentClassName="space-y-4">
+      <StackedBar
+        label="Jalur TBS dari petani"
+        ariaLabel="Komposisi jalur TBS"
+        total={total}
+        segments={CHANNEL_ORDER.map((c) => ({ key: c, label: CHANNEL_LABEL[c], ton: summary.tonByChannel[c], color: channelColor(c, dark) }))}
+      />
+      <StackedBar
+        label="Kepastian Mill tujuan"
+        ariaLabel="Kepastian Mill tujuan"
+        total={summary.totalTon}
+        segments={[
+          { key: "disebut", label: "PKS disebut di survei", ton: namedPksTon, colorClass: "bg-emerald-600" },
+          { key: "dipetakan", label: "PKS dipetakan dari nama PT", ton: Math.max(s.PKS_PASTI - namedPksTon, 0), colorClass: "bg-emerald-400" },
+          { key: "belum", label: "PKS belum pasti", ton: s.PKS_BELUM_PASTI, colorClass: "bg-amber-500" },
+          { key: "tak", label: "Mill tidak diketahui", ton: s.TIDAK_DIKETAHUI, colorClass: "bg-zinc-400", onClick: onSelectUnknown, title: `Mill tidak diketahui: ${fmtTon(s.TIDAK_DIKETAHUI)} (${pctOf(s.TIDAK_DIKETAHUI, summary.totalTon)}). Klik untuk memfilter.` },
+        ]}
+      />
+    </CollapsibleCard>
+  );
+}
+
+/** Catatan kualitas data — satu baris ringkas, rincian dilipat. Di bawah tabel agar tidak memotong alur baca. */
+function DataNotes({ summary, records, view }: { summary: SupplyChainSummary; records: ScRecord[]; view: SupplyChainView }) {
   const [open, setOpen] = useState(false);
   const flagCount = useMemo(() => {
     const c = new Map<string, number>();
@@ -393,7 +346,7 @@ function DataNotes({ summary, records, view }: { summary: SupplyChainSummary; re
         <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
         <span className="flex-1 text-muted-foreground">
           <span className="font-medium text-foreground">Catatan data:</span> {formatNumber(summary.recordsWithoutTon)} baris tanpa tonase ·{" "}
-          {fmtTon(summary.tonByStatus.TIDAK_DIKETAHUI)} ke Mill tak diketahui · data pengakuan, bukan bukti transaksi
+          {fmtTon(summary.tonByStatus.TIDAK_DIKETAHUI)} ke Mill tak diketahui · jarak = garis lurus, bukan jarak tempuh · data pengakuan, bukan bukti transaksi
         </span>
         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
@@ -420,100 +373,10 @@ function DataNotes({ summary, records, view }: { summary: SupplyChainSummary; re
             {n("SUPPLY_MELEBIHI_PRODUKSI") > 0 && <li>{n("SUPPLY_MELEBIHI_PRODUKSI")} baris supply ke offtaker &gt; produksi lahan (peringatan K10).</li>}
             {n("PARCEL_TIDAK_COCOK") > 0 && <li>{n("PARCEL_TIDAK_COCOK")} baris Parcel ID tak ditemukan di MIS.</li>}
             <li>Survei yang hanya menyebut nama PT dipetakan ke PKS Universal Mill List (satu-satunya PKS PT itu, atau yang terdekat ke Lembaga) — dikonfirmasi benar 2026-10-06.</li>
+            <li>Jarak = garis lurus Lembaga → offtaker → Mill dari koordinat tabel (K8); offtaker tanpa koordinat dilompati, Lembaga/Mill tanpa koordinat tidak dihitung.</li>
           </ul>
         </div>
       )}
     </div>
-  );
-}
-
-const STATUS_ICON: Record<MillStatus, { icon: typeof CircleCheck; className: string }> = {
-  PKS_PASTI: { icon: CircleCheck, className: "text-emerald-600" },
-  PKS_BELUM_PASTI: { icon: CircleDashed, className: "text-amber-600" },
-  TIDAK_DIKETAHUI: { icon: CircleHelp, className: "text-muted-foreground" },
-};
-
-function MillTable({ rows, total, onSelect }: { rows: MillVolumeRow[]; total: number; onSelect: (millId: string | null) => void }) {
-  const [showAll, setShowAll] = useState(false);
-  const max = Math.max(1, ...rows.map((r) => r.ton));
-  const visible = showAll ? rows : rows.slice(0, MILL_ROWS_COLLAPSED);
-  return (
-    <Card className="border border-border/60 shadow-sm">
-      <CardHeader className="pb-2">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Volume per Mill</CardTitle>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            {(Object.keys(STATUS_ICON) as MillStatus[]).filter((s) => rows.some((r) => r.status === s)).map((s) => {
-              const { icon: Icon, className } = STATUS_ICON[s];
-              return (
-                <span key={s} className="inline-flex items-center gap-1">
-                  <Icon className={cn("h-3.5 w-3.5", className)} /> {MILL_STATUS_LABEL[s]}
-                </span>
-              );
-            })}
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-block h-2 w-3 rounded-sm bg-primary" /> porsi ke UL
-            </span>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs text-muted-foreground">
-              <th className="py-2 pr-3 font-medium">Mill</th>
-              <th className="py-2 pr-3 font-medium">Distrik</th>
-              <th className="py-2 pr-3 font-medium w-[34%]">Tonase</th>
-              <th className="py-2 pr-3 text-right font-medium">Porsi</th>
-              <th className="py-2 pr-3 text-right font-medium">Lembaga</th>
-              <th className="py-2 text-right font-medium">Offtaker</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((m) => {
-              const { icon: Icon, className } = STATUS_ICON[m.status];
-              return (
-                <tr
-                  key={m.millId ?? "?"}
-                  className="group cursor-pointer border-b last:border-0 hover:bg-muted/50"
-                  title={`${MILL_STATUS_LABEL[m.status]} — ${MILL_BASIS_LABEL[m.basis] ?? m.basis}. Klik untuk memfilter Mill ini.`}
-                  onClick={() => onSelect(m.millId)}
-                >
-                  <td className="py-1.5 pr-3">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Icon className={cn("h-3.5 w-3.5 shrink-0", className)} aria-label={MILL_STATUS_LABEL[m.status]} />
-                      <span className="font-medium group-hover:text-primary">{m.name}</span>
-                      {m.isUl && <UlBadge />}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap py-1.5 pr-3 text-muted-foreground">{m.district ?? "—"}</td>
-                  <td className="py-1.5 pr-3">
-                    {m.ton > 0 ? (
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-                          <div className="h-full bg-primary" style={{ width: `${(m.ulTon / max) * 100}%` }} />
-                          <div className="h-full bg-foreground/35" style={{ width: `${(Math.max(m.ton - m.ulTon, 0) / max) * 100}%` }} />
-                        </div>
-                        <span className="w-20 text-right tabular-nums">{fmtTon(m.ton)}</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs italic text-muted-foreground">tonase belum tersedia</span>
-                    )}
-                  </td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">{pct(m.ton, total)}</td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums">{m.groupCount}</td>
-                  <td className="py-1.5 text-right tabular-nums">{m.offtakerCount}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {rows.length > MILL_ROWS_COLLAPSED && (
-          <Button variant="ghost" size="sm" className="mt-2" onClick={() => setShowAll((v) => !v)}>
-            {showAll ? "Tampilkan 10 teratas" : `Tampilkan semua (${rows.length} Mill)`}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
   );
 }

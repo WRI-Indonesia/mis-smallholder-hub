@@ -127,6 +127,13 @@ Tidak direncanakan: Lembaga Petani/KT & Region (BULK-02) — issue #69/#70 ditut
 | ✅ [Data — All Lembaga](pages/data-analyst/data-availability.md) (halaman Ketersediaan Data — Semua Lembaga) | `data-analyst-data-availability` | DA-03 (#193, #352) | Roll-up skor DA-02 lintas Lembaga: 6 KPI + matriks Lembaga×domain / Lembaga×modul + bar chart terendah-dulu + panel anomali (per entitas vs sistemik) + Excel; deep link ke DA-02; live query, tanpa DONOR |
 | 🟠 [Tumpang Tindih Lahan](pages/data-analyst/parcel-overlap.md) | `data-analyst-parcel-overlap` | #317 Fase 2 (tab Tumpang Tindih) | Self-join `ST_Intersects` atas `LandParcel.geom` (GiST), live; split view tabel + peta preview; filter %/jenis/Distrik/Lembaga/label di URL; Duplikat vs Tercakup; Excel + SHP/GeoJSON irisan; scope minimal satu sisi; tanpa DONOR. Tab Luar Boundary/Selisih Luas + guard upload + layer peta belum |
 | ✅ [Komparasi Data Acuan](pages/data-analyst/benchmark-comparison.md) | `data-analyst-benchmark-comparison` | DA-06 (#243) | Angka acuan manual per Lembaga vs data MIS |
+
+### 🛠️ Platform Developer — `/admin/platform-developer`
+
+Grup tooling internal (2026-10-07); route & key tetap di segmen lama. Katalog: [pages/platform-developer/](pages/platform-developer/README.md).
+
+| Sub menu | Key | Fase | Ringkasan |
+|---|---|---|---|
 | ✅ [Metrik Rilis](pages/data-analyst/metrics.md) | `dashboard-metrics` | — | Roadmap %, KPI & RVS per rilis dari `docs/project/metrics.md` + Detail Roadmap (route `/admin/dashboard/metrics`) |
 | ✅ [Peta Data & Skema](pages/data-analyst/data-map.md) | `data-analyst-data-map` | DA-07 | Lineage menu → entitas + skema dari artefak `*.generated.ts` |
 | ✅ [Rencana Pengembangan](pages/data-analyst/sprint.md) | `data-analyst-sprint` | #378 · #389 (kanban) · per rilis 2026-09-30 | Rencana pengembangan **per rilis** dari `docs/project/sprint.md` (di-bundle saat build, pola Metrik Rilis; dulu Sprint Mingguan): strip ringkasan (umur dokumen, rilis yang dikejar, keputusan menunggu) + tab Rilis (pemilih rilis belum tuntas + combobox Riwayat, progres poin S/M/L, papan kanban 4 kolom) + tab Analisa (kartu ringkasan, beban & kapasitas per rilis, fokus per kategori, keputusan menunggu owner, carry-over) + tab Semua Issue (satu baris per issue dari tabel Rilis + Backlog, combobox rilis, filter status, cari, urutkan) |

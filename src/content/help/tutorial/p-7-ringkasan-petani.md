@@ -24,7 +24,7 @@ Angkanya dihitung langsung dari data terkini setiap kali tombol Analisa diklik, 
 + Hasil tidak menyegarkan diri saat filter diubah — angka lama tetap tampil sampai Analisa diklik lagi. Biasakan: ubah filter → klik Analisa.
 4. Baca tab **Detail Petani**: empat kartu (lembaga, petani, persil, luas) dan tabel per petani dengan jumlah persilnya.
 5. Buka tab **Petani Tanpa Lahan** untuk daftar kerjanya.
-+ Definisinya: petani aktif yang tidak punya satu pun persil aktif — termasuk yang persilnya pernah ada tapi sudah dinonaktifkan. Kartu persentase dibaca terhadap total petani pada filter yang sama. Daftar ini adalah subset tab pertama, jadi jangan menjumlahkan keduanya.
++ Definisinya: petani terdaftar yang tidak punya satu pun persil aktif — termasuk yang persilnya pernah ada tapi sudah dinonaktifkan. Kartu persentase dibaca terhadap total petani pada filter yang sama. Daftar ini adalah subset tab pertama, jadi jangan menjumlahkan keduanya.
 6. Unduh lewat tombol **Excel** di toolbar tabel.
 + Tiap tab menghasilkan berkas sendiri. Isinya mengikuti pencarian, urutan, dan kolom yang sedang tampil — tetapi memuat semua halaman, bukan hanya yang terlihat. Tombol Excel hanya tampil bila akun Anda punya izin **Export** pada menu ini.
 
