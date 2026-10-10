@@ -37,6 +37,8 @@ Tandai bila status di rencana tak cocok dengan kodenya (🟡 tanpa commit, atau 
 
 Temuan kebersihan (sebut saja, jangan dieksekusi): worktree `prunable`, stash lama, berkas untracked, `updatedAt` lebih lama dari commit `docs(rencana)`/`docs(sprint)` terakhir.
 
+Audit berkala: tanggal laporan terbaru `audit-report/audit-*.md` (folder gitignored; `ls audit-report/audit-*.md | sort | tail -1`). Lebih dari **7 hari** atau belum ada → satu baris "Audit terakhir YYYY-MM-DD (n hari) — jalankan `/audit`". Jangan menjalankannya dari sini.
+
 ## Tahap 2 — Sinkron GitHub ↔ Rencana Rilis
 
 - `gh issue list --state open --limit 200 --json number,title,labels,updatedAt`
