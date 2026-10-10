@@ -13,7 +13,7 @@ goal: Angka kontrak / trayektori pelatihan tercatat di aplikasi, sehingga Dashbo
 
 Halaman ini menyimpan angka **kontrak** program — bukan data petani. Angkanya berlaku untuk seluruh program (semua distrik dan Lembaga), dan dipakai tampilan **vs Kontrak** di kartu *Training Benefit per year* (Dashboard Pelatihan).
 
-+ Secara bawaan hanya SUPERADMIN dan ADMIN yang bisa membuka dan mengubah halaman ini. Peran lain tidak melihat menunya, kecuali diberi izin per akun.
++ Secara bawaan hanya SUPERADMIN dan ADMIN yang bisa mengubah angka. MANAGEMENT dan OPERATOR bisa membuka halaman ini tetapi hanya melihat, karena izin lihat menu Master Data berlaku untuk semua submenunya. DONOR tidak melihat menunya.
 
 ## Langkah
 
