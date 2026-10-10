@@ -124,7 +124,8 @@ describe("supplyChainInsights", () => {
     if (k.kind !== "KONSENTRASI") throw new Error();
     expect(k.topMill).toMatchObject({ millId: "M1", isUl: true });
     expect(k.topShare).toBeCloseTo(105 / 150, 5);
-    expect(k.top3Share).toBeCloseTo(1, 5);
+    // Tiga Mill bernama terbesar (M1 105 + M2 15); 30 t Mill tak diketahui tidak ikut.
+    expect(k.top3Share).toBeCloseTo(120 / 150, 5);
     expect(k.millCount).toBe(2);
   });
   it("koperasi Lembaga sendiri (penjualan kolektif) bukan ketergantungan", () => {
@@ -162,6 +163,48 @@ describe("supplyChainInsights", () => {
     if (j.kind !== "JARAK") throw new Error();
     expect(j.avgKm).toBeNull();
     expect(j.farthestMill).toBeNull();
+  });
+});
+
+describe("review 2026-10-10", () => {
+  it("konsentrasi: Mill tidak diketahui tidak ikut peringkat, walau tonasenya terbesar", () => {
+    const k = supplyChainInsights([
+      rec({ id: "u", millId: null, millStatus: "TIDAK_DIKETAHUI", supplyTon: 60 }),
+      rec({ id: "a", millId: "M1", supplyTon: 30 }),
+      rec({ id: "b", millId: "M2", supplyTon: 10 }),
+    ], data)[0];
+    if (k.kind !== "KONSENTRASI") throw new Error();
+    expect(k.topMill).toMatchObject({ millId: "M1" });
+    expect(k.topShare).toBeCloseTo(0.3, 5);
+    expect(k.top3Share).toBeCloseTo(0.4, 5);
+    expect(k.millCount).toBe(2);
+  });
+  it("konsentrasi dilewati bila semua TBS ke Mill tidak diketahui", () => {
+    const ins = supplyChainInsights([rec({ millId: null, millStatus: "TIDAK_DIKETAHUI", supplyTon: 5 })], data);
+    expect(ins.map((i) => i.kind)).toEqual(["KETERGANTUNGAN", "KEPASTIAN", "JARAK"]);
+  });
+  it("jarak mengikuti garis peta: offtaker kedua non-RAMP disinggahi, koperasi Lembaga sendiri dilewati", () => {
+    const d2: SupplyChainData = {
+      ...data,
+      offtakers: [
+        ...data.offtakers,
+        { id: "KUD-9", name: "KUD", type: "KOPERASI", district: "Siak", lat: 0, lon: 103, farmerGroupCode: null },
+        { id: "KOP-G1", name: "L1", type: "KOPERASI", district: "Siak", lat: 0, lon: 99, farmerGroupCode: "G1" },
+      ],
+    };
+    const lk2 = { groups: new Map(d2.groups.map((g) => [g.code, g])), offtakers: new Map(d2.offtakers.map((o) => [o.id, o])), mills: new Map(d2.mills.map((m) => [m.id, m])) };
+    // G1 (100) → AGN-1 (100,5) → KUD-9 (103) → M1 (101): 0,5 + 2,5 + 2 = 5°.
+    expect(recordDistanceKm(rec({ offtakerId: "AGN-1", nextOfftakerId: "KUD-9" }), lk2)!).toBeCloseTo(5 * DEG_KM, 0);
+    // Koperasi milik G1 berkoordinat sendiri (99) tetap dilewati seperti di peta: G1 → M1 = 1°.
+    expect(recordDistanceKm(rec({ offtakerId: "KOP-G1" }), lk2)!).toBeCloseTo(DEG_KM, 0);
+  });
+  it("sheet Jalur: status PKS pasti membawa basis record yang pasti", () => {
+    const rows = supplyChainExportSheets([
+      rec({ id: "x", millStatus: "PKS_BELUM_PASTI", millBasis: "PKS_TERDEKAT", supplyTon: 5 }),
+      rec({ id: "y", millStatus: "PKS_PASTI", millBasis: "NAMA_PKS", supplyTon: 5 }),
+    ], data)[0].data;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ statusMill: "PKS pasti", basisMill: "teks survei menyebut PKS" });
   });
 });
 

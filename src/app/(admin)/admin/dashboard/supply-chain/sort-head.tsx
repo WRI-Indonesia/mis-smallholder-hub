@@ -3,8 +3,8 @@
 import { useCallback, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { SortDir } from "@/lib/supply-chain-views";
 
-export type SortDir = "asc" | "desc";
 export interface SortState<K extends string> {
   key: K;
   dir: SortDir;

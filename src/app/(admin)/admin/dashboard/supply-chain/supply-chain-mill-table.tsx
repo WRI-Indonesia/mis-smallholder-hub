@@ -5,13 +5,11 @@ import Link from "next/link";
 import { CircleCheck, CircleDashed, CircleHelp, Map as MapIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { formatPct } from "@/lib/format";
+import { fmtKm, fmtTon, pctOf } from "@/lib/supply-chain-format";
 import { MILL_BASIS_LABEL, MILL_STATUS_LABEL, UNKNOWN_MILL_FILTER, type MillStatus, type MillVolumeRow } from "@/lib/supply-chain-flow";
 import type { DistanceStat } from "@/lib/supply-chain-insights";
-import { fmtTon } from "./supply-chain-sankey";
 import { CollapsibleCard } from "./collapsible-card";
 import { SortHead, sortRows, useTableSort } from "./sort-head";
-import { pctOf } from "./supply-chain-filter-chips";
 import { UlBadge } from "./ul-badge";
 
 const ROWS_COLLAPSED = 10;
@@ -25,8 +23,6 @@ export const STATUS_ICON: Record<MillStatus, { icon: typeof CircleCheck; classNa
 type SortKey = "NAME" | "DISTRICT" | "TON" | "GROUPS" | "OFFTAKERS" | "KM";
 const defaultDir = (k: SortKey) => (k === "NAME" || k === "DISTRICT" ? "asc" : "desc");
 
-/** Jarak km 1 desimal; "—" bila tak terhitung. */
-export const fmtKm = (km: number | null) => (km == null ? "—" : `${formatPct(Math.round(km * 10) / 10)} km`);
 
 /**
  * Tabel Volume per Mill (owner 2026-10-10: bisa diurut, baris Mill yang sedang

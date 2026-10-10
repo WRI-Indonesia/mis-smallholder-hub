@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ScRecord, SupplyChainData } from "@/lib/supply-chain-flow";
-import { arcCoordinates, flowLineWidth, niceTon, undrawnEntities, widthScaleSamples } from "@/lib/supply-chain-map";
+import { buildFlowSegments, type ScRecord, type SupplyChainData } from "@/lib/supply-chain-flow";
+import { arcCoordinates, flowLineWidth, niceTon, offtakerFilterPatch, undrawnEntities, widthScaleSamples } from "@/lib/supply-chain-map";
 
 describe("arcCoordinates", () => {
   it("mulai di A, berakhir di B, dan melengkung ke kiri arah aliran", () => {
@@ -72,11 +72,61 @@ describe("undrawnEntities", () => {
       rec({ id: "d", offtakerId: "KOP-1", supplyTon: 3 }), // koperasi = Lembaga bertitik → bukan tanpa titik
       rec({ id: "e", supplyTon: null, millId: "M2" }), // tanpa tonase diabaikan
     ]);
+    // Record b (Mill tanpa titik + Lembaga tanpa titik) masuk bucket Mill saja — pola buildFlowSegments.
     expect(u.mills).toEqual([{ id: "M2", name: "Tanpa Titik", ton: 25 }]);
-    expect(u.groups).toEqual([{ code: "G2", abrv: "L2", ton: 20 }]);
+    expect(u.groups).toEqual([]);
     expect(u.offtakers).toEqual([{ id: "AGN-1", name: "Agen A", type: "AGEN", ton: 7 }]);
   });
   it("mode Ringkas (tanpa offtaker) tidak melaporkan offtaker", () => {
     expect(undrawnEntities(data, [rec({ offtakerId: "AGN-1" })], { viaOfftakers: false }).offtakers).toEqual([]);
+  });
+});
+
+describe("review 2026-10-10 — satu aturan titik singgah & filter offtaker", () => {
+  const rec = (over: Partial<ScRecord>): ScRecord => ({
+    id: "r", year: 2025, level: "DEALER", groupCode: "G1", surveyId: null, offtakerId: null, nextOfftakerId: null,
+    millText: null, millId: "M1", millStatus: "PKS_PASTI", millBasis: "NAMA_PKS", supplyTon: 10, toUl: false, ulTon: null, flags: [],
+    ...over,
+  });
+  const data: SupplyChainData = {
+    groups: [
+      { code: "G1", name: "Lembaga Satu", abrv: "L1", category: "SWADAYA", districtName: "Siak", lat: 0, lon: 100 },
+      { code: "G2", name: "Lembaga Dua", abrv: "L2", category: "SWADAYA", districtName: "Siak", lat: null, lon: null },
+    ],
+    mills: [
+      { id: "M1", umlId: null, name: "Ada", company: "ADA", district: null, lat: 0, lon: 101, rspoStatus: null, source: "UML", buyerPrograms: [] },
+      { id: "M2", umlId: null, name: "Tanpa Titik", company: "TANPA TITIK", district: null, lat: null, lon: null, rspoStatus: null, source: "MANUAL", buyerPrograms: [] },
+    ],
+    offtakers: [
+      { id: "AGN-1", name: "Agen A", type: "AGEN", district: "Siak", lat: null, lon: null, farmerGroupCode: null },
+      { id: "KUD-1", name: "KUD K", type: "KOPERASI", district: "Siak", lat: null, lon: null, farmerGroupCode: null },
+      { id: "RMP-1", name: "RAMP R", type: "RAMP", district: "Siak", lat: 0, lon: 100.5, farmerGroupCode: null },
+    ],
+    records: [],
+  };
+  const offs = new Map(data.offtakers.map((o) => [o.id, o]));
+
+  it("undrawnEntities memakai bucket buildFlowSegments: satu record satu bucket, offtaker hanya dari record yang tergambar", () => {
+    const records = [
+      rec({ id: "a", groupCode: "G2", millId: "M2", offtakerId: "AGN-1", supplyTon: 20 }), // Mill tanpa titik → hanya bucket Mill
+      rec({ id: "b", groupCode: "G2", offtakerId: "AGN-1", supplyTon: 5 }), // Lembaga tanpa titik → hanya bucket Lembaga
+      rec({ id: "c", millId: null, millStatus: "TIDAK_DIKETAHUI", offtakerId: "AGN-1", supplyTon: 4 }), // Mill tak diketahui → tak ada nama
+      rec({ id: "d", offtakerId: "AGN-1", nextOfftakerId: "KUD-1", supplyTon: 7 }), // tergambar; KUD kedua (non-RAMP) ikut dilompati
+    ];
+    const u = undrawnEntities(data, records);
+    const { undrawn } = buildFlowSegments(data, records);
+    expect(u.mills).toEqual([{ id: "M2", name: "Tanpa Titik", ton: 20 }]);
+    expect(u.groups).toEqual([{ code: "G2", abrv: "L2", ton: 5 }]);
+    expect(u.offtakers.map((o) => [o.id, o.ton])).toEqual([["AGN-1", 7], ["KUD-1", 7]]);
+    expect(u.mills.reduce((a, m) => a + m.ton, 0)).toBe(undrawn.millWithoutPointTon);
+    expect(u.groups.reduce((a, g) => a + g.ton, 0)).toBe(undrawn.groupWithoutPointTon);
+    expect(u.offtakers).toHaveLength(undrawn.offtakersWithoutPoint);
+  });
+
+  it("offtakerFilterPatch: patch hanya bila filter benar-benar menangkap record offtaker itu", () => {
+    expect(offtakerFilterPatch("AGN-1", [rec({ offtakerId: "AGN-1" })], offs)).toEqual({ agen: "AGN-1" });
+    expect(offtakerFilterPatch("RMP-1", [rec({ offtakerId: "AGN-1", nextOfftakerId: "RMP-1" })], offs)).toEqual({ ramp: "RMP-1" });
+    // KUD hanya sebagai offtaker kedua non-RAMP: filter agen/ramp tak bisa menangkapnya → null (tombol disembunyikan).
+    expect(offtakerFilterPatch("KUD-1", [rec({ offtakerId: "AGN-1", nextOfftakerId: "KUD-1" })], offs)).toBeNull();
   });
 });

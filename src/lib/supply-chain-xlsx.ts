@@ -44,7 +44,11 @@ export function supplyChainExportSheets(records: ScRecord[], data: Pick<SupplyCh
     p.ton += ton;
     p.ulTon += recordUlTon(r);
     p.rows += 1;
-    if (r.millStatus === "PKS_PASTI") p.status = "PKS_PASTI";
+    // Status naik ke PKS pasti → basisnya ikut dari record yang pasti (kolom Status & Basis tak saling bertentangan).
+    if (r.millStatus === "PKS_PASTI" && p.status !== "PKS_PASTI") {
+      p.status = "PKS_PASTI";
+      p.basis = r.millBasis;
+    }
     const km = recordDistanceKm(r, lk);
     if (km != null && ton > 0) {
       p.tonKm += ton * km;

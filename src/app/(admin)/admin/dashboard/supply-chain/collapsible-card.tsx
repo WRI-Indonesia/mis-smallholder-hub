@@ -38,7 +38,7 @@ export function useStoredChoice<T extends string>(key: string, initial: T, allow
   return [value, set] as const;
 }
 
-const OPEN_STATES = ["open", "closed"] as const;
+export const OPEN_STATES = ["open", "closed"] as const;
 
 /**
  * Kartu dashboard yang bisa dilipat lewat judulnya (owner 2026-10-09). Terbuka
@@ -51,15 +51,21 @@ export function CollapsibleCard({
   aside,
   children,
   contentClassName,
+  open: openProp,
+  onOpenChange,
 }: {
   id: string;
   title: React.ReactNode;
   aside?: React.ReactNode;
   children: React.ReactNode;
   contentClassName?: string;
+  /** Mode terkendali (mis. kartu yang dibuka dari luar oleh tautan Sorotan); pemanggil yang menyimpan state-nya. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [state, setState] = useStoredChoice(`card:${id}`, "open", OPEN_STATES);
-  const open = state === "open";
+  const [state, setStored] = useStoredChoice(`card:${id}`, "open", OPEN_STATES);
+  const open = openProp ?? state === "open";
+  const setState = (v: (typeof OPEN_STATES)[number]) => (onOpenChange ? onOpenChange(v === "open") : setStored(v));
   return (
     <Card className="border border-border/60 shadow-sm">
       <CardHeader className={cn("pb-2", !open && "pb-4")}>

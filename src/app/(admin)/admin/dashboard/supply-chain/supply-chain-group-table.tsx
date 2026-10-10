@@ -1,17 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { AlertTriangle, Map as MapIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { OFFTAKER_TYPE_LABEL } from "@/lib/supply-chain-flow";
 import { DEPENDENCY_THRESHOLD, type GroupVolumeRow } from "@/lib/supply-chain-insights";
-import { fmtTon } from "./supply-chain-sankey";
+import { fmtKm, fmtTon, pctOf } from "@/lib/supply-chain-format";
 import { CollapsibleCard } from "./collapsible-card";
 import { SortHead, sortRows, type SortState } from "./sort-head";
-import { pctOf } from "./supply-chain-filter-chips";
-import { fmtKm } from "./supply-chain-mill-table";
 import { UlBadge } from "./ul-badge";
 
 const ROWS_COLLAPSED = 10;
@@ -36,6 +34,10 @@ export function SupplyChainGroupTable({
   selectedCode,
   onSelect,
   mapHref,
+  open,
+  onOpenChange,
+  showAll,
+  onShowAllChange,
 }: {
   rows: GroupVolumeRow[];
   sort: SortState<GroupSortKey>;
@@ -43,8 +45,12 @@ export function SupplyChainGroupTable({
   selectedCode: string | null;
   onSelect: (row: GroupVolumeRow) => void;
   mapHref: (code: string) => string;
+  /** Lipat kartu & "tampilkan semua" dikendalikan Dashboard — tautan "+N lagi" di Sorotan membuka keduanya (review 2026-10-10). */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  showAll: boolean;
+  onShowAllChange: (showAll: boolean) => void;
 }) {
-  const [showAll, setShowAll] = useState(false);
   const sorted = useMemo(
     () =>
       sortRows(rows, sort, (r, key) =>
@@ -53,7 +59,8 @@ export function SupplyChainGroupTable({
         : key === "TON" ? r.ton
         : key === "UL" ? share(r.ulTon, r.ton)
         : key === "PASTI" ? share(r.pastiTon, r.ton)
-        : key === "OFFTAKER" ? (r.mainOfftaker ? share(r.mainOfftaker.ton, r.ton) : null)
+        // Koperasi Lembaga sendiri bukan ketergantungan pada pihak luar → paling bawah, sama dengan Sorotan.
+        : key === "OFFTAKER" ? (r.mainOfftaker && !r.mainOfftaker.isSelf ? share(r.mainOfftaker.ton, r.ton) : null)
         : key === "MILL" ? (r.mainMill ? share(r.mainMill.ton, r.ton) : null)
         : r.avgKm,
       ),
@@ -67,6 +74,8 @@ export function SupplyChainGroupTable({
     <div id={GROUP_TABLE_ID} className="scroll-mt-4">
       <CollapsibleCard
         id="lembaga"
+        open={open}
+        onOpenChange={onOpenChange}
         title="Volume per Lembaga"
         contentClassName="overflow-x-auto"
         aside={
@@ -88,7 +97,7 @@ export function SupplyChainGroupTable({
               <SortHead sortKey="TON" sort={sort} onToggle={onToggleSort} label="Tonase" className="w-[22%]" />
               <SortHead sortKey="UL" sort={sort} onToggle={onToggleSort} label="ke UL" className="text-right" title="Porsi tonase Lembaga yang ke Mill pemasok UL" />
               <SortHead sortKey="PASTI" sort={sort} onToggle={onToggleSort} label="PKS pasti" className="text-right" title="Porsi tonase yang PKS-nya pasti (disebut di survei atau dipetakan dari nama PT)" />
-              <SortHead sortKey="OFFTAKER" sort={sort} onToggle={onToggleSort} label="Offtaker utama" title="Offtaker pertama dengan tonase terbesar dan porsinya" />
+              <SortHead sortKey="OFFTAKER" sort={sort} onToggle={onToggleSort} label="Offtaker utama" title="Offtaker pertama dengan tonase terbesar dan porsinya; koperasi Lembaga sendiri diurut paling bawah" />
               <SortHead sortKey="MILL" sort={sort} onToggle={onToggleSort} label="Mill utama" title="Mill dengan tonase terbesar dan porsinya" />
               <SortHead sortKey="KM" sort={sort} onToggle={onToggleSort} label="Jarak" className="text-right" title="Rata-rata garis lurus Lembaga → offtaker → Mill, tertimbang tonase (bukan jarak tempuh jalan)" />
               <th className="w-8" />
@@ -165,7 +174,7 @@ export function SupplyChainGroupTable({
           </tbody>
         </table>
         {rows.length > ROWS_COLLAPSED && (
-          <Button variant="ghost" size="sm" className="mt-2" onClick={() => setShowAll((v) => !v)}>
+          <Button variant="ghost" size="sm" className="mt-2" onClick={() => onShowAllChange(!showAll)}>
             {showAll ? `Tampilkan ${ROWS_COLLAPSED} teratas` : `Tampilkan semua (${rows.length} Lembaga)`}
           </Button>
         )}

@@ -3,20 +3,16 @@
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatPct } from "@/lib/format";
 import { GROUP_CATEGORY_LABEL, UL_FILTER_LABEL, UNKNOWN_MILL_FILTER, millLabel, type SupplyChainView } from "@/lib/supply-chain-flow";
 import type { ScFilterParam, SupplyChainFilterState } from "./use-supply-chain-filters";
-
-/** Persen 1 desimal dari bagian terhadap total; "—" bila total 0. */
-export const pctOf = (part: number, total: number) => (total > 0 ? `${formatPct(Math.round((part / total) * 1000) / 10)}%` : "—");
 
 /**
  * Umpan balik saat filter diterapkan dari klik node/baris (owner 2026-10-10):
  * kartu dan tabel di luar layar ikut berubah, jadi beri tahu sekali — satu id
  * agar klik beruntun mengganti toast, bukan menumpuk.
  */
-export function notifyFilter(label: string) {
-  toast(`Filter: ${label}`, { id: "sc-filter", duration: 2500, description: "Kartu, diagram, dan tabel ikut tersaring. Hapus lewat chip di bawah bar filter." });
+export function notifyFilter(label: string, description = "Kartu, diagram, dan tabel ikut tersaring. Hapus lewat chip di bawah bar filter.") {
+  toast(`Filter: ${label}`, { id: "sc-filter", duration: 2500, description });
 }
 
 /**

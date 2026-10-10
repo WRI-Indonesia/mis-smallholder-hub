@@ -6,7 +6,7 @@ import { formatNumber, formatPct } from "@/lib/format";
 import type { SupplyChainInsight } from "@/lib/supply-chain-insights";
 import { CollapsibleCard } from "./collapsible-card";
 import type { GroupSortKey } from "./supply-chain-group-table";
-import { fmtKm } from "./supply-chain-mill-table";
+import { fmtKm } from "@/lib/supply-chain-format";
 import { UlBadge } from "./ul-badge";
 
 const pct = (share: number) => `${formatPct(Math.round(share * 1000) / 10)}%`;

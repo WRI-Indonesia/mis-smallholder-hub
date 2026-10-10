@@ -175,6 +175,21 @@ export function recordRampId(r: ScRecord, offtakers: Map<string, ScOfftaker>): s
   return o2?.type === "RAMP" ? o2.id : null;
 }
 
+/**
+ * Offtaker yang disinggahi garis peta satu record, urut arah TBS: `offtakerId`
+ * lalu `nextOfftakerId` apa pun tipenya; koperasi milik Lembaga itu sendiri
+ * dilewati (titiknya = titik Lembaga). Satu definisi untuk garis Peta, jarak
+ * garis lurus, dan daftar "tidak tergambar" (review 2026-10-10).
+ */
+export function recordWaypointOfftakers(r: ScRecord, offtakers: Map<string, ScOfftaker>): ScOfftaker[] {
+  const out: ScOfftaker[] = [];
+  for (const id of [r.offtakerId, r.nextOfftakerId]) {
+    const o = id ? offtakers.get(id) : undefined;
+    if (o && o.farmerGroupCode !== r.groupCode) out.push(o);
+  }
+  return out;
+}
+
 /** Nilai filter Mill untuk record tanpa Mill (kolom kosong / beberapa PT). */
 export const UNKNOWN_MILL_FILTER = "tidak-diketahui";
 
@@ -829,11 +844,8 @@ export function buildFlowSegments(
     const pts: FlowPoint[] = [{ key: `L:${g.code}`, kind: "LEMBAGA", lat: g.lat, lon: g.lon }];
     let skipped = false;
     // Mode Ringkas: garis langsung Lembaga → Mill, titik offtaker tidak disinggahi.
-    for (const oid of viaOfftakers ? [r.offtakerId, r.nextOfftakerId] : []) {
-      const o = oid ? offtakers.get(oid) : undefined;
-      if (!o) continue;
-      // Koperasi = Lembaga itu sendiri → titiknya sama, tak perlu segmen nol.
-      if (o.farmerGroupCode === g.code) continue;
+    // Koperasi = Lembaga itu sendiri dilewati `recordWaypointOfftakers` → tak ada segmen nol.
+    for (const o of viaOfftakers ? recordWaypointOfftakers(r, offtakers) : []) {
       if (o.lat == null || o.lon == null) {
         skipped = true;
         noPoint.add(o.id);

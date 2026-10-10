@@ -23,7 +23,8 @@ import { Button } from "@/components/ui/button";
 import { formatPct } from "@/lib/format";
 import { CHANNEL_LABEL, SANKEY_COLUMNS, layoutSankey, sankeyLinkKey, type SankeyGraph, type SankeyNode, type SupplyChannel } from "@/lib/supply-chain-flow";
 import { bezierPointAtX, dodgeLabels, spreadEdgeEnds } from "@/lib/supply-chain-views";
-import { channelColor, fmtTon, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { fmtTon } from "@/lib/supply-chain-format";
+import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 
 /**
  * Tab Diagram Alur (owner 2026-10-09): graf yang sama dengan Sankey, digambar

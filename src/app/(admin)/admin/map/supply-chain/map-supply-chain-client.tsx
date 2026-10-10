@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { MAP_POPUP_PROPS, MapPopupDragHandle, MapPopupHeader, MapPopupHighlight, MapPopupRows, useMapPopupAutoPan, useMapPopupDrag } from "@/components/shared/map-popup";
 import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
 import { useVectorBasemap } from "@/hooks/use-vector-basemap";
-import { formatNumber, formatPct } from "@/lib/format";
+import { fmtKm, fmtTon, pctOf } from "@/lib/supply-chain-format";
 import {
   CHANNEL_LABEL,
   CHANNEL_ORDER,
@@ -33,17 +33,15 @@ import {
   type SupplyChainMapView,
 } from "@/lib/supply-chain-flow";
 import { distanceStats, groupVolumes, millKey as millKeyOf } from "@/lib/supply-chain-insights";
-import { arcCoordinates, flowLineWidth, undrawnEntities, widthScaleSamples } from "@/lib/supply-chain-map";
+import { arcCoordinates, flowLineWidth, offtakerFilterPatch, undrawnEntities, widthScaleSamples } from "@/lib/supply-chain-map";
 import { channelColor, useChartDark } from "../../dashboard/supply-chain/supply-chain-sankey";
 import { useStoredChoice } from "../../dashboard/supply-chain/collapsible-card";
 import { ModeToggle } from "../../dashboard/supply-chain/segment-toggle";
 import { SupplyChainFilterBar } from "../../dashboard/supply-chain/supply-chain-filter-bar";
-import { notifyFilter, pctOf } from "../../dashboard/supply-chain/supply-chain-filter-chips";
-import { fmtKm } from "../../dashboard/supply-chain/supply-chain-mill-table";
+import { notifyFilter } from "../../dashboard/supply-chain/supply-chain-filter-chips";
 import { UlBadge } from "../../dashboard/supply-chain/ul-badge";
 import { useSupplyChainFilters, type ScFilterParam } from "../../dashboard/supply-chain/use-supply-chain-filters";
 
-const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 const PANEL_W = 340;
 /** Label Mill/Lembaga yang selalu tampil (peringkat tonase); sisanya baru pada zoom ≥ LABEL_REST_ZOOM. */
 const TOP_LABELS = 8;
@@ -51,7 +49,7 @@ const LABEL_REST_ZOOM = 10;
 const UNDRAWN_LIST_MAX = 8;
 
 type Selected = { lng: number; lat: number; kind: string; id: string } | null;
-type Hover = { lng: number; lat: number; title: string; sub: string } | null;
+type Hover = { key: string; lng: number; lat: number; title: string; sub: string } | null;
 type FeatureRef = { source: string; id: string };
 
 // ---------------------------------------------------------------------------
@@ -363,6 +361,9 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
     },
     [groupByCode, offById, millById],
   );
+  // Lookup O(1) untuk tooltip (dulu `find` linear tiap mousemove — review 2026-10-10).
+  const segmentByKey = useMemo(() => new globalThis.Map(segments.map((x) => [flowSegmentKey(x), x])), [segments]);
+  const parcelById = useMemo(() => new globalThis.Map(view.parcels.map((x) => [x.surveyId, x])), [view.parcels]);
   const rankFeature = (k: unknown) => (k === "mill" || k === "lembaga" || k === "offtaker" ? 0 : k === "parcel" ? 1 : 2);
   const topFeature = (e: MapLayerMouseEvent) => [...(e.features ?? [])].sort((a, b) => rankFeature(a.properties?.kind) - rankFeature(b.properties?.kind))[0];
 
@@ -380,20 +381,22 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
     let title = p.label ?? "";
     let sub = p.ton != null ? fmtTon(Number(p.ton)) : "";
     if (p.kind === "flow") {
-      const s = segments.find((x) => flowSegmentKey(x) === p.id);
+      const s = segmentByKey.get(p.id);
       if (s) {
         title = `${flowLabel(s.from.key)} → ${flowLabel(s.to.key)}`;
         sub = `${fmtTon(s.ton)} · ${CHANNEL_LABEL[s.channel]}`;
       }
     } else if (p.kind === "parcel") {
-      const pc = view.parcels.find((x) => x.surveyId === p.id);
+      const pc = parcelById.get(p.id);
       title = pc?.farmerName ?? "Lahan";
       sub = pc?.ffbTon == null ? "produksi —" : `produksi ${fmtTon(pc.ffbTon)}`;
     } else if (p.kind === "mill") sub = `Mill · ${sub}`;
     else if (p.kind === "lembaga") sub = `Lembaga · ${sub}`;
     else if (p.kind === "offtaker") sub = `${OFFTAKER_TYPE_LABEL[offById.get(p.id)?.type ?? "AGEN"]} · ${sub}`;
     const [lng, lat] = ft.geometry.type === "Point" ? (ft.geometry.coordinates as [number, number]) : [e.lngLat.lng, e.lngLat.lat];
-    setHover((h) => (h && h.title === title && h.sub === sub && ft.geometry.type === "Point" ? h : { lng, lat, title, sub }));
+    // Jangkar tetap selama kursor di fitur yang sama (garis juga) → state tak berubah tiap gerak, peta tak di-render ulang.
+    const key = `${ref.source}:${ref.id}`;
+    setHover((h) => (h && h.key === key ? h : { key, lng, lat, title, sub }));
   };
 
   const onClick = (e: MapLayerMouseEvent) => {
@@ -418,12 +421,12 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
   const applyFilter = (patch: Partial<Record<ScFilterParam, string>>, label: string) => {
     f.update(patch);
     setSelected(null);
-    notifyFilter(label);
+    notifyFilter(label, "Peta dan Dashboard ikut tersaring. Lepas lewat bagian Filter di panel (Reset).");
   };
 
   const totalTon = records.reduce((a, r) => a + (r.supplyTon ?? 0), 0);
   const drawnTon = totalTon - undrawn.unknownMillTon - undrawn.millWithoutPointTon - undrawn.groupWithoutPointTon;
-  const drawnPct = totalTon > 0 ? `${formatPct(Math.round((drawnTon / totalTon) * 1000) / 10)}%` : "—";
+  const drawnPct = pctOf(drawnTon, totalTon);
   const undrawnTon = totalTon - drawnTon;
   const dimOpacity = (on: number, off: number) => ["case", ["get", "on"], on, off] as unknown as number;
   const hovered: ExpressionSpecification = ["boolean", ["feature-state", "hover"], false];
@@ -926,6 +929,11 @@ function PopupActions({ onFilter, href }: { onFilter: () => void; href: string }
   );
 }
 
+/** Pengganti aksi bila entitas tak bisa diwakili filter (offtaker kedua non-RAMP). */
+function PopupNoFilter() {
+  return <p className="border-t bg-muted/30 px-3.5 py-2 text-[11px] text-muted-foreground">Offtaker ini hanya tercatat sebagai pembeli kedua (bukan RAMP), jadi belum bisa dijadikan filter Agen/RAMP.</p>;
+}
+
 function SelectedCard({
   selected,
   view,
@@ -1005,7 +1013,8 @@ function SelectedCard({
   } else if (selected.kind === "offtaker") {
     const o = offs.get(selected.id);
     const rs = records.filter((r) => r.offtakerId === selected.id || r.nextOfftakerId === selected.id);
-    const patch: Partial<Record<ScFilterParam, string>> = o?.type === "RAMP" ? { ramp: selected.id } : { agen: selected.id };
+    // Patch hanya bila filter Agen/RAMP benar-benar menangkap record offtaker ini (review 2026-10-10).
+    const patch = offtakerFilterPatch(selected.id, rs, offs);
     body = o && (
       <>
         <MapPopupHeader accent="amber" icon={<Truck className="h-5 w-5" />} title={o.name} rows={[{ label: "Kode", value: o.id, mono: true }, { label: "Tipe", value: OFFTAKER_TYPE_LABEL[o.type] }]} />
@@ -1015,7 +1024,7 @@ function SelectedCard({
           <div className="text-[11px] font-medium text-muted-foreground">Mill tujuan</div>
           <MapPopupRows rows={millRows(rs)} />
         </div>
-        <PopupActions onFilter={() => onFilter(patch, o.name)} href={dashboardHref(patch)} />
+        {patch ? <PopupActions onFilter={() => onFilter(patch, o.name)} href={dashboardHref(patch)} /> : <PopupNoFilter />}
       </>
     );
   } else if (selected.kind === "parcel") {

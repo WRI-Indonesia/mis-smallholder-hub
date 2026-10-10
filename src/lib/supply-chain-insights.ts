@@ -10,9 +10,8 @@ import {
   UNKNOWN_MILL_FILTER,
   isUlMill,
   millLabel,
-  recordCollectorId,
-  recordRampId,
   recordUlTon,
+  recordWaypointOfftakers,
   type GroupCategory,
   type OfftakerType,
   type ScGroup,
@@ -41,18 +40,18 @@ const lookups = (data: Pick<SupplyChainData, "groups" | "offtakers" | "mills">):
 // ---------------------------------------------------------------------------
 
 /**
- * Jarak garis lurus satu record (km): Lembaga → pengumpul → RAMP → Mill.
- * Offtaker tanpa koordinat dilompati (sama dengan garis Peta Rantai Pasok);
- * null bila Lembaga atau Mill tidak berkoordinat. Bukan jarak tempuh jalan.
+ * Jarak garis lurus satu record (km) sepanjang garis Peta Rantai Pasok mode
+ * Detail: Lembaga → offtaker (`recordWaypointOfftakers`) → Mill. Offtaker tanpa
+ * koordinat dilompati; null bila Lembaga atau Mill tidak berkoordinat. Bukan
+ * jarak tempuh jalan.
  */
 export function recordDistanceKm(r: ScRecord, { groups, offtakers, mills }: Lookups): number | null {
   const g = groups.get(r.groupCode);
   const m = r.millId ? mills.get(r.millId) : undefined;
   if (!g || g.lat == null || g.lon == null || !m || m.lat == null || m.lon == null) return null;
   const pts: [number, number][] = [[g.lon, g.lat]];
-  for (const id of [recordCollectorId(r, offtakers), recordRampId(r, offtakers)]) {
-    const o = id ? offtakers.get(id) : undefined;
-    if (o && o.lat != null && o.lon != null) pts.push([o.lon, o.lat]);
+  for (const o of recordWaypointOfftakers(r, offtakers)) {
+    if (o.lat != null && o.lon != null) pts.push([o.lon, o.lat]);
   }
   pts.push([m.lon, m.lat]);
   let meters = 0;
@@ -185,14 +184,15 @@ export const DEPENDENCY_THRESHOLD = 0.8;
 export const UNCERTAIN_THRESHOLD = 0.5;
 
 export type SupplyChainInsight =
-  | { kind: "KONSENTRASI"; topMill: { millId: string | null; name: string; isUl: boolean }; topShare: number; top3Share: number; millCount: number }
+  | { kind: "KONSENTRASI"; topMill: { millId: string; name: string; isUl: boolean }; topShare: number; top3Share: number; millCount: number }
   | { kind: "KETERGANTUNGAN"; threshold: number; groups: { code: string; abrv: string; offtakerName: string; share: number }[] }
   | { kind: "KEPASTIAN"; uncertainShare: number; unknownShare: number; groups: { code: string; abrv: string; share: number }[] }
   | { kind: "JARAK"; avgKm: number | null; coveredShare: number; farthestMill: { millId: string; name: string; avgKm: number } | null };
 
 /**
- * Empat sorotan atas record yang sedang terfilter. Angka mentah (0–1 untuk
- * porsi) — layar yang memformat. Kosong bila tidak ada tonase.
+ * Empat sorotan atas record yang sedang terfilter (Konsentrasi dilewati bila tak
+ * ada Mill bernama). Angka mentah (0–1 untuk porsi) — layar yang memformat.
+ * Kosong bila tidak ada tonase.
  */
 export function supplyChainInsights(
   records: ScRecord[],
@@ -203,19 +203,22 @@ export function supplyChainInsights(
   const total = records.reduce((a, r) => a + (r.supplyTon ?? 0), 0);
   if (!(total > 0)) return [];
 
-  // Konsentrasi ke Mill.
+  // Konsentrasi ke Mill bernama — "Mill tidak diketahui" bukan Mill, jadi tidak ikut peringkat
+  // (porsinya tetap dihitung terhadap total TBS dan dilaporkan di sorotan Kepastian).
   const byMill = new Map<string, number>();
-  for (const r of records) byMill.set(millKey(r), (byMill.get(millKey(r)) ?? 0) + (r.supplyTon ?? 0));
-  const mills = [...byMill.entries()].sort((a, b) => b[1] - a[1]);
-  const [topId, topTon] = mills[0];
-  const topMill = topId === UNKNOWN_MILL_FILTER ? undefined : lk.mills.get(topId);
-  const konsentrasi: SupplyChainInsight = {
-    kind: "KONSENTRASI",
-    topMill: { millId: topId === UNKNOWN_MILL_FILTER ? null : topId, name: topMill ? millLabel(topMill) : UNKNOWN_MILL_NAME, isUl: !!topMill && isUlMill(topMill) },
-    topShare: topTon / total,
-    top3Share: mills.slice(0, 3).reduce((a, m) => a + m[1], 0) / total,
-    millCount: mills.filter(([id]) => id !== UNKNOWN_MILL_FILTER).length,
-  };
+  for (const r of records) if (r.millId) byMill.set(r.millId, (byMill.get(r.millId) ?? 0) + (r.supplyTon ?? 0));
+  const mills = [...byMill.entries()].filter(([, t]) => t > 0).sort((a, b) => b[1] - a[1]);
+  const top = mills[0];
+  const topMill = top ? lk.mills.get(top[0]) : undefined;
+  const konsentrasi: SupplyChainInsight | null = top
+    ? {
+        kind: "KONSENTRASI",
+        topMill: { millId: top[0], name: topMill ? millLabel(topMill) : top[0], isUl: !!topMill && isUlMill(topMill) },
+        topShare: top[1] / total,
+        top3Share: mills.slice(0, 3).reduce((a, m) => a + m[1], 0) / total,
+        millCount: mills.length,
+      }
+    : null;
 
   // Ketergantungan & kepastian per Lembaga.
   const groups = groupVolumes(records, data);
@@ -240,7 +243,7 @@ export function supplyChainInsights(
   }
 
   return [
-    konsentrasi,
+    ...(konsentrasi ? [konsentrasi] : []),
     { kind: "KETERGANTUNGAN", threshold: dependencyThreshold, groups: dependent },
     { kind: "KEPASTIAN", uncertainShare: uncertainTon / total, unknownShare: unknownTon / total, groups: uncertainGroups },
     { kind: "JARAK", avgKm: all.avgKm, coveredShare: all.tonWithDistance / total, farthestMill: farthest },

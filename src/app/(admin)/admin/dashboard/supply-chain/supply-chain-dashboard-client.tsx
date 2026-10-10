@@ -21,11 +21,12 @@ import {
   type SupplyChainView,
 } from "@/lib/supply-chain-flow";
 import { distanceStats, groupVolumes, millKey, supplyChainInsights } from "@/lib/supply-chain-insights";
-import { channelColor, fmtTon, useChartDark } from "./supply-chain-sankey";
-import { CollapsibleCard } from "./collapsible-card";
+import { fmtTon, pctOf } from "@/lib/supply-chain-format";
+import { channelColor, useChartDark } from "./supply-chain-sankey";
+import { CollapsibleCard, OPEN_STATES, useStoredChoice } from "./collapsible-card";
 import { SupplyChainFlowCard } from "./supply-chain-flow-card";
 import { SupplyChainFilterBar } from "./supply-chain-filter-bar";
-import { SupplyChainFilterChips, notifyFilter, pctOf } from "./supply-chain-filter-chips";
+import { SupplyChainFilterChips, notifyFilter } from "./supply-chain-filter-chips";
 import { SupplyChainInsightsCard } from "./supply-chain-insights-card";
 import { SupplyChainMillTable } from "./supply-chain-mill-table";
 import { GROUP_TABLE_ID, SupplyChainGroupTable, groupDefaultDir, type GroupSortKey } from "./supply-chain-group-table";
@@ -69,6 +70,8 @@ export function SupplyChainDashboardClient({ view, helpSlot, canExport = false }
   const groupRows = useMemo(() => groupVolumes(records, view.data), [records, view.data]);
   const insights = useMemo(() => supplyChainInsights(records, view.data), [records, view.data]);
   const groupSort = useTableSort<GroupSortKey>({ key: "TON", dir: "desc" }, groupDefaultDir);
+  const [groupCard, setGroupCard] = useStoredChoice("card:lembaga", "open", OPEN_STATES);
+  const [groupShowAll, setGroupShowAll] = useState(false);
 
   // Asal PKS: disebut langsung di survei vs dipetakan dari nama PT lewat UML (dikonfirmasi owner 2026-10-06).
   const namedPksTon = useMemo(() => records.filter((r) => r.millBasis === "NAMA_PKS" && r.millStatus === "PKS_PASTI").reduce((a, r) => a + (r.supplyTon ?? 0), 0), [records]);
@@ -102,8 +105,11 @@ export function SupplyChainDashboardClient({ view, helpSlot, canExport = false }
     notifyFilter(label);
   };
   const focusGroups = (key: GroupSortKey) => {
+    // Kartu bisa terlipat (diingat browser) dan hanya 10 baris → buka keduanya dulu, gulir setelah render.
     groupSort.setSort({ key, dir: key === "PASTI" ? "asc" : "desc" });
-    document.getElementById(GROUP_TABLE_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setGroupCard("open");
+    setGroupShowAll(true);
+    requestAnimationFrame(() => document.getElementById(GROUP_TABLE_ID)?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const [exporting, setExporting] = useState(false);
@@ -222,6 +228,10 @@ export function SupplyChainDashboardClient({ view, helpSlot, canExport = false }
         selectedCode={f.filter.groupCode}
         onSelect={(g) => filterGroup(g.code, g.abrv)}
         mapHref={(code) => mapHref({ lembaga: code })}
+        open={groupCard === "open"}
+        onOpenChange={(o) => setGroupCard(o ? "open" : "closed")}
+        showAll={groupShowAll}
+        onShowAllChange={setGroupShowAll}
       />
 
       <DataNotes summary={summary} records={records} view={view} />
