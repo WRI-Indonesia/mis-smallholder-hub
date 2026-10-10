@@ -76,7 +76,7 @@ Peran: SUPERADMIN, lalu OPERATOR · Langkah: pilih Lembaga (analisa otomatis), k
 Peran: SUPERADMIN · Langkah: buka ketiganya · Harapan: angka terisi; Peta Data memuat tabel baru rilis ini.
 
 ### SM-24 · Bulk Upload › Petani · Produksi · Lahan (tiap tab) · Pohon [P0] (3 mnt)
-Peran: ADMIN · Langkah: tiap tab terbuka, unduh template · Harapan: template terunduh.
+Peran: ADMIN · Langkah: tiap tab terbuka, unduh template (Produksi, Lahan, Pohon) · Harapan: template terunduh; Upload **Petani** tanpa template (pencocokan kolom dinamis, by design).
 
 ### SM-25 · Tools › Dashboard Snapshot · Snapshot BMP [P2] (1 mnt)
 Peran: SUPERADMIN · Langkah: daftar terbuka (tanpa generate) · Harapan: terbuka.
@@ -104,3 +104,9 @@ Peran: OPERATOR · Langkah: filter %/jenis/Distrik/Lembaga, klik 1 baris → pet
 
 ### SM-33 · Data Analyst › Rencana Pengembangan [P2] (1 mnt)
 Peran: MANAGEMENT · Langkah: pilih rilis lain (tombol atau combobox **Riwayat**), buka tab Analisa dan Semua Issue · Harapan: papan kanban (4 kolom) = tabel rilis di `docs/project/sprint.md`; strip header menampilkan tanggal dokumen & rilis yang dikejar; OPERATOR/DONOR **tidak** melihat menu ini.
+
+### SM-34 · Dashboard › Rantai Pasok [P1] (3 mnt)
+Peran: OPERATOR, lalu DONOR · Langkah: kartu KPI + Sorotan + Jalur TBS & Kepastian Mill terisi; klik node Sankey → chip filter di bawah bar filter; buka keempat tab Aliran TBS; Unduh Excel · Harapan: hanya Lembaga dalam scope; tidak tampil "Data prototipe rantai pasok belum tersedia"; DONOR **tanpa** tombol Unduh Excel. (Prototipe CSV — sumber `prototype/supply-chain/` di S3.)
+
+### SM-35 · Map › Peta Rantai Pasok [P1] (2 mnt)
+Peran: OPERATOR · Langkah: Ringkas → Detail, hover ikon Mill (tooltip), klik Mill → popup → **Jadikan filter**, ganti Basemap · Harapan: garis & ikon tetap tampil setelah ganti basemap; tonase peta = popup; konsol tanpa "Map source error".

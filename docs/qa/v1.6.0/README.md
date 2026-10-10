@@ -11,7 +11,13 @@
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v1.6.0`)
 
-_(belum ada run)_
+| Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
+|---|---|---:|---:|---:|---:|---:|
+| 2026-10-10-local.md | Smoke | 14 | 0 | 2 | 1 | 0 |
+| 2026-10-10-local.md | Kasus uji | 10 | 0 | 1 | 0 | 0 |
+| 2026-10-10-local.md | Regresi | 0 | 0 | 3 | 0 | 0 |
+
+Run lokal (build produksi `:3100`, SUPERADMIN): 2 temuan minor — strip legenda Peta melipat (diperbaiki), spesifikasi SM-24 (dikoreksi). Blocked = butuh login OPERATOR/DONOR (SM-28, SM-29, bagian DONOR TC-381-04) atau unduhan berkas; TC-REV-03/05/06 tidak dijalankan (area tak tersentuh rilis). **Run staging oleh owner belum ada.**
 
 ## Keputusan
 

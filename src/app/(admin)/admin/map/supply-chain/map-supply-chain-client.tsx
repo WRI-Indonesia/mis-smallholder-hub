@@ -724,10 +724,12 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
         </Popover>
       </div>
 
-      {/* Strip legenda mendatar di bawah tengah (owner 2026-10-10); digeser ke kanan selebar panel bila panel terbuka. */}
-      <div className="absolute bottom-6 z-10 -translate-x-1/2" style={{ left: `calc(50% + ${panelOpen ? PANEL_W / 2 + 12 : 0}px)` }}>
+      {/* Strip legenda mendatar di bawah tengah area peta yang bebas panel (owner 2026-10-10). Pembungkus membentang
+          dari tepi panel sampai tepi kanan dan memusatkan strip — dulu titik tengah + translate(-50%) membatasi lebar
+          strip ke jarak titik itu sampai tepi kanan, sehingga legenda terlipat 2–3 baris (QA lokal v1.6.0). */}
+      <div className="pointer-events-none absolute bottom-6 right-3 z-10 flex justify-center" style={{ left: panelOpen ? PANEL_W + 24 : 12 }}>
         {legendStored ? (
-          <div className="flex max-w-[calc(100vw-420px)] flex-wrap items-center gap-x-4 gap-y-1 rounded-full border bg-card/95 py-1.5 pl-4 pr-2 text-xs shadow backdrop-blur">
+          <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-2xl border bg-card/95 py-1.5 pl-4 pr-2 text-xs shadow backdrop-blur">
             {CHANNEL_ORDER.map((c) => (
               <span key={c} className="inline-flex items-center gap-1.5 text-muted-foreground">
                 <span className="inline-block h-1.5 w-5 rounded" style={{ background: channelColor(c, dark) }} /> {CHANNEL_LABEL[c].replace("Lewat ", "").replace("Langsung ke ", "→ ")}
@@ -744,7 +746,7 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
             </button>
           </div>
         ) : (
-          <button type="button" onClick={() => setLegendStored(true)} className="inline-flex items-center gap-1.5 rounded-full border bg-card/95 px-3 py-1.5 text-xs shadow backdrop-blur hover:bg-muted">
+          <button type="button" onClick={() => setLegendStored(true)} className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border bg-card/95 px-3 py-1.5 text-xs shadow backdrop-blur hover:bg-muted">
             <ListTree className="h-3.5 w-3.5" /> Legenda
           </button>
         )}
