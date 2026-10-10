@@ -8,7 +8,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 ### Rencana Rilis
 
-Terakhir diperbarui: 2026-10-09
+Terakhir diperbarui: 2026-10-10
 
 Rencana disusun **per rilis**, bukan per minggu (keputusan owner 2026-09-30): pengembangan dikerjakan satu orang sambil cleaning data dan kunjungan ke distrik, jadi ada minggu yang padat dan ada minggu tanpa coding sama sekali — ritme mingguan membuat minggu kosong tampak seperti sprint gagal. Setiap rilis punya **tanggal mulai dan target**; kemajuan diukur dalam poin, velocity dalam **poin per minggu kalender** rilis yang sudah lewat. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Riwayat: disusun 2026-09-28 dari triase 42 issue terbuka sebagai 6 sprint mingguan; 2026-09-30 dipetakan ke rilis — setiap rilis dimulai sehari setelah rilis sebelumnya (v1.1.0 dirilis 2026-09-23), agar velocity mencerminkan siklus sebenarnya (Sprint 1 selesai → v1.2.0, sisa Sprint 1 + Sprint 2–4 → v1.3.0, Sprint 5–6 → v1.4.0), backlog jadi tabel satu issue per baris, tabel Work Item diarsipkan. **v1.3.0 dirilis lebih awal 2026-09-30** (keputusan owner): sisa butirnya digeser ke rilis baru **v1.4.0** (10-01 → 10-25), sehingga Supply Chain menjadi **v1.5.0** dan penyangga akhir tahun **v1.6.0** (tanggal tetap). Setiap rilis berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner dan sebaiknya diputuskan di awal rilis.
 
@@ -82,14 +82,25 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
 | 1 | **#317** Tumpang tindih lahan — Fase 3 guard upload | Fitur | M | Dari v1.4.0 (Fase 2 ikut v1.4.0). Peringatan tumpang tindih saat upload shapefile, memakai `geom` GENERATED + GiST. **✅ 2026-10-08** (di `mvp`): `checkUploadParcelOverlaps` — baris valid diadu ke lahan DB + sesama baris berkas, ambang/label = laporan, revisi lahan sendiri dikecualikan; peringatan kuning (tabel, peta, Excel), tidak memblokir simpan; 2.000 poligon 396 ms; review `be8fe45`: identitas lahan lawan di luar scope disamarkan kecuali berizin laporan; diverifikasi di browser dengan berkas uji (tanpa simpan) | ✅ Selesai | — |
-| 2 | **#290** Basemap GIBS Fire Alert | Fitur | M | Dari v1.4.0. Tombol GIBS mengikuti tanggal rentang titik api + Bantuan `p-11`; langkah pertama roadmap GIS-01. **✅ 2026-10-08** (di `mvp`): tombol GIBS (VIIRS NOAA-20, 250 m — satu-satunya VIIRS dengan tile hari-ini utuh di atas Riau saat diuji), tanggal = akuisisi titik api terbaru (tanpa titik → kemarin / akhir bulan), chip tanggal + atribusi NASA GIBS, overzoom di atas z9; canvas tidak ter-taint (cetak PDF jalan). Sekalian diperbaiki: layer canvas hilang saat beralih basemap vector → raster (`labelBeforeId` basi, semua peta). Diverifikasi di browser | ✅ Selesai | — |
-| 3 | **#319** Report: default `coverage` ≠ `landParcelLegalWhere` | Kerapian | S | Dari v1.4.0. `coverage` wajib diisi, tanpa default. **✅ 2026-10-09** (di `mvp`): `coverage` wajib di tipe + server menolak filter tanpa `all`/`mapped`; `landParcelLegalWhere` pindah ke `src/lib/report-land-parcel-where.ts` dan pasangannya dengan teks `describeLegalFilters` dikunci test | ✅ Selesai | — |
-| 4 | **#315** Dua salinan `FilterCombobox` di panel peta | Kerapian | S | Dari v1.4.0. Pakai satu primitif `shared/filter-combobox.tsx`. **✅ 2026-10-09** (di `mvp`): primitif bersama + `label`/`required`/`popoverWidthClass`, kedua salinan peta dihapus; item "Semua …" = `__all__` (tak ikut tersaring pencarian) di semua halaman; diverifikasi di browser (Peta Lahan & Peta BMP) | ✅ Selesai | — |
-| 5 | **#310** Bantuan `t-3` tak menyinggung Upload List Peserta | Kerapian | S | Dari v1.4.0. Tambah langkah tab Upload List Peserta (#301). **✅ 2026-10-09** (di `mvp`): bagian "Langkah — mengunggah daftar peserta" (template, alias kolom ID + kolom pertama sebagai cadangan, status VALID/WARNING/ERROR, yang disimpan) + 3 troubleshooting; checklist Docs Compliance: cakupan Bantuan per alur, bukan per menu | ✅ Selesai | — |
-| 6 | **#366** Detail Lahan Siak — sisa APKASDU | Data | S | Dari v1.4.0. 1.360 baris APKASDU ditahan: lahan di-upload ulang 2026-10-02, berkas memakai ID lama → minta berkas ber-ID baru, lalu skrip idempoten yang sama (dry-run → dump prod → `--write`) → **v1.6.0** (berkas ber-ID baru belum ada; v1.5.0 dirilis 2026-10-09) | ⏭️ Digeser | ✅ Diputuskan 2026-10-07: APKASDU ditahan |
+| 2 | **#290** Basemap GIBS Fire Alert | Fitur | M | Dari v1.4.0. Tombol GIBS mengikuti tanggal rentang titik api + Bantuan `p-11`; langkah pertama roadmap GIS-01. **✅ 2026-10-08** (di `mvp`): tombol GIBS (VIIRS NOAA-20, 250 m — satu-satunya VIIRS dengan tile hari-ini utuh di atas Riau saat diuji), tanggal = akuisisi titik api terbaru (tanpa titik → kemarin / akhir bulan), chip tanggal + atribusi NASA GIBS, overzoom di atas z9; canvas tidak ter-taint (cetak PDF jalan). Sekalian diperbaiki: layer canvas hilang saat beralih basemap vector → raster (`labelBeforeId` basi, semua peta). Diverifikasi di browser | ✅ Selesai · ditutup 2026-10-10 (retro) | — |
+| 3 | **#319** Report: default `coverage` ≠ `landParcelLegalWhere` | Kerapian | S | Dari v1.4.0. `coverage` wajib diisi, tanpa default. **✅ 2026-10-09** (di `mvp`): `coverage` wajib di tipe + server menolak filter tanpa `all`/`mapped`; `landParcelLegalWhere` pindah ke `src/lib/report-land-parcel-where.ts` dan pasangannya dengan teks `describeLegalFilters` dikunci test | ✅ Selesai · ditutup 2026-10-10 (retro) | — |
+| 4 | **#315** Dua salinan `FilterCombobox` di panel peta | Kerapian | S | Dari v1.4.0. Pakai satu primitif `shared/filter-combobox.tsx`. **✅ 2026-10-09** (di `mvp`): primitif bersama + `label`/`required`/`popoverWidthClass`, kedua salinan peta dihapus; item "Semua …" = `__all__` (tak ikut tersaring pencarian) di semua halaman; diverifikasi di browser (Peta Lahan & Peta BMP) | ✅ Selesai · ditutup 2026-10-10 (retro) | — |
+| 5 | **#310** Bantuan `t-3` tak menyinggung Upload List Peserta | Kerapian | S | Dari v1.4.0. Tambah langkah tab Upload List Peserta (#301). **✅ 2026-10-09** (di `mvp`): bagian "Langkah — mengunggah daftar peserta" (template, alias kolom ID + kolom pertama sebagai cadangan, status VALID/WARNING/ERROR, yang disimpan) + 3 troubleshooting; checklist Docs Compliance: cakupan Bantuan per alur, bukan per menu | ✅ Selesai · ditutup 2026-10-10 (retro) | — |
+| 6 | **#366** Detail Lahan Siak — sisa APKASDU | Data | S | Dari v1.4.0. 1.360 baris APKASDU ditahan: lahan di-upload ulang 2026-10-02, berkas memakai ID lama → minta berkas ber-ID baru, lalu skrip idempoten yang sama (dry-run → dump prod → `--write`) → **v1.7.0** (berkas ber-ID baru belum ada; v1.5.0 dirilis 2026-10-09; penomoran ulang 2026-10-10) | ⏭️ Digeser | ✅ Diputuskan 2026-10-07: APKASDU ditahan |
 | 7 | **Rilis v1.5.0** | Rilis | M | Semua butir di atas → staging → prod. ✅ 2026-10-09: tanpa migrasi/seed; review rentang penuh (10 temuan, 7 diperbaiki); run lokal P0 20 Pass · 0 Fail · 7 Blocked; merge `mvp → staging` `319f57b` → deploy `37864003328` hijau 2m35s; data-qc staging ✓ (B9 ekspektasi dibetulkan); uji browser staging OPERATOR/DONOR tidak dijalankan (owner: lanjut PR) → PR #405 merge `81d0747` → deploy prod `37866588686` hijau 3m42s → tag `v1.5.0` + GitHub Release (2026-10-09). Sisa: run prod `--only P0` (kasus Blocked), retro + tutup #290 · #319 · #315 · #310 | ✅ Selesai | ✅ Diputuskan 2026-10-09 (owner): tuntaskan #319 · #315 · #310 dulu, lalu review rentang penuh → QA → staging → prod; #366 (menunggu berkas) tak memblokir |
 
-#### Rilis v1.6.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
+#### Rilis v1.6.0 · 2026-10-10 → 2026-10-25 — Prototipe Rantai Pasok diperluas & istilah "petani terdaftar"
+
+Keputusan owner 2026-10-10: batch prototipe di `mvp` sejak v1.5.0 (ada `feat:` → MINOR) dirilis sebagai **v1.6.0**; rencana Supply Chain versi DB bergeser ke **v1.7.0**, penyangga akhir tahun ke **v1.8.0** (isi tiap rilis tidak berubah).
+
+| # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
+| - | ----- | -------- | ---- | ------ | ------ | ------------------ |
+| 1 | **#381** Prototipe Rantai Pasok — Dashboard & Peta | Fitur | M | Tab Diagram Alur · Jalur · Tabel Pohon, chip filter global, tabel Volume per Mill & per Lembaga, Unduh Excel 3 sheet; Peta dirombak (panel lipat, garis lengkung beranimasi, hover, popup beraksi, kontrol kanan atas, legenda strip). **✅ 2026-10-10** (di `mvp`, `4aa8d69`..`ffd70ac`, dua putaran `/code-review`) | ✅ Selesai (prototipe; #381 tetap open untuk versi DB) | ✅ 2026-10-10: bawaan Distrik · Per jenis · UL/Non-UL · Ton, toolbar lepasan |
+| 2 | **#382** Prototipe Sorotan & jarak | Fitur | S | Konsentrasi · ketergantungan ≥ 80% ke pembeli luar · kepastian · jarak garis lurus (titik Lembaga). **✅ 2026-10-10** | ✅ Selesai (prototipe; #382 tetap open) | ✅ 2026-10-10: ambang 80% |
+| 3 | **#406** Istilah "petani aktif" → "petani terdaftar" | Kerapian | S | Teks UI, judul kolom Excel Monev BMP, Bantuan, docs. **✅ 2026-10-10** (`c473eef`, ditutup dengan retro) | ✅ Selesai | — |
+| 4 | **Rilis v1.6.0** | Rilis | M | Tanpa migrasi/seed/menu baru. `mvp → staging` 2026-10-10 → QA `docs/qa/v1.6.0/` (TC-381-01..08, TC-382-01..03; uji DONOR & peran lain oleh owner) → bump → PR `staging → main` → tag. Di staging sejak 2026-10-10 | 🟡 Dikerjakan | Go rilis |
+
+#### Rilis v1.7.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
@@ -100,9 +111,9 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 5 | **#381** Peta Rantai Pasok + Report | Fitur | L | Garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel | 🔲 Todo | Prototipe CSV (Dashboard Sankey + Peta, bukan DB) dirilis 2026-10-06 untuk diskusi; diperluas 2026-10-10 (4 tab Aliran, tabel Mill & Lembaga, Excel 3 sheet, Peta dirombak) — versi final menunggu #380 |
 | 6 | **#382** Analisa volume, jarak & risiko Mill | Fitur | M | Jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker, risiko NKT & tumpang tindih per Mill. Prototipe CSV 2026-10-10: Sorotan (konsentrasi · ketergantungan · kepastian · jarak titik Lembaga) + kolom Jarak | 🔲 Todo | ✅ Diputuskan 2026-10-10: ambang 80%, koperasi Lembaga sendiri dikecualikan |
 | 7 | **#366** Detail Lahan Siak — sisa APKASDU | Data | S | Dari v1.5.0. 1.360 baris APKASDU ditahan sampai ada berkas ber-ID lahan baru; skrip idempoten yang sama (dry-run → dump prod → `--write`) | 🔲 Todo | ✅ Diputuskan 2026-10-07: APKASDU ditahan |
-| 8 | **Rilis v1.6.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
+| 8 | **Rilis v1.7.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
 
-#### Rilis v1.7.0 · 2026-11-09 → 2026-12-20 — Penyangga akhir tahun: tuntaskan fase K4 2026 & siapkan 2027
+#### Rilis v1.8.0 · 2026-11-09 → 2026-12-20 — Penyangga akhir tahun: tuntaskan fase K4 2026 & siapkan 2027
 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
@@ -111,9 +122,9 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 3 | **#317** Tumpang tindih lahan — Fase 4 layer Peta Lahan | Fitur | M | Layer tumpang tindih di Peta Lahan → #317 & fase DA-09 tuntas | 🔲 Todo | — |
 | 4 | Concept note **GIS-02 Deforestation** | Fitur | S | Sumber data tutupan hutan + lisensi, tahun *cut-off*, ambang luas, butuh GeoServer (GIS-04) atau tidak → issue induk | 🔲 Todo | Sumber data & cut-off |
 | 5 | Concept note **MD-12 Certification** | Fitur | S | Skema (RSPO/ISPO), unit sertifikasi Lembaga vs petani, siklus audit & temuan, dokumen S3 → issue induk | 🔲 Todo | Cakupan skema |
-| 6 | **Rilis v1.7.0** | Rilis | M | Semua butir di atas + limpahan v1.5.0/v1.6.0 yang digeser ke sini | 🔲 Todo | Go rilis |
+| 6 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas + limpahan v1.6.0/v1.7.0 yang digeser ke sini | 🔲 Todo | Go rilis |
 
-#### Backlog terurut (setelah v1.7.0)
+#### Backlog terurut (setelah v1.8.0)
 
 | # | Issue | Status | Catatan |
 | - | ----- | ------ | ------- |
