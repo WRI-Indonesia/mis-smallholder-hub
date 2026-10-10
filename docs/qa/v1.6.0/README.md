@@ -24,10 +24,13 @@ Run staging 2026-10-10 (`b6f53b9`, sesi owner SUPERADMIN): 0 Fail; 1 temuan mino
 
 ## Keputusan
 
-**Go / No-go:** … (tanggal, oleh siapa) — syarat: …
+**Go / No-go:** **Go** — 2026-10-10, owner (rilis hari yang sama dengan v1.5.1, pengecualian tercatat di Decision Log). Tanpa migrasi; run prod `--only P0` diisi ≤ 1 jam setelah deploy.
 
 ## Known issues yang dibawa
 
 | Issue | Dampak ke pengguna | Kenapa ditunda |
 |---|---|---|
-| | | |
+| #386 butir 2 · #409 | Pemegang izin tulis Settings Users / Lembaga yang ber-scope bisa menulis di luar batasnya (bukan baca) | dijadwalkan v1.8.0 (PLATFORM-08) |
+| #384 | Filter Peta BMP memakai izin Peta Lahan | v1.8.0 |
+| #410 | Pohon menu bisa terbaca tanpa login (judul/URL saja) | rendah, Backlog |
+| TD-057 | Izin EXPORT Dashboard Rantai Pasok hanya menyembunyikan tombol (data CSV prototipe) | sampai versi DB #381 (v1.7.0) |
