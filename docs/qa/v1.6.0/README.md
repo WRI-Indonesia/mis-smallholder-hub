@@ -20,7 +20,7 @@
 | 2026-10-10-staging.md | Kasus uji | 10 | 0 | 1 | 0 | 0 |
 | 2026-10-10-staging.md | Regresi | 0 | 0 | 3 | 0 | 0 |
 
-Run staging 2026-10-10 (`b6f53b9`, sesi owner SUPERADMIN): 0 Fail; 1 temuan minor baru — popup peta tak di-auto-pan dari tepi kanan/atas/bawah sejak v1.5.0 (diperbaiki `4e218cf`, cek ulang di staging). Masih Blocked: SM-28 OPERATOR, SM-29 DONOR, TC-381-04 (unduhan + DONOR). Run lokal (build produksi `:3100`, SUPERADMIN): 2 temuan minor — strip legenda Peta melipat (diperbaiki), spesifikasi SM-24 (dikoreksi). Blocked = butuh login OPERATOR/DONOR (SM-28, SM-29, bagian DONOR TC-381-04) atau unduhan berkas; TC-REV-03/05/06 tidak dijalankan (area tak tersentuh rilis). **Run staging oleh owner belum ada.**
+Run staging 2026-10-10 (`b6f53b9`, sesi owner SUPERADMIN): 0 Fail; 1 temuan minor baru — popup peta tak di-auto-pan dari tepi kanan/atas/bawah sejak v1.5.0 (diperbaiki `4e218cf`, cek ulang staging `c4211fb` lulus) dan koreksi spesifikasi TC-381-04 (temuan 4). Unduhan Excel tanpa filter & Siak lulus. Masih Blocked: SM-28 OPERATOR, SM-29 DONOR, bagian DONOR TC-381-04. Run lokal (build produksi `:3100`, SUPERADMIN): 2 temuan minor — strip legenda Peta melipat (diperbaiki), spesifikasi SM-24 (dikoreksi). Blocked = butuh login OPERATOR/DONOR (SM-28, SM-29, bagian DONOR TC-381-04) atau unduhan berkas; TC-REV-03/05/06 tidak dijalankan (area tak tersentuh rilis). **Run staging oleh owner belum ada.**
 
 ## Keputusan
 
