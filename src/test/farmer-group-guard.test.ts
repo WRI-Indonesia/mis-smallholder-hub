@@ -171,6 +171,40 @@ describe("updateFarmerGroup — EDIT + Zod + scope by id", () => {
   });
 });
 
+describe("#409 — distrik tujuan Lembaga harus dalam scope (create & update)", () => {
+  it("create BY_DISTRICT ke distrik di luar scope → ditolak, tanpa tulis", async () => {
+    getAccessContext.mockResolvedValue(BY_DISTRICT);
+    expect(await createFarmerGroup({ ...VALID, districtId: "D2" })).toMatchObject({ success: false, error: expect.stringMatching(/Distrik tidak dalam akses/) });
+    expect(db.farmerGroup.create).not.toHaveBeenCalled();
+  });
+
+  it("create BY_DISTRICT ke distrik scope → dibuat", async () => {
+    getAccessContext.mockResolvedValue(BY_DISTRICT);
+    expect(await createFarmerGroup(VALID)).toEqual({ success: true });
+    expect(db.farmerGroup.create).toHaveBeenCalledOnce();
+  });
+
+  it("create BY_FARMER_GROUP → ditolak (Lembaga baru tak akan masuk scope Lembaga pengguna)", async () => {
+    getAccessContext.mockResolvedValue(BY_GROUP);
+    expect(await createFarmerGroup(VALID)).toMatchObject({ success: false, error: expect.stringMatching(/dibatasi per Lembaga/) });
+    expect(db.farmerGroup.create).not.toHaveBeenCalled();
+  });
+
+  it("update BY_DISTRICT: pindah Lembaga ke distrik di luar scope → ditolak, tanpa tulis", async () => {
+    getAccessContext.mockResolvedValue(BY_DISTRICT);
+    expect(await updateFarmerGroup({ ...VALID, id: "G2", districtId: "D2" })).toMatchObject({ success: false, error: expect.stringMatching(/Distrik tidak dalam akses/) });
+    expect(db.farmerGroup.update).not.toHaveBeenCalled();
+  });
+
+  it("update BY_FARMER_GROUP: ganti distrik Lembaga sendiri → ditolak; distrik tetap → boleh", async () => {
+    getAccessContext.mockResolvedValue(BY_GROUP);
+    expect(await updateFarmerGroup({ ...VALID, id: "G1", districtId: "D2" })).toMatchObject({ success: false, error: expect.stringMatching(/dibatasi per Lembaga/) });
+    expect(db.farmerGroup.update).not.toHaveBeenCalled();
+    expect(await updateFarmerGroup({ ...VALID, id: "G1", name: "Nama Baru" })).toEqual({ success: true });
+    expect(db.farmerGroup.update).toHaveBeenCalledOnce();
+  });
+});
+
 describe("toggleFarmerGroupActive — DELETE + scope, soft delete", () => {
   it("tanpa DELETE → error, tanpa kueri", async () => {
     hasPermission.mockResolvedValue(false);

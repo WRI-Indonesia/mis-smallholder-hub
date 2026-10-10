@@ -18,6 +18,21 @@ export function farmerGroupAccessFilter(access: AccessContext) {
 }
 
 /**
+ * Boleh menaruh Lembaga di `districtId` ini? Dipakai aksi TULIS Lembaga (#409):
+ * filter baca saja tidak cukup — distrik tujuan dari klien juga harus dalam scope.
+ * - ALL → selalu boleh.
+ * - BY_DISTRICT → distrik tujuan harus salah satu distrik scope.
+ * - BY_FARMER_GROUP → scope berupa Lembaga, bukan wilayah: membuat Lembaga baru
+ *   ditolak (Lembaga baru tak akan masuk scope), mengubah hanya boleh bila distrik
+ *   tetap (`currentDistrictId` = distrik Lembaga saat ini).
+ */
+export function canPlaceGroupInDistrict(access: AccessContext, districtId: string, currentDistrictId?: string): boolean {
+  if (access.mode === "ALL") return true;
+  if (access.mode === "BY_DISTRICT") return access.ids.includes(districtId);
+  return currentDistrictId !== undefined && districtId === currentDistrictId;
+}
+
+/**
  * Cermin `farmerGroupAccessFilter` untuk kueri SQL mentah (PostGIS) yang tidak
  * bisa memakai objek where Prisma: daftar id Lembaga / distrik, `undefined` =
  * tanpa batasan. Satu sumber agar mode akses baru tidak bocor di jalur mentah

@@ -16,6 +16,7 @@ import {
   farmerGroupAccessFilter,
   getAccessibleDistrictIds,
 } from "@/lib/access-context";
+import { canPlaceGroupInDistrict } from "@/lib/access-scope";
 import { buildFarmerGroupDetail } from "@/lib/farmer-group-detail";
 import { computeCompleteness } from "@/lib/data-completeness";
 import type { CompletenessGroupInput } from "@/types/data-completeness";
@@ -345,6 +346,15 @@ export async function createFarmerGroup(input: FarmerGroupInput) {
   const parsed = farmerGroupSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
+  // Distrik tujuan dari klien harus dalam scope (#409) — sama dengan validasi Lembaga tujuan di createFarmer.
+  const access = await getAccessContext();
+  if (!canPlaceGroupInDistrict(access, parsed.data.districtId)) {
+    const error = access.mode === "BY_FARMER_GROUP"
+      ? "Akun Anda dibatasi per Lembaga Petani sehingga tidak bisa menambah Lembaga baru"
+      : "Distrik tidak dalam akses Anda";
+    return { success: false, error };
+  }
+
   const session = await auth();
 
   await prisma.farmerGroup.create({
@@ -373,9 +383,16 @@ export async function updateFarmerGroup(input: UpdateFarmerGroupInput) {
   // Verify group exists, is active, and is within the user's scope before updating
   const existing = await prisma.farmerGroup.findFirst({
     where: { id, isActive: true, AND: farmerGroupAccessFilter(access) },
-    select: { id: true },
+    select: { id: true, districtId: true },
   });
   if (!existing) return { success: false, error: "Lembaga Petani tidak ditemukan atau tidak dalam akses Anda" };
+  // Distrik baru juga harus dalam scope (#409): tanpa ini Lembaga bisa dipindah keluar wilayah pengguna.
+  if (!canPlaceGroupInDistrict(access, data.districtId, existing.districtId)) {
+    const error = access.mode === "BY_FARMER_GROUP"
+      ? "Akun Anda dibatasi per Lembaga Petani sehingga tidak bisa memindahkan distrik Lembaga"
+      : "Distrik tidak dalam akses Anda";
+    return { success: false, error };
+  }
 
   await prisma.farmerGroup.update({
     where: { id },

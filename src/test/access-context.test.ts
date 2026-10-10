@@ -3,6 +3,7 @@ import {
   farmerGroupAccessFilter,
   farmerAccessFilter,
   farmerRelationAccessFilter,
+  canPlaceGroupInDistrict,
   type AccessContext,
 } from "@/lib/access-scope";
 
@@ -74,6 +75,24 @@ describe("farmerGroupAccessFilter", () => {
   });
   it("BY_DISTRICT → batasi districtId", () => {
     expect(farmerGroupAccessFilter(BY_DIST)).toEqual({ districtId: { in: ["d1"] } });
+  });
+});
+
+describe("canPlaceGroupInDistrict (#409 — distrik tujuan aksi tulis Lembaga)", () => {
+  it("ALL → selalu boleh", () => {
+    expect(canPlaceGroupInDistrict({ mode: "ALL" }, "d9")).toBe(true);
+  });
+  it("BY_DISTRICT → hanya distrik scope", () => {
+    const a: AccessContext = { mode: "BY_DISTRICT", ids: ["d1", "d2"] };
+    expect(canPlaceGroupInDistrict(a, "d2")).toBe(true);
+    expect(canPlaceGroupInDistrict(a, "d9")).toBe(false);
+    expect(canPlaceGroupInDistrict(a, "d9", "d1")).toBe(false);
+  });
+  it("BY_FARMER_GROUP → buat baru ditolak; ubah hanya bila distrik tetap", () => {
+    const a: AccessContext = { mode: "BY_FARMER_GROUP", ids: ["kt-1"] };
+    expect(canPlaceGroupInDistrict(a, "d1")).toBe(false);
+    expect(canPlaceGroupInDistrict(a, "d1", "d1")).toBe(true);
+    expect(canPlaceGroupInDistrict(a, "d2", "d1")).toBe(false);
   });
 });
 

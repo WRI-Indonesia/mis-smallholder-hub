@@ -23,7 +23,7 @@ Secara bawaan akun SUPERADMIN dan ADMIN yang bisa menambah atau mengubah lembaga
 2. Isi seksi **Identitas**: **Nama Lembaga Petani** (wajib, minimal 2 karakter), lalu Kode, Singkatan, dan Abrv 3ID bila ada.
 + Sistem tidak memeriksa duplikat — dua lembaga boleh punya nama atau kode yang sama. Disiplin penomoran kode harus dijaga manual; sepakati polanya dulu dengan tim sebelum mengisi.
 3. Pilih **Distrik** (wajib), **Kategori** (Ex Plasma / Swadaya, wajib), dan **Tipe Grup** (Asosiasi / Koperasi) bila diketahui.
-+ Distrik bukan sekadar alamat: seluruh pembatasan hak akses bertumpu padanya. Salah memilih distrik bisa membuat lembaga langsung "hilang" dari pandangan Anda sendiri dan muncul di dashboard pengguna distrik lain.
++ Distrik bukan sekadar alamat: seluruh pembatasan hak akses bertumpu padanya. Salah memilih distrik membuat lembaga muncul di dashboard pengguna distrik lain. Daftar Distrik hanya berisi distrik dalam wilayah akses akun Anda, dan sistem menolak distrik di luar wilayah itu.
 4. Isi **Tahun Berdiri Lembaga** dan **Tahun Bergabung Program** bila diketahui.
 5. Isi **Sertifikasi & Assurance** (RSPO, ISPO, SAP/MAP) bila lembaga sudah punya status.
 + Aturannya satu arah: status tanpa tahun boleh, tetapi tahun tanpa status ditolak saat menyimpan. Status inilah yang menjadi sumber kartu sertifikasi di Main Dashboard.
@@ -42,6 +42,8 @@ Secara bawaan akun SUPERADMIN dan ADMIN yang bisa menambah atau mengubah lembaga
 
 **Lembaga baru tidak muncul di Main Dashboard** — wajar; dashboard membaca snapshot. Generate snapshot baru lewat menu Tools (lihat tutorial **Memperbarui angka dashboard**).
 
-**Lembaga hilang setelah dibuat** — kemungkinan distriknya di luar wilayah akses akun Anda. Minta SUPERADMIN memeriksa dan memindahkan distriknya.
+**Muncul "Distrik tidak dalam akses Anda"** — distrik yang dipilih di luar wilayah akses akun Anda; pilih distrik lain, atau minta SUPERADMIN menambah wilayah akun.
+
+**Muncul "Akun Anda dibatasi per Lembaga Petani…"** — akun yang dibatasi per Lembaga tidak bisa menambah Lembaga baru dan tidak bisa memindahkan distrik Lembaganya; minta SUPERADMIN atau ADMIN berwilayah yang melakukannya.
 
 **Titik lembaga tidak muncul di peta** — koordinat belum diisi, atau Latitude/Longitude tertukar. Buka Edit dan periksa kembali kedua angkanya.
