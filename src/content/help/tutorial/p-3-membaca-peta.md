@@ -36,7 +36,7 @@ Hanya lahan yang berasal dari unggahan shapefile yang muncul di peta.
 
 ## Memilih peta dasar
 
-Deretan tombol di pojok kanan peta (kanan-bawah di Peta Lahan, Peta BMP, dan Fire Alert; kanan-atas di peta lainnya) mengganti **peta dasar** — latar di belakang data Anda. Pilihannya sama di semua halaman peta:
+Deretan tombol di pojok kanan peta (kanan-bawah di Peta Lahan, Peta BMP, dan Fire Alert; kanan-atas di peta lainnya; di Peta Rantai Pasok kelima pilihan ada di balik tombol **Basemap** di kanan atas) mengganti **peta dasar** — latar di belakang data Anda. Pilihannya sama di semua halaman peta:
 
 | Tombol | Isinya | Paling cocok untuk |
 | --- | --- | --- |

@@ -15,7 +15,7 @@ Dashboard Pelatihan menjawab pertanyaan "program sudah sejauh mana, dan lembaga 
 
 Angka di sini **dihitung langsung** saat halaman dibuka — tidak memakai snapshot.
 
-+ Jadi hasil input pelatihan hari ini langsung terlihat di sini, tanpa perlu proses tambahan apa pun. Ini satu-satunya dashboard yang berperilaku demikian.
++ Jadi hasil input pelatihan hari ini langsung terlihat di sini, tanpa perlu proses tambahan apa pun — sama seperti Dashboard Monev BMP, berbeda dari Main Dashboard dan BMP Dashboard yang memakai snapshot.
 
 ## Langkah
 

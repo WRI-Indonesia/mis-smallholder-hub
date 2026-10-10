@@ -15,7 +15,7 @@ Main Dashboard dan BMP Dashboard membaca **snapshot** — rekaman angka pada sat
 
 + Ini pilihan sadar agar halaman tetap ringan meski data program besar. Konsekuensinya, setelah input data besar seseorang harus membuat snapshot baru. Dashboard Pelatihan tidak termasuk: ia menghitung langsung, jadi selalu terkini.
 
-Membuat snapshot butuh izin CREATE pada menu Tools — secara bawaan hanya ADMIN dan SUPERADMIN; peran lain tidak melihat menu Tools sama sekali.
+Membuat snapshot butuh izin CREATE pada menu **Dashboard Snapshot** di grup Tools — secara bawaan hanya ADMIN dan SUPERADMIN; peran lain tidak melihat menu Tools sama sekali.
 
 ## Langkah
 

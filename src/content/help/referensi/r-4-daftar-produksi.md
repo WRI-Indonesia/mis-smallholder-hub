@@ -17,7 +17,7 @@ Data di halaman ini **selalu terkini**. Yang membaca snapshot berkala adalah Mai
 
 **Lembaga Petani** — mempersempit ke satu lembaga. Pilihannya ikut menyempit bila Distrik sudah dipilih.
 
-**Pilih bulan** — menampilkan satu periode panen saja.
+**Filter bulan** (pemilih bulan-tahun di samping filter Lembaga) — menampilkan satu periode panen saja.
 
 **Lahan** — memisahkan data yang sudah/belum terhubung ke persil (Terpetakan / Belum Terpetakan). **Status** hanya untuk SUPERADMIN.
 

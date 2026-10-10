@@ -29,7 +29,7 @@ Secara bawaan akun SUPERADMIN dan ADMIN yang bisa menambah atau mengubah lembaga
 + Aturannya satu arah: status tanpa tahun boleh, tetapi tahun tanpa status ditolak saat menyimpan. Status inilah yang menjadi sumber kartu sertifikasi di Main Dashboard.
 6. Isi **Latitude** lalu **Longitude** lokasi sekretariat lembaga.
 + Koordinat ini menentukan titik lembaga di peta Main Dashboard, Peta Lahan, dan Peta BMP — tanpa koordinat, lembaga tidak tergambar di peta. Perhatikan urutannya: form meminta Latitude (sekitar -6 s.d. 6 untuk Indonesia) lalu Longitude (sekitar 95 s.d. 141); tertukar berarti titiknya melompat ke belahan bumi lain.
-7. Klik **Buat**. Lembaga langsung muncul di daftar, dan klik nama/ikon mata untuk membuka halaman detailnya.
+7. Klik **Buat**. Lembaga langsung muncul di daftar; klik ikon mata (**Lihat**) di kolom Aksi untuk membuka halaman detailnya.
 + Halaman detail menampilkan 5 kartu ringkasan dan 5 tab (Ringkasan, Petani, Lahan, Pelatihan, Produksi) yang terisi otomatis seiring data lain masuk. Kartu Kelengkapan Data menautkan ke halaman analisanya.
 
 > [!penting] Kode, Singkatan, Koordinat, dan Tahun Bergabung ikut dinilai dalam skor **Kelengkapan Data** lembaga. Mengosongkannya tidak menghalangi penyimpanan, tetapi langsung menurunkan skor di halaman Analisa.

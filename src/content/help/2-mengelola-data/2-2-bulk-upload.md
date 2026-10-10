@@ -18,4 +18,4 @@ intro: Untuk data dalam jumlah banyak, gunakan Bulk Upload alih-alih input satu 
 
 **Siapa yang bisa** — Secara bawaan menu Bulk Upload hanya ada untuk SUPERADMIN dan ADMIN.
 
-**Data ganda** — Sistem menolak data yang sudah ada (mis. lahan aktif dengan ID sama, atau produksi pada lahan dan bulan yang sama) agar tidak terjadi perhitungan ganda.
+**Data ganda** — Sistem menolak data yang benar-benar sama (mis. lahan dengan ID dan poligon identik, atau produksi pada lahan, bulan, dan **Panen Ke-** yang sama) agar tidak terjadi perhitungan ganda. ID Lahan sama dengan poligon berbeda disimpan sebagai revisi baru.

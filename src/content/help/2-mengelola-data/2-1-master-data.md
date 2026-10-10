@@ -4,7 +4,7 @@ icon: Database
 intro: Menu Master Data adalah tempat input harian: Lembaga Petani, Petani, Lahan, Pelatihan, Produksi, dan Monev BMP. Semua daftar punya pola yang sama.
 ---
 
-**Menambah data** — Klik tombol Tambah di kanan atas daftar, isi formulir, lalu Simpan. Kolom bertanda wajib harus diisi.
+**Menambah data** — Klik tombol Tambah di kanan atas daftar, isi formulir, lalu klik **Buat** (atau **Simpan** saat mengubah data). Kolom bertanda wajib harus diisi.
 
 **Mencari & menyaring** — Gunakan kotak pencarian di atas tabel; tombol Kolom untuk menampilkan atau menyembunyikan kolom (daftar Lembaga Petani dan Petani punya kolom tersembunyi **Lahan NKT** — jumlah lahan termasuk/terdampak NKT, badge merah bila ada — untuk menemukan lembaga/petani yang perlu tindak lanjut NKT tanpa membuka detail satu per satu); klik judul kolom untuk mengurutkan. Daftar Petani, Pelatihan, Lahan, dan Produksi juga punya pasangan filter **Distrik → Lembaga Petani** yang saling terkait: memilih Distrik menyaring pilihan Lembaga, dan pilihan Lembaga yang tak lagi sesuai otomatis kembali ke "Semua". Keduanya bisa dicari dengan mengetik. Tombol **Excel** untuk mengunduh isi daftar hanya tampil bila akun Anda punya izin **Export** pada menu tersebut.
 
