@@ -4,13 +4,13 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-09-29 · **Next management review:** 2026-10-13
+**Last updated:** 2026-10-10 · **Next management review:** 2026-10-13
 
-**Perubahan terakhir (2026-09-29):** ditulis ulang setelah audit docs menyeluruh — periode **v0.35.0 → v1.1.0** (2026-09-15 s.d. 2026-09-23), termasuk **v1.0.0 milestone MVP**. Sejak 2026-09-30 pengembangan direncanakan **per rilis** dengan tanggal mulai & target ([sprint.md](./sprint.md), juga tampil di menu Data Analyst › Rencana Pengembangan; 2026-09-28 → 09-29 sempat memakai sprint mingguan). Riwayat lengkap → [`changelog.md`](./changelog.md).
+**Perubahan terakhir (2026-10-10):** ditulis ulang untuk periode **2026-09-30 s.d. 2026-10-10** — lima rilis (v1.3.0 · v1.4.0 · v1.5.0 · v1.5.1 hotfix · v1.6.0) dan baseline **Roadmap 2026–2027** (reset 2026-09-30; baseline MVP 88,5% beku di [roadmap-mvp.md](./roadmap-mvp.md)). Brief sebelumnya (periode v0.35.0 → v1.1.0) ada di riwayat git.
 
 **Source of truth:** tabel **Phase Status** di [`roadmap.md`](./roadmap.md). **Panduan update & checklist:** [`contributing.md`](./contributing.md).
 
-**Audit basis:** source code, Prisma schema, route files, server actions, scripts, GitHub workflow, status issue GitHub, dan hasil test lokal.
+**Audit basis:** source code, Prisma schema, route files, server actions, scripts, GitHub workflow, status issue GitHub, hasil test lokal, dan lembar run QA di `docs/qa/`.
 
 ---
 
@@ -22,67 +22,70 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Item               | Nilai                                                       |
 | ------------------ | ----------------------------------------------------------- |
-| Periode laporan    | 2026-09-15 s.d. 2026-09-29                                  |
-| Status keseluruhan | 🟢 On Track — **v1.0.0 (MVP) dan v1.1.0 live di produksi** 2026-09-23; Roadmap **88,5%** |
-| Basis review       | Audit docs ↔ code 2026-09-29 (roadmap Phase Status, status issue GitHub, `metrics.md`) |
-| Test lokal         | ✅ **1.868 test** saat rilis v1.1.0 · lint 0 error · typecheck ✅ · build ✅ |
-| Fokus berikutnya   | **v1.2.0 live 2026-09-29**; staging pulih 2026-09-30 (RAM 4 GB, #363) & sejajar v1.2.0; Sprint 2: jalur rilis (#277, #376), #342, #390 |
+| Periode laporan    | 2026-09-30 s.d. 2026-10-10                                  |
+| Status keseluruhan | 🟢 On Track — **v1.6.0 live di produksi** 2026-10-10 (lima rilis dalam 11 hari, semua lewat gate lokal + QA staging); Roadmap 2026–2027 **18,6%** (dari 8,6% saat reset) |
+| Basis review       | Audit docs ↔ code 2026-10-10 (roadmap Phase Status, status issue GitHub, `metrics.md`, run QA v1.6.0 lokal/staging/prod) |
+| Test lokal         | ✅ **2.804 test** saat rilis v1.6.0 (dari 2.461 di v1.3.0) · lint 0 error · typecheck ✅ · build ✅ |
+| Fokus berikutnya   | **v1.6.1** PATCH (2026-10-11 → 10-25): celah RBAC laten #409 · #386 butir 2 (kode sudah di `mvp`), #384, #387, batch TD #412; lalu **v1.7.0** Supply Chain versi DB (10-26 → 11-08) |
 
 ### Ringkasan Eksekutif
 
 | Area                | Status          | Ringkasan                                                                                                                                  |
 | ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Platform foundation | ✅ Ready        | Auth, RBAC 5 role (termasuk DONOR), izin 6 level (termasuk EXPORT/PRINT), menu 3 level, user & region management. |
-| Master data inti    | ✅ Complete     | Lembaga Petani, Petani, Lahan (+ legalitas, sepadan, NKT, patok, pohon), Pelatihan, Produksi, **Monev BMP** (skor per petani + 32 indikator). |
-| Dashboard           | ✅ Complete     | Main, BMP Produksi, Pelatihan, **Monev BMP**, **Fire Alert** (titik api vs boundary ICS, laporan bulanan). |
-| Report              | ✅ Complete     | Petani, Pelatihan, Produksi, Kelompok Tani (Summary/Detail), Lahan (+ Laporan NKT), **Patok**; Excel per KT/Blok; **Profil Petani PDF**. |
-| Bulk Upload         | 🟠 Hampir lengkap | Petani, Produksi, Lahan (shapefile + Detail Lahan), Pohon. **BULK-02** (Region & Lembaga/KT) belum ada — issue-nya ditutup *not planned*, perlu keputusan. |
-| Map & Data Analyst  | ✅ Complete     | Peta Lahan & Peta BMP; Ringkasan Petani, Ketersediaan Data (per/semua Lembaga), Komparasi Data Acuan, Peta Data & Skema, Metrik Rilis; **Tumpang Tindih Lahan** & **Rencana Pengembangan** (dulu Sprint Mingguan) dirilis v1.2.0; label baru menunggu seed v1.3.0. |
-| Bantuan (HELP)      | ✅ Complete     | Panduan in-app tutorial/konsep/referensi (64 berkas materi), dijaga test cakupan menu. |
-| Keamanan            | 🟡 Perlu tindakan | Di `mvp` (v1.2.0): struktur menu dikunci dari UI (#364), kunci S3 bukti pelatihan divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). v1.3.0: role & status aktif dibaca ulang dari DB ≤ 1 menit (#342), seed memakai akun fiktif + password dari env (#390, ditutup 2026-10-07 — keputusan owner). **Terbuka:** celah RBAC laten filter vs scope & eskalasi role (#386), guard filter Peta BMP (#384) — v1.6.0. |
-| Testing & QA        | ✅ Strong       | Gate lokal lint/build/typecheck/test; paket QA manual per rilis di `docs/qa/` (smoke + kasus uji + QC data + sign-off). |
+| Platform foundation | ✅ Ready        | Auth, RBAC 5 role, izin 6 level, menu 3 level (+ grup **Platform Developer** v1.4.0), user & region management. Role/status dibaca ulang dari DB ≤ 1 menit (#342). |
+| Master data inti    | ✅ Complete     | Lembaga Petani, Petani, Lahan (+ legalitas, sepadan, NKT, patok, pohon), Pelatihan, Produksi, Monev BMP, **Target Program** (kontrak per paket, v1.4.0). |
+| Dashboard           | ✅ Complete     | Main, BMP Produksi (produktivitas **disetahunkan** Ton/Ha/tahun), Pelatihan (+ **Training Benefit per year** & vs Kontrak), Monev BMP, Fire Alert (+ latar satelit harian **GIBS**, v1.5.0), **Rantai Pasok** (prototipe CSV, v1.4.0–v1.6.0). |
+| Report              | ✅ Complete     | Petani, Pelatihan, Produksi, Kelompok Tani, Lahan (+ NKT), Patok; Excel per KT/Blok; Profil Petani PDF; istilah seragam "petani terdaftar" (#406). |
+| Bulk Upload         | ✅ Complete     | Petani, Produksi (parser tanggal DD/MM diperbaiki, #400), Lahan (shapefile + Detail Lahan; **peringatan tumpang tindih saat upload**, #317 Fase 3), Pohon. BULK-02 diparkir (keputusan 2026-09-30). |
+| Map & Data Analyst  | ✅ Complete     | Peta Lahan, Peta BMP, **Peta Rantai Pasok** (prototipe, dirombak v1.6.0); Tumpang Tindih Lahan lengkap 3 tab (#317 Fase 2); Ketersediaan Data, Komparasi, Metrik Rilis per baseline (#392), Rencana Pengembangan per rilis. |
+| Bantuan (HELP)      | ✅ Complete     | Panduan in-app tutorial/konsep/referensi (69 berkas materi), dijaga test cakupan menu; 25 koreksi dari audit 2026-10-10. |
+| Keamanan            | 🟡 Perlu tindakan | **Hotfix v1.5.1** (2026-10-10): filter scope Lembaga tertimpa key filter literal di beberapa kueri Report/Peta/Data Analyst (#408, kelas BUG-007). Sisa laten → **v1.6.1**: distrik tujuan Lembaga dalam scope (#409) & anti-eskalasi pengelolaan pengguna (#386) — kode sudah di `mvp`, menunggu QA; guard Peta BMP (#384). |
+| Data prod           | 🟢 Membaik      | DQ-01: 2.213 tanggal lahir tertukar diperbaiki (#354), Detail Lahan Siak 9 Lembaga (#366; APKASDU ditahan), Monev BMP Kampar 2026 (279 penilaian), tahun tanam/alamat/KT belasan Lembaga diisi dari berkas fasilitator. |
+| DevOps              | ✅ Done         | OPS-02 Done: guard `migrate status` di deploy staging & prod (#277/#394), prosedur rollback teruji di staging (#232), RAM staging 4 GB (#363), cek migrasi vs tag (#376). |
+| Testing & QA        | ✅ Strong       | Gate lokal lint/build/typecheck/test; paket QA manual per rilis (`docs/qa/`), run prod P0 ≤ 1 jam pasca-deploy; audit `/audit` mingguan + 126 test guard 3 lapis baru. |
 
 ### Snapshot Progres
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
-| Total phase    | 51 fase        | PLATFORM(7), MD(11), DASH(8), MAP(3), RPT(5), HELP(2), BULK(4), DA(5), TOOLS(1), CMS(1), COMM(2), OPS(2) |
-| ✅ Done        | **40 fase**    | Seluruh PLATFORM, MD-01…06, DASH-01…08, MAP-01…03, RPT-01…05, HELP-01/02, BULK-01/03/04, DA-01/02/03/06/07, OPS-01 |
-| 🟠 Partial     | 3 fase         | MD-08 (NKT & patok sudah ada), TOOLS-01, OPS-02 |
-| 🔲 Not Started | 3 fase         | BULK-02, CMS-01, COMM-01 |
-| 🔲 Planned     | 5 fase         | MD-07, MD-09, MD-10, MD-11, COMM-02 |
+| Total phase    | 26 fase        | Roadmap 2026–2027 (reset 2026-09-30): Now 8 · Next 7 · Later 11 |
+| ✅ Done        | **1 fase**     | OPS-02 (2026-10-07) |
+| 🟠 Partial     | 6 fase         | PLATFORM-08, PLATFORM-09, DQ-01, DA-09, GIS-01, MD-08 |
+| 🔲 Not Started | 3 fase         | SC-01, SC-02, SC-03 (Supply Chain — prototipe CSV sudah live, versi DB di v1.7.0) |
+| 🔲 Planned     | 16 fase        | Horizon Next/Later (DA-05, DA-08, MAP-04, GIS-02, MD-12, PLATFORM-10, FORM-01, MD-07/10/11/13/14/15/16, GIS-03/04) |
 | 🔴 Blocked     | 0 fase         | — |
-| Roadmap %      | **88,5%**      | Dihitung dari Phase Status (bobot inti ×2) — [metrics.md](./metrics.md) |
+| Roadmap %      | **18,6%**      | Dihitung dari Phase Status (bobot inti ×2) — [metrics.md](./metrics.md); RVS kumulatif 5.418 |
 
-> **Reset 2026-09-30:** angka di atas adalah baseline MVP (kini beku di [roadmap-mvp.md](./roadmap-mvp.md)). Roadmap direset menjadi **Roadmap 2026–2027**: 26 fase (pasca-MVP + modul Visi Produk), **8,6%**, dan fase tanpa scope diparkir ([roadmap.md](./roadmap.md)). Brief 2026-10-13 memakai baseline baru.
+> Baseline MVP (51 fase, 88,5%) beku di [roadmap-mvp.md](./roadmap-mvp.md). Angka di atas tidak sebanding dengan brief sebelum 2026-09-30.
 
 ### Poin Bahasan Manajemen
 
 | Topik               | Pesan Utama                                                              | Dampak                                                                                    |
 | ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **MVP live (v1.0.0)** 🟢 | Milestone MVP dirilis 2026-09-23, disusul v1.1.0 hari yang sama sebagai hotfix (migrasi prod sudah mendahului kode). | Seluruh fase inti kecuali BULK-02 sudah Done; pengembangan kini fokus pada pengerasan dan fitur lanjutan. |
-| **Monev BMP** 🟢 | Skor BMP per petani per tahun + 32 indikator + penilaian Lembaga; data Rohul 2026 sudah masuk prod. | Adopsi praktik BMP bisa dipantau per Lembaga dan per petani, tidak lagi lewat rekap Excel terpisah. |
-| **Lahan: legalitas, NKT, patok** 🟢 | Satelit lahan lengkap: surat/STDB/UL Parcel Code, sepadan, status NKT, patok batas bernomor unik, lahan tetangga. | Kesiapan data untuk sertifikasi dan ketertelusuran meningkat; tumpang tindih lahan kini terdeteksi (menunggu rilis). |
-| **Keamanan akses prod** 🟡 | Dua celah terbuka: akun demo berperan SUPERADMIN mengubah label menu prod, dan perubahan peran baru berlaku setelah login ulang. | Dijadwalkan paling awal (Sprint 1) karena menyangkut data prod. |
-| **Supply Chain** 🔵 | Epic baru #379: peta rantai pasok Petani → Offtaker → Mill (declared supply base). | Dijadwalkan Sprint 5–6 (s.d. 2026-11-08), menunggu keputusan lisensi Universal Mill List dan ketersediaan berkas survei. |
-| Delivery confidence | 6 rilis dalam 9 hari dengan gate hijau; test 1.507 → 1.868. | Ritme rilis stabil; jalur `mvp → staging → main` aktif sejak v0.38.0. |
+| **Ritme rilis pasca-MVP** 🟢 | Lima rilis dalam 11 hari (v1.3.0 → v1.6.0) dengan gate hijau dan QA staging 0 Fail; rencana kini **per rilis** (bukan mingguan). | Perbaikan sampai ke lapangan dalam hitungan hari; jalur `mvp → staging → main` dan rollback sudah teruji. |
+| **Training Benefit & target kontrak** 🟢 | Kartu Training Benefit per year (per paket, kolom tahun bergeser) + target kontrak di DB (Master Data › Target Program) + tampilan vs Kontrak; Excel 3 sheet untuk donor. | Capaian program vs kontrak terbaca langsung dari dashboard, tanpa rekap manual. Angka kontrak prod diisi owner. |
+| **Rantai Pasok (prototipe)** 🔵 | Dashboard (4 tampilan aliran, Sorotan, volume per Mill/Lembaga, jarak, Excel) + Peta dari CSV survei 2025 di S3 privat — untuk diskusi, bukan versi final. | Bahan keputusan sebelum SC-01..03 (versi DB, v1.7.0 10-26 → 11-08). Lisensi UML sudah diputuskan (CC BY 4.0). |
+| **Keamanan akses** 🟡 | Satu celah kelas BUG-007 ditemukan audit dan ditutup hotfix v1.5.1 hari yang sama; dua celah laten (#409, #386) sudah diperbaiki di `mvp`, dirilis sebagai PATCH v1.6.1 setelah QA. | Tidak ada temuan P1 terbuka; audit mingguan `/audit` menjadi rutin. |
+| **Kualitas data prod** 🟢 | DQ-01: tanggal lahir, Detail Lahan Siak, Monev BMP Kampar, tahun tanam & alamat belasan Lembaga sudah masuk prod lewat skrip idempoten (dry-run → persetujuan → tulis). | Dashboard & laporan makin mewakili kondisi lapangan; sisa: APKASDU (ID lahan lama ≠ poligon baru), 82 UL Parcel Code ganda (#395). |
+| Delivery confidence | Test 2.461 → 2.804; TD aktif 31 (register dirapikan 2026-10-10, 10 TD cepat jadi #412). | Debt terkendali; tidak ada fase Blocked. |
 
 ### Keputusan yang Dibutuhkan
 
 | Keputusan                  | Owner                   | Dibutuhkan Kapan     | Rekomendasi Tech Lead                                                                       |
 | -------------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------------- |
-| ~~Akun seed lama di `users.csv` (#390)~~ | Owner + DevOps | ✅ Diputuskan 2026-10-07 | Issue ditutup (keputusan owner). Seed = akun fiktif + `SEED_USER_PASSWORD` sejak v1.3.0; riwayat git dibiarkan. |
-| ~~Nasib BULK-02 (#69/#70 ditutup *not planned*)~~ | Owner / Product | ✅ Diputuskan 2026-09-30 | Dipindah ke **Parkir** saat reset roadmap (di luar hitungan Roadmap %). |
-| ~~Lisensi Universal Mill List & berkas survei rantai pasok (#379)~~ | Owner | ✅ Diputuskan 2026-09-30 | UML = CC BY 4.0; seed Mill tetap lewat `--data` dari folder lokal (di luar repo). Sisa: daftar Lembaga yang sudah punya survei. |
-| ~~Migrasi staging otomatis (#277)~~ | Owner + DevOps | ✅ Selesai v1.3.0 | Guard `migrate status` di deploy staging (#277) & prod (#394), migrasi tetap manual; keduanya ditutup 2026-10-07. Build staging OOM #363 ✅ (RAM 4 GB). |
+| Angka target kontrak program di prod (#403) — belum tercatat terisi di docs | Owner | Sebelum review 2026-10-13 | Isi lewat Master Data › Target Program (tabel DB, tanpa deploy); di staging baru angka fiktif uji (TC-PREP-01 v1.4.0). Tampilan vs Kontrak kosong sampai diisi. |
+| APKASDU: berkas Detail Lahan ber-ID lahan baru (#366) | Owner + fasilitator | v1.7.0 | 1.360 baris ditahan karena ID lama ≠ poligon upload ulang 2026-10-02; minta berkas ulang ber-ID baru, jangan dipaksakan. |
+| Kelompok Tani HJP & SSJ (KT NULL, nilai "33 F" di Blok, #334) | Owner + fasilitator | v1.7.0 | Tetapkan: KT+Blok tergabung atau kode blok; KPI KT kedua Lembaga = 0 sampai diputuskan. |
+| Subdistrict & Village hanya 1 baris (#260) | Owner / Product | Tidak mendesak | Sembunyikan dari form sampai ada data, atau isi dari referensi BPS saat modul wilayah disentuh. |
+| ~~Lisensi Universal Mill List & berkas survei (#379)~~ | Owner | ✅ Diputuskan 2026-09-30 | UML = CC BY 4.0; seed Mill lewat `--data` dari folder lokal; prototipe CSV di S3 privat. |
 
-### Dua Minggu ke Depan (2026-09-29 s.d. 2026-10-11)
+### Dua Minggu ke Depan (2026-10-13 s.d. 2026-10-25)
 
 | Priority | Target                                      | Output                                                                                                        |
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **P1**   | Keamanan akses prod (#364 ✅, #237 ✅, #342, #390) | Struktur menu dikunci dari UI ✅, reaktivasi menu ✅; sisa: role/`isActive` di JWT (#342), rotasi password seed (#390) |
-| **P1**   | Rilis **v1.2.0**                            | #317 Fase 2 + #378 + #364/#237/#385/#252/#383/#311 (siap QA 2026-09-29); seed menu Tumpang Tindih & Sprint Mingguan (kini Rencana Pengembangan) ke staging/prod |
-| **P2**   | Performa & jalur rilis (#252 ✅, #311 ✅, #363 ✅, #277, #376) | `getAccessContext` di-cache per render ✅, perf test stabil ✅, build staging OOM ✅ (RAM 4 GB); sisa: guard migrasi di deploy, cek migrasi vs tag |
-| **P2**   | Prosedur rollback (#232, OPS-02)            | Dokumentasi + uji rollback di staging → kandidat OPS-02 Done                                                  |
+| **P1**   | Rilis **v1.6.1** PATCH (#409 ✅ kode, #386 ✅ kode, #384, #387, #412) | QA staging TC-409/TC-386 → prod; #409/#386/#384 ditutup dengan retro → PLATFORM-08 naik mendekati Done |
+| **P1**   | Persiapan **v1.7.0** Supply Chain versi DB (#380 → #381 → #382) | Skema Mill/Offtaker/BuyerProgram + import survei; keputusan desain dari diskusi prototipe |
+| **P2**   | Kualitas data prod (DQ-01)                  | APKASDU berkas ber-ID baru (#366), 82 UL Parcel Code ganda (#395), KT HJP & SSJ (#334)                       |
+| **P2**   | Kerapian & test (#413, #414 — Backlog)      | Test cermin → modul asli (TD-050); `ActionResult` pisah `error`/`fieldErrors` (TD-010) — ditarik ke rilis bila ada kapasitas |
 
-Rincian per minggu: [sprint.md](./sprint.md).
+Rincian per rilis: [sprint.md](./sprint.md).

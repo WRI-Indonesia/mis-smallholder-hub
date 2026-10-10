@@ -49,7 +49,7 @@ Halaman: Lembaga Petani (/admin/master-data/groups)
 | Filter Distrik | Combobox | `Semua Distrik` + daftar distrik, ber-pencarian (`FilterCombobox`, `src/components/shared/filter-combobox.tsx`) |
 | Filter Status | Select | SUPERADMIN saja (lihat objek bersama) |
 | Pencarian | Filter | `Cari nama, kode, atau singkatan...` (`name`, `code`, `abrv`) |
-| Tombol `Tambah Lembaga Petani` | Tombol | CREATE — buka `GroupFormModal` mode tambah |
+| Tombol `Tambah Lembaga Petani` | Tombol | CREATE — buka `GroupFormModal` mode tambah. **Disembunyikan untuk akun ber-scope Lembaga** (`getAccessContext().mode === "BY_FARMER_GROUP"`, prop `groupScoped`, #409) — server pun menolak karena tak ada distrik dalam scope |
 | Tabel daftar | Tabel | Kolom: `Kode`, `Nama`, `Distrik`, `Tipe Grup` (badge), `Kategori` (Ex Plasma/Swadaya), `Total Petani`, `Total Persil` (hidden default), `Luas Lahan`, `Lahan NKT` (hidden default, #338 — badge merah "n NKT" bila > 0, "—" bila 0; `nktCount` dari `groupBy` ketiga di `getFarmerGroups`: lahan aktif dengan `identity.nkt.status ∈ NKT_AFFECTED_STATUSES`, ikut Excel **bila kolomnya dinyalakan** — DataTable hanya mengekspor kolom aktif), `Tahun Bergabung Program`, `Tahun Berdiri Lembaga`, `Sertifikasi RSPO`, `Sertifikasi ISPO`, `Assurance SAP/MAP`, `Lat` (hidden), `Long` (hidden), `Status` (SUPERADMIN) |
 | Aksi baris | Tombol | Lihat → `/admin/master-data/groups/{id}`; Edit → modal; Nonaktifkan → `toggleFarmerGroupActive` |
 | Ekspor | Tombol | `data-farmer-groups` |
@@ -62,7 +62,7 @@ Judul `Tambah Lembaga Petani` / `Edit Lembaga Petani`; aksi `createFarmerGroup` 
 | Seksi | Field | Input |
 |---|---|---|
 | Identitas | `Nama Lembaga Petani` (wajib), `Kode`, `Singkatan`, `Abrv 3ID` | text |
-| Klasifikasi | `Distrik` (select, placeholder `Pilih distrik`), `Kategori` (`Ex Plasma`/`Swadaya`), `Tipe Grup` (`—`/`Asosiasi`/`Koperasi`) | select |
+| Klasifikasi | `Distrik` (select, placeholder `Pilih distrik`; daftar sudah ter-scope. **#409:** server memverifikasi distrik tujuan ada, aktif, dan dalam scope lewat `canPlaceGroupInDistrict` — BY_DISTRICT hanya distrik scope, BY_FARMER_GROUP tidak boleh memindah distrik; pada akun ber-scope Lembaga field tampil sebagai teks terkunci + nilai tersembunyi, `lockDistrict`), `Kategori` (`Ex Plasma`/`Swadaya`), `Tipe Grup` (`—`/`Asosiasi`/`Koperasi`) | select |
 | Tahun | `Tahun Berdiri Lembaga`, `Tahun Bergabung Program` | number 1900–2100 |
 | Sertifikasi & Assurance | Baris `RSPO`, `ISPO`, `SAP/MAP` — masing-masing status (`—`/`Tersertifikasi`/`Plan`) + tahun | select + number 1900–2100 |
 | Lokasi | `Latitude`, `Longitude` | number step any |

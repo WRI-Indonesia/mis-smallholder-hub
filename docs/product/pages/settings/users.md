@@ -66,8 +66,8 @@ Halaman: User Management (/admin/settings/users)
 | File | `src/app/(admin)/admin/settings/users/page.tsx` |
 | Client | `src/app/(admin)/admin/settings/users/user-list-client.tsx` |
 | Tipe | Server Component (list) → Client Component (tabel + dialog) |
-| Guard | `requirePermission("settings-users")` |
-| Server action / data | `getUsers()` (`src/server/actions/user.ts`), `getUserPermissionsForMenu("settings-users")` |
+| Guard | `requirePermission("settings-users")`; halaman meneruskan `currentUserId` (sesi) & `isSuperAdmin` ke klien untuk menyembunyikan kontrol yang pasti ditolak server (#386) |
+| Server action / data | `getUsers()` (`src/server/actions/user.ts`), `getUserPermissionsForMenu("settings-users")`. **Semua action pengelolaan pengguna hanya untuk pemanggil ber-scope `ALL`** (`src/lib/user-admin-guard.ts`, #386 — lihat [standards/rbac.md](../../../standards/rbac.md#anti-eskalasi-pengelolaan-pengguna-386-butir-2)) |
 | Loading | `loading.tsx` |
 
 **Objek halaman**
@@ -82,10 +82,10 @@ Halaman: User Management (/admin/settings/users)
 | `Kolom` | Dropdown | Toggle visibilitas kolom (`Tampilkan Kolom`) |
 | `Tambah User` | Tombol | Ikon `Plus`; tampil hanya jika permission `CREATE` |
 | Tabel user | Tabel | Komponen `DataTable` — sortable, paginasi (`Tampilkan N dari X data`, `Halaman n dari m`) |
-| Aksi baris | Tombol | `Edit` (permission EDIT), `Nonaktifkan` / `Aktifkan kembali` (permission DELETE) via `TableActions` |
-| `Akses Data` | Tombol | Ikon `Database`; tampil jika permission `EDIT`; membuka dialog Akses Data |
-| `Hak Akses Menu` | Tombol | Ikon `Shield`; tampil jika permission `EDIT` **dan** `user.role !== "SUPERADMIN"`; membuka dialog Hak Akses Menu |
-| Toast | Notifikasi | `Status user diubah` / `Gagal mengubah status` |
+| Aksi baris | Tombol | `Edit` (permission EDIT), `Nonaktifkan` / `Aktifkan kembali` (permission DELETE) via `TableActions`. **Anti-eskalasi (#386):** baris akun SUPERADMIN tanpa `Edit`/`Nonaktifkan` bila pemanggil bukan SUPERADMIN; baris **akun sendiri** tanpa `Nonaktifkan` (`Edit` tetap — nama/email/password) |
+| `Akses Data` | Tombol | Ikon `Database`; tampil jika permission `EDIT`, bukan baris akun sendiri, dan bukan akun SUPERADMIN bagi pemanggil non-SUPERADMIN; membuka dialog Akses Data |
+| `Hak Akses Menu` | Tombol | Ikon `Shield`; tampil jika permission `EDIT` **dan** `user.role !== "SUPERADMIN"` **dan** bukan baris akun sendiri; membuka dialog Hak Akses Menu |
+| Toast | Notifikasi | `Status user diubah` / pesan galat server (mis. penolakan anti-eskalasi) atau `Gagal mengubah status` |
 
 **Kolom tabel user**
 
@@ -111,10 +111,10 @@ Halaman: User Management (/admin/settings/users)
 |---|---|---|
 | `Nama` | Input | Wajib |
 | `Email` | Input | `type="email"`, wajib |
-| `Role` | Select | Opsi digenerate dari `ROLES` (`src/lib/roles.ts`) — 5 opsi: `SUPERADMIN`, `ADMIN`, `OPERATOR`, `MANAGEMENT`, `DONOR`; default `OPERATOR` |
+| `Role` | Select | Opsi digenerate dari `ROLES` (`src/lib/roles.ts`) — 5 opsi: `SUPERADMIN`, `ADMIN`, `OPERATOR`, `MANAGEMENT`, `DONOR`; default `OPERATOR`. **#386:** opsi `SUPERADMIN` hanya tampil bagi pemanggil SUPERADMIN (atau bila akun yang diedit sudah SUPERADMIN); saat mengedit **akun sendiri** role tampil sebagai teks terkunci (`title` "Role akun Anda sendiri tidak bisa diubah") + nilai tersembunyi |
 | `Password` | Input | `type="password"`; wajib saat create. Saat edit label bersuffix `(kosongkan jika tidak diubah)` |
 | `Batal` / `Buat` / `Simpan` | Tombol | `Buat` saat create, `Simpan` saat edit |
-| Toast | Notifikasi | `User berhasil dibuat` / `User berhasil diupdate` |
+| Toast | Notifikasi | `User berhasil dibuat` / `User berhasil diupdate`; galat server ditampilkan apa adanya (mis. pesan penolakan anti-eskalasi). Email unik dibandingkan tanpa beda huruf besar |
 
 ### Dialog: Akses Data — {nama user}
 

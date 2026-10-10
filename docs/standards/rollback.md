@@ -100,7 +100,7 @@ Dump sebelum gladi: `scripts/dump-prod/2026-09-30/mis-staging-local-before-rollb
 
 ### Rollback aplikasi di staging (2026-10-07, TC-232-01)
 
-v1.3.0 → v1.2.0 → v1.3.0 di `staging`, dua deploy disetujui owner, DB tak disentuh (migrasi v1.3.0 hanya indeks #251). Run: [`docs/qa/v1.3.0/runs/2026-10-07-staging.md`](../qa/v1.3.0/runs/2026-10-07-staging.md).
+v1.3.0 → v1.2.0 → v1.3.0 di `staging`, dua deploy disetujui owner, DB tak disentuh (migrasi v1.3.0 hanya indeks #251). Run: [`docs/qa/archive/v1.3.0/runs/2026-10-07-staging.md`](../qa/archive/v1.3.0/runs/2026-10-07-staging.md).
 
 | Langkah | Commit | Durasi run | Hasil |
 | --- | --- | --- | --- |

@@ -11,7 +11,7 @@
 
 - **Dashboard**: ✅ Main Dashboard + BMP (semua snapshot, semua data) · ✅ **Dashboard Pelatihan** (live query, semua Lembaga) · ✅ **Dashboard Monev BMP** (live query, #344) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
 - **Master Data**: ✅ Full CRUD, all regions/groups/farmers
-- **Settings**: ✅ User/Role/Menu/Region management
+- **Settings**: ✅ User/Role/Menu/Region management — satu-satunya peran yang boleh memberi role SUPERADMIN, mengubah akun SUPERADMIN, dan mengubah matriks Role & Permission; akun sendiri tetap tak bisa diubah role/status/penugasannya (#386, [access-context.md](./access-context.md#scope-pada-aksi-tulis))
 - **Report**: ✅ All reports, all data
 - **Bulk Upload**: ✅ All modules
 - **Tools**: ✅ Dashboard Snapshot (generate/view/delete), Export, S3/PDF, GIS

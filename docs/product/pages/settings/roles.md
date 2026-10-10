@@ -45,7 +45,7 @@ Halaman: Role & Permission (/admin/settings/roles)
 | File | `src/app/(admin)/admin/settings/roles/page.tsx` |
 | Client | `src/app/(admin)/admin/settings/roles/role-matrix-client.tsx` |
 | Tipe | Server Component → Client Component (matrix) |
-| Guard | `requirePermission("settings-roles")` |
+| Guard | `requirePermission("settings-roles")`; **mutasi `setRolePermissions` hanya diterima dari SUPERADMIN** (#386 butir 4 — pemegang izin ubah lain bisa menaikkan izin perannya sendiri; `src/lib/user-admin-guard.ts`) |
 | Server action / data | `getRolePermissions()`, `setRolePermissions(updates)` (`src/server/actions/role-permission.ts`), `getAllMenuItems()` (`src/server/actions/menu.ts`) |
 | Helper | `buildMenuTree` / `flattenTree` / `descendantKeys` / `collapsibleKeys` (`src/lib/menu-tree.ts`), `useCollapseState` (`src/lib/use-collapse-state.ts`), `ROLES` (`src/lib/roles.ts`) |
 

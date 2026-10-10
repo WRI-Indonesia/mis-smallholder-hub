@@ -8,17 +8,15 @@
 
 Format: satu berkas per bulan di [`changelog/`](./changelog/) — tiap berkas berisi **Decision Log** (`YYYY-MM-DD`) dan **Changelog** (`MM-DD`). Entri baru ditambahkan sebagai **baris teratas** tabel di berkas bulan berjalan; saat ganti bulan, buat `changelog/YYYY-MM.md` baru dan tambahkan barisnya di tabel di bawah. Keputusan besar (arsitektur, kebijakan, aturan yang berlaku lintas modul) juga ditulis sebagai catatan keputusan di [`../decisions/`](../decisions/README.md).
 
-### Ringkasan Dua Minggu Terakhir (15–29 September 2026)
+### Ringkasan Dua Minggu Terakhir (30 September – 10 Oktober 2026)
 
-> Snapshot per 2026-09-29 — perbarui/ganti section ini saat menulis ringkasan periode berikutnya. Ringkasan Juli ada di Changelog Juli 2026.
+> Snapshot per 2026-10-10 — perbarui/ganti section ini saat menulis ringkasan periode berikutnya. Ringkasan 15–29 September ada di Changelog September 2026 (rilis v0.35.0 → v1.1.0).
 
-- **Rilis:** **v0.35.0** (09-15) → **v0.36.0** (09-20) → **v0.37.0** (09-21) → **v0.38.0** (09-22) → **v1.0.0 milestone MVP** + **v1.1.0 hotfix** (09-23). Sejak v0.38.0 rilis lewat `mvp → staging → main`; paket QA manual per versi di `docs/qa/`.
-- **Satelit lahan tahap 2 (v0.35.0):** `geom` PostGIS + GiST, sepadan, lahan tetangga ≤ 25 m, status NKT, patok batas + kode unik, menu Report › Patok, Laporan NKT per Lembaga.
-- **Monev BMP (v0.36.0):** skor per petani per tahun + rincian 32 indikator + penilaian Lembaga, import rekap & form survei, Dashboard Monev BMP.
-- **Ketersediaan Data (v0.37.0):** skor mengikuti skema (registri check), radar + heatmap + drill-down; audit dead code #353.
-- **Profil Petani PDF (v0.38.0)** · **Laporan bulanan Fire Alert** + **Excel per KT/Blok** + **UL Parcel Code ganda** (v1.0.0/v1.1.0).
-- **Belum dirilis (kandidat v1.2.0):** #317 Fase 2 menu Tumpang Tindih Lahan · #378 Sprint Mingguan. Rencana 6 sprint mingguan s.d. 2026-11-08 termasuk epic Supply Chain #379–#382.
-- **QA:** test 1.507 (v0.35.0) → **1.868** (v1.1.0); lint 0, typecheck & build ✅.
+- **Rilis:** **v1.3.0** (09-30, jalur rilis/keamanan/performa; 1 migrasi indeks) → **v1.4.0** (10-07, menu Platform Developer, Target Program `tbl_program_target`, Training Benefit per year, prototipe Rantai Pasok) → **v1.5.0** (10-09, #317 Fase 3 peringatan tumpang tindih saat upload, latar GIBS Fire Alert, kerapian) → **v1.5.1** hotfix keamanan (10-10, filter scope Lembaga tertimpa — kelas BUG-007, #408) → **v1.6.0** (10-10, prototipe Rantai Pasok diperluas + istilah "petani terdaftar"; pengecualian aturan 1 rilis/hari). Rencana kini **per rilis** (keputusan 2026-09-30); roadmap direset ke **Roadmap 2026–2027** (8,6% → **18,6%**).
+- **Keamanan & DevOps:** role/`isActive` dibaca ulang dari DB ≤ 1 menit (#342); guard `migrate status` di deploy staging & prod (#277/#394); rollback teruji di staging (#232, OPS-02 ✅ Done); cek migrasi vs tag (#376); seed akun fiktif (#390). Celah laten #409/#386 diperbaiki di `mvp` → PATCH **v1.6.1** (10-11 → 10-25).
+- **Data prod (DQ-01):** 2.213 tanggal lahir tertukar diperbaiki (#354) + parser tanggal upload (#400); Detail Lahan Siak 9 Lembaga (#366, APKASDU ditahan); Monev BMP Kampar 2026; tahun tanam/alamat/KT belasan Lembaga dari berkas fasilitator; produktivitas BMP **disetahunkan** (Ton/Ha/tahun).
+- **Proses:** `/audit` jadi audit mingguan + workflow (fase F1–F6; 126 test guard 3 lapis, 25 koreksi Bantuan, register TD dirapikan 33 → 31, #412–#414); command `/lanjut`; catatan keputusan `decisions/` 0005–0007.
+- **QA:** test 2.461 (v1.3.0) → **2.804** (v1.6.0); lint 0, typecheck & build ✅; run staging v1.6.0 0 Fail (smoke 17 · kasus 11), run prod P0 ≤ 1 jam pasca-deploy; paket QA v1.3.0 diarsipkan.
 
 ---
 
