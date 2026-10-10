@@ -6,6 +6,13 @@ import bcrypt from "bcryptjs";
 import { createUserSchema, updateUserSchema } from "@/validations/user.schema";
 import type { CreateUserInput, UpdateUserInput } from "@/validations/user.schema";
 import { hasPermission } from "@/lib/rbac";
+import { roleGrantError, userTargetError, type UserRef } from "@/lib/user-admin-guard";
+
+/** Pemanggil dari sesi — dasar aturan anti-eskalasi (#386 butir 2). */
+async function sessionActor(): Promise<UserRef & { sessionId: string | null }> {
+  const session = await auth();
+  return { id: session?.user?.id ?? "", role: session?.user?.role ?? "", sessionId: session?.user?.id ?? null };
+}
 
 export async function getUsers(search?: string) {
   if (!(await hasPermission("settings-users", "VIEW"))) {
@@ -49,19 +56,22 @@ export async function createUser(input: CreateUserInput) {
   const parsed = createUserSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
+  const actor = await sessionActor();
+  const roleError = roleGrantError(actor, parsed.data.role);
+  if (roleError) return { success: false, error: roleError };
+
   const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   if (existing) return { success: false, error: { email: ["Email sudah terdaftar"] } };
 
   const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
 
-  const session = await auth();
   const user = await prisma.user.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
       password: hashedPassword,
       role: parsed.data.role,
-      createdBy: session?.user?.id ?? null,
+      createdBy: actor.sessionId,
     },
   });
 
@@ -76,12 +86,21 @@ export async function updateUser(input: UpdateUserInput) {
   const parsed = updateUserSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
-  const session = await auth();
+  // Anti-eskalasi (#386 butir 2): akun SUPERADMIN & role SUPERADMIN hanya oleh SUPERADMIN;
+  // akun sendiri boleh diubah nama/email/password, tetapi tidak role-nya.
+  const actor = await sessionActor();
+  const target = await prisma.user.findUnique({ where: { id: parsed.data.id }, select: { id: true, role: true } });
+  const guardError =
+    userTargetError(actor, target, { allowSelf: true }) ??
+    roleGrantError(actor, parsed.data.role) ??
+    (target && target.id === actor.id && target.role !== parsed.data.role ? "Tidak dapat mengubah role akun Anda sendiri" : null);
+  if (guardError) return { success: false, error: guardError };
+
   const data: Record<string, unknown> = {
     name: parsed.data.name,
     email: parsed.data.email,
     role: parsed.data.role,
-    modifiedBy: session?.user?.id ?? null,
+    modifiedBy: actor.sessionId,
   };
 
   if (parsed.data.password && parsed.data.password.length > 0) {
@@ -98,13 +117,14 @@ export async function toggleUserActive(id: string) {
     return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan user" };
   }
 
-  const user = await prisma.user.findUnique({ where: { id }, select: { isActive: true } });
-  if (!user) return { success: false, error: "User tidak ditemukan" };
+  const user = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true, isActive: true } });
+  const actor = await sessionActor();
+  const guardError = userTargetError(actor, user);
+  if (guardError || !user) return { success: false, error: guardError ?? "User tidak ditemukan" };
 
-  const session = await auth();
   await prisma.user.update({
     where: { id },
-    data: { isActive: !user.isActive, modifiedBy: session?.user?.id ?? null },
+    data: { isActive: !user.isActive, modifiedBy: actor.sessionId },
   });
 
   return { success: true };

@@ -661,10 +661,10 @@ export const DATA_LINEAGE: DataLineage = [
       "province": "R",
       "rolePermission": "R",
       "user": "RW",
-      "userDistrict": "W",
-      "userFarmerGroup": "W",
+      "userDistrict": "RW",
+      "userFarmerGroup": "RW",
       "userPermissionOverride": "RW",
-      "userProvince": "W"
+      "userProvince": "RW"
     },
     "modules": [
       "src/server/actions/user-data-access.ts",

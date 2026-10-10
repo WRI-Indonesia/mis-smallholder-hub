@@ -93,6 +93,16 @@ Untuk melakukan override permission menu per user (grant/revoke):
 - **Soft Delete** — Penghapusan override menggunakan update `isActive: false` (bukan physical delete).
 - **Optimasi Caching** — Fungsi pembacaan permission di `src/lib/rbac.ts` wajib dibungkus dengan React `cache` untuk mereduksi kueri ganda pada render lifecycle.
 
+### Anti-eskalasi pengelolaan pengguna (#386 butir 2)
+
+Keputusan owner 2026-10-10 — dijaga `src/lib/user-admin-guard.ts` (helper murni) di `user.ts`, `user-data-access.ts`, `user-menu-access.ts`; test `src/test/user-escalation-guard.test.ts`:
+
+1. **SUPERADMIN hanya oleh SUPERADMIN** — memberi role SUPERADMIN, mengubah, atau menonaktifkan akun SUPERADMIN. Override izin menu tidak bisa dipasang di akun SUPERADMIN sama sekali.
+2. **Akun sendiri terkunci** — role, status aktif, penugasan wilayah/Lembaga, dan override izin akun sendiri tidak bisa diubah (nama, email, password boleh).
+3. **Penugasan dalam scope pemanggil** — `BY_DISTRICT` hanya distrik scope atau Lembaga di distrik scope (provinsi ditolak); `BY_FARMER_GROUP` hanya Lembaga scope. Pemanggil ber-scope tidak boleh mencabut penugasan **terakhir** seseorang, karena user tanpa penugasan = `ALL`.
+
+Saat ini `settings-users` hanya dimiliki SUPERADMIN (seed); aturan ini menjaga bila izinnya kelak diberikan ke peran/akun lain. Tidak ada urutan antar peran lain (ADMIN boleh memberi role ADMIN/OPERATOR/MANAGEMENT/DONOR).
+
 ### UI Matriks Role & Permission
 
 Untuk mengelola permission per role (matriks role × menu × 6 izin di Settings — header ikon per izin, grup Data ┊ Keluaran, preset baris via dropdown `ListChecks`, toggle satu kolom via klik ikon header, hover highlight silang):

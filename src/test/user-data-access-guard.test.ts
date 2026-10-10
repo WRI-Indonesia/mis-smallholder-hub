@@ -11,9 +11,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
 vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "admin-1" } }) }));
+const getAccessContext = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/access-context", () => ({ getAccessContext }));
 
 const db = vi.hoisted(() => {
-  const model = () => ({ findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), deleteMany: vi.fn() });
+  const model = () => ({ findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), deleteMany: vi.fn(), count: vi.fn() });
   return {
     user: model(), province: model(), district: model(), farmerGroup: model(),
     userProvince: model(), userDistrict: model(), userFarmerGroup: model(),
@@ -38,7 +40,11 @@ beforeEach(() => {
     m.findUnique.mockResolvedValue(null);
     m.create.mockResolvedValue({});
     m.deleteMany.mockResolvedValue({ count: 1 });
+    m.count.mockResolvedValue(2);
   }
+  getAccessContext.mockResolvedValue({ mode: "ALL" });
+  db.user.findUnique.mockResolvedValue({ id: "u-1", role: "OPERATOR" });
+  db.farmerGroup.findUnique.mockResolvedValue({ districtId: "d1" });
 });
 
 describe("baca — getUserDataAccess VIEW, getRegionsForSelect EDIT", () => {

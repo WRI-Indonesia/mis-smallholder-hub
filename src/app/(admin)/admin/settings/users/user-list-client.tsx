@@ -82,7 +82,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
       toast.success("Status user diubah");
       router.refresh();
     } else {
-      toast.error("Gagal mengubah status");
+      toast.error(typeof result.error === "string" ? result.error : "Gagal mengubah status");
     }
   }
 

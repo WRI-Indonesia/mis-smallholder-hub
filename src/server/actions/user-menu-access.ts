@@ -87,6 +87,10 @@ export async function setUserMenuOverride(
   if (targetUser?.role === "SUPERADMIN") {
     return { success: false, error: "Tidak dapat mengubah hak akses SUPERADMIN" };
   }
+  // Anti-eskalasi (#386 butir 2): tak boleh memberi/mencabut override di akun sendiri.
+  if ((await auth())?.user?.id === userId) {
+    return { success: false, error: "Tidak dapat mengubah akses akun Anda sendiri" };
+  }
 
   try {
     const session = await auth();
@@ -126,6 +130,10 @@ export async function removeUserMenuOverride(
 ) {
   if (!(await hasPermission("settings-users", "EDIT"))) {
     return { success: false, error: "Tidak memiliki izin" };
+  }
+
+  if ((await auth())?.user?.id === userId) {
+    return { success: false, error: "Tidak dapat mengubah akses akun Anda sendiri" };
   }
 
   try {

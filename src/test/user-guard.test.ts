@@ -31,7 +31,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   hasPermission.mockResolvedValue(true);
   db.user.findMany.mockResolvedValue([]);
-  db.user.findUnique.mockResolvedValue(null);
+  // Lookup email (cek unik) → tak ada; lookup id (target #386) → akun OPERATOR biasa.
+  db.user.findUnique.mockImplementation(async ({ where }: { where: { id?: string } }) => (where.id ? { id: where.id, role: "OPERATOR", isActive: true } : null));
   db.user.create.mockResolvedValue({ id: "u-new" });
   db.user.update.mockResolvedValue({});
 });
