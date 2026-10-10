@@ -21,7 +21,7 @@ Halaman: Peta Rantai Pasok (/admin/map/supply-chain)
 │   ├── Label selektif: 8 terbesar per jenis selalu, sisanya zoom ≥ 10; bisa dimatikan
 │   ├── Hover = tooltip nama + tonase; klik node = sorot jaringannya, sisanya diredupkan
 │   └── Popup (auto-pan di kanan panel, bisa digeser): Mill (badge UL, UML ID, Distrik, porsi, status, RSPO, Lembaga·offtaker, jarak rata-rata, Lembaga teratas)
-│       · Lembaga (porsi, % UL · % PKS pasti, offtaker utama, jarak, Mill tujuan) · offtaker · lahan · garis — footer **Jadikan filter** · **Lihat di Dashboard**
+│       · Lembaga (porsi, % UL · % PKS pasti, offtaker utama, jarak, Mill tujuan) · offtaker (aksi hanya bila `offtakerFilterPatch` menangkap recordnya; pembeli kedua non-RAMP → keterangan) · lahan · garis — footer **Jadikan filter** · **Lihat di Dashboard**
 ├── Tumpukan kontrol kanan atas: zoom +/− · Paskan · Lapisan (popover saklar yang sama dengan panel) · Basemap (popover STREET / LIGHT / DARK / SAT / HYBRID)
 └── Strip legenda mendatar bawah tengah (warna jalur · Lembaga · offtaker · 3 ikon Mill; ✕ sembunyikan ↔ chip Legenda; diingat per browser, digeser ke kanan selebar panel saat panel terbuka)
 ```
@@ -32,5 +32,5 @@ Halaman: Peta Rantai Pasok (/admin/map/supply-chain)
 |---|---|
 | Menu key / izin | `map-supply-chain` · VIEW (izin peran = Monev BMP) |
 | Server Action | `getSupplyChainMapView` — sama dengan dashboard + titik lahan `ST_PointOnSurface(lp.geom)` (K8) dengan kunci Lembaga + Farmer ID + Parcel ID; cadangan koordinat survei |
-| Lib murni | `src/lib/supply-chain-map.ts` (lengkung garis, skala tebal, entitas tak tergambar bernama) · `src/lib/supply-chain-insights.ts` (jarak, volume Lembaga untuk popup) |
+| Lib murni | `src/lib/supply-chain-map.ts` (lengkung garis, skala tebal, entitas tak tergambar bernama — bucket = `buildFlowSegments`, `offtakerFilterPatch`) · titik singgah bersama `recordWaypointOfftakers` (`supply-chain-flow.ts`) · `src/lib/supply-chain-insights.ts` (jarak, volume Lembaga untuk popup) |
 | Bantuan | `src/content/help/tutorial/p-17-peta-rantai-pasok.md` |

@@ -13,7 +13,7 @@ Halaman: Dashboard Rantai Pasok (/admin/dashboard/supply-chain)
 │   ├── Lingkup: Distrik · Kategori (Swadaya/Ex-Plasma) · UL & Non-UL · Tahun
 │   └── Rantai: Lembaga › Agen·KT/Koperasi › RAMP › Mill (pilihan faset) — Reset hanya di panel Peta (vertikal)
 ├── Kartu KPI: TBS · Ke Mill Pemasok UL · Sampai PKS Pasti (sub: % disebut langsung) · Offtaker
-├── Kartu lipat* "Sorotan" — 4 ubin dari filter aktif (`supplyChainInsights`): Konsentrasi ke Mill · Ketergantungan offtaker (≥ 80%) · Mill belum pasti (Lembaga ≥ 50% tak pasti) · Jarak garis lurus (K8) — nama = tombol filter, "+N lagi" = gulir ke tabel Lembaga terurut
+├── Kartu lipat* "Sorotan" — 4 ubin dari filter aktif (`supplyChainInsights`): Konsentrasi ke Mill (Mill bernama saja; dilewati bila tak ada) · Ketergantungan offtaker (≥ 80%, koperasi Lembaga sendiri dikecualikan) · Mill belum pasti (Lembaga ≥ 50% tak pasti) · Jarak garis lurus (K8) — nama = tombol filter, "+N lagi" = buka kartu Lembaga (walau terlipat) + tampilkan semua + gulir, terurut
 ├── Kartu lipat* "Jalur TBS & Kepastian Mill" — dua batang 100%: Jalur (= legenda warna) · Kepastian Mill (disebut · dipetakan · belum pasti · tak diketahui → klik = filter)
 ├── Kartu lipat* "Aliran TBS": Lembaga/Distrik → Offtaker (Agen · RAMP · KT/Koperasi · rantai Agen → RAMP satu node) → Mill/UL-Non-UL
 │   ├── Tab (diingat*): Sankey · Diagram Alur (React Flow, garis beranimasi) · Jalur (baris per jalur) · Tabel Pohon (Arah Hulu→Hilir | Hilir→Hulu)
@@ -21,7 +21,7 @@ Halaman: Dashboard Rantai Pasok (/admin/dashboard/supply-chain)
 │   ├── Kalimat "Menampilkan …"
 │   └── Hover/klik = sorot jalur penuh · klik node/ikon corong = filter (toast singkat) / turun ke rincian
 ├── Kartu lipat* "Volume per Mill" — kolom bisa diurut, baris Mill terfilter disorot, kolom Jarak (rata-rata garis lurus, tertimbang tonase), ikon peta per baris (hover), top 10 + tampilkan semua
-├── Kartu lipat* "Volume per Lembaga" (`groupVolumes`) — Tonase (porsi UL) · % ke UL · % PKS pasti (amber < 50%) · Offtaker utama + % (⚠ ≥ 80%) · Mill utama + % · Jarak; urut dikendalikan dari luar (Sorotan), klik baris = filter, ikon peta
+├── Kartu lipat* "Volume per Lembaga" (`groupVolumes`) — Tonase (porsi UL) · % ke UL · % PKS pasti (amber < 50%) · Offtaker utama + % (⚠ ≥ 80% offtaker luar; `isSelf` diurut paling bawah) · Mill utama + % · Jarak; urut, lipat & tampilkan-semua dikendalikan Dashboard (Sorotan), klik baris = filter, ikon peta
 └── Banner "Catatan data" (bisa dilipat) — dipindah ke bawah agar tidak memotong alur baca
 
 * posisi lipat & tab terakhir disimpan di localStorage browser (`sc-dashboard:*`), bukan URL
@@ -33,5 +33,5 @@ Halaman: Dashboard Rantai Pasok (/admin/dashboard/supply-chain)
 |---|---|
 | Menu key / izin | `dashboard-supply-chain` · VIEW (izin peran = Monev BMP) |
 | Server Action | `getSupplyChainDashboardView` (`src/server/actions/supply-chain-prototype.ts`) — `hasPermission` VIEW, scope `getAccessContext` per kode Lembaga, Lembaga `isActive` |
-| Sumber data | `src/lib/supply-chain-tables.ts` (CSV lokal → S3) · agregasi murni `src/lib/supply-chain-flow.ts` · tab Jalur & Tabel Pohon `src/lib/supply-chain-views.ts` (dari graf Sankey yang sama) · jarak/Lembaga/Sorotan `src/lib/supply-chain-insights.ts` (haversine `lib/geo.ts`, koordinat dari CSV — tanpa DB) · Excel `src/lib/supply-chain-xlsx.ts` (`exportMultiSheetToExcel`, client-side, tombol hanya bila izin EXPORT) |
+| Sumber data | `src/lib/supply-chain-tables.ts` (CSV lokal → S3) · agregasi murni `src/lib/supply-chain-flow.ts` · tab Jalur & Tabel Pohon `src/lib/supply-chain-views.ts` (dari graf Sankey yang sama) · jarak/Lembaga/Sorotan `src/lib/supply-chain-insights.ts` (haversine `lib/geo.ts`, koordinat dari CSV — tanpa DB; titik singgah = `recordWaypointOfftakers`, sama dengan garis Peta) · formatter `src/lib/supply-chain-format.ts` · Excel `src/lib/supply-chain-xlsx.ts` (`exportMultiSheetToExcel`, client-side, tombol hanya bila izin EXPORT) |
 | Bantuan | `src/content/help/tutorial/p-16-dashboard-rantai-pasok.md` |

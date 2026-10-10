@@ -199,7 +199,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>SC-02</strong> · 🔲 Not Started — Supply Chain: peta rantai pasok + report</summary>
 
-- **Evidence:** Belum ada versi final. **Prototipe** (2026-10-06, untuk diskusi): Dashboard Rantai Pasok (Sankey) + Peta Rantai Pasok membaca tabel CSV hasil konversi survei 2025 (lokal / S3 privat), **bukan** model DB — status fase tetap Not Started sampai #380 menyediakan model & import.
+- **Evidence:** Belum ada versi final. **Prototipe** (2026-10-06, untuk diskusi): Dashboard Rantai Pasok (Sankey) + Peta Rantai Pasok membaca tabel CSV hasil konversi survei 2025 (lokal / S3 privat), **bukan** model DB — status fase tetap Not Started sampai #380 menyediakan model & import. Prototipe diperluas 2026-10-09/10: 4 tab Aliran TBS, Volume per Mill & per Lembaga, Unduh Excel 3 sheet (Jalur · Mill · Lembaga), Peta dengan garis lengkung beranimasi, hover, popup beraksi, panel "tidak tergambar" bernama (`99ccc3e`, `04cea12`).
 - **Next step:** v1.6.0 (#381): garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel.
 - **Selesai bila:** #381 ditutup; Bantuan tutorial peta & report tersedia.
 
@@ -208,8 +208,8 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>SC-03</strong> · 🔲 Not Started — Supply Chain: analisa volume, jarak & risiko Mill</summary>
 
-- **Evidence:** Belum ada.
-- **Next step:** v1.6.0 (#382): jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker (ambang ⚖️), risiko NKT & tumpang tindih per Mill (memakai MD-08 & DA-09).
+- **Evidence:** Belum ada versi final. **Prototipe CSV** (2026-10-10): kartu Sorotan + kolom Jarak — jarak garis lurus dari koordinat Lembaga/offtaker/Mill tabel (belum `ST_PointOnSurface` lahan), ketergantungan offtaker **≥ 80%** (koperasi Lembaga sendiri dikecualikan), konsentrasi Mill, kepastian Mill (`src/lib/supply-chain-insights.ts`). Risiko NKT & tumpang tindih per Mill belum.
+- **Next step:** v1.6.0 (#382): jarak dari `ST_PointOnSurface` lahan, risiko NKT & tumpang tindih per Mill (memakai MD-08 & DA-09). Ambang ketergantungan ✅ 80% (owner 2026-10-10).
 - **Selesai bila:** #382 ditutup.
 
 </details>
