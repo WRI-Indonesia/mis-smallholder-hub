@@ -4,11 +4,9 @@ import { OVERLAP_GEOMETRY_CHUNK } from "@/lib/parcel-overlap";
 /**
  * Input action geometri Tumpang Tindih Lahan (#317). `purpose` divalidasi saat runtime:
  * izin EXPORT & batas satu baris untuk preview bergantung padanya — nilai di luar
- * enum dulu lolos sebagai "bukan export" = cukup izin VIEW untuk ribuan geometri
- * (review ef4ed79).
+ * `preview`/`export` dulu lolos sebagai "bukan export" = cukup izin VIEW untuk ribuan
+ * geometri (review ef4ed79).
  */
-export const geometryPurposeSchema = z.enum(["preview", "export"]);
-
 const previewOrExport = <T extends z.ZodTypeAny>(item: T) =>
   z.discriminatedUnion("purpose", [
     z.object({ purpose: z.literal("preview"), items: z.array(item).length(1) }),

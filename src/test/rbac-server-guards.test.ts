@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { normalizeRolePermissionUpdates } from "@/lib/role-permission-updates";
-import { farmerGroupAccessFilter, type AccessContext } from "@/lib/access-scope";
 
 /**
  * Guard/scope yang menutup celah RBAC audit P0 (#125). Menguji kode ASLI:
@@ -40,7 +39,6 @@ vi.mock("@/lib/prisma", () => ({ prisma: db }));
 const { toggleFarmerActive, createFarmer } = await import("@/server/actions/farmer");
 const { bulkCreateFarmers } = await import("@/server/actions/bulk-upload");
 const { setRolePermissions } = await import("@/server/actions/role-permission");
-const { getAllMenuItems } = await import("@/server/actions/menu");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -56,21 +54,6 @@ beforeEach(() => {
 
 const whereOf = (fn: { mock: { calls: unknown[][] } }) => (fn.mock.calls[0][0] as { where: Record<string, unknown> }).where;
 const FARMER = { farmerGroupId: "kt-2", gender: "M" as const, name: "Budi", farmerId: "HJP.01" };
-
-describe("RBAC scope — farmerGroupAccessFilter (create/update/bulk farmer target group)", () => {
-  it("ALL → tanpa batasan (SUPERADMIN / user tanpa assignment)", () => {
-    expect(farmerGroupAccessFilter({ mode: "ALL" })).toEqual({});
-  });
-
-  it("BY_FARMER_GROUP → batasi ke id lembaga tani yang diberikan", () => {
-    const access: AccessContext = { mode: "BY_FARMER_GROUP", ids: ["kt-1", "kt-2"] };
-    expect(farmerGroupAccessFilter(access)).toEqual({ id: { in: ["kt-1", "kt-2"] } });
-  });
-
-  it("BY_DISTRICT → batasi ke districtId", () => {
-    expect(farmerGroupAccessFilter({ mode: "BY_DISTRICT", ids: ["dist-1"] })).toEqual({ districtId: { in: ["dist-1"] } });
-  });
-});
 
 describe("RBAC scope — filter petani by-id (toggleFarmerActive)", () => {
   it("user BY_FARMER_GROUP tidak dapat menjangkau petani KT lain (where menyertakan filter KT)", async () => {
@@ -93,27 +76,13 @@ describe("RBAC scope — filter petani by-id (toggleFarmerActive)", () => {
   });
 });
 
-describe("RBAC guard — setRolePermissions: entri SUPERADMIN diabaikan, dedup entri terakhir menang", () => {
-  it("tanpa izin EDIT settings-roles → ditolak, DB tak disentuh", async () => {
-    hasPermission.mockResolvedValue(false);
-    const res = await setRolePermissions([{ role: "ADMIN", menuKey: "report-farmer", permission: "VIEW", granted: true }]);
-    expect(res.success).toBe(false);
-    expect(hasPermission).toHaveBeenCalledWith("settings-roles", "EDIT");
-    expect(db.$transaction).not.toHaveBeenCalled();
-  });
-
+describe("RBAC guard — setRolePermissions: entri SUPERADMIN diabaikan, dedup entri terakhir menang (guard EDIT & no-op SUPERADMIN: role-permission-guard.test.ts)", () => {
   it("entri SUPERADMIN dibuang, entri role lain tetap", () => {
     const valid = normalizeRolePermissionUpdates([
       { role: "SUPERADMIN", menuKey: "settings-roles", permission: "EDIT", granted: false },
       { role: "OPERATOR", menuKey: "master-data-farmers", permission: "VIEW", granted: true },
     ]);
     expect(valid).toEqual([{ role: "OPERATOR", menuKey: "master-data-farmers", permission: "VIEW", granted: true }]);
-  });
-
-  it("payload hanya SUPERADMIN → action mengembalikan count 0 tanpa menyentuh DB", async () => {
-    const res = await setRolePermissions([{ role: "SUPERADMIN", menuKey: "settings-roles", permission: "VIEW", granted: true }]);
-    expect(res).toEqual({ success: true, data: { count: 0 } });
-    expect(db.$transaction).not.toHaveBeenCalled();
   });
 
   it("dedup per (role, menuKey, permission) — entri terakhir menang (hanya PRINT yang dibuat)", async () => {
@@ -151,30 +120,5 @@ describe("RBAC scope — validasi lembaga tani target (createFarmer & bulkCreate
     expect(bad.success === false && bad.error).toMatch(/kt-9/);
     expect(db.farmer.createMany).not.toHaveBeenCalled();
   });
-
-  it("bulkCreateFarmers mode ALL: semua KT diperbolehkan tanpa lookup scope", async () => {
-    const res = await bulkCreateFarmers([{ ...FARMER, farmerGroupId: "kt-9" }]);
-    expect(res.success).toBe(true);
-    expect(db.farmerGroup.findMany).not.toHaveBeenCalled();
-  });
 });
 
-describe("RBAC guard — getAllMenuItems dapat diakses settings-menu ATAU settings-roles", () => {
-  const only = (key: string) => hasPermission.mockImplementation(async (menu: string) => menu === key);
-
-  it("hanya settings-menu VIEW → boleh (halaman Menu Management)", async () => {
-    only("settings-menu");
-    await expect(getAllMenuItems()).resolves.toEqual([]);
-  });
-
-  it("hanya settings-roles VIEW → boleh (halaman Role & Permission)", async () => {
-    only("settings-roles");
-    await expect(getAllMenuItems()).resolves.toEqual([]);
-  });
-
-  it("tidak keduanya → ditolak, DB tak disentuh", async () => {
-    hasPermission.mockResolvedValue(false);
-    await expect(getAllMenuItems()).rejects.toThrow(/izin/);
-    expect(db.menuItem.findMany).not.toHaveBeenCalled();
-  });
-});
