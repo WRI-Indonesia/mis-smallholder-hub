@@ -71,4 +71,23 @@ describe("popupViewRect — panel melayang menutupi tepi kiri peta", () => {
     expect(popupViewRect(narrow, 300, 352).left).toBe(0);
     expect(computePopupPan(popupViewRect(narrow, 300, 352), rect(100, 200, 300, 280))).toEqual([0, 0]);
   });
+
+  it("DOMRect asli (getter di prototype, bukan properti sendiri) → tepi kanan/atas/bawah tetap terbaca (QA staging v1.6.0)", () => {
+    // `getBoundingClientRect()` mengembalikan DOMRect: `{ ...rect }` menghasilkan objek kosong,
+    // sehingga popup yang meluber ke kanan/bawah tak pernah digeser balik.
+    class DomRectLike {
+      constructor(private l: number, private t: number, private w: number, private h: number) {}
+      get left() { return this.l; }
+      get top() { return this.t; }
+      get right() { return this.l + this.w; }
+      get bottom() { return this.t + this.h; }
+    }
+    const box = new DomRectLike(0, 0, 800, 600);
+    expect({ ...box }).not.toHaveProperty("right"); // prasyarat: spread memang kehilangan getter
+    const view = popupViewRect(box, 300, 352);
+    expect(view).toEqual({ left: 352, top: 0, right: 800, bottom: 600 });
+    const [dx, dy] = computePopupPan(view, rect(600, 400, 300, 280));
+    expect(dx).toBe(600 + 300 - (800 - POPUP_VIEW_PAD));
+    expect(dy).toBe(400 + 280 - (600 - POPUP_VIEW_PAD));
+  });
 });

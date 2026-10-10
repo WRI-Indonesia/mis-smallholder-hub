@@ -38,7 +38,10 @@ type EdgeRect = { left: number; top: number; right: number; bottom: number };
  */
 export function popupViewRect(box: EdgeRect, popupWidth: number, insetLeft: number, pad = POPUP_VIEW_PAD): EdgeRect {
   const fits = box.right - box.left - insetLeft >= popupWidth + 2 * pad;
-  return { ...box, left: box.left + (fits ? insetLeft : 0) };
+  // Salin eksplisit, bukan `{ ...box }`: DOMRect dari getBoundingClientRect() menyimpan
+  // tepinya sebagai getter di prototype, jadi spread menghilangkan right/top/bottom
+  // dan popup yang meluber kanan/atas/bawah tak pernah digeser (QA staging v1.6.0).
+  return { left: box.left + (fits ? insetLeft : 0), top: box.top, right: box.right, bottom: box.bottom };
 }
 
 /**
