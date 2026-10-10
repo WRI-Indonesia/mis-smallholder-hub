@@ -48,6 +48,8 @@ interface Props {
   onClose: () => void;
   group: FarmerGroup | null;
   districts: District[];
+  /** Distrik tak bisa diubah (akun ber-scope Lembaga, #409) — tampil teks + nilai tersembunyi. */
+  lockDistrict?: boolean;
 }
 
 // Mapping value → label agar trigger Select menampilkan label, bukan nilai
@@ -68,7 +70,7 @@ function FormSection({ title, children }: { title: string; children: React.React
   );
 }
 
-export function GroupFormModal({ open, onClose, group, districts }: Props) {
+export function GroupFormModal({ open, onClose, group, districts, lockDistrict = false }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const router = useRouter();
@@ -216,22 +218,31 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="districtId">Distrik</Label>
-                <Select
-                  name="districtId"
-                  defaultValue={group?.districtId ?? ""}
-                  items={districtItems}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih distrik" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {lockDistrict && group ? (
+                  <>
+                    <input type="hidden" name="districtId" value={group.districtId} />
+                    <p className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm" title="Akun yang dibatasi per Lembaga tidak bisa memindahkan distrik Lembaga">
+                      {districtItems[group.districtId] ?? group.districtId}
+                    </p>
+                  </>
+                ) : (
+                  <Select
+                    name="districtId"
+                    defaultValue={group?.districtId ?? ""}
+                    items={districtItems}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Pilih distrik" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {districts.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 {errors.districtId && (
                   <p className="text-sm text-destructive">{errors.districtId[0]}</p>
                 )}

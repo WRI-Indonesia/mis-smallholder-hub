@@ -17,6 +17,7 @@ const group = (id: string, districtId: string, isActive = true): Row => ({
   ispoCertStatus: null, sapMapAssuranceYear: null, sapMapAssuranceStatus: null, locationLat: null, locationLong: null,
 });
 const GROUPS: Row[] = [group("G1", "D1"), group("G2", "D1"), group("G3", "D2"), group("G9", "D1", false)];
+const DISTRICTS: Row[] = [{ id: "D1", isActive: true }, { id: "D2", isActive: true }, { id: "D3", isActive: true }, { id: "DX", isActive: false }];
 
 const hasPermission = vi.hoisted(() => vi.fn());
 const isSuperAdmin = vi.hoisted(() => vi.fn());
@@ -36,6 +37,7 @@ vi.mock("@/lib/land-marker-query", () => markers);
 
 const db = vi.hoisted(() => ({
   farmerGroup: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  district: { findFirst: vi.fn() },
   trainingPackage: { findMany: vi.fn() },
   trainingActivity: { findMany: vi.fn() },
   farmer: { findMany: vi.fn() },
@@ -61,6 +63,7 @@ beforeEach(() => {
   isSuperAdmin.mockResolvedValue(false);
   getAccessContext.mockResolvedValue({ mode: "ALL" });
   db.farmerGroup.findFirst.mockImplementation(async ({ where }: { where: unknown }) => GROUPS.find((g) => matches(g, where)) ?? null);
+  db.district.findFirst.mockImplementation(async ({ where }: { where: unknown }) => DISTRICTS.find((d) => matches(d, where)) ?? null);
   db.farmerGroup.create.mockResolvedValue({ id: "G-new" });
   db.farmerGroup.update.mockResolvedValue({});
   db.trainingPackage.findMany.mockResolvedValue([]);
@@ -202,6 +205,22 @@ describe("#409 — distrik tujuan Lembaga harus dalam scope (create & update)", 
     expect(db.farmerGroup.update).not.toHaveBeenCalled();
     expect(await updateFarmerGroup({ ...VALID, id: "G1", name: "Nama Baru" })).toEqual({ success: true });
     expect(db.farmerGroup.update).toHaveBeenCalledOnce();
+  });
+});
+
+describe("#409 review — distrik aktif & pindah antar-distrik dalam scope", () => {
+  it("update BY_DISTRICT [D1, D3]: pindah G1 dari D1 ke D3 → berhasil, districtId ditulis D3", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["D1", "D3"] });
+    expect(await updateFarmerGroup({ ...VALID, id: "G1", districtId: "D3" })).toEqual({ success: true });
+    expect(argOf(db.farmerGroup.update).data.districtId).toBe("D3");
+  });
+
+  it("distrik nonaktif / tak dikenal → fieldErrors districtId, tanpa tulis (create & update)", async () => {
+    expect(await createFarmerGroup({ ...VALID, districtId: "DX" })).toMatchObject({ success: false, error: { districtId: expect.any(Array) } });
+    expect(await createFarmerGroup({ ...VALID, districtId: "D-tak-ada" })).toMatchObject({ success: false, error: { districtId: expect.any(Array) } });
+    expect(await updateFarmerGroup({ ...VALID, id: "G1", districtId: "DX" })).toMatchObject({ success: false, error: { districtId: expect.any(Array) } });
+    expect(db.farmerGroup.create).not.toHaveBeenCalled();
+    expect(db.farmerGroup.update).not.toHaveBeenCalled();
   });
 });
 

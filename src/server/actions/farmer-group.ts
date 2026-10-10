@@ -338,6 +338,11 @@ export async function getFarmerGroupDetail(id: string) {
   };
 }
 
+/** Distrik tujuan harus ada & aktif — tanpa ini id asing berujung galat FK, distrik nonaktif lolos (review #409). */
+async function isActiveDistrict(districtId: string): Promise<boolean> {
+  return !!(await prisma.district.findFirst({ where: { id: districtId, isActive: true }, select: { id: true } }));
+}
+
 export async function createFarmerGroup(input: FarmerGroupInput) {
   if (!(await hasPermission("master-data-groups", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menambah lembaga petani" };
@@ -353,6 +358,9 @@ export async function createFarmerGroup(input: FarmerGroupInput) {
       ? "Akun Anda dibatasi per Lembaga Petani sehingga tidak bisa menambah Lembaga baru"
       : "Distrik tidak dalam akses Anda";
     return { success: false, error };
+  }
+  if (!(await isActiveDistrict(parsed.data.districtId))) {
+    return { success: false, error: { districtId: ["Distrik tidak ditemukan atau nonaktif"] } };
   }
 
   const session = await auth();
@@ -392,6 +400,9 @@ export async function updateFarmerGroup(input: UpdateFarmerGroupInput) {
       ? "Akun Anda dibatasi per Lembaga Petani sehingga tidak bisa memindahkan distrik Lembaga"
       : "Distrik tidak dalam akses Anda";
     return { success: false, error };
+  }
+  if (data.districtId !== existing.districtId && !(await isActiveDistrict(data.districtId))) {
+    return { success: false, error: { districtId: ["Distrik tidak ditemukan atau nonaktif"] } };
   }
 
   await prisma.farmerGroup.update({

@@ -44,6 +44,6 @@ Secara bawaan akun SUPERADMIN dan ADMIN yang bisa menambah atau mengubah lembaga
 
 **Muncul "Distrik tidak dalam akses Anda"** — distrik yang dipilih di luar wilayah akses akun Anda; pilih distrik lain, atau minta SUPERADMIN menambah wilayah akun.
 
-**Muncul "Akun Anda dibatasi per Lembaga Petani…"** — akun yang dibatasi per Lembaga tidak bisa menambah Lembaga baru dan tidak bisa memindahkan distrik Lembaganya; minta SUPERADMIN atau ADMIN berwilayah yang melakukannya.
+**Tombol Tambah tidak ada dan Distrik terkunci, padahal akun bisa mengubah** — akun Anda dibatasi per Lembaga Petani: akun seperti ini tidak bisa menambah Lembaga baru dan tidak bisa memindahkan distrik Lembaganya (bila tetap dicoba lewat cara lain, muncul *"Akun Anda dibatasi per Lembaga Petani…"*). Minta SUPERADMIN atau ADMIN berwilayah yang melakukannya.
 
 **Titik lembaga tidak muncul di peta** — koordinat belum diisi, atau Latitude/Longitude tertukar. Buka Edit dan periksa kembali kedua angkanya.
