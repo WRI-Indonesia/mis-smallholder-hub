@@ -543,7 +543,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
             <Card className="border-amber-500/40 bg-amber-500/5">
               <CardContent className="flex items-center gap-2 py-4 text-sm text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                Lembaga Petani ini belum memiliki data petani aktif — domain Petani, Lahan, Pelatihan, dan Produksi kosong.
+                Lembaga Petani ini belum memiliki data petani terdaftar — domain Petani, Lahan, Pelatihan, dan Produksi kosong.
               </CardContent>
             </Card>
           )}
@@ -1353,7 +1353,7 @@ function CoverageMatrix({ training }: { training: TrainingCoverageDetail }) {
   const hasMore = training.matrix.length > INITIAL_MATRIX_ROWS;
 
   if (training.matrix.length === 0) {
-    return <p className="text-sm text-muted-foreground">Belum ada petani aktif.</p>;
+    return <p className="text-sm text-muted-foreground">Belum ada petani terdaftar.</p>;
   }
 
   return (

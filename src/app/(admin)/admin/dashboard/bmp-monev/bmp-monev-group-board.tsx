@@ -133,14 +133,14 @@ export function BmpMonevGroupBoard({
                     <span className="text-sm font-semibold tabular-nums">{r.avgScore == null ? "—" : formatScore(r.avgScore)}</span>
                     {cat && <BmpCategoryBadge category={cat} className="text-[10px] px-1.5" />}
                   </div>
-                  <div className="text-right text-xs tabular-nums text-muted-foreground" title={`${formatNumber(r.assessedFarmers)} dari ${formatNumber(r.totalFarmers)} petani aktif dinilai`}>
+                  <div className="text-right text-xs tabular-nums text-muted-foreground" title={`${formatNumber(r.assessedFarmers)} dari ${formatNumber(r.totalFarmers)} petani terdaftar dinilai`}>
                     {formatNumber(r.assessedFarmers)}/{formatNumber(r.totalFarmers)} · {formatPct(coverage)}%
                   </div>
                 </div>
               );
             })}
             <p className="pt-2 text-[11px] text-muted-foreground">
-              Lebar segmen = proporsi petani dinilai per kategori; rerata pada skala 0–3; cakupan = dinilai ÷ petani aktif.
+              Lebar segmen = proporsi petani dinilai per kategori; rerata pada skala 0–3; cakupan = dinilai ÷ petani terdaftar.
               {empty > 0 && ` ${formatNumber(empty)} Lembaga lain belum dinilai (lihat tabel rekap di bawah).`}
             </p>
           </div>

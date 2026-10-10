@@ -22,7 +22,7 @@ Seperti laporan lain, halaman ini membaca **data terkini**, bukan snapshot dashb
 1. Buka menu **Report → Pelatihan**.
 2. Pilih **Distrik** lalu **Lembaga Petani**, kemudian klik **Tampilkan Laporan**. Keduanya wajib diisi.
 3. Baca kartu ringkasan: Total Sesi, Total Peserta, Total Unik, dan persentase cakupan tiap paket.
-+ Total Peserta menghitung setiap kehadiran (satu petani ikut tiga sesi dihitung tiga), sedangkan Total Unik menghitung orangnya. Persentase cakupan dibaca terhadap seluruh petani aktif lembaga itu.
++ Total Peserta menghitung setiap kehadiran (satu petani ikut tiga sesi dihitung tiga), sedangkan Total Unik menghitung orangnya. Persentase cakupan dibaca terhadap seluruh petani terdaftar lembaga itu.
 4. Tinjau isi dua tab: **Sesi Pelatihan** (daftar sesi beserta tanggal, lokasi, dan jumlah peserta) dan **Detail per Pelatihan** (tanda paket apa saja yang sudah diikuti tiap petani).
 5. Untuk rekap lengkap, klik **Excel (2-Sheet)** atau **PDF** di kanan baris tab.
 + Excel-nya satu berkas dua sheet — "Sesi Pelatihan" dan "Cakupan per Petani". PDF-nya berjudul *Laporan Cakupan Pelatihan Petani*: matriks paket per petani, cocok untuk lampiran laporan program.

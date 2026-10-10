@@ -71,7 +71,7 @@ Halaman: Tumpang Tindih Lahan (/admin/data-analyst/parcel-overlap)
 
 | Hal | Aturan |
 |---|---|
-| Pasangan | Self-join `ST_Intersects` atas `LandParcel.geom` (GiST), `NOT ST_Touches` — bersinggungan di tepi bukan temuan; kedua lahan & petani aktif |
+| Pasangan | Self-join `ST_Intersects` atas `LandParcel.geom` (GiST), `NOT ST_Touches` — bersinggungan di tepi bukan temuan; kedua lahan aktif & petani terdaftar |
 | Luas | `ST_Area(::geography)` dari poligon (bukan kolom `area`) |
 | % utama | irisan ÷ lahan yang **lebih kecil**; % terhadap masing-masing lahan ikut tampil |
 | Ambang buang | irisan < 100 m² **dan** < 1% lahan terkecil (keputusan #317) |

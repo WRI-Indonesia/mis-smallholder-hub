@@ -109,7 +109,7 @@ export function AvailabilityMatrix({
                   <th className="whitespace-nowrap px-1 py-1.5 text-center font-semibold">
                     {headBtn("health", "Skor Total", "Skor kelengkapan berbobot lintas domain")}
                   </th>
-                  <th className="whitespace-nowrap px-2 py-1.5 text-right font-semibold">{headBtn("totalFarmers", "Petani (n)", "Jumlah petani aktif")}</th>
+                  <th className="whitespace-nowrap px-2 py-1.5 text-right font-semibold">{headBtn("totalFarmers", "Petani (n)", "Jumlah petani terdaftar")}</th>
                   {AVAILABILITY_DOMAIN_KEYS.map((key) => (
                     <th key={key} className="whitespace-nowrap px-1 py-1.5 text-center font-semibold">
                       {headBtn(key, shortDomainLabel(key))}

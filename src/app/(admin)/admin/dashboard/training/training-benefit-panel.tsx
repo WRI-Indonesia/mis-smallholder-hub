@@ -104,7 +104,7 @@ function BenefitBar({
             2026-10-07), jumlahnya hanya di tooltip. Garis acuan + ruang 5% dihapus. */}
         <div
           className="relative h-7 flex-1 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800"
-          title={untrained > 0 ? `${formatNumber(untrained)} petani aktif belum dilatih` : undefined}
+          title={untrained > 0 ? `${formatNumber(untrained)} petani terdaftar belum dilatih` : undefined}
         >
           <div className="flex h-full" style={{ width: `${(total / max) * 100}%` }}>
             {r.cells.map((c, i) =>
@@ -299,7 +299,7 @@ function BenefitChart({
         {activeFarmers > 0 && (
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-slate-200 dark:bg-slate-700" />
-            belum dilatih · trek penuh = <b className="tabular-nums text-foreground">{formatNumber(activeFarmers)}</b> petani aktif
+            belum dilatih · trek penuh = <b className="tabular-nums text-foreground">{formatNumber(activeFarmers)}</b> petani terdaftar
           </span>
         )}
         <span className="ml-auto">Angka di ujung = kumulatif s.d. {years[lastIdx].year}</span>
@@ -345,7 +345,7 @@ export function TrainingBenefitPanel({
   const activeFarmers = useMemo(() => groups.reduce((sum, g) => sum + g.totalFarmers, 0), [groups]);
   const subtitle: Record<BenefitView, string> = {
     tabel: "Petani unik per paket. Actual = penerima manfaat baru (pertama kali dilatih paket itu) pada tahun tersebut; Kumulative = total s.d. akhir tahun.",
-    grafis: `Panjang bar = petani unik yang sudah dilatih s.d. ${currentYear}; warna segmen = tahun pertama dilatih. Panjang trek penuh = total petani aktif; sisa abu = belum dilatih.`,
+    grafis: `Panjang bar = petani unik yang sudah dilatih s.d. ${currentYear}; warna segmen = tahun pertama dilatih. Panjang trek penuh = total petani terdaftar; sisa abu = belum dilatih.`,
     kontrak: "Target kontrak kumulatif (garis putus-putus) dibanding realisasi penerima manfaat baru (garis tegas). Target diisi di Master Data › Target Program.",
   };
   /** Tombol toggle (fungsi biasa, bukan komponen — tak di-remount tiap render). */

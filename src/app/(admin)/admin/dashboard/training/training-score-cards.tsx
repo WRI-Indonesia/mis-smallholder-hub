@@ -39,7 +39,7 @@ export function TrainingScoreCards({
         <>
           <StatEmph kind="percent">{pct(totals.trainedFarmers, totals.totalFarmers)}</StatEmph>{" "}
           dari total <StatEmph kind="total">{formatNumber(totals.totalFarmers)}</StatEmph> petani
-          aktif pernah ikut ≥1 pelatihan ({yearLabel})
+          terdaftar pernah ikut ≥1 pelatihan ({yearLabel})
         </>
       ),
       icon: UserCheck,

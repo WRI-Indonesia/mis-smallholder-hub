@@ -33,7 +33,7 @@ export function BmpMonevGroupTable({ rows, year, canExport }: { rows: BmpMonevGr
       columns: [
         { header: "Lembaga Petani", key: "name", width: 34 },
         { header: "Distrik", key: "district", width: 18 },
-        { header: "Petani Aktif", key: "total", width: 12 },
+        { header: "Petani Terdaftar", key: "total", width: 12 },
         { header: "Dinilai", key: "assessed", width: 10 },
         { header: "Cakupan (%)", key: "coverage", width: 12 },
         { header: "Rerata Skor", key: "avg", width: 12 },

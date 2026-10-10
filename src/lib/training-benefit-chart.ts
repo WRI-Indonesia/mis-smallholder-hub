@@ -160,7 +160,7 @@ export function benefitBarsSvg(years: TrainingBenefitYear[], rows: TrainingBenef
     lx += 30 + label.length * 7;
   });
   parts.push(`<rect x="${lx}" y="8" width="12" height="12" rx="2" fill="${C.track}" stroke="${C.border}"/>`);
-  parts.push(text(lx + 18, 18, `belum dilatih · trek penuh = ${formatNumber(activeFarmers)} petani aktif`, { size: 12, fill: C.muted }));
+  parts.push(text(lx + 18, 18, `belum dilatih · trek penuh = ${formatNumber(activeFarmers)} petani terdaftar`, { size: 12, fill: C.muted }));
   parts.push(text(W, 18, `Angka di ujung = kumulatif s.d. ${years[lastIdx].year}`, { size: 12, fill: C.muted, anchor: "end" }));
 
   const drawRow = (r: TrainingBenefitRow, top: number, strong: boolean) => {

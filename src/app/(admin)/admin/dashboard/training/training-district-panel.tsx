@@ -115,7 +115,7 @@ function DistrictCell({
           )}
         </div>
       </TooltipTrigger>
-      <StatTooltipContent title={label} footer={`dari ${formatNumber(total)} petani aktif`}>
+      <StatTooltipContent title={label} footer={`dari ${formatNumber(total)} petani terdaftar`}>
         {year == null ? (
           <>
             <StatTooltipRow
