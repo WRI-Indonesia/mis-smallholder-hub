@@ -91,10 +91,11 @@ export async function getFarmerGroupsForMap(
   await requireView();
   const access = await getAccessContext();
 
+  // Scope di AND: filter distrik permintaan tak boleh menimpa `districtId: { in }` BY_DISTRICT (BUG-007, audit 2026-10-10).
   const where = {
     isActive: true,
-    ...farmerGroupAccessFilter(access),
     ...(districtId ? { districtId } : {}),
+    AND: farmerGroupAccessFilter(access),
   };
 
   return prisma.farmerGroup.findMany({

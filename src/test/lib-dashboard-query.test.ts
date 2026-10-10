@@ -32,21 +32,20 @@ beforeEach(() => {
 });
 
 describe("aggregateDashboardData — where Lembaga", () => {
-  it("filter Lembaga dibungkus AND sehingga tidak menimpa scope `id` BY_FARMER_GROUP", async () => {
+  it("scope & filter Lembaga sama-sama di AND — tak saling menimpa (BY_FARMER_GROUP)", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["g1", "g2"] });
     await aggregateDashboardData({ farmerGroupId: "g9", districtId: "d1" });
     expect(db.farmerGroup.findMany.mock.calls[0][0].where).toEqual({
       isActive: true,
-      id: { in: ["g1", "g2"] },
       districtId: "d1",
-      AND: [{ id: "g9" }],
+      AND: [{ id: { in: ["g1", "g2"] } }, { id: "g9" }],
     });
   });
 
   it("BY_DISTRICT tanpa filter → isActive + districtId scope", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["d1"] });
     await aggregateDashboardData();
-    expect(db.farmerGroup.findMany.mock.calls[0][0].where).toEqual({ isActive: true, districtId: { in: ["d1"] } });
+    expect(db.farmerGroup.findMany.mock.calls[0][0].where).toEqual({ isActive: true, AND: [{ districtId: { in: ["d1"] } }] });
   });
 
   it("tidak ada Lembaga dalam scope → kueri petani dilewati", async () => {
