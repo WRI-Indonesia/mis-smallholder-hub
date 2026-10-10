@@ -117,7 +117,7 @@ function CoverageCell({
         <StatTooltipContent
           title={label}
           subtitle={row.groupName}
-          footer="Lembaga belum punya petani aktif"
+          footer="Lembaga belum punya petani terdaftar"
         />
       </Tooltip>
     );
@@ -140,7 +140,7 @@ function CoverageCell({
         subtitle={row.groupName}
         footer={
           <>
-            <span className="block">dari {formatNumber(row.totalFarmers)} petani aktif</span>
+            <span className="block">dari {formatNumber(row.totalFarmers)} petani terdaftar</span>
             <span className="block">{targetLine}</span>
           </>
         }
@@ -269,7 +269,7 @@ export function TrainingCoverageMatrix({
                 </span>
                 <span className="block text-xs text-muted-foreground mt-1">
                   {open
-                    ? "% petani aktif Lembaga yang sudah mengikuti paket tersebut, dibaca terhadap target program. Klik judul kolom untuk mengurutkan; klik sel yang belum mencapai target untuk melihat daftar petaninya."
+                    ? "% petani terdaftar Lembaga yang sudah mengikuti paket tersebut, dibaca terhadap target program. Klik judul kolom untuk mengurutkan; klik sel yang belum mencapai target untuk melihat daftar petaninya."
                     : `${formatNumber(rows.length)} Lembaga · ${formatPct(
                         summaryFarmers > 0 ? (summaryTrained / summaryFarmers) * 100 : 0,
                       )}% petani terlatih${untouched > 0 ? ` · ${formatNumber(untouched)} Lembaga belum tersentuh` : ""}${targetGap > 0 ? ` · kurang ${formatNumber(targetGap)} petani menuju target` : ""}`}

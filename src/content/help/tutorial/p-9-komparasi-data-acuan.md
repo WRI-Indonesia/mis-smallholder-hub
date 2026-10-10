@@ -14,7 +14,7 @@ goal: Anda tahu lembaga mana yang datanya di MIS masih kurang dari angka acuan (
 Halaman **Komparasi Data Acuan** membandingkan dua sisi untuk setiap Lembaga Petani:
 
 - **Acuan** — angka target/acuan manual (dari rekap GDrive "MD 1st SOW") yang dientry ke MIS dan bisa diedit di halaman ini.
-- **MIS** — angka live yang dihitung langsung dari database saat halaman dibuka: jumlah petani aktif, persil dan luas lahan aktif, petani terlatih per paket (distinct, konvensi sama dengan Dashboard Training), serta petani yang sudah punya data produksi.
+- **MIS** — angka live yang dihitung langsung dari database saat halaman dibuka: jumlah petani terdaftar, persil dan luas lahan aktif, petani terlatih per paket (distinct, konvensi sama dengan Dashboard Training), serta petani yang sudah punya data produksi.
 
 Kolom **Δ (selisih) = Acuan − MIS**. Selisih positif berarti data di MIS masih kurang dari acuan (misalnya lahan belum semua terupload); nol berarti sudah cocok.
 

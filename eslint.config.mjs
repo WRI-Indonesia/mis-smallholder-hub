@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // CLI / local maintenance scripts — not application code (issue #126).
     "scripts/**",
+    // Folder lokal bahan laporan/presentasi (gitignored, bukan kode aplikasi) — owner 2026-10-10.
+    "REPORTING/**",
   ]),
 ]);
 

@@ -1,13 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatNumber, formatPct } from "@/lib/format";
 import { CHANNEL_LABEL, type SankeyGraph, type SankeyNode } from "@/lib/supply-chain-flow";
 import { DIRECT_LABEL, buildPathRows, sortPathRows, type PathSortKey, type SortDir } from "@/lib/supply-chain-views";
-import { channelColor, fmtTon, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { fmtTon } from "@/lib/supply-chain-format";
+import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { SortHead } from "./sort-head";
 
 const ROWS_COLLAPSED = 20;
 
@@ -56,23 +58,9 @@ export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: Sank
     );
   };
 
-  const sortHead = (key: PathSortKey, label: string, className: string) => {
-    const on = sort.key === key;
-    const Icon = !on ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
-    return (
-      <th className={className} aria-sort={on ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}>
-        <button
-          type="button"
-          // Nama mulai A–Z; tonase mulai terbesar.
-          onClick={() => setSort(on ? { key, dir: sort.dir === "asc" ? "desc" : "asc" } : { key, dir: key === "TON" ? "desc" : "asc" })}
-          className="inline-flex items-center gap-1 font-medium hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          {label}
-          <Icon className={cn("h-3 w-3", !on && "opacity-50")} />
-        </button>
-      </th>
-    );
-  };
+  // Nama mulai A–Z; tonase mulai terbesar.
+  const toggleSort = (key: PathSortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: key === "TON" ? "desc" : "asc" }));
+  const sortHead = (key: PathSortKey, label: string, className: string) => <SortHead sortKey={key} sort={sort} onToggle={toggleSort} label={label} className={className} />;
   const sortText =
     sort.key === "TON"
       ? sort.dir === "desc" ? "diurut dari tonase terbesar" : "diurut dari tonase terkecil"

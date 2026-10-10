@@ -78,7 +78,7 @@ describe("SVG ekspor", () => {
     const { svg } = benefitBarsSvg(years, rows, any, 100);
     expect(svg).toContain("P1 | BMP, P&amp;C RSPO, HCV");
     expect(svg).not.toMatch(/&(?!amp;|lt;|gt;|quot;)/);
-    expect(svg).toContain("trek penuh = 100 petani aktif");
+    expect(svg).toContain("trek penuh = 100 petani terdaftar");
   });
 
   it("grid kontrak: satu kotak per baris, total kontrak + % di kepala", () => {

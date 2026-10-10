@@ -19,7 +19,18 @@ function Active({ on, children, className }: { on: boolean; children: React.Reac
  * disusun mengikuti arah aliran TBS — Lembaga → Agen → RAMP → Mill — sama
  * dengan urutan kolom Sankey dan garis peta.
  */
-export function SupplyChainFilterBar({ f, vertical = false, years }: { f: SupplyChainFilterState; vertical?: boolean; years: number[] }) {
+export function SupplyChainFilterBar({
+  f,
+  vertical = false,
+  years,
+  showReset = true,
+}: {
+  f: SupplyChainFilterState;
+  vertical?: boolean;
+  years: number[];
+  /** Dashboard memakai chip filter global (Hapus semua) di bawah bar, jadi tombol Reset di sini disembunyikan. */
+  showReset?: boolean;
+}) {
   const w = vertical ? "w-full" : undefined;
   const Arrow = vertical ? ChevronDown : ChevronRight;
   const chain = [
@@ -100,7 +111,7 @@ export function SupplyChainFilterBar({ f, vertical = false, years }: { f: Supply
               </Active>
             </div>
           ))}
-          {f.hasFilter && (
+          {showReset && f.hasFilter && (
             <Button variant="ghost" size="sm" onClick={f.reset} className={cn("text-muted-foreground", vertical && "self-start")}>
               <RotateCcw className="h-3.5 w-3.5" /> Reset
             </Button>

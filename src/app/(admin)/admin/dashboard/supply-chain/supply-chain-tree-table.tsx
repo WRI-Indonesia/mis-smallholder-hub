@@ -16,7 +16,8 @@ import {
   type TreeDirection,
   type TreeLevel,
 } from "@/lib/supply-chain-views";
-import { channelColor, fmtTon, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { fmtTon } from "@/lib/supply-chain-format";
+import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { UlBadge } from "./ul-badge";
 
 const LEVEL_COLUMN: Record<TreeLevel, 0 | 1 | 3> = { DISTRIK: 0, LEMBAGA: 0, OFFTAKER: 1, UL: 3, MILL: 3 };

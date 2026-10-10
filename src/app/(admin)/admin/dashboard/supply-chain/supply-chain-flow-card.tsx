@@ -2,16 +2,13 @@
 
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { ListOrdered, ListTree, RotateCcw, Spline, Workflow, X } from "lucide-react";
+import { ListOrdered, ListTree, RotateCcw, Spline, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  GROUP_CATEGORY_LABEL,
-  UL_FILTER_LABEL,
   UNKNOWN_MILL_FILTER,
   buildSupplyChainSankey,
-  millLabel,
   parseChainNodeId,
   type SankeyDestination,
   type SankeyMode,
@@ -25,7 +22,8 @@ import { SegmentToggle } from "./segment-toggle";
 import { SupplyChainSankey, isGroupNode, type SankeyUnit } from "./supply-chain-sankey";
 import { SupplyChainPathList } from "./supply-chain-path-list";
 import { SupplyChainTreeTable } from "./supply-chain-tree-table";
-import type { ScFilterParam, SupplyChainFilterState } from "./use-supply-chain-filters";
+import { notifyFilter } from "./supply-chain-filter-chips";
+import type { SupplyChainFilterState } from "./use-supply-chain-filters";
 
 // React Flow hanya dimuat saat tab Diagram Alur dibuka.
 const SupplyChainFlowDiagram = dynamic(() => import("./supply-chain-flow-diagram").then((m) => m.SupplyChainFlowDiagram), {
@@ -43,23 +41,29 @@ const TAB_META: Record<FlowTab, { label: string; icon: typeof Spline; hint: stri
 };
 
 const TOP_OPTIONS = ["8", "12", "20", "999"] as const;
+/** Bawaan tampilan (owner 2026-10-10): paling ringkas — Distrik · Per jenis · UL/Non-UL · Ton; di tiap toggle pilihan bawaan di kiri. */
+const DEFAULT_ORIGIN: SankeyOrigin = "DISTRIK";
+const DEFAULT_DESTINATION: SankeyDestination = "UL";
 /** Mode Ringkas hanya melipat kolom Mill — kolom tengah sudah ≤ 5 node, jadi ada ruang untuk lebih banyak Mill. */
 const RINGKAS_MILLS = 15;
 
 /**
- * Kartu Aliran TBS (owner 2026-10-09): empat tab tampilan atas data yang sama,
- * toolbar berlabel yang dipakai bersama (pilihan yang tak berlaku di tab aktif
- * disembunyikan), chip filter aktif yang bisa dihapus satu per satu, dan kartu
- * yang bisa dilipat. Klik node di tab mana pun = penangan filter yang sama.
+ * Kartu Aliran TBS (owner 2026-10-09): empat tab tampilan atas data yang sama.
+ * Toolbar tampilan (Arah · Dari · Ke · Offtaker · Angka) tetap **lepasan** di
+ * bawah tab — sempat dicoba popover "Tampilan", owner 2026-10-10: pengguna
+ * sering tak menyadarinya. Bawaan paling ringkas (Distrik · Per jenis ·
+ * UL/Non-UL · Ton), pilihan bawaan di kiri; kalimat "Menampilkan …" merangkum.
+ * Chip filter aktif global di bawah bar filter. Klik node di tab mana pun =
+ * penangan filter yang sama + toast singkat.
  */
 export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: SupplyChainFilterState }) {
-  const { records, offtakers, millsById } = f;
+  const { records, offtakers } = f;
   const [tab, setTab] = useStoredChoice<FlowTab>("tab", "SANKEY", TABS);
   const [mode, setMode] = useState<SankeyMode>("RINGKAS");
   const [top, setTop] = useState<(typeof TOP_OPTIONS)[number]>("12");
   const [unit, setUnit] = useState<SankeyUnit>("TON");
-  const [origin, setOrigin] = useState<SankeyOrigin>("LEMBAGA");
-  const [destination, setDestination] = useState<SankeyDestination>("MILL");
+  const [origin, setOrigin] = useState<SankeyOrigin>(DEFAULT_ORIGIN);
+  const [destination, setDestination] = useState<SankeyDestination>(DEFAULT_DESTINATION);
   const [direction, setDirection] = useState<TreeDirection>("HULU");
 
   // Tiap graf hanya dibangun untuk tab yang memakainya.
@@ -76,33 +80,30 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
     [tab, view.data, records, mode],
   );
 
-  const chipMill = f.filter.millId ? millsById.get(f.filter.millId) : undefined;
-  const chips: { param: ScFilterParam; label: string }[] = [
-    f.district ? { param: "distrik" as const, label: `Distrik: ${f.district}` } : null,
-    f.category ? { param: "kategori" as const, label: `Kategori: ${GROUP_CATEGORY_LABEL[f.category]}` } : null,
-    f.filter.groupCode
-      ? { param: "lembaga" as const, label: `Lembaga: ${view.data.groups.find((g) => g.code === f.filter.groupCode)?.abrv ?? f.filter.groupCode}` }
-      : null,
-    f.filter.collectorId ? { param: "agen" as const, label: `Agen: ${offtakers.get(f.filter.collectorId)?.name ?? f.filter.collectorId}` } : null,
-    f.filter.rampId ? { param: "ramp" as const, label: `RAMP: ${offtakers.get(f.filter.rampId)?.name ?? f.filter.rampId}` } : null,
-    f.filter.millId
-      ? { param: "mill" as const, label: f.filter.millId === UNKNOWN_MILL_FILTER ? "Mill tidak diketahui" : `Mill: ${chipMill ? millLabel(chipMill) : f.filter.millId}` }
-      : null,
-    f.filter.ul ? { param: "ul" as const, label: UL_FILTER_LABEL[f.filter.ul] } : null,
-  ].filter((x) => x !== null);
-
-  const viewChanged = mode !== "RINGKAS" || origin !== "LEMBAGA" || destination !== "MILL" || unit !== "TON" || direction !== "HULU";
+  // Pilihan tampilan yang menyimpang dari bawaan — memunculkan tombol Tampilan bawaan.
+  const changed = [
+    origin !== DEFAULT_ORIGIN,
+    destination !== DEFAULT_DESTINATION,
+    mode !== "RINGKAS",
+    unit !== "TON",
+    tab === "POHON" && direction !== "HULU",
+    mode === "RINCI" && tab !== "POHON" && top !== "12",
+  ].filter(Boolean).length;
   const resetView = () => {
     setMode("RINGKAS");
-    setOrigin("LEMBAGA");
-    setDestination("MILL");
+    setTop("12");
+    setOrigin(DEFAULT_ORIGIN);
+    setDestination(DEFAULT_DESTINATION);
     setUnit("TON");
     setDirection("HULU");
   };
 
   const selectNode = (n: SankeyNode) => {
-    if (isGroupNode(n)) setMode("RINCI");
-    else if (n.id.startsWith("U:")) {
+    if (isGroupNode(n)) {
+      setMode("RINCI");
+      return;
+    }
+    if (n.id.startsWith("U:")) {
       // Klik UL/Non-UL = filter UL lalu turun ke rincian per Mill.
       f.update({ ul: n.id.slice(2) });
       setDestination("MILL");
@@ -118,6 +119,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
       else if (offtakers.get(n.id.slice(2))?.type === "RAMP") f.update({ ramp: n.id.slice(2) });
       else f.update({ agen: n.id.slice(2) });
     } else f.update({ mill: n.id === "M:?" ? UNKNOWN_MILL_FILTER : n.id.slice(2) });
+    notifyFilter(n.label);
   };
 
   // Kalimat baca: apa yang sedang ditampilkan, dalam bahasa biasa.
@@ -152,10 +154,11 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
               );
             })}
           </div>
-          <p className="pb-2 text-xs text-muted-foreground">{TAB_META[tab].hint}</p>
+          <p className="hidden pb-2 text-xs text-muted-foreground lg:block">{TAB_META[tab].hint}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md bg-muted/30 px-3 py-2">
+        {/* Toolbar lepasan (owner 2026-10-10: popover sering tak disadari) — satu strip ringkas, bawaan di kiri tiap toggle. */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
           {tab === "POHON" && (
             <SegmentToggle
               caption="Arah"
@@ -163,7 +166,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
               onChange={setDirection}
               label="Arah agregasi"
               options={[
-                { value: "HULU", label: "Hulu → Hilir", hint: "Mulai dari Lembaga, buka sampai Mill tujuannya" },
+                { value: "HULU", label: "Hulu → Hilir", hint: "Mulai dari Lembaga, buka sampai Mill tujuannya (bawaan)" },
                 { value: "HILIR", label: "Hilir → Hulu", hint: "Mulai dari Mill, buka sampai Lembaga pemasoknya" },
               ]}
             />
@@ -174,8 +177,8 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
             onChange={setOrigin}
             label="Kelompok asal"
             options={[
+              { value: "DISTRIK", label: "Distrik", hint: "Gabungkan Lembaga per kabupaten (bawaan)" },
               { value: "LEMBAGA", label: "Lembaga", hint: "Satu baris/node per Lembaga Petani" },
-              { value: "DISTRIK", label: "Distrik", hint: "Gabungkan Lembaga per kabupaten" },
             ]}
           />
           <SegmentToggle
@@ -184,8 +187,8 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
             onChange={setDestination}
             label="Kelompok tujuan"
             options={[
+              { value: "UL", label: "UL / Non-UL", hint: "Gabungkan jadi Ke Mill UL dan Bukan ke Mill UL (bawaan)" },
               { value: "MILL", label: "Mill", hint: "Satu baris/node per Mill (PKS)" },
-              { value: "UL", label: "UL / Non-UL", hint: "Gabungkan jadi Ke Mill UL dan Bukan ke Mill UL" },
             ]}
           />
           <SegmentToggle
@@ -194,7 +197,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
             onChange={setMode}
             label="Rincian offtaker"
             options={[
-              { value: "RINGKAS", label: "Per jenis", hint: "Gabungkan per jenis: Agen, RAMP, KT/Koperasi, Agen → RAMP" },
+              { value: "RINGKAS", label: "Per jenis", hint: "Gabungkan per jenis: Agen, RAMP, KT/Koperasi, Agen → RAMP (bawaan)" },
               { value: "RINCI", label: "Satu per satu", hint: "Tiap agen, RAMP, dan KT/koperasi tampil sendiri" },
             ]}
           />
@@ -202,7 +205,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
             <div className="inline-flex items-center gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tampilkan</span>
               <Select value={top} onValueChange={(v) => setTop(v as (typeof TOP_OPTIONS)[number])}>
-                <SelectTrigger className="h-7 w-[150px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-7 w-[160px] text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {TOP_OPTIONS.map((t) => (
                     <SelectItem key={t} value={t}>{t === "999" ? "Semua" : `${t} teratas per kolom`}</SelectItem>
@@ -217,43 +220,18 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
             onChange={setUnit}
             label="Satuan angka"
             options={[
-              { value: "TON", label: "Ton", hint: "Tonase TBS per tahun survei" },
+              { value: "TON", label: "Ton", hint: "Tonase TBS per tahun survei (bawaan)" },
               { value: "PCT", label: "%", hint: "Persen dari total pada filter aktif" },
             ]}
           />
-          {viewChanged && (
+          {changed > 0 && (
             <Button variant="ghost" size="sm" onClick={resetView} className="ml-auto h-7 gap-1.5 text-xs" title="Kembalikan pilihan tampilan ke bawaan">
               <RotateCcw className="h-3.5 w-3.5" /> Tampilan bawaan
             </Button>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="text-muted-foreground">Menampilkan {reading}.</span>
-          {chips.length > 0 && (
-            <>
-              <span className="ml-2 font-medium text-foreground">Filter:</span>
-              {chips.map((c) => (
-                <span key={c.param} className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 py-0.5 pl-2 pr-1 text-foreground">
-                  {c.label}
-                  <button
-                    type="button"
-                    onClick={() => f.update({ [c.param]: null })}
-                    aria-label={`Hapus filter ${c.label}`}
-                    className="rounded-full p-0.5 text-muted-foreground hover:bg-primary/20 hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-              {chips.length > 1 && (
-                <button type="button" onClick={f.reset} className="ml-1 text-primary underline-offset-2 hover:underline">
-                  Hapus semua
-                </button>
-              )}
-            </>
-          )}
-        </div>
+        <p className="text-xs text-muted-foreground">Menampilkan {reading}.</p>
 
         <div className="overflow-x-auto">
           {tab === "SANKEY" && graph && <SupplyChainSankey graph={graph} unit={unit} onSelectNode={selectNode} />}
