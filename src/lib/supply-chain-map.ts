@@ -5,7 +5,7 @@
  * tonase). Tanpa React/MapLibre — dipakai klien peta dan test.
  */
 
-import { OFFTAKER_TYPE_LABEL, millLabel, recordCollectorId, recordRampId, recordWaypointOfftakers, type OfftakerType, type ScOfftaker, type ScRecord, type SupplyChainData } from "@/lib/supply-chain-flow";
+import { millLabel, recordCollectorId, recordRampId, recordWaypointOfftakers, type OfftakerType, type ScOfftaker, type ScRecord, type SupplyChainData } from "@/lib/supply-chain-flow";
 
 export type LonLat = [number, number];
 
@@ -120,5 +120,3 @@ export function offtakerFilterPatch(id: string, records: ScRecord[], offtakers: 
   return hit ? (isRamp ? { ramp: id } : { agen: id }) : null;
 }
 
-/** Label tipe offtaker untuk tooltip/popup. */
-export const offtakerTypeLabel = (t: OfftakerType) => OFFTAKER_TYPE_LABEL[t];

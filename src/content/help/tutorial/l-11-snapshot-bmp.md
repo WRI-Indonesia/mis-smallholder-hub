@@ -17,7 +17,7 @@ Snapshot BMP **terpisah** dari Dashboard Snapshot (Main Dashboard) dan tidak sal
 
 + Satu snapshot BMP merangkum seluruh Lembaga Petani beserta petani, lahan (luas dan tahun tanam), dan produksinya. Tahun tanam itulah yang kelak mengisi analisa umur tanaman, dan total luas yang mengisi kartu Luasan — keduanya tidak ada di snapshot yang dibuat sebelum kolom itu ditambahkan.
 
-Membuat snapshot butuh izin CREATE pada menu Tools — secara bawaan hanya ADMIN dan SUPERADMIN. Akun dengan izin VIEW saja tetap bisa membaca daftar dan membuka rekaman lama.
+Membuat snapshot butuh izin CREATE pada menu **Dashboard Snapshot BMP** di grup Tools — secara bawaan hanya ADMIN dan SUPERADMIN. Akun dengan izin VIEW saja tetap bisa membaca daftar dan membuka rekaman lama.
 
 ## Langkah
 

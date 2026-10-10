@@ -16,7 +16,7 @@ Audit **seluruh repo** (bukan hanya diff). Mode dari argumen: $ARGUMENTS
 - DB: tanpa akses kecuali **READ ONLY** (`BEGIN READ ONLY`) bila perlu memverifikasi klaim prod — ajukan query-nya dulu.
 - Tiap temuan ber-bukti (`file:line`, hasil grep/test, nomor issue), bukan dugaan.
 - Membuat/menutup issue, komentar GitHub = **izin per aksi** (format tanya bertahap + rekomendasi). Repo **publik**: issue/commit tanpa nama petani/offtaker asli, NIK, password, email staf, angka kontrak.
-- False positive yang sudah dikenal (#353): CSS `@import`, skrip CLI `scripts/**` (selama belum ada `knip.json` ber-`entry`), devDep `sharp` (TD-009), token `@theme`, ekspor `src/components/ui/**`, `NEXTAUTH_*` (dibaca implisit next-auth). Keputusan tertunda #353 bagian E (kini tinggal font Acumin, #273) jangan diputuskan sepihak.
+- False positive yang sudah dikenal (#353): CSS `@import`, skrip CLI `scripts/**` (sejak 2026-10-10 dijadikan `entry` di `knip.json`; knip juga mengabaikan ekspor yang dipakai di berkasnya sendiri — sisa laporan normal = ekspor `src/components/ui/**`), devDep `sharp` (TD-009), token `@theme`, ekspor `src/components/ui/**`, `NEXTAUTH_*` (dibaca implisit next-auth). Keputusan tertunda #353 bagian E (kini tinggal font Acumin, #273) jangan diputuskan sepihak.
 
 ## Langkah 1 — Analisa (workflow)
 1. Laporan sebelumnya: berkas terbaru `audit-report/audit-*.md` (folder gitignored). Ambil daftar `key` temuan dari tabel-tabelnya (kolom pertama) → `previous`.

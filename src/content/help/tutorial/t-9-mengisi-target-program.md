@@ -13,7 +13,7 @@ goal: Angka kontrak / trayektori pelatihan tercatat di aplikasi, sehingga Dashbo
 
 Halaman ini menyimpan angka **kontrak** program — bukan data petani. Angkanya berlaku untuk seluruh program (semua distrik dan Lembaga), dan dipakai tampilan **vs Kontrak** di kartu *Training Benefit per year* (Dashboard Pelatihan).
 
-+ Hanya SUPERADMIN dan ADMIN yang bisa mengubah angka. Peran lain yang membuka halaman ini hanya bisa melihat.
++ Secara bawaan hanya SUPERADMIN dan ADMIN yang bisa membuka dan mengubah halaman ini. Peran lain tidak melihat menunya, kecuali diberi izin per akun.
 
 ## Langkah
 
@@ -35,6 +35,6 @@ Halaman ini menyimpan angka **kontrak** program — bukan data petani. Angkanya 
 
 **Tombol Simpan tidak aktif** — ada sel berisi bukan angka (berbingkai merah). Isi dengan bilangan bulat tanpa koma, atau kosongkan.
 
-**Muncul "Tahun Start of the Program harus sama untuk semua baris"** — kedua baris kontrak memakai satu tahun Start yang sama; pilih satu tahun di header kolom Start.
+**Muncul "Tahun Start of the Program harus sama untuk semua baris"** — semua baris memakai satu tahun Start yang sama; pilih satu tahun di header kolom Start.
 
 **Kolom isian tidak muncul, hanya angka** — akun Anda tidak punya izin mengubah. Minta SUPERADMIN atau ADMIN.

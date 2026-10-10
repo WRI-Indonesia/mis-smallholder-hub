@@ -39,7 +39,7 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **Status Kepemilikan** — Milik Sendiri, Sewa, atau Bagi Hasil. Sering diminta saat audit sertifikasi untuk memastikan hak garap jelas.
 
-**NKT** (kolom tersembunyi, aktifkan lewat tombol Kolom) — status NKT pendek atau *Belum dinilai*. **Patok** — jumlah patok batas yang tercatat.
+**NKT** dan **Patok** (keduanya kolom tersembunyi, aktifkan lewat tombol Kolom) — NKT: status NKT pendek atau *Belum dinilai*; Patok: jumlah patok batas yang tercatat.
 
 **Komoditas / Species** — jenis tanaman. Komoditas berisi **Kelapa Sawit** untuk seluruh lahan yang didata MIS saat ini; kolom yang dibiarkan kosong (termasuk lewat Unggah Lahan) otomatis terisi Kelapa Sawit, bukan kosong. Species diisi nama ilmiah bila diperlukan laporan teknis.
 

@@ -146,7 +146,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>PLATFORM-08</strong> · 🟠 Partial — Pengerasan keamanan & RBAC pasca-MVP</summary>
 
 - **Evidence:** v1.2.0 (2026-09-29): struktur menu dikunci dari UI (#364), reaktivasi menu (#237), kunci berkas bukti pelatihan & path unggahan S3 divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). v1.3.0 (2026-09-30): role/`isActive` di JWT dibaca ulang dari DB ≤ 1 menit, memo dibuang saat sign-in (#342, `src/lib/auth-role-refresh.ts` + test; TC-342-01 lulus di staging), akun seed fiktif + password dari `SEED_USER_PASSWORD` (#390, `5028ffd` + `seed-data-privacy.test.ts`).
-- **Next step:** #342 ditutup 2026-10-07 (retro di issue). #390 ditutup 2026-10-07 (keputusan owner). #286 butir 2 (key FIRMS di log) risiko diterima tanpa rotasi (Decision Log 2026-09-30). v1.7.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
+- **Next step:** #342 ditutup 2026-10-07 (retro di issue). #390 ditutup 2026-10-07 (keputusan owner). #286 butir 2 (key FIRMS di log) risiko diterima tanpa rotasi (Decision Log 2026-09-30). Celah filter vs scope (#386 butir 1, kelas BUG-007) diperbaiki di hotfix v1.5.1 (#408, 2026-10-10). v1.8.0: eskalasi role Settings Users (#386 butir 2), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
 - **Selesai bila:** #342, #390, #386, #384 ditutup; tidak ada temuan keamanan P1 terbuka.
 
 </details>
@@ -182,7 +182,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>DA-09</strong> · 🟠 Partial — Tumpang tindih lahan: laporan lengkap, guard upload, layer peta</summary>
 
 - **Evidence:** #317 Fase 1: `LandParcel.geom` GENERATED + GiST (v0.35.0). Fase 2 (sebagian): menu Data Analyst › Tumpang Tindih Lahan (`data-analyst-parcel-overlap`), self-join 256 ms / 14.174 lahan, dirilis v1.2.0. **Fase 2 tuntas di `mvp` (2026-10-07):** tab Luar Boundary (130 sepenuhnya + 24 sebagian, ringkasan per Lembaga, peta lahan + boundary, 120 ms) & Selisih Luas (98) — satu definisi dengan check DA-02 (`src/lib/parcel-boundary-area.ts`).
-- **Next step:** Fase 2 ikut rilis v1.4.0. Fase 3 guard saat upload shapefile ✅ 2026-10-08 di `mvp` (`checkUploadParcelOverlaps`, ikut v1.5.0). Fase 4 layer tumpang tindih di Peta Lahan → v1.7.0.
+- **Next step:** Fase 2 dirilis v1.4.0; Fase 3 guard saat upload shapefile (`checkUploadParcelOverlaps`) dirilis v1.5.0. Fase 4 layer tumpang tindih di Peta Lahan → v1.8.0.
 - **Selesai bila:** keempat fase #317 selesai dan #317 ditutup.
 
 </details>

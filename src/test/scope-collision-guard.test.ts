@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { matches, type Row } from "./prisma-where";
 
 /**
  * Regresi kelas BUG-007 / #127 (audit 2026-10-10): filter akses yang di-*spread*
@@ -10,29 +11,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  *
  * Data contoh: G1 (milik user, D1) · G2 (Lembaga lain, D1) · G3 (Lembaga lain, D2).
  */
-type Row = Record<string, unknown>;
-
-function isPlain(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v) && !(v instanceof Date);
-}
-
-/** Penilai `where` ala Prisma untuk subset yang dipakai kueri Lembaga/petani. */
-function matches(row: Row, where: unknown): boolean {
-  if (!isPlain(where)) return true;
-  return Object.entries(where).every(([k, v]) => {
-    if (v === undefined) return true;
-    if (k === "AND") return (Array.isArray(v) ? v : [v]).every((w) => matches(row, w));
-    if (k === "OR") return (v as unknown[]).some((w) => matches(row, w));
-    if (isPlain(v)) {
-      if ("in" in v) return (v.in as unknown[]).includes(row[k]);
-      if ("none" in v || "some" in v || "every" in v || "contains" in v) return true; // tak relevan untuk scope
-      if (isPlain(row[k])) return matches(row[k] as Row, v); // relasi
-      return true;
-    }
-    return row[k] === v;
-  });
-}
-
 const GROUPS: Row[] = [
   { id: "G1", name: "Milik User", code: "C1", districtId: "D1", isActive: true },
   { id: "G2", name: "Lain Sedistrik", code: "C2", districtId: "D1", isActive: true },

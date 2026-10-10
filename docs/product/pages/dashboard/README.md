@@ -24,7 +24,7 @@ Menu: Dashboard (/admin/dashboard)
     └── Page: /admin/dashboard/supply-chain
 ```
 
-> **Metrik Rilis tidak lagi di sini.** Menu `dashboard-metrics` route-nya memang `/admin/dashboard/metrics`, tetapi di database ia bertengger di bawah **Data Analyst** — dokumennya pindah ke [../data-analyst/metrics.md](../data-analyst/metrics.md). Perbedaan ini ditemukan saat mendaftarkan menu DA-07 (#256) dan diselesaikan dengan menjadikan keadaan produksi sebagai acuan.
+> **Metrik Rilis tidak lagi di sini.** Menu `dashboard-metrics` route-nya memang `/admin/dashboard/metrics`, tetapi di sidebar ia ada di grup **Platform Developer** (sejak 2026-10-07; sebelumnya di bawah Data Analyst) — dokumennya di [../data-analyst/metrics.md](../data-analyst/metrics.md), katalog grup di [../platform-developer/README.md](../platform-developer/README.md).
 
 ## Atribut menu
 

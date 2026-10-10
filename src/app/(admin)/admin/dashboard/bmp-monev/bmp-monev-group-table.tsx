@@ -88,7 +88,7 @@ export function BmpMonevGroupTable({ rows, year, canExport }: { rows: BmpMonevGr
               <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <th className="py-2 pr-4">Lembaga Petani</th>
                 <th className="py-2 pr-4">Distrik</th>
-                <th className="py-2 pr-4 text-right">Dinilai / Aktif</th>
+                <th className="py-2 pr-4 text-right">Dinilai / Terdaftar</th>
                 <th className="py-2 pr-4 text-right">Cakupan</th>
                 <th className="py-2 pr-4 text-right">Rerata</th>
                 <th className="py-2 pr-4">Kategori</th>

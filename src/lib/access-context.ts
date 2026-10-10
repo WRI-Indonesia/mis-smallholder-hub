@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export type { AccessContext } from "@/lib/access-scope";
-export { farmerGroupAccessFilter, rawFarmerGroupScope, farmerAccessFilter, farmerRelationAccessFilter } from "@/lib/access-scope";
+export { farmerGroupAccessFilter, farmerAccessFilter, farmerRelationAccessFilter } from "@/lib/access-scope";
 import type { AccessContext } from "@/lib/access-scope";
 
 /**
