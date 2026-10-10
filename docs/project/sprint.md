@@ -117,12 +117,13 @@ Keputusan owner 2026-10-10: batch prototipe di `mvp` sejak v1.5.0 (ada `feat:` �
 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
-| 1 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | Keamanan | M | Menutup fase roadmap PLATFORM-08 bersama #342/#390 (v1.3.0) | 🔲 Todo | — |
+| 1 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | Keamanan | M | Menutup fase roadmap PLATFORM-08 bersama #342/#390 (v1.3.0). Butir 1 (filter menimpa scope) ✅ hotfix v1.5.1 (#408, 2026-10-10); sisa butir 2 eskalasi role | 🔲 Todo | — |
 | 2 | **#384** Peta BMP: filter memakai guard `map-parcel` | Keamanan | S | Guard filter Peta BMP memakai `map-bmp`; PLATFORM-08 | 🔲 Todo | — |
-| 3 | **#317** Tumpang tindih lahan — Fase 4 layer Peta Lahan | Fitur | M | Layer tumpang tindih di Peta Lahan → #317 & fase DA-09 tuntas | 🔲 Todo | — |
-| 4 | Concept note **GIS-02 Deforestation** | Fitur | S | Sumber data tutupan hutan + lisensi, tahun *cut-off*, ambang luas, butuh GeoServer (GIS-04) atau tidak → issue induk | 🔲 Todo | Sumber data & cut-off |
-| 5 | Concept note **MD-12 Certification** | Fitur | S | Skema (RSPO/ISPO), unit sertifikasi Lembaga vs petani, siklus audit & temuan, dokumen S3 → issue induk | 🔲 Todo | Cakupan skema |
-| 6 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas + limpahan v1.6.0/v1.7.0 yang digeser ke sini | 🔲 Todo | Go rilis |
+| 3 | **#409** Buat/ubah Lembaga Petani tak memeriksa distrik tujuan dalam scope | Keamanan | S | Dari audit `/audit` 2026-10-10 (owner: masuk v1.8.0 bersama #386); PLATFORM-08 | 🔲 Todo | — |
+| 4 | **#317** Tumpang tindih lahan — Fase 4 layer Peta Lahan | Fitur | M | Layer tumpang tindih di Peta Lahan → #317 & fase DA-09 tuntas | 🔲 Todo | — |
+| 5 | Concept note **GIS-02 Deforestation** | Fitur | S | Sumber data tutupan hutan + lisensi, tahun *cut-off*, ambang luas, butuh GeoServer (GIS-04) atau tidak → issue induk | 🔲 Todo | Sumber data & cut-off |
+| 6 | Concept note **MD-12 Certification** | Fitur | S | Skema (RSPO/ISPO), unit sertifikasi Lembaga vs petani, siklus audit & temuan, dokumen S3 → issue induk | 🔲 Todo | Cakupan skema |
+| 7 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas + limpahan v1.6.0/v1.7.0 yang digeser ke sini | 🔲 Todo | Go rilis |
 
 #### Backlog terurut (setelah v1.8.0)
 
@@ -138,6 +139,7 @@ Keputusan owner 2026-10-10: batch prototipe di `mvp` sejak v1.5.0 (ada `feat:` �
 | 3 | **#356** Bobot cakupan modul ke Index | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
 | 3 | **#358** DA-03 peta kesiapan data per Lembaga | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
 | 3 | **#258** Peta aplikasi (sitemap) di Bantuan | 🔲 Todo | — |
+| 3 | **#410** `getMenuItems` tanpa pemeriksaan sesi | 🔲 Todo | Dari audit `/audit` 2026-10-10; rendah (hanya pohon menu), kerjakan menumpang saat menyentuh `menu.ts` |
 | 3 | **#203** Detail Lahan: riwayat revisi lahan | 🔲 Todo | — |
 | 4 | **#308** Seragamkan selektor kolom di semua menu | 🔲 Todo | Kerapian |
 | 4 | **#259** Peta Data: pisahkan kolom audit dari kolom domain | 🔲 Todo | Kerapian |
