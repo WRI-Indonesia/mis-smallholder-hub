@@ -50,8 +50,8 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [qa/_template/](./qa/_template/) | Master per rilis: scope (akun & persiapan data) · smoke `SM-nn` · kasus uji `TC-<issue>-nn` ber-tag P0/P1/P2 · QC data · temuan · sign-off · template lembar run |
 | [qa/regression.md](./qa/regression.md) | Kasus `[regresi]` yang ikut setiap rilis (lahir dari temuan review/bug) |
 | [qa/v1.3.0/](./qa/v1.3.0/) · [v1.4.0](./qa/v1.4.0/) · [v1.5.0](./qa/v1.5.0/) | Paket QA tiga rilis terakhir (00–05 + `runs/`); lebih lama di [qa/archive/](./qa/archive/) |
-| [qa/archive/](./qa/archive/) | Paket QA rilis lebih lama (v0.35.0 — rilis pertama proses ini — s.d. v0.38.0) |
-| [qa/v1.3.0/](./qa/v1.3.0/) | Rilis berjalan — baru `02-test-cases.md` (kasus uji ditulis saat issue ditutup) |
+| [qa/archive/](./qa/archive/) | Paket QA rilis lebih lama (v0.35.0 — rilis pertama proses ini — s.d. v1.2.0) |
+| [qa/v1.6.0/](./qa/v1.6.0/) | Rilis berjalan — paket QA kandidat v1.6.0 (run lokal ada di `runs/`, run staging menunggu) |
 | `scripts/qa/` | `data-qc.ts` (cek DB read-only → tabel markdown) · `new-run.mjs` (lembar run dari spesifikasi) · `summary.mjs` (rekap Pass/Fail per run) |
 
 ## 🧭 Keputusan (`decisions/`) — catatan keputusan besar
@@ -77,7 +77,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 
 ## 📏 Konvensi docs
 
-**Penamaan.** Folder & berkas `kebab-case` berbahasa Inggris; isi dan **heading berbahasa Indonesia** (kecuali istilah teknis/nama kode dan kunci yang diparse build: `Phase Status (Indeks)`, `Rincian per Phase`, `Sprint Focus`, `Debt Register`). Katalog `product/pages/` mengikuti **segmen route** (`list`/`detail`/`new`/`edit`). Indeks folder = `README.md`. Berkas bernomor hanya di `qa/vX.Y.Z/` (`00-scope` … `05-signoff`) dan `decisions/` (`NNNN-slug`). Heading tidak dinomori kecuali daftar yang memang berurutan (`principles.md`, `versioning.md` §Metrik).
+**Penamaan.** Folder & berkas `kebab-case` berbahasa Inggris; isi dan **heading berbahasa Indonesia** (kecuali istilah teknis/nama kode dan kunci yang diparse build: `Phase Status (Indeks)`, `Rincian per Phase`, `Rencana Rilis`, `Debt Register`). Katalog `product/pages/` mengikuti **segmen route** (`list`/`detail`/`new`/`edit`). Indeks folder = `README.md`. Berkas bernomor hanya di `qa/vX.Y.Z/` (`00-scope` … `05-signoff`) dan `decisions/` (`NNNN-slug`). Heading tidak dinomori kecuali daftar yang memang berurutan (`principles.md`, `versioning.md` §Metrik).
 
 **Kepala berkas.** Baris kedua setelah judul: `> Bagian dari dokumentasi **Area**. Indeks: … · Terkait: …`; katalog `product/pages/` memakai `[← Induk](./README.md) · …`.
 
@@ -99,7 +99,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | Fakta | Sumber kebenaran |
 |---|---|
 | Status fase | `project/roadmap.md` § Phase Status |
-| Rencana & status minggu ini | `project/sprint.md` § Sprint Focus |
+| Rencana & status rilis berjalan | `project/sprint.md` § Rencana Rilis |
 | Debt & bug | `project/tech-debt.md` |
 | Angka per rilis (Roadmap %, KPI, RVS, jumlah test) | `project/metrics.md` |
 | Enum, tabel & ringkasan menu, angka teknis | blok `<!-- GENERATED -->` — `npm run build:docs` |
