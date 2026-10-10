@@ -42,10 +42,11 @@ export async function getFarmerGroupsForAnalyst(districtId?: string | null) {
     access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
     {};
 
+  // Scope di AND: filter permintaan tak boleh menimpa scope (BUG-007, #386 butir 1).
   const where = {
     isActive: true,
-    ...accessFilter,
-    ...(districtId ? { districtId } : {})
+    ...(districtId ? { districtId } : {}),
+    AND: accessFilter,
   };
 
   return prisma.farmerGroup.findMany({
@@ -70,11 +71,12 @@ export async function getFarmerSummary(filters: AnalystFilters): Promise<FarmerS
     access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
     {};
 
+  // Scope di AND: filter permintaan tak boleh menimpa scope (BUG-007, #386 butir 1).
   const farmerGroupWhere = {
     isActive: true,
-    ...accessFilter,
     ...(filters.districtId    && { districtId: filters.districtId }),
     ...(filters.farmerGroupId && { id:         filters.farmerGroupId }),
+    AND: accessFilter,
   };
 
   const farmerWhere = {
@@ -142,11 +144,12 @@ export async function getFarmersWithoutParcels(filters: AnalystFilters): Promise
     access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
     {};
 
+  // Scope di AND: filter permintaan tak boleh menimpa scope (BUG-007, #386 butir 1).
   const farmerGroupWhere = {
     isActive: true,
-    ...accessFilter,
     ...(filters.districtId    && { districtId: filters.districtId }),
     ...(filters.farmerGroupId && { id:         filters.farmerGroupId }),
+    AND: accessFilter,
   };
 
   const farmerWhere = {
