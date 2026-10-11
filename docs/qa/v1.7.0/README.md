@@ -21,10 +21,12 @@ _Semua Fail sudah merujuk issue._
 
 ## Keputusan
 
-**Go / No-go:** … (tanggal, oleh siapa) — syarat: …
+**Go / No-go:** **Go** — 2026-10-12, owner. Tanpa migrasi; **seed menu prod wajib** (`seed-menu-only.ts`: 2 dibuat · 2 diperbarui) sesudah deploy; run prod `--only P0` diisi ≤ 1 jam setelah deploy.
 
 ## Known issues yang dibawa
 
 | Issue | Dampak ke pengguna | Kenapa ditunda |
 |---|---|---|
-| | | |
+| TD-061 | PDF selain Laporan Lahan (Farm Passport, laporan layer, cetak Peta BMP, ekspor titik api, Profil Petani) masih bisa mencetak tanda seperti "≥" sebagai karakter rusak | dikerjakan menumpang saat file terkait disentuh; Laporan Lahan & eksportir bersama sudah aman |
+| TD-060 | — (internal: guard izin "A ATAU B" ada di tiga salinan) | kerapian, tak berdampak perilaku |
+| SM-33 peran MANAGEMENT | belum diuji dengan akun MANAGEMENT di staging (OPERATOR, DONOR, ADMIN ber-scope & SUPERADMIN sudah) | belum ada akun uji MANAGEMENT; izin dijaga test RBAC |
