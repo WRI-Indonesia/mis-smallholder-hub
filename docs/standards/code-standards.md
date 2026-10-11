@@ -94,9 +94,10 @@ Pola tunggal untuk **semua list master data** (Petani, Lembaga Petani, Pelatihan
 
 Untuk data yang memerlukan tracking perubahan historical (contoh: Land Parcel update):
 - **Field `revision`**: Tambahkan field `revision Int @default(0)` di model (lihat `LandParcel`)
-- **Auto-increment on update**: Setiap update record, increment revision number
-- **Soft delete old version**: Saat update dengan parcel ID sama, set old record `isActive = false` dan create new record dengan `revision += 1`
-- **History tracking**: User bisa melihat historical changes melalui filter `isActive = false` dengan order by revision
+- **Dua jalur tulis** (keputusan owner 2026-10-11, #387 butir 5):
+  - **Upload ulang (bulk upload shapefile) = survei baru** → set record lama `isActive = false`, create record baru dengan `revision += 1`, dan **repoint** tabel yang menunjuk `LandParcel.id` (produksi, pohon; patok lewat `parcelUid`).
+  - **Ubah lewat form (`updateLandParcel`) = koreksi di tempat** → update record yang sama, `revision` naik sebagai penghitung; id dan tautan dependants tetap.
+- **History tracking**: User bisa melihat historical changes melalui filter `isActive = false` dengan order by revision (pembaca riwayat seperti `getLandParcelProduction` sengaja tanpa `isActive` — #387 butir 7, bahan #203)
 - **Duplicate detection**: 
   - Check uniqueness constraint (misalnya: `parcelId` per `farmerId`)
   - Jika duplicate found dengan `isActive = true` → reject
