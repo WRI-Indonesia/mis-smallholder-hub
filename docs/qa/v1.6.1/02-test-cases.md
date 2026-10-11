@@ -40,6 +40,18 @@ Harapan:
 - Langkah 3: diarahkan keluar (tanpa izin `map-parcel`) — izin peta lahan tidak ikut terbuka.
 Baseline dev: `map-guard.test.ts` — `requireFilterView` menolak bila keduanya tidak ada, menerima `map-bmp` saja, dan tidak mengecek `map-bmp` bila `map-parcel` ada.
 
+## #387 — Temuan kecil audit test
+
+### TC-387-01 · Pindah Lembaga pelatihan ditolak selama ada peserta [P1] (3 mnt)
+Prasyarat: satu pelatihan dengan ≥1 peserta (kode Lembaga asal A, Lembaga tujuan B dalam scope).
+Langkah:
+1. Master Data › Pelatihan → Edit pelatihan itu → ganti Lembaga Petani ke B → Simpan.
+2. Buka tab Peserta → hapus semua peserta → ulangi langkah 1.
+Harapan:
+- Langkah 1: ditolak dengan pesan pada kolom Lembaga "masih punya n peserta dari Lembaga asal…"; data tidak berubah.
+- Langkah 2: berhasil; peserta baru hanya bisa dipilih dari anggota B.
+Baseline dev: `training-guard.test.ts` (#387 butir 6); butir 1/3 (`menu-guard`, `user-menu-access-guard`) dan butir 7 (`land-parcel-guard`) hanya lewat test.
+
 ## #409 — Distrik tujuan Lembaga wajib dalam scope
 
 Prasyarat umum: akun **ADMIN** yang dibatasi per distrik (UserDistrict/UserProvince) dan akun **ADMIN** yang dibatasi per Lembaga (UserFarmerGroup), keduanya ber-izin CREATE/EDIT Master Data › Lembaga Petani. Login akun dilakukan owner.

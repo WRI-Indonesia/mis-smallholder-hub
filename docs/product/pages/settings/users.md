@@ -141,7 +141,7 @@ Halaman: User Management (/admin/settings/users)
 | Atribut | Nilai |
 |---|---|
 | File | `src/app/(admin)/admin/settings/users/user-menu-access-modal.tsx` |
-| Server action | `getMenuItemsForSelect()`, `getUserEffectivePermissions()`, `setUserMenuOverride()`, `removeUserMenuOverride()` (`src/server/actions/user-menu-access.ts`) |
+| Server action | `getMenuItemsForSelect()`, `getUserEffectivePermissions()`, `setUserMenuOverride()`, `removeUserMenuOverride()` (`src/server/actions/user-menu-access.ts`; cabut override = `isActive:false` + `modifiedBy` dari sesi, #387 butir 3) |
 | Judul | `Hak Akses Menu — {userName}` (ikon `Shield`), subteks `Role: {userRole}` |
 
 | Objek | Tipe | Keterangan |

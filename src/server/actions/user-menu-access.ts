@@ -141,7 +141,8 @@ export async function removeUserMenuOverride(
 
   const removeScopeError = userAdminScopeError(await getAccessContext());
   if (removeScopeError) return { success: false, error: removeScopeError };
-  if ((await auth())?.user?.id === userId) {
+  const session = await auth();
+  if (session?.user?.id === userId) {
     return { success: false, error: "Tidak dapat mengubah akses akun Anda sendiri" };
   }
 
@@ -156,6 +157,8 @@ export async function removeUserMenuOverride(
       },
       data: {
         isActive: false,
+        // #387 butir 3: jejak siapa yang mencabut override (sebelumnya tanpa audit).
+        modifiedBy: session?.user?.id ?? null,
       },
     });
     return { success: true };

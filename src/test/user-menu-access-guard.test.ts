@@ -94,11 +94,11 @@ describe("setUserMenuOverride / removeUserMenuOverride", () => {
     expect((await actions.setUserMenuOverride("u-1", "m", "VIEW", true)).success).toBe(false);
   });
 
-  it("remove → update isActive:false (soft delete), bukan delete; baris tak ada tetap sukses", async () => {
+  it("remove → update isActive:false (soft delete) + modifiedBy dari sesi (#387 butir 3), bukan delete; baris tak ada tetap sukses", async () => {
     await actions.removeUserMenuOverride("u-1", "master-data-farmers", "VIEW");
     expect(db.userPermissionOverride.update.mock.calls[0][0]).toMatchObject({
       where: { userId_menuKey_permission: { userId: "u-1", menuKey: "master-data-farmers", permission: "VIEW" } },
-      data: { isActive: false },
+      data: { isActive: false, modifiedBy: "admin-1" },
     });
     expect(db.userPermissionOverride.delete).not.toHaveBeenCalled();
     expect(db.userPermissionOverride.deleteMany).not.toHaveBeenCalled();

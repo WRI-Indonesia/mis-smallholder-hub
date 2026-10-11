@@ -70,6 +70,8 @@ Jumlah peserta muncul di daftar pelatihan. Petani tersebut **langsung** terhitun
 
 + Saat menyimpan, sistem memeriksa ulang setiap peserta (pilihan manual maupun baris unggahan yang lolos validasi) dan menolak **seluruh** batch bila ada satu yang tak valid, bukan melewatinya diam-diam. Jadi bila penyimpanan gagal, periksa satu per satu — bukan berarti semua pesertanya bermasalah.
 
+**Tidak bisa memindahkan pelatihan ke Lembaga lain** — pesan "masih punya n peserta dari Lembaga asal". Peserta selalu anggota Lembaga penyelenggara, jadi kosongkan dulu daftar pesertanya, pindahkan Lembaganya, lalu tambahkan peserta dari Lembaga baru.
+
 **Unggahan notulen ditolak.** Hanya PDF di bawah 10 MB yang diterima.
 
 **Muncul pesan "Header ditemukan di baris 3" saat mengunggah daftar peserta** — berkas punya baris judul di atas nama kolom, dan sistem melewatinya sendiri. Periksa sekilas bahwa kolom ID Petani terbaca benar di tabel validasi, lalu lanjutkan.
