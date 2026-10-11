@@ -48,8 +48,7 @@ import {
   PARCEL_CHECKS,
   PARCEL_CHECK_WEIGHT_TOTAL,
   PROFILE_CHECKS,
-  SYSTEMIC_THRESHOLD,
-} from "@/lib/data-completeness-registry";
+  SYSTEMIC_THRESHOLD, uiCheckLabel } from "@/lib/data-completeness-registry";
 import { maskIfNik } from "@/lib/mask";
 import { formatNumber, formatPct } from "@/lib/format";
 import type {
@@ -878,7 +877,7 @@ function CheckRowItem({ row, items, defaultOpen = false }: { row: CheckRow; item
         <span className="flex w-full min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
           <span className="flex min-w-0 flex-1 items-center gap-2">
             <KindChip kind={row.kind} />
-            <span className={cn("truncate text-sm", inactive && "text-muted-foreground")}>{row.label}</span>
+            <span className={cn("truncate text-sm", inactive && "text-muted-foreground")}>{uiCheckLabel(row.label)}</span>
             {row.systemic && (
               <Badge variant="outline" className="shrink-0 border-amber-500/50 text-[10px] text-amber-700 dark:text-amber-400">
                 sistemik

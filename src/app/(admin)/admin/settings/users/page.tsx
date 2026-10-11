@@ -1,13 +1,16 @@
 import { getUsers } from "@/server/actions/user";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { UserListClient } from "./user-list-client";
-import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
+import { requirePermission, getUserPermissionsForMenu, isSuperAdmin } from "@/lib/rbac";
+import { auth } from "@/lib/auth";
 
 export default async function UsersPage() {
   await requirePermission("settings-users");
-  const [users, permissions] = await Promise.all([
+  const [users, permissions, superAdmin, session] = await Promise.all([
     getUsers(),
     getUserPermissionsForMenu("settings-users"),
+    isSuperAdmin(),
+    auth(),
   ]);
 
   return (
@@ -19,7 +22,7 @@ export default async function UsersPage() {
         </div>
         <p className="text-muted-foreground">Kelola akun pengguna sistem</p>
       </div>
-      <UserListClient initialUsers={users} permissions={permissions} />
+      <UserListClient initialUsers={users} permissions={permissions} currentUserId={session?.user?.id ?? null} isSuperAdmin={superAdmin} />
     </div>
   );
 }

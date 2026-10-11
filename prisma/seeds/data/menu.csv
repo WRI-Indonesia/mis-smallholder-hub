@@ -19,8 +19,10 @@ master-data-production,master-data,Produksi,/admin/master-data/production,Trendi
 data-analyst,,Data Analyst,/admin/data-analyst,BarChart3,4,TRUE,TRUE
 platform-developer,,Platform Developer,/admin/platform-developer,Code2,5,TRUE,TRUE
 data-analyst-farmer-summary,data-analyst,Ringkasan Petani,/admin/data-analyst/farmer-summary,Users,1,TRUE,TRUE
-data-analyst-data-availability,data-analyst,Data — All Lembaga,/admin/data-analyst/data-availability,Gauge,2,TRUE,TRUE
-data-analyst-data-completeness,data-analyst,Data — Per Lembaga,/admin/data-analyst/data-completeness,ClipboardCheck,3,TRUE,TRUE
+data-analyst-availability,data-analyst,Ketersediaan Data,/admin/data-analyst/availability,Gauge,2,TRUE,TRUE
+data-analyst-data-availability,data-analyst-availability,Semua Lembaga,/admin/data-analyst/data-availability,Gauge,1,TRUE,TRUE
+data-analyst-data-completeness,data-analyst-availability,Per Lembaga,/admin/data-analyst/data-completeness,ClipboardCheck,2,TRUE,TRUE
+data-analyst-availability-production,data-analyst-availability,Produksi,/admin/data-analyst/availability/production,CalendarRange,3,TRUE,TRUE
 data-analyst-benchmark-comparison,data-analyst,Komparasi Data Acuan,/admin/data-analyst/benchmark-comparison,GitCompare,4,TRUE,TRUE
 data-analyst-data-map,platform-developer,Peta Data & Skema,/admin/data-analyst/data-map,Network,2,TRUE,TRUE
 data-analyst-parcel-overlap,data-analyst,Tumpang Tindih Lahan,/admin/data-analyst/parcel-overlap,Layers,7,TRUE,TRUE

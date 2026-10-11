@@ -5,7 +5,7 @@ import { join } from "path";
 
 export async function seedRolePermissions(prisma: PrismaClient) {
   const csv = readFileSync(join(__dirname, "data/role-permissions.csv"), "utf-8");
-  const records = parse(csv, { columns: true, skip_empty_lines: true });
+  const records = parse(csv, { columns: true, skip_empty_lines: true }) as { role: string; menu_key: string; permission: string }[];
 
   for (const row of records) {
     const role = row.role as Role;

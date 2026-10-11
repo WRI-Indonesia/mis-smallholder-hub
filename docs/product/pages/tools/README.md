@@ -23,7 +23,7 @@ Menu: Tools (/admin/tools → redirect /admin/tools/snapshot)
 | Icon | `Wrench` |
 | Sub menu | 2 — Dashboard Snapshot (`dashboard-snapshot`), Dashboard Snapshot BMP (`dashboard-snapshot-bmp`) |
 | Order | 6 |
-| Catatan | `src/app/(admin)/admin/tools/page.tsx` hanya `redirect("/admin/tools/snapshot")` — tidak ada halaman induk. |
+| Catatan | `src/app/(admin)/admin/tools/page.tsx` hanya `redirectToFirstAccessibleChild("tools")` (bawaan `/admin/tools/snapshot` — sejak TD-051 (#412): ke **anak pertama (urut `order`) yang boleh diakses pengguna**, termasuk override per user; tanpa anak yang boleh → `/admin`) — tidak ada halaman induk. |
 
 Sumber metadata menu: `prisma/seeds/data/menu.csv`. Konteks penyimpanan snapshot: [../../../database/dashboard-snapshots.md](../../../database/dashboard-snapshots.md). Semua halaman berada di bawah guard NextAuth (`src/middleware.ts`) dan tiga lapis keamanan (menu permission, access context, soft delete).
 

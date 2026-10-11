@@ -181,6 +181,20 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "data-analyst-availability-production",
+    "route": "(admin)/admin/data-analyst/availability/production",
+    "models": {
+      "farmer": "R",
+      "farmerGroup": "R",
+      "landParcel": "R",
+      "productionRecord": "R"
+    },
+    "modules": [
+      "src/server/actions/production-availability.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "data-analyst-benchmark-comparison",
     "route": "(admin)/admin/data-analyst/benchmark-comparison",
     "models": {
@@ -704,6 +718,10 @@ export const UNMAPPED_ROUTES: UnmappedRoute[] = [
   },
   {
     "route": "(admin)/admin/data-analyst",
+    "reason": "tanpa-requirePermission"
+  },
+  {
+    "route": "(admin)/admin/data-analyst/availability",
     "reason": "tanpa-requirePermission"
   },
   {

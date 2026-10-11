@@ -10,7 +10,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  */
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
-vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "admin-1" } }) }));
+const auth = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/auth", () => ({ auth }));
 
 const db = vi.hoisted(() => ({
   menuItem: {
@@ -31,6 +32,7 @@ const fullPayload = (o: Record<string, unknown> = {}) => ({
 beforeEach(() => {
   vi.clearAllMocks();
   hasPermission.mockResolvedValue(true);
+  auth.mockResolvedValue({ user: { id: "admin-1" } });
   db.menuItem.findMany.mockResolvedValue([]);
   db.menuItem.findUnique.mockResolvedValue({ isActive: true });
   db.menuItem.create.mockResolvedValue({});
@@ -43,6 +45,17 @@ describe("guard", () => {
     await actions.deleteMenuItem("m-1");
     expect(hasPermission.mock.calls).toEqual([["settings-menu", "EDIT"], ["settings-menu", "DELETE"]]);
     expect(actions).not.toHaveProperty("createMenuItem");
+  });
+
+  it("getMenuItems (#387 butir 1): tanpa sesi → { success:false } tanpa kueri; dengan sesi → pohon menu aktif & terlihat, tanpa cek izin menu", async () => {
+    auth.mockResolvedValue(null);
+    expect(await actions.getMenuItems()).toEqual({ success: false });
+    expect(db.menuItem.findMany).not.toHaveBeenCalled();
+
+    auth.mockResolvedValue({ user: { id: "op-1" } });
+    expect(await actions.getMenuItems()).toEqual({ success: true, data: [] });
+    expect(db.menuItem.findMany.mock.calls[0][0].where).toEqual({ isActive: true, isVisible: true });
+    expect(hasPermission).not.toHaveBeenCalled();
   });
 
   it("getAllMenuItems: settings-menu:VIEW ATAU settings-roles:VIEW; keduanya ditolak → melempar", async () => {

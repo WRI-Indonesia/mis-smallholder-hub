@@ -85,6 +85,19 @@ Aturan dasar: setiap pembacaan hanya mengembalikan baris dalam scope user. Dua p
 
 Menambah pengecualian baru = menambah baris di tabel ini **dan** komentar di fungsinya.
 
+### Scope pada aksi tulis
+
+Scope tidak hanya menyaring bacaan — **target yang dipilih klien** pada aksi tulis juga diverifikasi sebelum ditulis (pelajaran #409, 2026-10-10):
+
+| Aksi | Yang diverifikasi ke scope | Helper / aturan |
+|---|---|---|
+| Buat/ubah Petani | `farmerGroupId` tujuan | Lembaga dicari dengan `AND: farmerGroupAccessFilter(access)` — di luar scope = *tidak ditemukan* |
+| Buat/ubah Lembaga Petani (#409) | `districtId` tujuan (dan distrik saat ini) | `canPlaceGroupInDistrict(access, districtId, currentDistrictId?)` (`src/lib/access-scope.ts`): `BY_DISTRICT` hanya distrik scope; `BY_FARMER_GROUP` tidak boleh membuat Lembaga baru maupun memindah distrik; distrik wajib ada & aktif |
+| Kelola pengguna — Settings › Users (#386) | pemanggil, bukan target | Semua action `user.ts` · `user-data-access.ts` · `user-menu-access.ts` hanya untuk pemanggil ber-mode `ALL`; akun SUPERADMIN & role SUPERADMIN hanya oleh SUPERADMIN; akun sendiri tak bisa diubah role/status/penugasan/override (`src/lib/user-admin-guard.ts`) |
+| Matriks Role & Permission (#386) | pemanggil | `setRolePermissions` hanya SUPERADMIN |
+
+Rincian aturan anti-eskalasi: [../standards/rbac.md](../standards/rbac.md#anti-eskalasi-pengelolaan-pengguna-386-butir-2); pola kode: [../standards/code-standards.md](../standards/code-standards.md).
+
 ### Prioritas Resolusi Izin
 
 1. **SUPERADMIN** → bypass: semua izin, tanpa filter scope

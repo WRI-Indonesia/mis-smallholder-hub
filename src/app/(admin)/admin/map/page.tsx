@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-export default function MapPage() {
-  redirect("/admin/map/parcel");
+/** Indeks induk `map`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function MapIndexPage() {
+  await redirectToFirstAccessibleChild("map");
 }

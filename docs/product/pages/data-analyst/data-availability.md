@@ -4,6 +4,10 @@
 
 Sub menu `data-analyst-data-availability`, satu halaman: `/admin/data-analyst/data-availability` (DA-03, #193).
 
+> **Kerangka #417 (owner 2026-10-11, tata letak A "Ringkas, satu tempat")**: tinggi halaman bawaan 3.817 → **1.680 px** (32 Lembaga, 1.440 px), Daftar Kerja dalam satu scroll; skor, rumus, Excel 2 sheet, dan deep link Per Lembaga tidak berubah.
+
+> Sejak #416 (owner 2026-10-11) menu ini **anak level 3** dari induk **Ketersediaan Data** (`data-analyst-availability`) dengan judul **Semua Lembaga** (order 1); key, route, izin tetap. Saudaranya: [Per Lembaga](data-completeness.md) dan [Produksi](availability-production.md).
+
 > Label menu **"Data — All Lembaga"** sejak #364 (keputusan owner 2026-09-29: label prod jadi acuan, `menu.csv` disamakan; judul halaman tetap "Ketersediaan Data — Semua Lembaga"). **Order 2** (pintu masuk) dan label "Ketersediaan Data — Semua Lembaga" sejak #352 (keputusan owner P4, 2026-09-21) — sebelumnya "Dashboard Ketersediaan Data", order 3. Key, route, RolePermission tidak berubah. Semula dirilis sebagai sub menu keempat di grup **Dashboard** (`dashboard-data-availability`), lalu dipindah ke **Data Analyst** pada hari yang sama (keputusan owner #193).
 
 Roll-up lintas Lembaga Petani dari scoring [Ketersediaan Data — Per Lembaga (DA-02)](data-completeness.md): skor kelengkapan 5 domain (Profil Lembaga, Petani, Lahan, Pelatihan, Produksi) per Lembaga + ringkasan anomali + **cakupan modul** (#352). Alur: ringkasan di sini → klik nama Lembaga (`?lembaga=`) → daftar kerja di DA-02 → Master Data.
@@ -11,27 +15,21 @@ Roll-up lintas Lembaga Petani dari scoring [Ketersediaan Data — Per Lembaga (D
 ## Diagram objek
 
 ```text
-Halaman: Ketersediaan Data — Semua Lembaga (/admin/data-analyst/data-availability)
+Halaman: Ketersediaan Data › Semua Lembaga (/admin/data-analyst/data-availability) — kerangka #417
 ├── Header
-│   ├── Judul "Ketersediaan Data — Semua Lembaga"
-│   └── Deskripsi + tanggal generate
-├── Filter (state di URL)
-│   ├── Kategori Lembaga (select) — ?kategori=
-│   ├── Distrik (FilterCombobox) — ?distrik=
-│   ├── Lembaga (FilterCombobox, cascade Distrik/Kategori) — ?lembaga=
-│   └── Tombol Excel (gate EXPORT)
-├── Hero (putaran 3, #352) — dua kolom seimbang (7/12 + 5/12, tinggi sama)
-│   ├── Kiri atas: Cincin Skor Keseluruhan (ScoreGauge 120; tooltip skor + temuan) · label band · "rata-rata tertimbang n Lembaga · n temuan" · 3 angka ringkas (Lembaga · Petani · Persil) sebaris
-│   ├── Kiri bawah: Distribusi Lembaga per band — stacked bar kritis/perlu perhatian/baik/lengkap selebar kolom; segmen & pil legenda bisa diklik → ?band= (band kosong dinonaktifkan); "hapus filter band"
-│   └── Kanan: Aksi lintas Lembaga — 3 kolom sistemik terbesar (topSystemicAnomalies atas irisan yang sama dengan panel Anomali): label · "n · n Lembaga" · satu menu tujuan (rute lengkap di tooltip); catatan kaki satu baris
-├── Kartu domain (5) — SKOR memimpin (besar, warna band) + bar mini + bobot % + jumlah entitas + "n kritis"; klik → ?urut=<domain> (matriks tersortir menaik, kartu disorot, gulir ke matriks)
-├── Matriks per Lembaga (kartu) — segmented control Radar | Heatmap | Cakupan modul (?tampilan=; radar = bawaan tanpa parameter) di header
-│   ├── Radar (bawaan): grid kartu (2–5 kolom), tiap Lembaga satu pentagon lima sumbu (SVG murni) + Skor Total + kode · distrik · n petani; klik grafik → modal radar besar (kiri grafik, kanan tabel domain bobot·skor·kontribusi + tautan daftar kerja/Detail Lembaga, ◀ ▶ mengikuti urutan aktif); pilih-urut + tombol arah + cari
-│   ├── Heatmap (?tampilan=heatmap): baris rapat satu garis — nama (deep link DA-02) + kode · distrik · Skor Total (HeatCell tebal) · Petani (n) · 5 sel domain solid berwarna skala kontinu (heatStyle) + angka kecil; legenda ramp 0→99 + swatch 100
-│   ├── Semua baris/kartu tampil (bawaan) + "Ringkas — 10 pertama saja"; pencarian menampilkan semua yang cocok
-│   └── Cakupan modul (?tampilan=modul): Matriks cakupan modul (baris portfolio + kolom per modul, ✓/✗ tingkat Lembaga, "—" belum dimulai) — sel HeatCell, legenda sama
-├── Paling tertinggal per domain (penuh-lebar) — 5 kolom kecil (Profil…Produksi), sampai 5 Lembaga terendah < 100 % + distrik · petani + bar mini; Lembaga tanpa petani dikeluarkan
-└── Panel Anomali Terbanyak (penuh-lebar, dua seksi berdampingan: Per entitas · Kolom belum pernah diisi — 8 baris masing-masing)
+│   ├── H1 "Ketersediaan Data" + Panduan · sub-nav keluarga menu (AvailabilityNav, server): Semua Lembaga · Per Lembaga · Produksi (hanya yang ber-VIEW; item aktif = sub-judul)
+│   ├── Deskripsi satu baris + tanggal data
+│   └── Filter (state di URL): Kategori ?kategori= · Distrik ?distrik= · Lembaga ?lembaga= (cascade) · Excel (gate EXPORT) — pindah ke baris sendiri di bawah xl
+├── Filter aktif (ActiveFilterBar) — chip per kunci (kategori · distrik · lembaga · band "Tingkat skor" · urut) dengan ✕ + "Reset semua"; tidak tampil tanpa pilihan
+├── Hero satu baris (AvailabilityHero) — ScoreGauge 88 · label tingkat skor · "n Lembaga · n petani · n lahan" · bar sebaran Lembaga per tingkat skor selebar sisa baris (segmen = tombol ?band=, jumlah + nama pendek di dalam, aria-label)
+├── Kartu domain (5) — ikon + nama pendek · chip bobot · skor besar · bar · "n entitas · n kritis" · chip "Urutkan ⇅"/"Terurut ↑" (satu-satunya tombol kartu) → ?urut=<domain>
+├── Matriks (satu kartu, bukan <Card> agar sticky jalan)
+│   ├── MatrixToolbar lengket (sticky top-0): status "n Lembaga · n kritis · 10 tampil" + ⓘ cara baca · tab Radar (sidik jari) | Heatmap (tabel warna) | Cakupan modul (di luar Index) ?tampilan= · Urut · arah · Cari
+│   ├── Radar (bawaan): grid container query 1/2/3/4/5 kolom (@md/@2xl/@4xl/@6xl) · label sumbu 11 px · tombol "Perbesar" saat hover/fokus → modal
+│   ├── Heatmap: tabel min-w 720, kolom domain 72 px — muat tanpa scroll mendatar pada ≥ 1.024 px konten; kode · distrik di samping nama hanya @4xl (selainnya title)
+│   ├── Cakupan modul: urut di URL ?urut=modul:<key>, cari & Ringkas ikut; tetap scroll mendatar dengan kolom nama sticky
+│   └── Bawaan Ringkas 10 (K2) + "Tampilkan n lagi" / "Ringkas — 10 … pertama saja"; pencarian menampilkan semua hasil
+└── Daftar Kerja (AvailabilityWorklist, bertab ?kerja=) — Sistemik (unggah massal, 8 + menu pengisian) · Per entitas (8) · Tertinggal per domain (5 × 5); badge jumlah; "n Lembaga ▾" = popover daftar Lembaga terdampak
 ```
 
 ## Atribut halaman
@@ -40,7 +38,7 @@ Halaman: Ketersediaan Data — Semua Lembaga (/admin/data-analyst/data-availabil
 |---|---|
 | File | `src/app/(admin)/admin/data-analyst/data-availability/page.tsx` |
 | Tipe | Server Component → `DataAvailabilityClient` (Client Component) |
-| Komponen anak | `data-availability-client.tsx`, `availability-hero.tsx`, `availability-domain-cards.tsx`, `availability-matrix.tsx` (heatmap), `availability-radar-grid.tsx` (radar) + `availability-radar-dialog.tsx` (modal), `availability-module-matrix.tsx`, `availability-domain-laggards.tsx`, `availability-anomaly-panel.tsx`, `matrix-rows.ts` (`MatrixSortKey`, `filterMatrixRows`, `sortMatrixRows`, `sortKeyLabel`, `LOWEST_N`, hook `useMatrixRows` — satu sumber urut/cari/ringkas untuk heatmap & radar) + `matrix-toolbar.tsx` (`MatrixSearch`, `MatrixLimitToggle`, `emptyRowsMessage`), `domain-meta.ts` (ikon domain, `CATEGORY_LABELS`, `entryDomainScores`; formatter dari `src/lib/format.ts` (`formatPct`), `bandLabel`/`BAND_LABEL` dari `score-band-styles`, `shortDomainLabel` & `BAND_THRESHOLDS` dari lib agregasi), `loading.tsx` (putaran 3 #352: `availability-score-cards.tsx` & `availability-group-chart.tsx` dihapus); visual bersama `src/components/shared/score-visuals.tsx` (`ScoreGauge`, `BandBar`, `HeatCell`, `HeatLegend`) dan `src/components/shared/radar-chart.tsx` (`RadarChart` — juga dipakai header Index+radar DA-02; label sumbu bisa diklik = tautan ber-`role=link`, svg `overflow-visible`); skala warna kontinu `src/lib/score-heat.ts` (`heatRgb`/`heatStyle`/`HEAT_GRADIENT_CSS`, jangkar di ambang band, 100 = `HEAT_FULL`); geometri pentagon `src/lib/radar-geometry.ts`; gaya band diskret `src/lib/score-band-styles.ts` (`BAND_CELL`/`BAND_CELL_SOFT` dihapus — tak ada pemakai) |
+| Komponen anak | `data-availability-client.tsx`, `availability-hero.tsx`, `availability-domain-cards.tsx`, `availability-matrix.tsx` (heatmap), `availability-radar-grid.tsx` (radar) + `matrix-toolbar.tsx` (toolbar bersama, #417) + `active-filter-bar.tsx` + `availability-worklist.tsx` (Daftar Kerja, #417) + `../availability/availability-nav.tsx` (sub-nav) + `availability-radar-dialog.tsx` (modal), `availability-module-matrix.tsx`, `availability-domain-laggards.tsx`, `availability-anomaly-panel.tsx`, `matrix-rows.ts` (`MatrixSortKey`, `filterMatrixRows`, `sortMatrixRows`, `sortKeyLabel`, `LOWEST_N`, hook `useMatrixRows` — satu sumber urut/cari/ringkas untuk heatmap & radar) + `matrix-toolbar.tsx` (`MatrixSearch`, `MatrixLimitToggle`, `emptyRowsMessage`), `domain-meta.ts` (ikon domain, `CATEGORY_LABELS`, `entryDomainScores`; formatter dari `src/lib/format.ts` (`formatPct`), `bandLabel`/`BAND_LABEL` dari `score-band-styles`, `shortDomainLabel` & `BAND_THRESHOLDS` dari lib agregasi), `loading.tsx` (putaran 3 #352: `availability-score-cards.tsx` & `availability-group-chart.tsx` dihapus); visual bersama `src/components/shared/score-visuals.tsx` (`ScoreGauge`, `BandBar`, `HeatCell`, `HeatLegend`) dan `src/components/shared/radar-chart.tsx` (`RadarChart` — juga dipakai header Index+radar DA-02; label sumbu bisa diklik = tautan ber-`role=link`, svg `overflow-visible`); skala warna kontinu `src/lib/score-heat.ts` (`heatRgb`/`heatStyle`/`HEAT_GRADIENT_CSS`, jangkar di ambang band, 100 = `HEAT_FULL`); geometri pentagon `src/lib/radar-geometry.ts`; gaya band diskret `src/lib/score-band-styles.ts` (`BAND_CELL`/`BAND_CELL_SOFT` dihapus — tak ada pemakai) |
 | Guard | `requirePermission("data-analyst-data-availability")` (halaman); `hasPermission("data-analyst-data-availability", "VIEW")` + `getAccessContext()` di action; tombol Excel digate `EXPORT` |
 | Server action / data | `getDataAvailabilityView()` dari `src/server/actions/data-availability.ts` — **live query** (bukan snapshot), satu query nested per bentuk DA-02 lintas Lembaga (tanpa kolom `geometry`; kehadiran geometry via query id terpisah `geometry: { not: Prisma.DbNull }`), partisipasi "tamu" (activity Lembaga lain) disaring di JS; kehadiran modul (#352) lewat `loadModuleFlagSets` (`src/lib/data-completeness-query.ts`): 19 kueri paralel dalam satu `Promise.all` — 15 kueri id-set (`groupBy`/`findMany`) per satelit + 4 `$queryRaw` PostGIS (Lembaga ber-boundary `geom`, persil di luar boundary ICS, luas `ST_Area`, koordinat Lembaga vs kabupaten BIG) — scope lewat relasi `parcel.farmer.farmerGroup`, sejajar dengan kueri geometry — TIDAK di-nest ke `findMany` utama |
 | Scoring | Direuse utuh dari DA-02: `computeCompleteness` (`src/lib/data-completeness.ts` + registri `data-completeness-registry.ts`) via `buildAvailabilityEntry` — skor per Lembaga di dashboard **identik** dengan halaman DA-02 |
@@ -66,41 +64,45 @@ Halaman: Ketersediaan Data — Semua Lembaga (/admin/data-analyst/data-availabil
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `data-analyst-data-availability` (`findTutorialForMenu`), dibuka di tab baru |
-| Judul halaman | Heading `h1` | "Ketersediaan Data — Semua Lembaga" |
-| Deskripsi | Teks | "Kelengkapan data 5 domain lintas Lembaga Petani — data per {tanggal generate}. Klik nama Lembaga untuk rinciannya." |
+| Judul halaman | Heading `h1` + sub-nav | "Ketersediaan Data" + tab aktif **Semua Lembaga** (`AvailabilityNav`, #417 A; H1 tanpa em-dash) |
+| Deskripsi | Teks | "Kelengkapan data 5 domain lintas Lembaga Petani · data per {tanggal generate}. Klik nama Lembaga untuk rinciannya." |
 | Filter Kategori Lembaga | Select | "Semua Kategori", "Ex-Plasma", "Swadaya" |
 | Filter Distrik | `FilterCombobox` | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga | `FilterCombobox` (#352) | "Cari lembaga petani..."; opsi "Semua Lembaga"; daftar mengikuti Distrik/Kategori; memfokuskan semua panel ke satu Lembaga |
 | "Excel" | Tombol (gate `EXPORT`) | `ketersediaan-data-semua-lembaga-<yyyyMMdd>.xlsx`: sheet **Kelengkapan Inti** (Lembaga, Kode, Distrik, Kategori, Petani, Persil, 5 skor domain, Skor Total, Temuan Anomali) + sheet **Cakupan Modul** (Lembaga × modul, % atau "belum dimulai") — atas irisan yang tampil |
-| Perilaku filter | Catatan | Nilai tersimpan di URL (`?distrik=…&kategori=…&lembaga=…&band=…&urut=…&arah=turun&tampilan=heatmap`); nilai tak valid diabaikan; `tampilan=inti` (nilai lama v0.36) dipetakan ke `heatmap` agar bookmark lama tetap membuka tabel |
-| Hero | Kartu | Lihat rincian di bawah |
-| Kartu domain (5) | Tombol kartu | Lihat rincian di bawah |
+| Perilaku filter | Catatan | Nilai tersimpan di URL (`?distrik=…&kategori=…&lembaga=…&band=…&urut=…&arah=turun&tampilan=heatmap&kerja=entitas`; urut modul `?urut=modul:<key>`); nilai tak valid diabaikan; `tampilan=inti` (nilai lama v0.36) dipetakan ke `heatmap` agar bookmark lama tetap membuka tabel |
+| Filter aktif | Baris chip + Reset semua (#417) | Lihat rincian di bawah |
+| Hero | Kartu satu baris | Lihat rincian di bawah |
+| Kartu domain (5) | Kartu + chip Urutkan | Lihat rincian di bawah |
 | Radar per Lembaga (bawaan) | Grid kartu pentagon + modal | Lihat rincian di bawah |
-| Matriks per Lembaga | Heatmap padat + segmented control + cari | Lihat rincian di bawah |
-| Matriks cakupan modul | Tabel heatmap (collapsible) | Lihat rincian di bawah |
-| Paling tertinggal per domain | 5 kotak kecil | Lihat rincian di bawah |
-| Panel Anomali Terbanyak | Panel bar dua bagian | Lihat rincian di bawah |
+| Toolbar matriks | `MatrixToolbar` lengket (#417 B) | Status · ⓘ · tab tampilan · Urut · arah · Cari — satu untuk ketiga tampilan |
+| Matriks per Lembaga | Heatmap padat | Lihat rincian di bawah |
+| Matriks cakupan modul | Tabel heatmap | Lihat rincian di bawah |
+| Daftar Kerja | Kartu bertab (#417 C) | Lihat rincian di bawah — menggantikan Paling tertinggal per domain & Panel Anomali Terbanyak |
 
-## Hero (`AvailabilityHero`)
+## Hero (`AvailabilityHero`, satu baris sejak #417)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Cincin Skor Keseluruhan | `ScoreGauge` 120 px | Angka bulat, warna band; tooltip: skor + temuan anomali; di sampingnya label band ("50 – <80 — perlu perhatian") dan "rata-rata tertimbang n Lembaga · n temuan"; 3 angka ringkas di kanan baris yang sama |
-| Distribusi Lembaga per band | Stacked bar (`BAND_BAR`) urut kritis → lengkap | Lebar segmen ∝ jumlah Lembaga; angka di dalam segmen; klik segmen/legenda → `?band=` (segmen lain meredup, tombol "hapus filter band"); legenda band kosong dinonaktifkan; tooltip jumlah + persen |
-| Angka ringkas | 3 kotak (baris cincin) | Lembaga · Petani · Persil (irisan) |
-| Aksi lintas Lembaga | Kotak setinggi kolom kiri, daftar bernomor (maks 3) | `topSystemicAnomalies` atas irisan yang SAMA dengan panel Anomali (termasuk filter band): label (truncate) · "n · n Lembaga" · tautan menu pertama `fix` registri + kolom (rute lengkap & alternatif di `title`); catatan kaki satu baris "Kolom ≥ 95 % kosong — urusan unggah massal…" (+ "Mengikuti filter band") + "Panel Anomali →" |
+| Cincin Skor Keseluruhan | `ScoreGauge` 88 px | Tooltip skor + temuan anomali; di sampingnya "Skor Keseluruhan", label tingkat skor ("50 – <80 — perlu perhatian") dan kalimat "n Lembaga · n petani · n lahan" (menggantikan 3 kotak angka) |
+| Sebaran Lembaga per tingkat skor | Stacked bar tinggi 32 px selebar sisa baris | Segmen = `<button aria-pressed>` dengan jumlah (+ nama pendek kritis/perhatian/baik/lengkap bila ≥ 18 %) dan `aria-label` "n Lembaga {tingkat} — klik untuk menyaring/melepas filter" (T4); segmen lain meredup saat aktif; pelepasan juga lewat chip filter aktif |
+| Dipindah | — | "Aksi lintas Lembaga" (3 kolom sistemik) → Daftar Kerja › Sistemik (T2, satu informasi satu tempat); "hapus filter band" → baris filter aktif |
+
+## Filter aktif (`ActiveFilterBar`, #417 A)
+
+Chip per pilihan yang berlaku — Kategori · Distrik · Lembaga · Tingkat skor (`band`) · Urut (bukan bawaan Skor Total menaik; di tampilan modul: nama modul) — masing-masing dengan tombol ✕ bernama ("Lepas filter Tingkat skor: kritis"), plus **Reset semua** (hapus `kategori distrik lembaga band urut arah`; `tampilan` & `kerja` bukan filter). Tidak dirender tanpa chip.
 
 ## Kartu domain (`AvailabilityDomainCards`)
 
 | # | Kartu | Nilai besar | Sub |
 |---|---|---|---|
-| 1 | Profil Lembaga · 10 % | skor % (warna band) + bar | "{n} Lembaga" · "{n} kritis" |
-| 2 | Petani · 25 % | skor % | "{n} petani" · "{n} kritis" |
-| 3 | Lahan · 25 % | skor % | "{n} persil" · "{n} kritis" |
-| 4 | Pelatihan · 20 % | skor % | "{n} sesi" · "{n} kritis" |
-| 5 | Produksi · 20 % | skor % | "{n} / {n} petani ber-produksi" · "{n} kritis" |
+| 1 | Profil · chip "bobot 10%" | skor % (warna tingkat) + bar | "{n} Lembaga" · "{n} kritis" |
+| 2 | Petani · bobot 25% | skor % | "{n} petani" · "{n} kritis" |
+| 3 | Lahan · bobot 25% | skor % | "{n} lahan" · "{n} kritis" |
+| 4 | Pelatihan · bobot 20% | skor % | "{n} sesi" · "{n} kritis" |
+| 5 | Produksi · bobot 20% | skor % | "{n} / {n} petani" · "{n} kritis" |
 
-Klik kartu → `?urut=<domain>` + `arah` di-reset menaik; tampilan **Cakupan modul** dipindah ke bawaan (Radar; matriks modul punya urutan sendiri), tampilan Heatmap dipertahankan; kartu ber-ring pada tampilan Radar & Heatmap; gulir ke matriks; klik lagi = kembali ke Skor Total. "n kritis" = Lembaga berskor <50 pada domain itu tanpa Lembaga tanpa petani (konsisten `domainLaggards`). Tooltip: bobot, basis portfolio (tertimbang petani / rata-rata sederhana), Lembaga kritis.
+Kartu **bukan** tombol (#417 T4: satu tombol satu aksi). Chip "Urutkan ⇅" (selalu terlihat) → `?urut=<domain>` + `arah` menaik, gulir ke matriks; saat aktif berubah "Terurut ↑" dan kartu ber-ring; klik lagi = kembali ke Skor Total. Tampilan **Cakupan modul** dipindah ke Radar (urutan modul terpisah), Heatmap dipertahankan.
 
 ## Matriks per Lembaga — heatmap (`AvailabilityMatrix`, `?tampilan=heatmap`, #352 putaran 4)
 
@@ -108,15 +110,15 @@ Pilihan owner dari tiga opsi (bar anggaran skor · bar data per sel · heatmap p
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Header | Judul + ringkasan | "Matriks per Lembaga" · "{n} Lembaga · {n} berskor kritis (<50) — warna sel mengikuti skor (merah → hijau); klik judul kolom…"; kanan: segmented control **Radar | Heatmap | Cakupan modul** (`Tabs`, `?tampilan=`) + kotak **Cari Lembaga / kode / distrik** |
-| Tata letak tabel | `table-fixed` + `<colgroup>` + `border-spacing-[2px]` | Lebar kolom eksplisit (Skor Total 80 px · Petani (n) 72 px · domain 96 px · nama = sisa, min-width 880 px) supaya lebar tidak dihitung ulang dari isi saat urutan/irisan berubah (masukan owner: kolom bergeser saat kartu domain diklik); celah 2 px antar sel ala heatmap; baris satu garis tinggi 28 px |
+| Header | — (#417 B: digantikan `MatrixToolbar` bersama — status satu baris + ⓘ) | Lama: "Matriks per Lembaga" · "{n} Lembaga · {n} berskor kritis (<50) — warna sel mengikuti skor (merah → hijau); klik judul kolom…"; kanan: segmented control **Radar | Heatmap | Cakupan modul** (`Tabs`, `?tampilan=`) + kotak **Cari Lembaga / kode / distrik** |
+| Tata letak tabel | `table-fixed` + `<colgroup>` + `border-spacing-[2px]` | #417 B (T5): Total 72 px · Petani 64 px · domain 72 px · nama = sisa, **min-width 720 px** — kelima kolom domain terlihat tanpa scroll mendatar pada 1.284 px konten (terukur 2026-10-11); kode · distrik di samping nama hanya bila kartu ≥ `@4xl`, selainnya di `title` |
 | Kolom "Lembaga Petani" | Kolom tabel (sortable) | Nama = **deep link** `/admin/data-analyst/data-completeness?lembaga={id}` berwarna primary + ikon `ExternalLink`, di-truncate dengan `title`; "{kode} · {distrik}" kecil di baris yang sama; baris ber-hover |
 | Kolom "Skor Total" | Kolom tabel (sortable, bawaan menaik) | Tepat setelah nama; `HeatCell emphasis` (tebal, ring) berwarna `heatStyle(healthScore)`; tooltip band + temuan |
 | Kolom "Petani (n)" | Kolom tabel (sortable) | Jumlah petani terdaftar |
 | Kolom domain (5) | Kolom tabel (sortable) | Profil, Petani, Lahan, Pelatihan, Produksi — `HeatCell` solid: latar `heatRgb(skor)` (gradasi merah-700 → amber → lime → emerald-500; 100 = emerald-800), teks putih/hitam dipilih dari luminansi WCAG (ambang 0,18 — kontras ≥ 4,5:1 di seluruh ramp, review putaran 4–5), angka 1 desimal tanpa "%"; tooltip band |
-| Batas baris | Toggle | **Bawaan semua baris** (nilai heatmap ada pada gambaran utuhnya) + "Ringkas — 10 baris pertama saja (urut … menaik/menurun)" / "Tampilkan semua ({n}) — {m} tersembunyi"; saat mencari, semua yang cocok tampil |
+| Batas baris | Toggle (state halaman) | **Bawaan Ringkas 10** (#417 K2) + "Tampilkan {n} lagi" / "Ringkas — 10 baris pertama saja"; pencarian menampilkan semua hasil; berlaku sama di radar & modul |
 | Legenda | `HeatLegend` | Ramp gradasi 0 → 99 dengan garis ambang 50 & 80 dan label segmen kritis · perhatian · baik, swatch terpisah "100 — lengkap penuh" |
-| Empty state | Teks | "Tidak ada Lembaga Petani pada filter ini." / "Tidak ada Lembaga yang cocok dengan \"{q}\"." |
+| Empty state | Teks | "Tidak ada Lembaga Petani pada pilihan filter ini." / "Tidak ada Lembaga yang cocok dengan \"{q}\"." |
 
 ## Radar per Lembaga (`AvailabilityRadarGrid`, tampilan bawaan, #352 putaran 4)
 
@@ -124,42 +126,35 @@ Pilihan owner dari empat usulan "out of the box" (peta kesiapan data · treemap 
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Header | Judul + ringkasan | "Radar per Lembaga" (ikon `Pentagon`) · "{n} Lembaga · {n} berskor kritis — pentagon penuh = lengkap, gepeng ke satu sisi = domain itu kosong. Klik grafik untuk memperbesar…"; kanan: segmented control tampilan + `Select` **Urut: Skor Total / Nama / Jumlah petani / 5 domain** (→ `?urut=`, arah di-reset menaik; `items` supaya label tampil) + tombol ikon balik arah (`?arah=`) + kotak cari |
+| Header | — | #417 B: digantikan `MatrixToolbar` bersama (cara baca di ⓘ). |
 | Kartu Lembaga | `RadarCard` | Nama (deep link DA-02, truncate) + `HeatCell emphasis` Skor Total (tooltip: 5 skor domain ber-chip band) · **tombol grafik** (`cursor-zoom-in`, ikon `Maximize2` saat hover, `aria-label` "Perbesar radar {nama}") → modal · "{kode} · {distrik}" · "{n} petani" |
 | Modal radar | `RadarDetailDialog` (`Dialog`, `sm:max-w-4xl`) | Judul: nama + `HeatCell` Skor Total + label band; deskripsi: kode · distrik · kategori · n petani · n persil · n temuan. **Kiri** radar `large` (label 7 px relatif viewBox agar proporsional saat 2×). **Kanan** tabel Domain · Bobot · Skor (`HeatCell`) · **Kontribusi** = bobot × skor ("{poin} / {bobot}") + baris Skor Total "{n} / 100" + catatan + tombol **Buka daftar kerja** (DA-02 `?lembaga=`) & **Detail Lembaga** (`/admin/master-data/groups/{id}`). Footer: "{i} / {n} pada urutan aktif · tombol ← → untuk berpindah" + **Sebelumnya / Berikutnya** (indeks pada `sorted`, bukan `limited`, jadi menjangkau semua; panah kiri/kanan di keyboard) |
-| Radar | `RadarChart` bersama, SVG `viewBox 236×172`, `radar-geometry.ts` | Lima sumbu (Profil di atas, searah jarum jam Petani · Lahan · Pelatihan · Produksi); cincin pentagon pada 50 · 80 (putus-putus) · 100; poligon skor isian `heatRgb(healthScore)` opacity 0,3 + garis; titik sudut r = 3 berwarna `heatRgb(skor domain)` (+`<title>`); label sumbu "Domain **skor**" di luar jari-jari (anchor middle/start/end menurut sisi) |
-| Grid | CSS grid | 1 / 2 (sm) / 3 (md) / 4 (xl) / 5 (2xl) kolom; bawaan semua kartu + "Ringkas — 10 kartu pertama saja" |
+| Radar | `RadarChart` bersama, SVG `viewBox 272×180` (#417 T6: label sumbu 11 px), `radar-geometry.ts` | Lima sumbu (Profil di atas, searah jarum jam Petani · Lahan · Pelatihan · Produksi); cincin pentagon pada 50 · 80 (putus-putus) · 100; poligon skor isian `heatRgb(healthScore)` opacity 0,3 + garis; titik sudut r = 3 berwarna `heatRgb(skor domain)` (+`<title>`); label sumbu "Domain **skor**" di luar jari-jari (anchor middle/start/end menurut sisi) |
+| Grid | CSS grid + container query | 1 / 2 (`@md`) / 3 (`@2xl`) / 4 (`@4xl`) / 5 (`@6xl`) kolom mengikuti lebar **konten**, bukan viewport (#417 T1; 4 kolom pada 931 px); bawaan Ringkas 10; tombol "Perbesar" (ikon + teks) muncul saat hover/fokus kartu |
 | Legenda | `HeatLegend` | Ramp yang sama + catatan "isian = Skor Total · titik sudut = skor domain · cincin = ambang 50 / 80 / 100" |
 
 ## Matriks cakupan modul (`AvailabilityModuleMatrix`, #352)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Judul | Collapsible trigger | "Matriks Cakupan Modul per Lembaga" (ikon `Rows3`, default terbuka); sub-judul: "Informatif — tidak masuk Index. …"; segmented control tampilan di kanan header |
-| Baris "Semua Lembaga (irisan)" | Baris portfolio | `moduleCoverageTotals` — Σ atas Lembaga yang modulnya berlaku; tooltip "{n} Lembaga berlaku" |
+| Judul | — | #417 B: header `Collapsible` dihapus; toolbar bersama (tab · Urut `?urut=modul:<key>` · arah · Cari) + Ringkas 10 seperti tampilan lain |
+| Baris "Semua Lembaga (pilihan filter)" | Baris portfolio | `moduleCoverageTotals` — Σ atas Lembaga yang modulnya berlaku; tooltip "{n} Lembaga berlaku" |
 | Kolom per modul (15) | Kolom tabel (sortable; tak berlaku diurutkan paling bawah) | Judul pendek `ModuleDef.short` + nama domain kecil di atasnya; `title` = label penuh |
 | Sel | `HeatCell` | % tanpa tanda "%" (skala kontinu `heatStyle`, sama dengan heatmap inti; baris portfolio `emphasis`), atau ✓/✗ untuk modul tingkat Lembaga; "—" bergaris = belum dimulai di Lembaga itu (pct null); tooltip terisi/total |
 | Kolom "Lembaga Petani" | Sticky kiri | Nama = deep link DA-02 + "{kode} · {distrik}" satu baris (tinggi 28 px) |
 | Legenda | `HeatLegend` "Skala cakupan" | Ramp yang sama + "belum dimulai di Lembaga itu" |
 
-## Paling tertinggal per domain (`AvailabilityDomainLaggards`)
+## Daftar Kerja (`AvailabilityWorklist`, #417 C)
 
-| Objek | Tipe | Keterangan |
+Satu kartu bertab menggantikan kolom *Aksi lintas Lembaga* di hero + kartu *Paling tertinggal per domain* + panel *Anomali Terbanyak* (T2). Mengikuti pilihan filter yang tampil, termasuk tingkat skor. Tab di URL `?kerja=` (bawaan `sistemik`, tanpa parameter); badge jumlah di tiap tab.
+
+| Tab | Isi | Keterangan |
 |---|---|---|
-| Judul | Heading kartu | "Paling tertinggal per domain" (ikon `ListOrdered`); sub: "5 Lembaga berskor terendah tiap domain … Lembaga tanpa petani tidak diikutkan" |
-| Kolom domain (5) | Kotak kecil | `domainLaggards(groups, key, 5)` disaring skor < 100: baris "{i}. {nama}" (deep link DA-02) · skor % warna band · "{distrik} · {n} petani" · `BandBar`; seri skor → petani terbanyak dulu |
-| Empty state | Teks | "Semua Lembaga sudah 100 %." (hijau) hanya bila ada Lembaga yang dinilai (profil: semua; domain lain: berpetani); irisan kosong → "Tidak ada Lembaga pada irisan ini.", semua tanpa petani → "Belum ada Lembaga berpetani pada irisan ini." (review pra-rilis #352) |
+| Sistemik (unggah massal) | `topSystemicAnomalies(groups, 8)` — Σ entitas kosong | Kolom ≥ 95 % kosong di suatu Lembaga; tiap baris: label (deep link Lembaga terdampak terbanyak) · angka · **"n Lembaga ▾"** (popover daftar Lembaga terdampak, bisa keyboard/sentuh) · bar · "Isi lewat {menu › kolom}" |
+| Per entitas | `topAnomalies(groups, 8)` — Σ temuan | Baris sama tanpa menu pengisian |
+| Tertinggal per domain | `DomainLaggardsGrid` (5 kolom × ≤ 5 Lembaga < 100 %) | Badge = Lembaga unik di kelima kolom; Lembaga tanpa petani tidak diikutkan |
 
-## Panel Anomali Terbanyak (`AvailabilityAnomalyPanel`)
-
-| Objek | Tipe | Keterangan |
-|---|---|---|
-| Judul | Heading kartu | "Anomali Terbanyak" (ikon `AlertTriangle` amber); sub: "Dijumlah lintas Lembaga pada irisan yang sedang tampil. Klik label → Lembaga terdampak terbanyak." |
-| Tata letak | Grid 2 kolom (md+) | Kedua bagian berdampingan, kartu penuh-lebar di bawah "Paling tertinggal per domain" |
-| Bagian "Per entitas — bisa dikejar per petani/persil" | Bar amber (maks 8) | `topAnomalies` (anomali non-sistemik, Σ `count`); label = deep link `?lembaga=<Lembaga terdampak terbanyak>`; tooltip: rute perbaikan (registri) + daftar ≤ 6 Lembaga terbanyak; "di {n} Lembaga" |
-| Bagian "Kolom belum pernah diisi — sistemik (≥ 95 % kosong)" | Bar slate (maks 8) | `topSystemicAnomalies` (Σ `entityCount`, Lembaga terdampak = Lembaga yang kolom itu praktis kosong) — ikon `Columns3` |
-| Link tindak lanjut | Link | "Buka Ketersediaan Data — Per Lembaga untuk daftar petaninya →" |
-| Empty state | Teks | Per bagian: "Tidak ada anomali per entitas pada filter ini. 🎉" / "Tidak ada kolom yang kosong sistemik pada filter ini." |
+Label registri yang memakai "persil" dibaca **"lahan"** di layar (`uiAnomalyLabel`, #417 D); kunci URL dan kolom Excel tetap.
 
 ## Catatan performa
 

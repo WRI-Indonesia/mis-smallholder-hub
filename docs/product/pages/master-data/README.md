@@ -37,7 +37,7 @@ Menu: Master Data (/admin/master-data)
 | URL | `/admin/master-data` |
 | Icon | `Database` |
 | Sub menu | 7 — Lembaga Petani (`master-data-groups`), Petani (`master-data-farmers`), Pelatihan (`master-data-training`), Lahan (`master-data-parcels`), Produksi (`master-data-production`), Monev BMP (`master-data-bmp-monev`, #344), Target Program (`master-data-program-target`, #403 — [program-target.md](program-target.md)) |
-| File | `src/app/(admin)/admin/master-data/page.tsx` — `redirect("/admin/master-data/farmers")` (tidak ada halaman index sendiri) |
+| File | `src/app/(admin)/admin/master-data/page.tsx` — `redirectToFirstAccessibleChild("master-data")` (bawaan `/admin/master-data/groups`, anak order 1 — sejak TD-051 (#412): ke **anak pertama (urut `order`) yang boleh diakses pengguna**, termasuk override per user; tanpa anak yang boleh → `/admin`; tidak ada halaman index sendiri) |
 
 ## Daftar sub menu
 

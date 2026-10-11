@@ -472,6 +472,7 @@ export function TrainingListClient({
         activity={editActivity}
         packages={packages}
         farmerGroups={farmerGroups}
+        canAttachEvidence={permissions.includes("EDIT")}
       />
     </>
   );

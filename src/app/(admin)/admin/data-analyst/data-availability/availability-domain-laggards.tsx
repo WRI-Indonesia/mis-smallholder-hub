@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ListOrdered } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BandBar } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
 import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainLaggards, scoreBand } from "@/lib/data-availability-aggregation";
@@ -12,24 +10,14 @@ import { formatNumber } from "@/lib/format";
 import { DOMAIN_ICONS } from "./domain-meta";
 
 /**
- * "Paling tertinggal per domain" (#352 putaran 3) — menggantikan bar chart skor
+ * Isi tab Daftar Kerja › Tertinggal per domain (#417 C; semula kartu sendiri
+ * "Paling tertinggal per domain", #352 putaran 3) — menggantikan bar chart skor
  * total yang menduplikasi kolom matriks. Lima kolom kecil, masing-masing 5
  * Lembaga terendah pada domain itu: langsung menjawab "untuk Produksi,
  * Lembaga mana yang didatangi dulu?". Lembaga tanpa petani dikeluarkan.
  */
-export function AvailabilityDomainLaggards({ groups, n = 5 }: { groups: AvailabilityGroupEntry[]; n?: number }) {
+export function DomainLaggardsGrid({ groups, n = 5 }: { groups: AvailabilityGroupEntry[]; n?: number }) {
   return (
-    <Card className="border border-border/60 shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          <ListOrdered className="h-4 w-4 text-primary" /> Paling tertinggal per domain
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Sampai {n} Lembaga berskor terendah (di bawah 100 %) tiap domain pada irisan yang tampil — daftar kunjungan per urusan. Lembaga tanpa
-          petani tidak diikutkan.
-        </p>
-      </CardHeader>
-      <CardContent>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {AVAILABILITY_DOMAIN_KEYS.map((key) => {
             // Lembaga yang sudah 100 % bukan "tertinggal" — disembunyikan agar daftar tidak berisi noise.
@@ -40,12 +28,12 @@ export function AvailabilityDomainLaggards({ groups, n = 5 }: { groups: Availabi
             const Icon = DOMAIN_ICONS[key];
             return (
               <div key={key} className="rounded-lg border p-3">
-                <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                   <Icon className="h-3.5 w-3.5" /> {AVAILABILITY_DOMAIN_LABELS[key]}
                 </div>
                 {rows.length === 0 ? (
                   eligible === 0 ? (
-                    <p className="text-xs text-muted-foreground">{groups.length === 0 ? "Tidak ada Lembaga pada irisan ini." : "Belum ada Lembaga berpetani pada irisan ini."}</p>
+                    <p className="text-xs text-muted-foreground">{groups.length === 0 ? "Tidak ada Lembaga pada pilihan filter ini." : "Belum ada Lembaga berpetani pada pilihan filter ini."}</p>
                   ) : (
                     <p className="text-xs text-emerald-700 dark:text-emerald-400">Semua Lembaga sudah 100 %.</p>
                   )
@@ -76,7 +64,5 @@ export function AvailabilityDomainLaggards({ groups, n = 5 }: { groups: Availabi
             );
           })}
         </div>
-      </CardContent>
-    </Card>
   );
 }

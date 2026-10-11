@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode } from "react";
+import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode, useDeferredValue } from "react";
 import { landNktStatusLabel, isNktAffected, NKT_AFFECTED_STATUSES } from "@/lib/land-parcel-satellite-format";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
@@ -152,6 +152,9 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
   // Right-side parcel list panel (searchable list of the currently-shown parcels).
   const [showParcelList, setShowParcelList] = useState(false);
   const [parcelSearch, setParcelSearch] = useState("");
+  // TD-032: penyaringan daftar lahan memakai nilai tertunda (React 19 `useDeferredValue`) —
+  // ketikan tidak diblokir oleh filter ribuan baris; aman sampai > 10k lahan.
+  const deferredParcelSearch = useDeferredValue(parcelSearch);
 
   // Ruler tool: while active, map clicks drop vertices and the running
   // geodesic distance along the path is shown.
@@ -533,7 +536,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
 
   const filteredParcels = useMemo(() => {
     const parcels = data?.parcels ?? [];
-    const q = parcelSearch.trim().toLowerCase();
+    const q = deferredParcelSearch.trim().toLowerCase();
     if (!q) return parcels;
     return parcels.filter(
       (p) =>
@@ -541,7 +544,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
         p.farmerCode.toLowerCase().includes(q) ||
         p.parcelId.toLowerCase().includes(q)
     );
-  }, [data, parcelSearch]);
+  }, [data, deferredParcelSearch]);
 
   // Zoom the map to a parcel's extent and open its popup.
   const zoomToParcel = useCallback((p: ParcelFeature) => {
@@ -1056,6 +1059,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
               <button
                 onClick={() => setShowParcelList(false)}
                 title="Tutup"
+                aria-label="Tutup daftar lahan"
                 className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <X className="h-3.5 w-3.5" />
@@ -1068,6 +1072,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
                   value={parcelSearch}
                   onChange={(e) => setParcelSearch(e.target.value)}
                   placeholder="Cari nama / ID petani / ID lahan"
+                  aria-label="Cari lahan di daftar"
                   className="h-8 w-full rounded-md border bg-background pr-2 pl-7 text-xs outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
@@ -1091,6 +1096,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
                           <button
                             onClick={() => zoomToParcel(p)}
                             title="Zoom ke lahan"
+                            aria-label={`Zoom ke lahan ${p.parcelId}`}
                             className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
                             <Crosshair className="h-3.5 w-3.5" />

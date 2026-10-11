@@ -146,6 +146,10 @@ export async function getLandParcelProduction(id: string): Promise<ProductionSum
 
   const access = await getAccessContext();
 
+  // Sengaja TANPA `isActive` (#387 butir 7, owner 2026-10-11): lahan revisi lama
+  // tetap bisa dibaca sebagai riwayat (#203). Produksi sudah di-repoint ke
+  // revisi aktif saat upload ulang, jadi baris lama menghasilkan ringkasan kosong,
+  // bukan angka ganda. Scope tetap lewat relasi petani.
   const parcel = await prisma.landParcel.findFirst({
     where: { id, ...farmerRelationAccessFilter(access) },
     select: { id: true, farmerId: true, farmer: { select: { farmerGroupId: true } } },

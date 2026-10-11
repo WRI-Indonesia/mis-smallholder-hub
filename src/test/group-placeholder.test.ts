@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { cleanGroupInput } from "@/lib/group-placeholder";
+import { BLANK_TOKENS, PENDING_TOKENS } from "@/lib/land-parcel-detail-import";
 import { parcelGroupValue } from "@/lib/report-land-parcel";
 import { landParcelSchema } from "@/validations/land-parcel.schema";
 import { landParcelDetailRowSchema } from "@/validations/land-parcel-detail.schema";
@@ -24,13 +25,23 @@ describe("cleanGroupInput", () => {
     ["KT-1", "KT-1"],
     ["Tidak  Ada", null], // spasi ganda (review #374)
     ["Tidak\u00a0Ada", null], // NBSP
+    ["n/a", null], // token kosong berkas Excel - satu daftar dengan import (TD-046)
+    ["NULL", null],
+    ["Belum ada", null],
+    ["Nama", "Nama"], // bukan token walau mengandung "na"
     ["KT  Maju", "KT Maju"], // spasi ganda dirapatkan, sama dengan pengelompokan
   ])("%j → %j", (input, expected) => {
     expect(cleanGroupInput(input)).toBe(expected);
   });
 
+  it("penjaga drift TD-046: setiap token yang dikosongkan import Detail Lahan juga kosong di form/Zod", () => {
+    for (const t of [...BLANK_TOKENS, ...PENDING_TOKENS]) expect(cleanGroupInput(t), t).toBeNull();
+    expect(cleanGroupInput("0")).toBeNull(); // review #412: "0" dari form dulu tersimpan sebagai KT bernama 0
+    expect(cleanGroupInput("Blok 0")).toBe("Blok 0");
+  });
+
   it("sejalan dengan parcelGroupValue (pengelompokan Excel/peta #371/#372)", () => {
-    for (const v of ["Tidak Ada", "Tidak  Ada", "Tidak\u00a0 Ada", "-", "KT Maju", "  "]) expect(cleanGroupInput(v) === null).toBe(parcelGroupValue(v) === null);
+    for (const v of ["Tidak Ada", "Tidak  Ada", "Tidak\u00a0 Ada", "-", "KT Maju", "  ", "n/a", "none"]) expect(cleanGroupInput(v) === null).toBe(parcelGroupValue(v) === null);
   });
 });
 

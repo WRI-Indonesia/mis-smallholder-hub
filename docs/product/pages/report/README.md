@@ -46,7 +46,7 @@ Menu: Report (/admin/report)
 | Atribut | Nilai |
 |---|---|
 | File | `src/app/(admin)/admin/report/page.tsx` |
-| Tipe | Server Component tanpa UI — `redirect("/admin/report/farmer")` |
+| Tipe | Server Component tanpa UI — `redirectToFirstAccessibleChild("report")` (bawaan `/admin/report/farmer` — sejak TD-051 (#412): ke **anak pertama (urut `order`) yang boleh diakses pengguna**, termasuk override per user; tanpa anak yang boleh → `/admin`) |
 | Guard | — (tidak ada `requirePermission`; guard berada di halaman tujuan) |
 | Server action / data | — |
 

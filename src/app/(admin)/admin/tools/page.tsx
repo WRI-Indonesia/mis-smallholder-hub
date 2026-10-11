@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-export default function ToolsIndexPage() {
-  redirect("/admin/tools/snapshot");
+/** Indeks induk `tools`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function ToolsIndexPage() {
+  await redirectToFirstAccessibleChild("tools");
 }

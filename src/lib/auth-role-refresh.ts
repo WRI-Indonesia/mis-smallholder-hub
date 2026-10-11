@@ -1,4 +1,5 @@
 import type { JWT } from "next-auth/jwt";
+import { createTtlMemo } from "@/lib/ttl-memo";
 
 /**
  * Role & status aktif dibaca ulang dari DB, bukan dipercaya dari JWT (#342).
@@ -10,6 +11,8 @@ import type { JWT } from "next-auth/jwt";
  * ditulis ulang, jadi penanda waktu di token tidak dipakai).
  */
 export const ROLE_CACHE_TTL_MS = 60 * 1000;
+/** Batas entri memo role (TD-054): cukup untuk ±50 akun kini, tak tumbuh tanpa batas. */
+export const ROLE_CACHE_MAX_ENTRIES = 1000;
 
 export type UserRoleState = { role: string; isActive: boolean } | null;
 export type RoleLookup = ((userId: string) => Promise<UserRoleState>) & {
@@ -17,17 +20,11 @@ export type RoleLookup = ((userId: string) => Promise<UserRoleState>) & {
   forget?: (userId: string) => void;
 };
 
-/** Bungkus fetcher DB dengan memo per userId ber-TTL. Galat tidak dimemo. */
+/** Bungkus fetcher DB dengan memo per userId ber-TTL (primitif bersama `createTtlMemo`, TD-054). Galat tidak dimemo. */
 export function createRoleLookup(fetcher: RoleLookup, ttlMs = ROLE_CACHE_TTL_MS, now = Date.now): RoleLookup {
-  const memo = new Map<string, { value: UserRoleState; expiresAt: number }>();
-  const lookup: RoleLookup = async (userId) => {
-    const hit = memo.get(userId);
-    if (hit && hit.expiresAt > now()) return hit.value;
-    const value = await fetcher(userId);
-    memo.set(userId, { value, expiresAt: now() + ttlMs });
-    return value;
-  };
-  lookup.forget = (userId) => void memo.delete(userId);
+  const memo = createTtlMemo<string, UserRoleState>({ ttlMs, maxEntries: ROLE_CACHE_MAX_ENTRIES, now });
+  const lookup: RoleLookup = (userId) => memo.get(userId, () => fetcher(userId));
+  lookup.forget = (userId) => memo.forget(userId);
   return lookup;
 }
 

@@ -100,7 +100,7 @@ model MainDashboardSnapshot {
 
   // Snapshot Metadata
   snapshotDate DateTime @map("snapshot_date")
-  districtId   String?  @map("district_id") // NULL = all districts
+  districtId   String?  @map("district_id") // NULL = all districts (org-wide: tampil utuh ke semua pemegang menu snapshot — ADMIN/SUPERADMIN — tanpa dipangkas ke scope penonton; diterima #387 butir 4, 2026-10-11)
   joinedYear   Int?     @map("joined_year") // NULL = all years
 
   // Relations

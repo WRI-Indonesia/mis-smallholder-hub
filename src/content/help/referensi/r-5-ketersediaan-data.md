@@ -4,7 +4,7 @@ icon: Gauge
 menuKey: data-analyst-data-availability
 permission: VIEW
 href: /admin/data-analyst/data-availability
-hrefLabel: Buka Ketersediaan Data — Semua Lembaga
+hrefLabel: Buka Ketersediaan Data › Semua Lembaga
 ---
 
 ## Index Ketersediaan Data
@@ -43,7 +43,7 @@ Setiap baris checklist berchip jenis:
 
 ## Temuan anomali
 
-**Per entitas** — satu baris per petani/persil yang bermasalah; jumlahnya masuk badge "n temuan" dan panel Anomali Terbanyak bagian *Per entitas*.
+**Per entitas** — satu baris per petani/persil yang bermasalah; jumlahnya masuk badge "n temuan" dan **Daftar Kerja › Per entitas** di halaman Semua Lembaga.
 
 **Sistemik** — bila satu check "kolom kosong" (Inti, Lapangan, Relasi) kosong pada ≥ 95 % entitas Lembaga (dan Lembaga punya ≥ 10 entitas), anomali itu dilipat menjadi **satu** temuan agregat "kolom belum pernah diisi". Check validitas, kualitas, dan paket pelatihan tidak pernah dilipat. Skor domain tidak berubah oleh pelipatan ini — hanya cara menghitung temuannya. Daftar lengkap tetap tersedia di Excel.
 
@@ -72,3 +72,11 @@ Persentase entitas yang sudah mengisi modul tambahan — **informatif, di luar I
 **Tidak berlaku** — modul bergrain petani/persil yang belum diisi satu pun di Lembaga itu ditandai "belum ada di Lembaga ini" dan dikeluarkan dari penyebut, baik di halaman Per Lembaga maupun di baris *Semua Lembaga* pada matriks cakupan. Modul tingkat Lembaga (boundary, acuan, penilaian Lembaga, sertifikasi) selalu dinilai ada/tidak.
 
 + Status sertifikasi kosong diperlakukan **netral**: sistem tidak bisa membedakan "belum diisi" dari "tidak bersertifikat" (pilihan hanya Bersertifikat/Direncanakan), jadi ia hanya tampil sebagai cakupan, bukan anomali.
+
+## Kalender Produksi — bukan skor
+
+Halaman **Ketersediaan Data → Produksi** tidak memakai Index di atas. Sel Lembaga × bulan = **lahan aktif non-PSR yang punya ≥ 1 record produksi bulan itu ÷ seluruh lahan aktif non-PSR Lembaga**, dibatasi 100 % (record bisa menunjuk lahan petani lain dalam Lembaga yang sama). Baris petani memakai rumus yang sama atas lahan miliknya; baris lahan menampilkan kg.
+
++ **Bulan ber-data** (kolom "Bulan") = aturan penyetahunan produktivitas yang dipakai Peta BMP dan Detail Lembaga: sebuah bulan dihitung ber-data bila total produksinya > 0 ton (dibulatkan 2 desimal) **atau** ada record yang ber-ID Lahan. Jadi bulan yang hanya berisi record 0 kg tanpa ID Lahan tidak dihitung, walau selnya tetap tampil berwarna karena "ada record".
++ **Jeda** = selisih bulan dari periode terakhir ke bulan berjalan; ≥ 3 bulan = basi — ambang yang sama dengan anomali *produksi basi* di atas.
++ Record berlabel **Estimasi** (kolom catatan berisi kata "estimasi", tidak peka huruf besar) dan record **0 kg** dihitung sebagai penanda, bukan pengurang persen; record **tanpa ID Lahan** tidak masuk pembilang dan ditampilkan terpisah.

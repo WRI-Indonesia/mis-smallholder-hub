@@ -29,16 +29,32 @@ import type {
 
 const VIEW = "VIEW";
 const MENU_KEY = "map-parcel";
+const BMP_MENU_KEY = "map-bmp";
+const DENIED = "Tidak memiliki izin untuk mengakses data ini";
 
 async function requireView() {
   if (!(await hasPermission(MENU_KEY, VIEW))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+    throw new Error(DENIED);
+  }
+}
+
+/**
+ * Opsi filter Provinsi/Distrik/Lembaga dipakai dua halaman (Peta Lahan & Peta
+ * BMP), jadi cukup salah satu izin VIEW (#384) — pola `requireBoundaryRead`
+ * di `fire-boundary.ts` / proxy `/api/map-hotspot`. Urutan cek tidak
+ * berpengaruh pada biaya: `getEffectiveMenuPermissions` di-`cache()` per
+ * request, jadi cek kedua hanya membaca peta izin yang sama (TD-060: helper
+ * `hasAnyPermission` bersama belum ada).
+ */
+async function requireFilterView() {
+  if (!(await hasPermission(MENU_KEY, VIEW)) && !(await hasPermission(BMP_MENU_KEY, VIEW))) {
+    throw new Error(DENIED);
   }
 }
 
 /** Provinces within the user's data-access scope (for the Province filter). */
 export async function getProvincesForMap(): Promise<MapSelectOption[]> {
-  await requireView();
+  await requireFilterView();
   const access = await getAccessContext();
   const districtIds = await getAccessibleDistrictIds(access);
 
@@ -64,7 +80,7 @@ export async function getProvincesForMap(): Promise<MapSelectOption[]> {
 export async function getDistrictsForMap(
   provinceId?: string | null
 ): Promise<MapSelectOption[]> {
-  await requireView();
+  await requireFilterView();
   const access = await getAccessContext();
   const districtIds = await getAccessibleDistrictIds(access);
 
@@ -88,7 +104,7 @@ export async function getDistrictsForMap(
 export async function getFarmerGroupsForMap(
   districtId?: string | null
 ): Promise<MapGroupOption[]> {
-  await requireView();
+  await requireFilterView();
   const access = await getAccessContext();
 
   // Scope di AND: filter distrik permintaan tak boleh menimpa `districtId: { in }` BY_DISTRICT (BUG-007, audit 2026-10-10).
@@ -114,7 +130,7 @@ export async function getMapData(
   filters: MapFilters
 ): Promise<ActionResult<MapDataWire>> {
   if (!(await hasPermission(MENU_KEY, VIEW))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+    return { success: false, error: DENIED };
   }
 
   const parsed = mapFilterSchema.safeParse(filters);
@@ -200,7 +216,7 @@ export async function getMapData(
  */
 export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<MapMarkerWire>> {
   if (!(await hasPermission(MENU_KEY, VIEW))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+    return { success: false, error: DENIED };
   }
   const parsed = mapFilterSchema.safeParse(filters);
   if (!parsed.success) return { success: false, error: "Filter tidak valid" };
@@ -238,8 +254,6 @@ export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<M
   };
 }
 
-const BMP_MENU_KEY = "map-bmp";
-
 /**
  * Peta BMP — Layer 1: production-data availability per parcel. Loads land
  * parcels for the selected Lembaga Petani (RBAC-scoped) and classifies each into
@@ -254,7 +268,7 @@ export async function getBmpMapData(
   filters: BmpMapFilters
 ): Promise<ActionResult<BmpMapDataWire>> {
   if (!(await hasPermission(BMP_MENU_KEY, VIEW))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+    return { success: false, error: DENIED };
   }
 
   const parsed = bmpMapFilterSchema.safeParse(filters);

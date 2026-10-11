@@ -12,6 +12,9 @@ import type { ActionResult } from "@/types/action-result";
 const NO_ACTIVE_PERMISSION = "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu";
  
 export async function getMenuItems(): Promise<{ success: boolean; data?: MenuItem[] }> {
+  // #387 butir 1: pohon menu (dipakai sidebar sebelum `filterMenuTreeByAccess`)
+  // hanya untuk sesi yang sah — bukan pintu anonim ke struktur menu.
+  if (!(await auth())?.user) return { success: false };
   try {
     const items = await prisma.menuItem.findMany({
       where: { isActive: true, isVisible: true },

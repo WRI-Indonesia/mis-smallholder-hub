@@ -221,13 +221,13 @@ const CHECKS: Check[] = [
     expectLabel: MENU_352.map((m) => `${m.title}:${m.order}`).join(" · "),
   },
   {
-    id: "G1", section: "G", purpose: "menu data-analyst-parcel-overlap + izin per peran (v1.2.0; ✗ = seed-menu-key.mjs belum dijalankan)",
+    id: "G1", section: "G", purpose: "menu data-analyst-parcel-overlap + izin per peran (v1.2.0; ✗ = seed-menu-key.ts belum dijalankan)",
     sql: `select (select count(*) from tbl_menu_item where key='data-analyst-parcel-overlap' and is_active)::int as menu, (select count(*) from rbac_role_permission where menu_key='data-analyst-parcel-overlap' and is_active)::int as perms, (select string_agg(role || ':' || n, ' ') from (select role::text, count(*)::int as n from rbac_role_permission where menu_key='data-analyst-parcel-overlap' and is_active group by role order by role) x) as per_role`,
     pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin · ${r[0]?.per_role ?? "—"}`,
     expect: (_v, rows) => Number(rows[0]?.menu) === 1 && Number(rows[0]?.perms) === 8, expectLabel: "1 menu · 8 izin (ADMIN/MANAGEMENT/OPERATOR/SUPERADMIN: VIEW+EXPORT)",
   },
   {
-    id: "G2", section: "G", purpose: "menu data-analyst-sprint + izin per peran (v1.2.0; ✗ = seed-menu-key.mjs belum dijalankan)",
+    id: "G2", section: "G", purpose: "menu data-analyst-sprint + izin per peran (v1.2.0; ✗ = seed-menu-key.ts belum dijalankan)",
     sql: `select (select count(*) from tbl_menu_item where key='data-analyst-sprint' and is_active)::int as menu, (select count(*) from rbac_role_permission where menu_key='data-analyst-sprint' and is_active)::int as perms, (select string_agg(role || ':' || n, ' ') from (select role::text, count(*)::int as n from rbac_role_permission where menu_key='data-analyst-sprint' and is_active group by role order by role) x) as per_role`,
     pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin · ${r[0]?.per_role ?? "—"}`,
     expect: (_v, rows) => Number(rows[0]?.menu) === 1 && Number(rows[0]?.perms) === 3, expectLabel: "1 menu · 3 izin (ADMIN/MANAGEMENT/SUPERADMIN: VIEW)",

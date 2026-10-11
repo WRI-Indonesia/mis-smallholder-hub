@@ -59,9 +59,11 @@ interface Props {
   activity: TrainingActivity | null;
   packages: TrainingPackage[];
   farmerGroups: FarmerGroup[];
+  /** Menempelkan bukti = `updateTrainingActivity` (EDIT); tanpa izin itu kolom Evidence disembunyikan saat buat (TD-053c). */
+  canAttachEvidence?: boolean;
 }
 
-export function TrainingFormModal({ open, onClose, activity, packages, farmerGroups }: Props) {
+export function TrainingFormModal({ open, onClose, activity, packages, farmerGroups, canAttachEvidence = true }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [farmerGroupId, setFarmerGroupId] = useState(activity?.farmerGroupId ?? "");
@@ -357,6 +359,7 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
             {errors.notes && <p className="text-sm text-destructive">{errors.notes[0]}</p>}
           </div>
 
+          {canAttachEvidence ? (
           <div className="space-y-2">
             <Label htmlFor="evidence">Evidence (Notulen PDF, maks 10MB)</Label>
             <Input
@@ -377,6 +380,9 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
               <p className="text-sm text-destructive mt-1">{(errors.evidence ?? errors.evidenceKey)[0]}</p>
             )}
           </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Bukti (PDF) hanya bisa ditempelkan oleh akun dengan izin EDIT Pelatihan — unggah lewat Edit setelah dibuat oleh akun tersebut.</p>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>
