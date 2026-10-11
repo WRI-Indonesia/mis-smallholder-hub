@@ -54,7 +54,9 @@ export async function getUsers(search?: string) {
       provinces: { select: { province: { select: { name: true } } } },
       districts: { select: { district: { select: { name: true } } } },
       farmerGroups: { select: { farmerGroup: { select: { name: true, abrv: true } } } },
-      permissionOverrides: { select: { id: true, granted: true } },
+      // Hanya override AKTIF — pencabutan = soft delete (isActive false); tanpa filter ini kolom
+      // "n Override" & Excel ikut menghitung override yang sudah dicabut (temuan QA staging v1.7.0).
+      permissionOverrides: { where: { isActive: true }, select: { id: true, granted: true } },
     },
     orderBy: { name: "asc" },
   });
