@@ -4,7 +4,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
-import { farmerGroupAccessFilter, rawFarmerGroupScope } from "@/lib/access-scope";
+import { farmerGroupAccessFilter } from "@/lib/access-scope";
+import { groupScopeSql } from "@/lib/access-scope-sql";
 import { currentPeriod } from "@/lib/data-completeness";
 import type {
   ProductionAvailabilityFarmerRow,
@@ -43,6 +44,13 @@ const toCell = (r: CellRow): ProductionCellStats => ({
 });
 
 /**
+ * POPULASI RECORD satu definisi untuk semua tingkat & Sheet 2 (review #416):
+ * record aktif **atas nama petani** (`pr.farmer_id`) — Lembaga = petani-petaninya,
+ * petani = record-nya sendiri, lahan = record petani itu per `parcel_id`. Record
+ * yang menunjuk lahan petani lain tetap dihitung pada petani yang mencatatnya
+ * (tampil sebagai baris lahan "lain"), sehingga induk dan anak selalu berjumlah
+ * sama dan tautan ke Master Data Produksi (filter petani) selalu berisi.
+ *
  * Agregat per (pemilik, periode) yang sama untuk tingkat Lembaga dan petani.
  * `parcels_reporting` = lahan AKTIF non-PSR berbeda yang ditunjuk record
  * (LEFT JOIN: record ke lahan nonaktif/hilang tidak dihitung lahan melapor,
@@ -74,13 +82,8 @@ export async function getProductionAvailabilityView(): Promise<ProductionAvailab
   }
   const access = await getAccessContext();
   const groupWhere = { isActive: true, ...farmerGroupAccessFilter(access) };
-  const scope = rawFarmerGroupScope(access);
-  const groupIds = scope.groupIds ?? null;
-  const districtIds = scope.districtIds ?? null;
-  // Cermin `farmerGroupAccessFilter` untuk SQL mentah (pola data-completeness-query).
-  const rawScope = Prisma.sql`g.is_active
-    AND (${groupIds}::text[] IS NULL OR g.id = ANY(${groupIds}::text[]))
-    AND (${districtIds}::text[] IS NULL OR g.district_id = ANY(${districtIds}::text[]))`;
+  // Scope SQL mentah dari helper bersama (review #416: satu definisi untuk semua kueri mentah).
+  const rawScope = Prisma.sql`g.is_active AND ${groupScopeSql("g", access)}`;
 
   const [groups, denominators, cells] = await Promise.all([
     prisma.farmerGroup.findMany({
@@ -199,8 +202,10 @@ export async function getProductionAvailabilityFarmers(groupId: string, year: nu
 
 /**
  * Semua lahan aktif satu Lembaga × bulan satu tahun — hanya untuk Sheet 2 ekspor
- * Excel (K6), bukan untuk layar (layar memuat per petani saat dibuka). Record
- * tanpa persil tidak ikut (ada di Sheet 1 sebagai angka per Lembaga).
+ * Excel (K6), bukan untuk layar (layar memuat per petani saat dibuka). Populasi
+ * sama dengan Sheet 1: record atas nama petani Lembaga ini; record yang menunjuk
+ * lahan di luar daftar aktif (petani lain / revisi lama) jadi baris tambahan
+ * bertanda. Record tanpa persil tidak ikut (ada di Sheet 1 per Lembaga).
  */
 export async function getProductionAvailabilityGroupParcels(groupId: string, year: number): Promise<ProductionAvailabilityGroupParcelRow[]> {
   if (!(await hasPermission(MENU_KEY, "VIEW"))) {
@@ -217,28 +222,31 @@ export async function getProductionAvailabilityGroupParcels(groupId: string, yea
   const [parcels, cells] = await Promise.all([
     prisma.landParcel.findMany({
       where: { isActive: true, farmer: { isActive: true, farmerGroupId: groupId } },
-      select: { id: true, parcelId: true, isPsr: true, area: true, farmer: { select: { name: true, farmerId: true } } },
+      select: { id: true, parcelId: true, isPsr: true, area: true, farmerId: true, farmer: { select: { name: true, farmerId: true } } },
       orderBy: [{ farmer: { name: "asc" } }, { parcelId: "asc" }],
     }),
-    prisma.$queryRaw<{ parcel_id: string; period: string; records: number; kg: number; zero_records: number; estimate_records: number }[]>(Prisma.sql`
-      SELECT pr.parcel_id, pr.period,
+    prisma.$queryRaw<{ parcel_id: string; farmer_id: string; period: string; records: number; kg: number; zero_records: number; estimate_records: number }[]>(Prisma.sql`
+      SELECT pr.parcel_id, pr.farmer_id, pr.period,
         COUNT(*)::int AS records,
         COALESCE(SUM(pr.yield_kg), 0)::float8 AS kg,
         COUNT(*) FILTER (WHERE pr.yield_kg = 0)::int AS zero_records,
         COUNT(*) FILTER (WHERE pr.notes ILIKE '%estimasi%')::int AS estimate_records
       FROM tbl_production_record pr
-      JOIN tbl_land_parcel lp ON lp.id = pr.parcel_id AND lp.is_active
-      JOIN tbl_farmer f ON f.id = lp.farmer_id AND f.is_active
-      WHERE pr.is_active AND f.farmer_group_id = ${groupId} AND ${yearRange(year)}
-      GROUP BY pr.parcel_id, pr.period`),
+      JOIN tbl_farmer f ON f.id = pr.farmer_id AND f.is_active
+      WHERE pr.is_active AND pr.parcel_id IS NOT NULL AND f.farmer_group_id = ${groupId} AND ${yearRange(year)}
+      GROUP BY pr.parcel_id, pr.farmer_id, pr.period`),
   ]);
-  const byParcel = new Map<string, ProductionParcelCell[]>();
+  // Kunci baris = (lahan, petani pencatat): lahan yang dicatat dua petani jadi dua baris.
+  const rowKey = (parcelId: string, farmerId: string) => `${parcelId}|${farmerId}`;
+  const byRow = new Map<string, ProductionParcelCell[]>();
   for (const r of cells) {
-    const list = byParcel.get(r.parcel_id) ?? [];
+    const k = rowKey(r.parcel_id, r.farmer_id);
+    const list = byRow.get(k) ?? [];
     list.push({ period: r.period, records: r.records, kg: r.kg, zeroRecords: r.zero_records, estimateRecords: r.estimate_records });
-    byParcel.set(r.parcel_id, list);
+    byRow.set(k, list);
   }
-  return parcels.map((p) => ({
+  const sortCells = (list: ProductionParcelCell[] | undefined) => (list ?? []).sort((a, b) => a.period.localeCompare(b.period));
+  const ownRows: ProductionAvailabilityGroupParcelRow[] = parcels.map((p) => ({
     id: p.id,
     parcelCode: p.parcelId,
     isPsr: p.isPsr,
@@ -246,14 +254,42 @@ export async function getProductionAvailabilityGroupParcels(groupId: string, yea
     isOwn: true,
     farmerName: p.farmer.name,
     farmerCode: p.farmer.farmerId,
-    cells: (byParcel.get(p.id) ?? []).sort((a, b) => a.period.localeCompare(b.period)),
+    cells: sortCells(byRow.get(rowKey(p.id, p.farmerId))),
   }));
+  // Baris tambahan: (lahan, petani) dari record yang tidak cocok dengan daftar lahan aktif-pemiliknya.
+  const ownKeys = new Set(parcels.map((p) => rowKey(p.id, p.farmerId)));
+  const extraKeys = [...byRow.keys()].filter((k) => !ownKeys.has(k));
+  if (extraKeys.length === 0) return ownRows;
+  const extraParcelIds = [...new Set(extraKeys.map((k) => k.split("|")[0]))];
+  const extraFarmerIds = [...new Set(extraKeys.map((k) => k.split("|")[1]))];
+  const [extraParcels, extraFarmers] = await Promise.all([
+    prisma.landParcel.findMany({ where: { id: { in: extraParcelIds } }, select: { id: true, parcelId: true, isPsr: true, area: true, isActive: true } }),
+    prisma.farmer.findMany({ where: { id: { in: extraFarmerIds } }, select: { id: true, name: true, farmerId: true } }),
+  ]);
+  const parcelById = new Map(extraParcels.map((p) => [p.id, p]));
+  const farmerById = new Map(extraFarmers.map((f) => [f.id, f]));
+  const extraRows: ProductionAvailabilityGroupParcelRow[] = extraKeys.map((k) => {
+    const [parcelId, farmerId] = k.split("|");
+    const p = parcelById.get(parcelId);
+    const f = farmerById.get(farmerId);
+    return {
+      id: parcelId,
+      parcelCode: p ? (p.isActive ? p.parcelId : `${p.parcelId} (nonaktif)`) : "(lahan tidak ditemukan)",
+      isPsr: p?.isPsr ?? false,
+      area: p?.area ?? null,
+      isOwn: false,
+      farmerName: f?.name ?? "",
+      farmerCode: f?.farmerId ?? "",
+      cells: sortCells(byRow.get(k)),
+    };
+  });
+  return [...ownRows, ...extraRows];
 }
 
 /**
- * Baris lahan satu petani untuk satu tahun (anak petani). Populasi record =
- * record petani ini + record di lahan-lahannya yang tercatat atas nama pemilik
- * lain (definisi `fetchFarmerDataMonths`). Record tanpa ID Lahan dikembalikan
+ * Baris lahan satu petani untuk satu tahun (anak petani). Populasi = record atas
+ * nama petani ini (sama dengan baris petaninya); lahan yang ditunjuk tetapi bukan
+ * lahan aktifnya ikut sebagai baris "lain". Record tanpa ID Lahan dikembalikan
  * terpisah (`noParcel`) untuk baris semu "Tanpa persil" (K5-c).
  */
 export async function getProductionAvailabilityParcels(farmerId: string, year: number): Promise<ProductionAvailabilityParcelsResult> {
@@ -280,14 +316,14 @@ export async function getProductionAvailabilityParcels(farmerId: string, year: n
     where: {
       isActive: true,
       period: { gte: `${year}-01`, lte: `${year}-12` },
-      OR: [{ farmerId }, { parcel: { farmerId } }],
+      farmerId,
     },
     select: {
       parcelId: true,
       period: true,
       yieldKg: true,
       notes: true,
-      parcel: { select: { id: true, parcelId: true, isPsr: true, area: true, isActive: true, farmerId: true } },
+      parcel: { select: { id: true, parcelId: true, isPsr: true, area: true, isActive: true } },
     },
   });
 

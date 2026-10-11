@@ -41,8 +41,10 @@ export interface ProductionRangeSummary {
   lastPeriod: string | null;
   /** Bulan ber-data per tahun — aturan penyetahunan Peta BMP. */
   monthsByYear: DataMonthsByYear;
-  /** Jeda bulan dari periode terakhir ke periode acuan; `null` tanpa record. */
+  /** Jeda bulan dari periode terakhir ke periode acuan (≥ 0); `null` tanpa record. */
   gapMonths: number | null;
+  /** Periode terakhir melampaui periode acuan (salah ketik tahun / periode masa depan) — jeda dipaksa 0. */
+  futureLast: boolean;
   /** `gapMonths ≥ PRODUCTION_STALE_MONTHS` (K5-d). */
   stale: boolean;
   totalRecords: number;
@@ -59,7 +61,9 @@ export function summarizeRange(cells: ProductionCellStats[], referencePeriod: st
   const firstPeriod = periods[0] ?? null;
   const lastPeriod = periods[periods.length - 1] ?? null;
   const gap = lastPeriod ? monthsBetween(lastPeriod, referencePeriod) : Number.NaN;
-  const gapMonths = Number.isFinite(gap) ? gap : null;
+  // Periode masa depan → jeda negatif tidak bermakna; dipaksa 0 dan ditandai (review #416).
+  const gapMonths = Number.isFinite(gap) ? Math.max(0, gap) : null;
+  const futureLast = Number.isFinite(gap) && gap < 0;
   const totalRecords = valid.reduce((s, c) => s + c.records, 0);
   const estimateRecords = valid.reduce((s, c) => s + c.estimateRecords, 0);
   return {
@@ -67,6 +71,7 @@ export function summarizeRange(cells: ProductionCellStats[], referencePeriod: st
     lastPeriod,
     monthsByYear: dataMonthsPerYear(valid.map((c) => ({ period: c.period, kg: c.kg, linked: c.linkedRecords }))),
     gapMonths,
+    futureLast,
     stale: gapMonths != null && gapMonths >= PRODUCTION_STALE_MONTHS,
     totalRecords,
     estimateRecords,
@@ -187,17 +192,29 @@ export function sortProductionGroups<T extends SortableProductionRow>(
   referencePeriod: string,
 ): T[] {
   const dir = asc ? 1 : -1;
-  const summary = new Map(groups.map((g) => [g.id, summarizeRange(g.cells, referencePeriod)]));
-  // Nilai tak terdefinisi (tanpa lahan non-PSR / tanpa record) selalu di bawah
-  // apa pun arahnya — ia bukan "paling rendah", ia tak bisa dinilai.
-  const num = (v: number | null) => (v == null ? Number.POSITIVE_INFINITY * dir : v);
+  // Nilai urut dihitung SEKALI per baris (bukan di komparator — review #416).
+  // `null` = tak bisa dinilai (tanpa lahan non-PSR / tanpa record): selalu di
+  // bawah apa pun arah dan kuncinya — ia bukan "paling rendah".
+  const value = new Map<string, number | null>(
+    groups.map((g) => {
+      if (key === "coverage") return [g.id, yearCoverageAvg(g, year)];
+      const s = summarizeRange(g.cells, referencePeriod);
+      if (key === "months") return [g.id, s.lastPeriod ? (s.monthsByYear[String(year)] ?? 0) : null];
+      if (key === "last") return [g.id, s.lastPeriod ? monthsBetween("2000-01", s.lastPeriod) : null];
+      return [g.id, 0];
+    }),
+  );
   return [...groups].sort((a, b) => {
     let d = 0;
     if (key === "name") d = a.name.localeCompare(b.name) * dir;
-    else if (key === "coverage") d = (num(yearCoverageAvg(a, year)) - num(yearCoverageAvg(b, year))) * dir;
-    else if (key === "months") d = (num(summary.get(a.id)!.monthsByYear[String(year)] ?? 0) - num(summary.get(b.id)!.monthsByYear[String(year)] ?? 0)) * dir;
-    else if (key === "last") d = ((summary.get(a.id)!.lastPeriod ?? "").localeCompare(summary.get(b.id)!.lastPeriod ?? "")) * dir;
-    if (!Number.isFinite(d) || d === 0) d = a.name.localeCompare(b.name);
-    return d;
+    else {
+      const va = value.get(a.id) ?? null;
+      const vb = value.get(b.id) ?? null;
+      if (va == null && vb == null) d = 0;
+      else if (va == null) d = 1;
+      else if (vb == null) d = -1;
+      else d = (va - vb) * dir;
+    }
+    return d !== 0 ? d : a.name.localeCompare(b.name);
   });
 }

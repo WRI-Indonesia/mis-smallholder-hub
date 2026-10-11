@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Download, Loader2, Search } from "lucide-react";
+import { toast } from "sonner";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,6 +112,12 @@ export function ProductionAvailabilityClient({
     () => (byDistrict ? sortProductionGroups(groupRowsByDistrict(rows), sortKey, sortAsc, year, view.referencePeriod) : null),
     [byDistrict, rows, sortKey, sortAsc, year, view.referencePeriod],
   );
+  // Ringkasan rentang dihitung SEKALI per baris (Lembaga + Distrik) untuk tabel, header, dan ekspor (review #416).
+  const summaries = useMemo(() => {
+    const m = new Map(rows.map((g) => [g.id, summarizeRange(g.cells, view.referencePeriod)]));
+    for (const d of districts ?? []) m.set(d.id, summarizeRange(d.cells, view.referencePeriod));
+    return m;
+  }, [rows, districts, view.referencePeriod]);
 
   // Ringkasan header: Lembaga tampil · yang basi · yang tanpa record tahun ini.
   const headline = useMemo(() => {
@@ -118,18 +125,19 @@ export function ProductionAvailabilityClient({
     let stale = 0;
     let silentThisYear = 0;
     for (const g of rows) {
-      const s = summarizeRange(g.cells, view.referencePeriod);
-      if (s.stale) stale += 1;
+      if (summaries.get(g.id)?.stale) stale += 1;
       if (!periods.some((p) => (cellAt(g.cells, p)?.records ?? 0) > 0)) silentThisYear += 1;
     }
     return { stale, silentThisYear };
-  }, [rows, year, view.referencePeriod]);
+  }, [rows, year, summaries]);
 
   // Ekspor (K6): Sheet 1 Lembaga × bulan tahun terpilih + ringkasan; Sheet 2 lahan × bulan Lembaga terfilter.
   const [exporting, setExporting] = useState(false);
   const handleExport = async () => {
     setExporting(true);
     try {
+      // Nama sheet: ExcelJS menolak * ? : \ / [ ] dan > 31 karakter (review #416).
+      const safeSheetName = (name: string) => name.replace(/[*?:\\/[\]]/g, "-").trim().slice(0, 31) || "Lahan";
       const { exportMultiSheetToExcel } = await import("@/lib/xlsx");
       const periods = periodsOfYear(year);
       const monthCols = periods.map((p, i) => ({ header: `${MONTH_SHORT_ID[i]} ${year}`, key: p, width: 9 }));
@@ -154,7 +162,7 @@ export function ProductionAvailabilityClient({
           { header: "Record tanpa persil", key: "noParcel", width: 14 },
         ],
         data: rows.map((g) => {
-          const s = summarizeRange(g.cells, view.referencePeriod);
+          const s = summaries.get(g.id) ?? summarizeRange(g.cells, view.referencePeriod);
           const months: Record<string, number | string> = {};
           for (const p of periods) {
             const c = cellAt(g.cells, p);
@@ -198,7 +206,7 @@ export function ProductionAvailabilityClient({
       const selected = groupId ? allGroups.find((g) => g.id === groupId) : undefined;
       const parcelRows = selected ? await getProductionAvailabilityGroupParcels(selected.id, year) : [];
       const sheet2 = {
-        name: selected ? `Lahan ${selected.abrv ?? selected.code ?? ""}`.trim().slice(0, 31) : "Lahan",
+        name: selected ? safeSheetName(`Lahan ${selected.abrv ?? selected.code ?? ""}`) : "Lahan",
         columns: parcelCols,
         data: selected
           ? parcelRows.map((p) => {
@@ -225,6 +233,8 @@ export function ProductionAvailabilityClient({
         filename: `ketersediaan-produksi-${year}${selected ? `-${(selected.abrv ?? selected.code ?? "lembaga").toLowerCase()}` : ""}-${format(new Date(), "yyyyMMdd")}`,
         sheets: [sheet1, sheet2],
       });
+    } catch (err) {
+      toast.error(err instanceof Error ? `Ekspor gagal: ${err.message}` : "Ekspor Excel gagal");
     } finally {
       setExporting(false);
     }
@@ -322,7 +332,7 @@ export function ProductionAvailabilityClient({
             </div>
           </div>
 
-          <ProductionCalendarTable groups={rows} districts={districts} year={year} referencePeriod={view.referencePeriod} sortKey={sortKey} onSort={onSort} emptyMessage={emptyMessage} />
+          <ProductionCalendarTable groups={rows} districts={districts} summaries={summaries} year={year} referencePeriod={view.referencePeriod} sortKey={sortKey} onSort={onSort} emptyMessage={emptyMessage} />
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
             <HeatLegend label="% lahan non-PSR melapor">

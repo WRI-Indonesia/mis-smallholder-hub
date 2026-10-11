@@ -178,3 +178,22 @@ describe("production-availability — tingkat Distrik (owner 2026-10-11)", () =>
     expect(d.map((x) => x.name)).toEqual(["Kampar", "Siak"]);
   });
 });
+
+describe("production-availability — temuan review #416", () => {
+  it("periode terakhir melampaui acuan → jeda dipaksa 0, ditandai futureLast, tidak basi", () => {
+    const s = summarizeRange([cell("2027-01")], "2026-10");
+    expect(s.gapMonths).toBe(0);
+    expect(s.futureLast).toBe(true);
+    expect(s.stale).toBe(false);
+    expect(summarizeRange([cell("2026-08")], "2026-10").futureLast).toBe(false);
+  });
+
+  it("urut 'last' & 'months': baris tanpa record selalu paling bawah, menaik maupun menurun", () => {
+    const a = group("a", 5, [cell("2026-03")], { name: "Alpha" });
+    const b = group("b", 5, [cell("2026-01")], { name: "Beta" });
+    const n = group("n", 5, [], { name: "Nihil" });
+    expect(sortProductionGroups([n, a, b], "last", true, 2026, "2026-05").map((g) => g.id)).toEqual(["b", "a", "n"]);
+    expect(sortProductionGroups([n, a, b], "last", false, 2026, "2026-05").map((g) => g.id)).toEqual(["a", "b", "n"]);
+    expect(sortProductionGroups([n, a, b], "months", false, 2026, "2026-05").map((g) => g.id)).toEqual(["a", "b", "n"]);
+  });
+});

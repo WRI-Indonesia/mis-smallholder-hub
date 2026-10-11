@@ -15,8 +15,8 @@ import {
   cellAt,
   coveragePct,
   periodsOfYear,
-  summarizeRange,
   type ProductionAvailabilityDistrictRow,
+  type ProductionRangeSummary,
   type ProductionSortKey,
 } from "@/lib/production-availability";
 import { getProductionAvailabilityFarmers, getProductionAvailabilityParcels } from "@/server/actions/production-availability";
@@ -130,6 +130,27 @@ function ParcelCell({ cell, period, isPsr, href }: { cell: ProductionParcelCell 
 const productionHref = (groupId: string, period: string, search?: string) =>
   `/admin/master-data/production?farmerGroupId=${encodeURIComponent(groupId)}&period=${period}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
 
+const EMPTY_SUMMARY: ProductionRangeSummary = {
+  firstPeriod: null,
+  lastPeriod: null,
+  monthsByYear: {},
+  gapMonths: null,
+  futureLast: false,
+  stale: false,
+  totalRecords: 0,
+  estimateRecords: 0,
+  estimatePct: 0,
+  zeroRecords: 0,
+  noParcelRecords: 0,
+};
+
+const gapTitle = (s: ProductionRangeSummary) =>
+  s.gapMonths == null
+    ? "Tidak ada record"
+    : s.futureLast
+      ? `Periode terakhir ${s.lastPeriod} melampaui bulan berjalan — periksa tahun pada record (salah ketik?)`
+      : `${s.gapMonths} bulan sejak ${s.lastPeriod}${s.stale ? " — basi" : ""}`;
+
 /** Jumlah bulan tahun terpilih yang punya ≥1 record pada deretan sel. */
 const monthsWithRecords = (cells: { period: string; records: number }[], periods: string[]) =>
   periods.filter((p) => (cellAt(cells, p)?.records ?? 0) > 0).length;
@@ -137,6 +158,7 @@ const monthsWithRecords = (cells: { period: string; records: number }[], periods
 export function ProductionCalendarTable({
   groups,
   districts,
+  summaries,
   year,
   referencePeriod,
   sortKey,
@@ -146,6 +168,8 @@ export function ProductionCalendarTable({
   groups: ProductionAvailabilityGroupRow[];
   /** Baris Distrik (tingkat teratas) atau `null` = tanpa tingkat Distrik. */
   districts: ProductionAvailabilityDistrictRow[] | null;
+  /** Ringkasan rentang per id baris (Lembaga & Distrik), dihitung sekali di induk. */
+  summaries: Map<string, ProductionRangeSummary>;
   year: number;
   referencePeriod: string;
   sortKey: ProductionSortKey;
@@ -183,12 +207,17 @@ export function ProductionCalendarTable({
       .catch((e: unknown) => setParcels((m) => new Map(m).set(key, { state: "error", message: e instanceof Error ? e.message : "Gagal memuat" })));
   }, []);
 
+  // Entri error dianggap belum dimuat → klik lagi / ganti tahun memuat ulang (review #416).
+  const needsLoad = <T,>(m: Map<string, Loaded<T>>, key: string) => {
+    const cur = m.get(key);
+    return !cur || cur.state === "error";
+  };
   const toggleGroup = (id: string) => {
     const next = new Set(expandedGroups);
     if (next.has(id)) next.delete(id);
     else {
       next.add(id);
-      if (!farmers.has(`${year}:${id}`)) loadFarmers(id, year);
+      if (needsLoad(farmers, `${year}:${id}`)) loadFarmers(id, year);
     }
     setExpandedGroups(next);
   };
@@ -197,18 +226,25 @@ export function ProductionCalendarTable({
     if (next.has(id)) next.delete(id);
     else {
       next.add(id);
-      if (!parcels.has(`${year}:${id}`)) loadParcels(id, year);
+      if (needsLoad(parcels, `${year}:${id}`)) loadParcels(id, year);
     }
     setExpandedFarmers(next);
   };
-  // Tahun berganti → anak yang sedang terbuka dimuat untuk tahun itu bila belum
-  // ada di cache. `farmers`/`parcels` sengaja di luar dependensi: efek ini hanya
-  // perlu berjalan saat tahun/himpunan terbuka berubah, bukan tiap hasil tiba.
+  // Tahun berganti → anak yang sedang terbuka DAN tampil dimuat untuk tahun itu
+  // bila belum ada di cache; baris yang tersaring keluar tidak memicu permintaan
+  // (review #416). `farmers`/`parcels` sengaja di luar dependensi: efek ini hanya
+  // perlu berjalan saat tahun/himpunan terbuka/irisan berubah, bukan tiap hasil tiba.
   useEffect(() => {
-    for (const id of expandedGroups) if (!farmers.has(`${year}:${id}`)) loadFarmers(id, year);
-    for (const id of expandedFarmers) if (!parcels.has(`${year}:${id}`)) loadParcels(id, year);
+    const visibleGroups = groups.filter((g) => expandedGroups.has(g.id)).map((g) => g.id);
+    const visibleFarmers = new Set<string>();
+    for (const [key, entry] of farmers) {
+      const gid = key.slice(key.indexOf(":") + 1);
+      if (entry.state === "ready" && visibleGroups.includes(gid)) for (const f of entry.data) visibleFarmers.add(f.id);
+    }
+    for (const id of visibleGroups) if (needsLoad(farmers, `${year}:${id}`)) loadFarmers(id, year);
+    for (const id of expandedFarmers) if (visibleFarmers.has(id) && needsLoad(parcels, `${year}:${id}`)) loadParcels(id, year);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [year, expandedGroups, expandedFarmers, loadFarmers, loadParcels]);
+  }, [year, groups, expandedGroups, expandedFarmers, loadFarmers, loadParcels]);
 
   const headBtn = (key: ProductionSortKey, label: string, title?: string) => (
     <button
@@ -234,7 +270,7 @@ export function ProductionCalendarTable({
 
   const renderGroup = (g: ProductionAvailabilityGroupRow, depth: number) => {
     const open = expandedGroups.has(g.id);
-    const sum = summarizeRange(g.cells, referencePeriod);
+    const sum = summaries.get(g.id) ?? EMPTY_SUMMARY;
     const monthsYear = sum.monthsByYear[String(year)] ?? 0;
     const kids = farmers.get(`${year}:${g.id}`);
     return (
@@ -282,8 +318,8 @@ export function ProductionCalendarTable({
           <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">
             {sum.firstPeriod ? `${sum.firstPeriod} – ${sum.lastPeriod}` : "—"}
           </td>
-          <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : "text-muted-foreground")} title={sum.gapMonths == null ? "Tidak ada record" : `${sum.gapMonths} bulan sejak ${sum.lastPeriod}${sum.stale ? " — basi" : ""}`}>
-            {sum.gapMonths == null ? "—" : sum.gapMonths}
+          <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : sum.futureLast ? "font-semibold text-amber-600" : "text-muted-foreground")} title={gapTitle(sum)}>
+            {sum.gapMonths == null ? "—" : sum.futureLast ? `${sum.gapMonths}!` : sum.gapMonths}
           </td>
           <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.estimateRecords > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")} title={`${formatNumber(sum.estimateRecords)} dari ${formatNumber(sum.totalRecords)} record berlabel Estimasi`}>
             {sum.totalRecords > 0 ? `${formatNumber(Math.round(sum.estimatePct))}%` : "—"}
@@ -430,7 +466,7 @@ export function ProductionCalendarTable({
           {districts
             ? districts.map((d) => {
                 const open = !collapsedDistricts.has(d.id);
-                const sum = summarizeRange(d.cells, referencePeriod);
+                const sum = summaries.get(d.id) ?? EMPTY_SUMMARY;
                 const monthsYear = sum.monthsByYear[String(year)] ?? 0;
                 return (
                   <Fragment key={d.id}>
@@ -466,7 +502,9 @@ export function ProductionCalendarTable({
                         <span className="text-muted-foreground">/12</span>
                       </td>
                       <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{sum.firstPeriod ? `${sum.firstPeriod} – ${sum.lastPeriod}` : "—"}</td>
-                      <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : "text-muted-foreground")}>{sum.gapMonths == null ? "—" : sum.gapMonths}</td>
+                      <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : sum.futureLast ? "font-semibold text-amber-600" : "text-muted-foreground")} title={gapTitle(sum)}>
+                        {sum.gapMonths == null ? "—" : sum.futureLast ? `${sum.gapMonths}!` : sum.gapMonths}
+                      </td>
                       <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.estimateRecords > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
                         {sum.totalRecords > 0 ? `${formatNumber(Math.round(sum.estimatePct))}%` : "—"}
                       </td>
