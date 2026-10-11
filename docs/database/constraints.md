@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [erd.md](./erd.md) · [models.md](./models.md) · [indexes.md](./indexes.md) · [migrations.md](./migrations.md) · [security.md](./security.md) · [performance.md](./performance.md) · [dashboard-snapshots.md](./dashboard-snapshots.md)
 
+> **Ringkasan:** FK, perilaku cascade, aturan bisnis/validasi, dan pola soft delete di tingkat DB. Baca sebelum mengubah relasi atau menambah unique/constraint. Kebenaran: `prisma/schema/*.prisma` + `prisma/migrations/`.
+
 <details>
 <summary><strong>Constraint & Data Integrity</strong> — Aturan integritas data dan validasi</summary>
 

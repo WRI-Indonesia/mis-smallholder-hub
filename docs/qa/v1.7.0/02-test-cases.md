@@ -23,7 +23,7 @@ Langkah:
 1. Akun ber-scope distrik membuka Settings › User Management.
 2. Akun ADMIN tanpa batasan wilayah mencoba mengubah satu sel di Role & Permission.
 Harapan:
-- Langkah 1: halaman gagal memuat daftar dengan pesan "Pengelolaan pengguna hanya untuk akun tanpa batasan wilayah".
+- Langkah 1: halaman tampil dengan **pemberitahuan** "Pengelolaan pengguna hanya untuk akun tanpa batasan wilayah." (tanpa daftar pengguna) — bukan halaman "Terjadi Kesalahan" (review pra-rilis v1.7.0).
 - Langkah 2: sel kembali seperti semula + pemberitahuan "Hanya SUPERADMIN yang dapat mengubah Role & Permission".
 
 ## #384 — Peta BMP: opsi filter menerima `map-bmp` tanpa `map-parcel`

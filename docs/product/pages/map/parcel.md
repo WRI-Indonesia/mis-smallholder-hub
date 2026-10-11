@@ -2,6 +2,8 @@
 
 [← Menu Map](README.md) · [← Katalog halaman](../README.md)
 
+> **Ringkasan:** Katalog Peta Lahan: filter, legenda (titik Lembaga, titik/area lahan, lahan terdampak NKT, patok), unduh per lapisan, Peta Lainnya + transparansi, dan Titik Api (rentang, ringkasan, ekspor). Baca sebelum mengubah lapisan atau kontrol peta ini; standar peta umum di `standards/ui-ux-map.md`.
+
 ## Diagram objek
 
 ```text

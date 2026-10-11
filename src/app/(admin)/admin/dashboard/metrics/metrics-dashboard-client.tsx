@@ -1,16 +1,20 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, BookOpenCheck, Bug, ChevronDown, Gauge, Minus, Package } from "lucide-react";
+import { Activity, AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, BookOpenCheck, Bug, CalendarClock, ChevronDown, Minus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { CurrentReleaseSummary } from "@/lib/release-plan";
 import { cn } from "@/lib/utils";
 import type { TechDebtItem } from "@/lib/tech-debt";
 import type { ReleaseMetric } from "@/types/release-metrics";
 import type { RoadmapSummary } from "@/types/roadmap";
-import { dayEpoch, effectiveDate, fmt1, fmt2, fmtDate, fmtDelta, fmtInt, fmtPct1, fmtPoints, fmtRvs, docUrl, issueUrl, releaseUrl } from "./metrics-shared";
+import { dayEpoch, effectiveDate, fmt1, fmtDate, fmtDelta, fmtInt, fmtPct1, fmtPoints, fmtRvs, docUrl, issueUrl, releaseUrl } from "./metrics-shared";
 import { RvsCurveChart } from "./rvs-curve-chart";
 import { RvsPeriodBars } from "./rvs-period-bars";
 import { RoadmapStepChart, TestCountChart } from "./metrics-small-charts";
@@ -18,9 +22,12 @@ import { RoadmapDetail } from "./roadmap-detail";
 import { TimeWindowButtons, availableWindows } from "./time-window";
 
 /**
- * Dashboard Metrik Rilis (#227, disederhanakan): halaman menjawab tiga
- * pertanyaan berurutan — sekarang di mana (3 kartu KPI) → lajunya bagaimana
- * (tiga grafik berbagi SATU rentang waktu) → apa isinya (akordeon rincian).
+ * Dashboard Metrik Rilis (#227, disederhanakan; dirombak #421): halaman menjawab
+ * berurutan — apa yang sudah dirilis & apa yang sedang dikejar (Rilis terakhir +
+ * Rilis berjalan dari sprint.md) → sehat atau tidak (strip Bug · Tech debt ·
+ * Bantuan · Test bertren) → lajunya bagaimana (SATU grafik besar bertab, satu
+ * rentang waktu) → apa isinya (akordeon rincian). Kartu Payload peta dihapus
+ * (#421): terakhir diukur v0.35.0, tak pernah otomatis — riwayatnya di Daftar rilis.
  *
  * Aturan yang dipegang: tidak ada angka yang tampil dua kali di layar yang sama
  * (dulu kartu "Kualitas" mengulang tiga kartu di bawahnya), tidak ada kontrol
@@ -60,32 +67,6 @@ function LinkifiedNotes({ notes }: { notes: string }) {
         )
       )}
     </>
-  );
-}
-
-function ChartCard({
-  title,
-  subtitle,
-  action,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  /** Tautan opsional di kanan judul, mis. "lihat rincian" ke akordeon di bawah. */
-  action?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <Card className="h-full border border-border/60 shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-baseline justify-between gap-2 text-sm font-medium">
-          {title}
-          {action}
-        </CardTitle>
-        <p className="text-xs font-normal text-muted-foreground">{subtitle}</p>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
   );
 }
 
@@ -129,17 +110,107 @@ function CollapsibleSection({
   );
 }
 
+type ChartTab = "rvs" | "roadmap" | "test";
+/** Tinggi grafik bertab (#421) — dulu tiga grafik 200 px berdampingan. */
+const CHART_H = 300;
+
+/** Panah tren; warna mengikuti arah yang "baik" untuk metrik itu. */
+function TrendIcon({ dir, goodWhen }: { dir: number | null; goodWhen: "up" | "down" }) {
+  // Nilai/pembanding tak tercatat → tanpa ikon (jangan klaim "tetap" tanpa data — review #421).
+  if (dir == null) return null;
+  if (dir === 0) return <Minus className="h-4 w-4 text-muted-foreground" aria-label="tetap" />;
+  const good = (dir > 0 && goodWhen === "up") || (dir < 0 && goodWhen === "down");
+  const Icon = dir > 0 ? ArrowUpRight : ArrowDownRight;
+  return <Icon className={cn("h-4 w-4", good ? "text-emerald-600" : "text-amber-600")} aria-label={dir > 0 ? "naik" : "turun"} />;
+}
+
+/** Kartu "Rilis berjalan" (#421) — pengganti kartu Payload peta; data dari sprint.md. */
+function CurrentReleaseCard({ summary, planUpdatedAt, canOpenPlan }: { summary: CurrentReleaseSummary | null; planUpdatedAt?: string; canOpenPlan: boolean }) {
+  if (!summary) {
+    return (
+      <Card className="border border-border/60 shadow-sm">
+        <CardContent className="flex h-full items-center p-4 text-sm text-muted-foreground">
+          {canOpenPlan ? "Tidak ada rilis yang sedang dikejar." : "Ringkasan rilis berjalan hanya untuk pengguna dengan akses Rencana Pengembangan."}
+        </CardContent>
+      </Card>
+    );
+  }
+  const pct = summary.total > 0 ? Math.round((summary.done / summary.total) * 100) : 0;
+  const late = summary.state === "late";
+  return (
+    <Card className="border border-border/60 shadow-sm">
+      <CardContent className="space-y-3 p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            <CalendarClock className="h-3.5 w-3.5" aria-hidden /> Rilis berjalan
+          </p>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            target {fmtDate(summary.end)}
+            {late ? (
+              <span className="ml-1 font-medium text-amber-600"> · lewat {fmtInt(-summary.daysToTarget)} hari</span>
+            ) : summary.day != null ? (
+              ` · hari ke-${fmtInt(summary.day)}/${fmtInt(summary.days)}, sisa ${fmtInt(summary.daysToTarget)} hari`
+            ) : null}
+          </span>
+        </div>
+        <div>
+          <p className="truncate text-sm" title={summary.title}>
+            <span className="text-[22px] leading-tight font-medium">{summary.version}</span>{" "}
+            <span className="text-muted-foreground">{summary.title}</span>
+          </p>
+          <div className="mt-2 flex items-center gap-3">
+            <div
+              className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={summary.total}
+              aria-valuenow={summary.done}
+              aria-label={`${summary.done} dari ${summary.total} butir selesai`}
+            >
+              <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="whitespace-nowrap text-sm font-medium tabular-nums">
+              {fmtInt(summary.done)}/{fmtInt(summary.total)} butir
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+            {fmtPoints(summary.donePoints)}/{fmtPoints(summary.totalPoints)} poin selesai
+            {summary.inProgress > 0 && ` · ${fmtInt(summary.inProgress)} dikerjakan`}
+            {summary.decisions > 0 && <span className="text-amber-600"> · {fmtInt(summary.decisions)} menunggu keputusan</span>}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>sumber: docs/project/sprint.md{planUpdatedAt ? ` · diperbarui ${fmtDate(planUpdatedAt)}` : ""}</span>
+          {canOpenPlan && (
+            <Link href="/admin/data-analyst/sprint" className="inline-flex items-center gap-1 text-blue-600 underline-offset-2 hover:underline dark:text-amber-400">
+              Rencana Pengembangan <ArrowRight className="h-3 w-3" aria-hidden />
+            </Link>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function MetricsDashboardClient({
   releases,
   techDebt,
   roadmap,
   today,
+  currentRelease = null,
+  planUpdatedAt,
+  canOpenPlan = false,
   helpSlot,
 }: {
   releases: ReleaseMetric[];
   techDebt: TechDebtItem[];
   roadmap: RoadmapSummary;
   today: string;
+  /** Ringkasan rilis yang sedang dikejar (sprint.md); null = tak ada (#421). */
+  currentRelease?: CurrentReleaseSummary | null;
+  planUpdatedAt?: string;
+  /** Tautan "Rencana Pengembangan" hanya bila pengguna ber-VIEW data-analyst-sprint. */
+  canOpenPlan?: boolean;
   helpSlot?: ReactNode;
 }) {
   const { resolvedTheme } = useTheme();
@@ -148,6 +219,7 @@ export function MetricsDashboardClient({
   const [releasesOpen, setReleasesOpen] = useState(false);
   const [paceOpen, setPaceOpen] = useState(false);
   const [tdOpen, setTdOpen] = useState(false);
+  const [chartTab, setChartTab] = useState<ChartTab>("rvs");
 
   // Hanya dua akordeon yang punya "pintu masuk" dari atas: kartu Roadmap dan
   // angka Tech debt. Grafiknya sendiri sudah terlihat tanpa perlu melompat.
@@ -198,15 +270,10 @@ export function MetricsDashboardClient({
   const td = lastOf(releases, (r) => r.techDebt);
   const bantuan = [...releases].reverse().find((r) => r.bantuanDone != null);
 
-  // Payload: hanya titik terukur (tidak ditarik ke belakang, spec §2.3).
-  const payloadPts = releases.filter((r) => r.payloadMb != null);
-  const payloadFirst = payloadPts[0]?.payloadMb ?? null;
-  const payloadLast = payloadPts.length > 1 ? payloadPts[payloadPts.length - 1].payloadMb : null;
-
   // Arah TD: bandingkan dua nilai TD tercatat terakhir.
   const tdSeries = releases.map((r) => r.techDebt).filter((v): v is number => v != null);
   const tdPrev = tdSeries.length > 1 ? tdSeries[tdSeries.length - 2] : null;
-  const tdDir = td != null && tdPrev != null ? Math.sign(td - tdPrev) : 0;
+  const tdDir = td != null && tdPrev != null ? Math.sign(td - tdPrev) : null;
 
   // Tanda delta dihitung, bukan prefix hardcode — nilai negatif jangan
   // dirender "+-2,0" (#229). Formatter sudah membawa "-" untuk nilai negatif.
@@ -216,6 +283,16 @@ export function MetricsDashboardClient({
   // kumulatif sejak awal proyek tak menjawab "rilis kemarin menambah apa" (#392).
   const lastTestReleased = lastReleased?.testCount ?? null;
   const prevTestReleased = lastOf(released.slice(0, -1), (r) => r.testCount);
+  // Arah Test = nilai SEKARANG vs rilis terakhir (sama dengan TD: nilai terakhir vs
+  // sebelumnya). Tepat sesudah rilis (belum ada pertambahan) → perolehan rilis itu (review #421).
+  const testSinceRelease = lastTest != null && lastTestReleased != null && lastTest !== lastTestReleased ? lastTest - lastTestReleased : null;
+  const testDelta =
+    testSinceRelease ?? (lastTestReleased != null && prevTestReleased != null ? lastTestReleased - prevTestReleased : null);
+  const testDeltaLabel =
+    testSinceRelease != null && lastReleased ? `sejak ${lastReleased.version}` : lastReleased ? `di ${lastReleased.version}` : "";
+  // Roadmap kartu "Rilis terakhir" = nilai SAAT rilis itu, bukan baris siklus berjalan;
+  // nilai kini (roadmap.md live) disebut terpisah bila berbeda (review #421).
+  const releasedRoadmapPct = lastReleased?.roadmapPct ?? last.roadmapPct;
 
   // Roadmap: angka lintas baseline tak sebanding — sebut nilai beku baseline
   // sebelumnya (titik terakhir sebelum reset terbaru), bukan selisih sejak v0.9.0.
@@ -242,86 +319,70 @@ export function MetricsDashboardClient({
         </div>
       </div>
 
-      {/* Sekarang di mana — tiga angka utama, tanpa pengulangan di bawahnya */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+      {/* #421 — Ringkasan dulu: rilis terakhir (nilai yang sudah dirilis) + rilis berjalan (yang sedang dikejar) */}
+      <div className="grid gap-3 lg:grid-cols-2">
         <Card className="border border-border/60 shadow-sm">
-          <CardContent className="p-4">
-            <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-              <Activity className="h-3.5 w-3.5" aria-hidden /> RVS sekarang
-            </p>
-            <p className="mt-1 text-[28px] leading-tight font-medium tabular-nums">{fmtRvs(last)}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-              {lastReleased?.delta != null ? `${plus(lastReleased.delta)}${fmtInt(lastReleased.delta)} di ${lastReleased.version} · ` : ""}
-              anchor {first.version} = {fmtInt(first.rvs)}
-            </p>
+          <CardContent className="space-y-3 p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                <Activity className="h-3.5 w-3.5" aria-hidden /> Rilis terakhir
+              </p>
+              {lastReleased && (
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  <a href={releaseUrl(lastReleased.version)} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline-offset-2 hover:underline">
+                    {lastReleased.version}
+                  </a>
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  RVS (nilai kumulatif)
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="rounded-full px-0.5 leading-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                          aria-label="Apa itu RVS?"
+                        />
+                      }
+                    >
+                      ⓘ
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      Release Value Score: skor kumulatif nilai kerja yang dirilis — fitur/UX, perbaikan bug, performa terukur, test baru, review, dan tech debt ditutup. Anchor v0.9.0 = 1.000 (docs/standards/versioning.md §3).
+                    </TooltipContent>
+                  </Tooltip>
+                </p>
+                <p className="text-[28px] leading-tight font-medium tabular-nums">{lastReleased ? fmtRvs(lastReleased) : "—"}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {lastReleased?.delta != null ? `${plus(lastReleased.delta)}${fmtInt(lastReleased.delta)} dari rilis ini · ` : ""}anchor {first.version} = {fmtInt(first.rvs)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => jumpTo("roadmap")}
+                className="rounded-md text-left transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+                title={`Buka rincian ${fmtInt(roadmap.total)} fase penyusun angka ini`}
+              >
+                <p className="text-xs text-muted-foreground">Progres roadmap · rincian ↓</p>
+                <p className="text-[28px] leading-tight font-medium tabular-nums">{fmtPct1(releasedRoadmapPct)}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {Math.abs(roadmap.pct - releasedRoadmapPct) >= 0.05 && <>kini {fmtPct1(roadmap.pct)} · </>}
+                  {fmtPoints(roadmap.earned)}/{fmtInt(roadmap.max)} poin · {fmtInt(roadmap.total)} fase
+                  {frozenPct != null && ` · baseline lama beku ${fmtPct1(frozenPct)}`}
+                </p>
+              </button>
+            </div>
           </CardContent>
         </Card>
 
-        <Card
-          {...openProps("roadmap", `Progres roadmap — klik untuk membuka rincian ${fmtInt(roadmap.total)} fase`)}
-          className="cursor-pointer border border-border/60 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          <CardContent className="p-4">
-            <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-              <Gauge className="h-3.5 w-3.5" aria-hidden /> Roadmap · klik untuk rincian
-            </p>
-            <p className="mt-1 text-[28px] leading-tight font-medium tabular-nums">{fmtPct1(last.roadmapPct)}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-              {fmtPoints(roadmap.earned)}/{fmtInt(roadmap.max)} poin · {fmtInt(roadmap.total)} fase
-              {frozenPct != null && ` · baseline lama beku ${fmtPct1(frozenPct)}`}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border/60 shadow-sm">
-          <CardContent className="p-4">
-            <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-              <BookOpenCheck className="h-3.5 w-3.5" aria-hidden /> Test otomatis
-            </p>
-            <p className="mt-1 text-[28px] leading-tight font-medium tabular-nums">
-              {lastTest != null ? fmtInt(lastTest) : "—"}
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-              {lastTestReleased != null && prevTestReleased != null && lastReleased
-                ? `${plus(lastTestReleased - prevTestReleased)}${fmtInt(lastTestReleased - prevTestReleased)} di ${lastReleased.version}${firstTest != null ? ` · awal ≈${fmtInt(firstTest)}` : ""}`
-                : "—"}
-            </p>
-          </CardContent>
-        </Card>
+        <CurrentReleaseCard summary={currentRelease} planUpdatedAt={planUpdatedAt} canOpenPlan={canOpenPlan} />
       </div>
 
-      {/* Lajunya bagaimana — satu rentang waktu untuk ketiga grafik */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">Rentang waktu — berlaku untuk ketiga grafik di bawah</p>
-        <TimeWindowButtons value={windowDays} onChange={setWindowDays} windows={availableWindows(spanDays)} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <ChartCard title="Kurva RVS" subtitle="Kumulatif per tanggal rilis; garis putus = angka estimasi.">
-          <RvsCurveChart releases={releases} today={today} windowDays={windowDays} dark={dark} gridColor={gridColor} surface={surface} />
-        </ChartCard>
-        <ChartCard
-          title="Progres roadmap"
-          subtitle="Persen tertimbang fase roadmap; naik diskret tiap fase selesai. Garis diputus saat baseline direset — baseline lama dipudarkan."
-          action={
-            <button
-              type="button"
-              onClick={() => jumpTo("roadmap")}
-              className="shrink-0 text-xs font-normal text-blue-600 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring dark:text-amber-400"
-              title={`Buka rincian ${fmtInt(roadmap.total)} fase penyusun angka ini`}
-            >
-              lihat rincian
-            </button>
-          }
-        >
-          <RoadmapStepChart releases={releases} today={today} windowDays={windowDays} dark={dark} gridColor={gridColor} surface={surface} />
-        </ChartCard>
-        <ChartCard title="Jumlah test otomatis" subtitle="Per rilis; titik berongga = angka estimasi.">
-          <TestCountChart releases={releases} today={today} windowDays={windowDays} dark={dark} gridColor={gridColor} surface={surface} />
-        </ChartCard>
-      </div>
-
-      {/* Kualitas — satu jalur angka, bukan empat kartu setinggi KPI */}
+      {/* Kesehatan — satu jalur angka bertren (dulu di bawah grafik; Payload peta usang dihapus, #421) */}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/60 bg-border/60 sm:grid-cols-4">
         <div className={cn("bg-card p-3", bugOpen && "bg-amber-500/5")}>
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -336,15 +397,13 @@ export function MetricsDashboardClient({
           {...openProps("td", `Tech debt aktif ${td != null ? fmtInt(td) : ""} — klik untuk daftar lengkap`)}
           className={cn(
             "cursor-pointer bg-card p-3 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring",
-            tdDir > 0 && "bg-amber-500/5"
+            tdDir != null && tdDir > 0 && "bg-amber-500/5"
           )}
         >
-          <p className="text-xs text-muted-foreground">Tech debt aktif · klik</p>
+          <p className="text-xs text-muted-foreground">Tech debt aktif · daftar ↓</p>
           <p className="mt-0.5 flex items-center gap-1 text-lg font-medium tabular-nums">
             {td != null ? fmtInt(td) : "—"}
-            {tdDir > 0 && <ArrowUpRight className="h-4 w-4 text-amber-600" aria-label="naik" />}
-            {tdDir < 0 && <ArrowDownRight className="h-4 w-4 text-emerald-600" aria-label="turun" />}
-            {tdDir === 0 && td != null && <Minus className="h-4 w-4 text-muted-foreground" aria-label="tetap" />}
+            <TrendIcon dir={tdDir} goodWhen="down" />
           </p>
           <p className="text-xs text-muted-foreground tabular-nums">
             {tdPrev != null && td != null && td !== tdPrev ? `${fmtInt(tdPrev)} → ${fmtInt(td)}` : "stabil beberapa rilis"}
@@ -352,7 +411,7 @@ export function MetricsDashboardClient({
         </div>
 
         <div className="bg-card p-3">
-          <p className="text-xs text-muted-foreground">Audit Bantuan</p>
+          <p className="text-xs text-muted-foreground">Bantuan</p>
           <p className="mt-0.5 text-lg font-medium tabular-nums">
             {bantuan ? `${fmtInt(bantuan.bantuanDone as number)}/${fmtInt(bantuan.bantuanTotal as number)}` : "—"}
           </p>
@@ -365,26 +424,52 @@ export function MetricsDashboardClient({
 
         <div className="bg-card p-3">
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Package className="h-3.5 w-3.5" aria-hidden /> Payload peta
+            <BookOpenCheck className="h-3.5 w-3.5" aria-hidden /> Test otomatis
           </p>
-          {payloadFirst != null && payloadLast != null ? (
-            <>
-              <p className="mt-0.5 text-lg font-medium tabular-nums">
-                {payloadLast <= payloadFirst ? "−" : "+"}
-                {fmt1(Math.abs((1 - payloadLast / payloadFirst) * 100))}%
-              </p>
-              <p className="text-xs text-muted-foreground tabular-nums">
-                {fmt2(payloadFirst)} → {fmt2(payloadLast)} MB · dua titik
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="mt-0.5 text-lg font-medium tabular-nums">{payloadFirst != null ? `${fmt2(payloadFirst)} MB` : "—"}</p>
-              <p className="text-xs text-muted-foreground">baseline pertama</p>
-            </>
-          )}
+          <p className="mt-0.5 flex items-center gap-1 text-lg font-medium tabular-nums">
+            {lastTest != null ? fmtInt(lastTest) : "—"}
+            <TrendIcon dir={testDelta != null ? Math.sign(testDelta) : null} goodWhen="up" />
+          </p>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {testDelta != null ? `${plus(testDelta)}${fmtInt(testDelta)} ${testDeltaLabel}` : "—"}
+            {firstTest != null ? ` · awal ≈${fmtInt(firstTest)}` : ""}
+          </p>
         </div>
       </div>
+
+      {/* Lajunya bagaimana — satu grafik besar bertab, satu rentang waktu (#421) */}
+      <Card className="border border-border/60 shadow-sm">
+        <Tabs value={chartTab} onValueChange={(v) => setChartTab(v as ChartTab)}>
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-2">
+            {/* Label ringkas + scroll horizontal: muat di 360 px (review #421). */}
+            <TabsList className="max-w-full overflow-x-auto">
+              <TabsTrigger value="rvs">RVS</TabsTrigger>
+              <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
+              <TabsTrigger value="test">Test</TabsTrigger>
+            </TabsList>
+            <TimeWindowButtons value={windowDays} onChange={setWindowDays} windows={availableWindows(spanDays)} />
+          </CardHeader>
+          <CardContent>
+            <TabsContent value="rvs">
+              <p className="mb-2 text-xs text-muted-foreground">RVS kumulatif per tanggal rilis — naik setiap rilis membawa fitur, perbaikan, atau test; garis putus = angka estimasi (rekonstruksi sebelum pengukuran).</p>
+              <RvsCurveChart releases={releases} today={today} windowDays={windowDays} dark={dark} gridColor={gridColor} surface={surface} height={CHART_H} />
+            </TabsContent>
+            <TabsContent value="roadmap">
+              <p className="mb-2 text-xs text-muted-foreground">
+                Persen tertimbang fase roadmap; naik diskret tiap fase selesai. Garis diputus saat baseline direset — baseline lama dipudarkan.{" "}
+                <button type="button" onClick={() => jumpTo("roadmap")} className="text-blue-600 underline-offset-2 hover:underline dark:text-amber-400">
+                  lihat rincian fase
+                </button>
+              </p>
+              <RoadmapStepChart releases={releases} today={today} windowDays={windowDays} dark={dark} gridColor={gridColor} surface={surface} height={CHART_H} />
+            </TabsContent>
+            <TabsContent value="test">
+              <p className="mb-2 text-xs text-muted-foreground">Jumlah test otomatis per rilis; titik berongga = angka estimasi.</p>
+              <TestCountChart releases={releases} today={today} windowDays={windowDays} dark={dark} gridColor={gridColor} surface={surface} height={CHART_H} />
+            </TabsContent>
+          </CardContent>
+        </Tabs>
+      </Card>
 
       {/* Apa isinya — rincian yang dibuka saat dibutuhkan */}
       <div ref={roadmapRef} className={flashClass("roadmap")}>

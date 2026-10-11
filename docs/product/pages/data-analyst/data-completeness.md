@@ -2,6 +2,8 @@
 
 [← Menu Data Analyst](README.md) · [← Katalog halaman](../README.md)
 
+> **Ringkasan:** Katalog Ketersediaan Data › Per Lembaga: aturan skor, seksi collapsible per domain, baris checklist & tabel daftar kerja, sub-seksi Pelatihan, opsi ekspor. Baca sebelum mengubah checklist/skor satu Lembaga; ringkasan semua Lembaga di `data-availability.md`.
+
 > Sejak **#416** (2026-10-11): anak level 3 berlabel **"Per Lembaga"** di bawah induk **Ketersediaan Data** (`data-analyst-availability`); halaman memakai sub-nav `AvailabilityNav` (#417) — `h1` "Ketersediaan Data" + tab Semua Lembaga · **Per Lembaga** · Produksi. Sebelumnya: label menu **"Data — Per Lembaga"** sejak #364 (keputusan owner 2026-09-29: label prod jadi acuan; judul halaman tetap "Ketersediaan Data — Per Lembaga"). Label "Ketersediaan Data — Per Lembaga" (order 3) sejak #352 (keputusan owner P4, 2026-09-21) — sebelumnya "Analisa Ketersediaan Data" (order 2). Key, route, dan RolePermission tidak berubah. Halaman ini adalah drill-down dari [Ketersediaan Data — Semua Lembaga](data-availability.md) (DA-03, order 2): skornya identik karena memakai `computeCompleteness` yang sama.
 
 ## Diagram objek

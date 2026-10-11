@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [erd.md](./erd.md) · [indexes.md](./indexes.md) · [constraints.md](./constraints.md) · [migrations.md](./migrations.md) · [security.md](./security.md) · [performance.md](./performance.md) · [dashboard-snapshots.md](./dashboard-snapshots.md)
 
+> **Ringkasan:** Kolom umum & pengecualian soft delete, enum (blok GENERATED), konvensi nama tabel, alur RBAC, lalu rincian model: Petani & hierarki kelembagaan, Pelatihan, Tree, Monev BMP, identitas & satelit lahan, `geom` PostGIS, boundary. Baca untuk arti field/relasi; kebenaran di `prisma/schema/*.prisma`.
+
 ## Kolom Umum (semua tabel)
 
 > Pengecualian: `LandMarkerCounter` (penghitung murni, tanpa audit & `isActive`); `UserProvince`/`UserDistrict`/`UserFarmerGroup` tanpa `isActive`; `createdBy` pada `MainDashboardSnapshot`/`BmpDashboardSnapshot` wajib (FK ke User), bukan nullable.

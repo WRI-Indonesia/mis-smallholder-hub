@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [sprint.md](./sprint.md) · [tech-debt.md](./tech-debt.md) · [changelog.md](./changelog.md) · [contributing.md](./contributing.md) · Arsip: [roadmap-mvp.md](./roadmap-mvp.md)
 
+> **Ringkasan:** **Sumber kebenaran status fase** pasca-MVP: aturan tata kelola, definisi status & bobot, linimasa per kuartal, Phase Status (indeks + rincian per fase), visi produk, Parkir. Baca untuk "fase X sudah sampai mana"; mengubah status fase ikut mengubah Roadmap % di `metrics.md`.
+
 ## Roadmap — Sumber Kebenaran
 
 Section ini adalah acuan resmi status delivery **pasca-MVP, Oktober 2026 – Desember 2027**. Jika ada perbedaan antara changelog, issue, dan tabel ini, gunakan tabel **Phase Status** sebagai kebenaran utama.

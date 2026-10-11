@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Produk**. Indeks: [../README.md](../README.md) · Terkait: [access-context.md](access-context.md) · [crud-flows.md](crud-flows.md) · [role-flows.md](role-flows.md) · [../project/roadmap.md](../project/roadmap.md#phase-status-indeks) · [pages/](pages/README.md)
 
+> **Ringkasan:** Peta navigasi aplikasi: lapis route, role & cakupan, struktur menu sidebar, dan satu baris per sub menu (route, status, katalog halaman). Baca untuk mencari menu/route sebuah fitur; rincian per halaman di `pages/`.
+
 **Isi halaman ini:** peta navigasi aplikasi admin — lapis route, role, struktur menu sidebar, dan status tiap sub menu dalam satu baris.
 
 **Sumber data:** menu dari `prisma/seeds/data/menu.csv` · halaman dari `src/app/(admin)/admin/**`.

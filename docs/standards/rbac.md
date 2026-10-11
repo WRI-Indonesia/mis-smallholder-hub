@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Standar**. Indeks: [../README.md](../README.md) · Terkait: [principles.md](./principles.md) · [workflow.md](./workflow.md) · [code-standards.md](./code-standards.md) · [ui-ux.md](./ui-ux.md) · [architecture.md](./architecture.md)
 
+> **Ringkasan:** Standar RBAC: inventaris role & permission, kaskade izin menu (union), hierarki akses data (ALL / distrik / Lembaga), UI penugasan & override per user, anti-eskalasi, matriks role, menu 3 level. Baca sebelum menyentuh izin atau scope; kebenaran di `src/lib/rbac.ts` + `src/lib/access-context.ts`.
+
 ### Inventaris Role
 
 Aplikasi memiliki **5 role** (enum `Role` di `prisma/schema/_config.prisma`):

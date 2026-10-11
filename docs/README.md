@@ -72,6 +72,34 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [project/changelog.md](./project/changelog.md) | Indeks changelog & decision log per bulan (`changelog/YYYY-MM.md`, append-only) + ringkasan dua minggu terakhir |
 | [project/metrics.md](./project/metrics.md) | Metrik Nilai Rilis per rilis (Roadmap % · KPI · RVS) |
 | [project/contributing.md](./project/contributing.md) | Panduan kontribusi & update dokumen |
+| [project/archive/](./project/archive/) | Arsip beku: [Work Item sprint](./project/archive/sprint-work-items.md) (s.d. 2026-09-30) · [TD & bug selesai](./project/archive/tech-debt-done.md) |
+
+## 🔎 Cari cepat — pertanyaan → berkas
+
+Baca satu berkas yang tepat, bukan menyisir folder. Kolom terakhir = tempat memastikan kebenarannya: bila docs dan kode berbeda, **kode yang benar** — perbaiki docs-nya.
+
+| Pertanyaan | Baca | Kebenaran di kode / data |
+|---|---|---|
+| Izin menu (VIEW/CREATE/EDIT/DELETE), override per user | [standards/rbac.md](./standards/rbac.md) | `src/lib/rbac.ts` |
+| Scope data (ALL / per kabupaten / per Lembaga) | [product/access-context.md](./product/access-context.md) | `src/lib/access-context.ts` |
+| Pola Server Action, soft delete, revision lahan | [standards/code-standards.md](./standards/code-standards.md) | `src/server/actions/farmer.ts` · `src/types/action-result.ts` |
+| Pengecualian soft delete, enum, field model | [database/models.md](./database/models.md) | `prisma/schema/*.prisma` · `src/lib/data-schema.generated.ts` |
+| Constraint, FK, cascade, unique | [database/constraints.md](./database/constraints.md) | `prisma/schema/*.prisma` · `prisma/migrations/` |
+| Migrasi ke staging/prod, urutannya | [database/migrations.md](./database/migrations.md) · [standards/rollback.md](./standards/rollback.md) | `prisma/migrations/` |
+| Menu, route, halaman & objeknya | [product/navigation.md](./product/navigation.md) · [product/pages/](./product/pages/README.md) | `src/app/(admin)/admin/` · `src/lib/data-lineage.generated.ts` |
+| Alur bulk upload (Excel / shapefile) | [product/crud-flows.md](./product/crud-flows.md) · [standards/ui-ux-bulk-upload.md](./standards/ui-ux-bulk-upload.md) | `src/server/actions/bulk-upload*.ts` |
+| Tabel, peta, modal, sensor data pribadi | [standards/ui-ux.md](./standards/ui-ux.md) (+ sub-standar tabel/peta) | `src/components/shared/` |
+| Isi & gaya tutorial Bantuan | [standards/ui-ux-help.md](./standards/ui-ux-help.md) | `src/content/help/` |
+| Env, `.env.<env>`, S3 dev vs prod | [standards/environments.md](./standards/environments.md) | — |
+| Alur rilis, bump versi, tag | [standards/versioning.md](./standards/versioning.md) · [decisions/0003](./decisions/README.md) | `git tag` · `gh release list` |
+| Rilis berjalan & backlog | [project/sprint.md](./project/sprint.md) § Rencana Rilis | `npx tsx scripts/plan-status.ts` (parser yang sama dengan menu Rencana Pengembangan) |
+| Status fase roadmap | [project/roadmap.md](./project/roadmap.md) § Phase Status | — |
+| Debt aktif | [project/tech-debt.md](./project/tech-debt.md) § Debt Register | — |
+| Kenapa sesuatu diputuskan begitu | [decisions/](./decisions/README.md), lalu `grep "#nnn"` di [project/changelog/](./project/changelog.md) | issue GitHub `#nnn` |
+| Kasus uji QA rilis | [qa/README.md](./qa/README.md) → `qa/vX.Y.Z/` | `scripts/qa/` |
+| Angka per rilis (Roadmap %, KPI, RVS, jumlah test) | [project/metrics.md](./project/metrics.md) | — |
+
+**Hemat baca.** Changelog bulanan, `roadmap-mvp.md`, `qa/archive/`, dan `project/archive/` adalah log/arsip besar — buka hanya untuk riwayat, dan cari dengan `grep` nomor issue (`#nnn`), `TD-nnn`, atau `TC-nnn` daripada membaca utuh.
 
 ---
 
@@ -80,6 +108,8 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 **Penamaan.** Folder & berkas `kebab-case` berbahasa Inggris; isi dan **heading berbahasa Indonesia** (kecuali istilah teknis/nama kode dan kunci yang diparse build: `Phase Status (Indeks)`, `Rincian per Phase`, `Rencana Rilis`, `Debt Register`). Katalog `product/pages/` mengikuti **segmen route** (`list`/`detail`/`new`/`edit`). Indeks folder = `README.md`. Berkas bernomor hanya di `qa/vX.Y.Z/` (`00-scope` … `05-signoff`) dan `decisions/` (`NNNN-slug`). Heading tidak dinomori kecuali daftar yang memang berurutan (`principles.md`, `versioning.md` §Metrik).
 
 **Kepala berkas.** Baris kedua setelah judul: `> Bagian dari dokumentasi **Area**. Indeks: … · Terkait: …`; katalog `product/pages/` memakai `[← Induk](./README.md) · …`.
+
+**Ringkasan berkas besar.** Berkas ≥ 2.000 kata (di luar `qa/` dan `project/changelog/`) wajib punya baris ke-5 `> **Ringkasan:** …`: 2–3 kalimat berisi **isi**, **kapan dibaca**, dan bagian kunci / tempat kebenaran di kode — supaya pembaca (dan AI) bisa memutuskan relevan tidaknya tanpa membaca utuh. Tulis yang **stabil**: jangan memuat angka, status, atau tanggal yang cepat basi. **Perbarui ringkasan setiap kali cakupan berkas berubah** (seksi utama ditambah/dihapus/dipindah, berkas jadi arsip, sumber kebenaran pindah). Kehadirannya dijaga `src/test/docs-generated.test.ts` (berkas yang melewati 2.000 kata membuat test gagal); isinya diperiksa saat Cek Kepatuhan Docs.
 
 **Legenda status.**
 
@@ -105,7 +135,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | Enum, tabel & ringkasan menu, angka teknis | blok `<!-- GENERATED -->` — `npm run build:docs` |
 | Keputusan besar | `decisions/` |
 
-**Arsip.** Paket QA yang lebih tua dari 3 rilis terakhir yang sudah terbit → `qa/archive/` (paket rilis yang sedang disiapkan tetap di `qa/`). Changelog per bulan di `project/changelog/`. Tanggal di tabel ditulis ISO (`YYYY-MM-DD`; kolom Changelog bulanan `MM-DD`).
+**Arsip.** Paket QA yang lebih tua dari 3 rilis terakhir yang sudah terbit → `qa/archive/` (paket rilis yang sedang disiapkan tetap di `qa/`). Changelog per bulan di `project/changelog/`. Bagian berkas `project/` yang sudah beku dan tidak diparse kode (Work Item sprint lama, TD/bug selesai) → `project/archive/`; blok rilis lama di `sprint.md` § Rencana Rilis **tetap** di tempatnya karena diparse untuk velocity. Tanggal di tabel ditulis ISO (`YYYY-MM-DD`; kolom Changelog bulanan `MM-DD`).
 
 ---
 

@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [roadmap.md](./roadmap.md) · [changelog.md](./changelog.md) · [../standards/versioning.md](../standards/versioning.md)
 
+> **Ringkasan:** Tabel Metrik Nilai Rilis — satu baris per rilis (Roadmap %, KPI ringkas, RVS kumulatif) — plus aturan pengisian. Baris baru ditambahkan saat rilis; definisi & formula di `standards/versioning.md` § Metrik Nilai Rilis. Baca untuk angka/tren antar rilis, bukan untuk status kerja.
+
 Satu baris per rilis — riwayat **Metrik Nilai Rilis** sekali pandang. Definisi, formula, dan bobot: [`standards/versioning.md`](../standards/versioning.md) §Metrik Nilai Rilis (#226). Baris baru ditambahkan **saat rilis** (butir Checklist Rilis).
 
 **Cara baca:**

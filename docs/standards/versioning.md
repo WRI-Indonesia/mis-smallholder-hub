@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Standar**. Indeks: [../README.md](../README.md) · Terkait: [workflow.md](./workflow.md) · [principles.md](./principles.md) · [../project/roadmap.md](../project/roadmap.md) · [../project/changelog.md](../project/changelog.md)
 
+> **Ringkasan:** SemVer aplikasi: kriteria bump, hubungan dengan Conventional Commits, alur rilis & **Checklist Rilis**, catatan historis, dan definisi Metrik Nilai Rilis (Roadmap tertimbang, papan KPI, RVS). Baca sebelum menentukan nomor versi atau menjalankan rilis.
+
 ## Skema Versi
 
 Menggunakan **Semantic Versioning** (`MAJOR.MINOR.PATCH`) yang diadaptasi untuk aplikasi: "breaking change" didefinisikan dari sisi **pengguna dan operasional**, bukan API library. Tag Git berformat `vX.Y.Z` dan hanya dibuat di branch `main`.

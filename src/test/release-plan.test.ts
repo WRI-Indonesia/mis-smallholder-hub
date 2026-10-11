@@ -7,6 +7,8 @@ import {
   PLAN_STATUS_LABEL,
   allIssues,
   carryOvers,
+  currentRelease,
+  summarizeCurrentRelease,
   daysBetween,
   issueDescription,
   parseReleasePlan,
@@ -443,3 +445,35 @@ describe("helper tampilan (sprint-shared)", () => {
     expect(matchesQuery("firms selesai", parts)).toBe(false);
   });
 });
+
+describe("rilis berjalan (kartu Metrik Rilis #421)", () => {
+  const item = (no: number, status: "todo" | "progress" | "decision" | "done" | "moved", points = 1) => ({
+    no, issue: `#${no}`, issueRefs: [`#${no}`], category: "Fitur" as const, size: "S" as const, points, target: "", status, decision: null,
+  });
+  const rel = (version: string, start: string, end: string, releasedAt: string | null, items = [item(1, "done")]) => ({
+    version, start, end, releasedAt, title: `judul ${version}`, items,
+  });
+
+  it("memilih yang berjalan; bila tak ada, rilis lewat target yang belum dirilis; selain itu null", () => {
+    const plan = { releases: [rel("v1.0.0", "2026-09-01", "2026-09-10", "2026-09-10"), rel("v1.1.0", "2026-09-11", "2026-09-20", null), rel("v1.2.0", "2026-09-21", "2026-09-30", null)] };
+    expect(currentRelease(plan, "2026-09-25")?.version).toBe("v1.2.0");
+    expect(currentRelease(plan, "2026-10-05")?.version).toBe("v1.1.0"); // keduanya lewat target → yang pertama
+    expect(currentRelease({ releases: [rel("v1.0.0", "2026-09-01", "2026-09-10", "2026-09-10")] }, "2026-09-20")).toBeNull();
+  });
+
+  it("ringkasan: butir/poin (tanpa Digeser), dikerjakan, keputusan, hari ke-n, sisa/lewat hari", () => {
+    const items = [item(1, "done", 3), item(2, "progress"), item(3, "decision", 5), item(4, "moved"), item(5, "todo")];
+    const plan = { releases: [rel("v1.7.0", "2026-10-11", "2026-10-25", null, items)] };
+    expect(summarizeCurrentRelease(plan, "2026-10-12")).toMatchObject({
+      version: "v1.7.0", state: "active", done: 1, total: 4, donePoints: 3, totalPoints: 10,
+      inProgress: 1, decisions: 1, day: 2, days: 15, daysToTarget: 13,
+    });
+    expect(summarizeCurrentRelease(plan, "2026-10-28")).toMatchObject({ state: "late", day: null, daysToTarget: -3 });
+  });
+
+  it("sprint.md nyata: ada rilis berjalan atau null tanpa melempar", () => {
+    const plan = parseReleasePlan(sprintMd);
+    expect(() => summarizeCurrentRelease(plan, "2026-10-12")).not.toThrow();
+  });
+});
+
