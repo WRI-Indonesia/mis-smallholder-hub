@@ -135,7 +135,8 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 5 | **#381** Peta Rantai Pasok + Report | Fitur | L | Garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel | 🔲 Todo | Prototipe CSV (Dashboard Sankey + Peta, bukan DB) dirilis 2026-10-06 untuk diskusi; diperluas 2026-10-10 (4 tab Aliran, tabel Mill & Lembaga, Excel 3 sheet, Peta dirombak) — versi final menunggu #380 |
 | 6 | **#382** Analisa volume, jarak & risiko Mill | Fitur | M | Jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker, risiko NKT & tumpang tindih per Mill. Prototipe CSV 2026-10-10: Sorotan (konsentrasi · ketergantungan · kepastian · jarak titik Lembaga) + kolom Jarak | 🔲 Todo | ✅ Diputuskan 2026-10-10: ambang 80%, koperasi Lembaga sendiri dikecualikan |
 | 7 | **#366** Detail Lahan Siak — sisa APKASDU | Data | S | Dari v1.5.0. 1.360 baris APKASDU ditahan sampai ada berkas ber-ID lahan baru; skrip idempoten yang sama (dry-run → dump prod → `--write`) | 🔲 Todo | ✅ Diputuskan 2026-10-07: APKASDU ditahan |
-| 8 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
+| 8 | **#422** Perluas blok GENERATED docs | Kerapian | M | Blok turunan kode via `build:docs` + dijaga `docs-generated.test.ts`: menu → tutorial Bantuan, struktur skema, indeks per model (S+S+M), lalu izin bawaan role × menu (M); satu commit per blok, selisih dengan teks manual = temuan drift | 🔲 Todo | Blok izin bawaan role: tampil berlabel "bawaan seed, bukan isi DB prod" (#263) atau dilewati — putuskan sebelum blok itu |
+| 9 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
 
 #### Rilis v1.9.0 · 2026-11-09 → 2026-12-20 — Penyangga akhir tahun: tuntaskan fase K4 2026 & siapkan 2027
 
