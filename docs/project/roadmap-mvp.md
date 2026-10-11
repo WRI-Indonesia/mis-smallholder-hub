@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Roadmap aktif: [roadmap.md](./roadmap.md) · Terkait: [metrics.md](./metrics.md) · [changelog.md](./changelog.md)
 
+> **Ringkasan:** Arsip beku Phase Status baseline MVP (sampai reset roadmap 2026-09-30) beserta rincian & bukti per fase. Tidak diperbarui; buka hanya untuk riwayat fase lama (`grep` kode fase). Status fase berjalan di `roadmap.md`.
+
 > **ARSIP — tidak lagi diperbarui.** Ini tabel Phase Status yang dipakai sejak awal proyek sampai MVP (`v1.0.0`, 2026-09-23). Tabel ini **dibekukan 2026-09-30 pada 88,5%** (80,5/91 poin, 51 fase) saat roadmap direset menjadi **Roadmap 2026–2027** (keputusan owner, Decision Log 2026-09-30). Isinya dipertahankan apa adanya sebagai bukti evidence per fase dan sebagai sumber angka Roadmap % pada baris `metrics.md` v0.9.0–v1.2.0. File ini **tidak diparse build** — yang diparse hanya [roadmap.md](./roadmap.md). Fase yang belum selesai di sini sudah dipindahkan ke tabel baru (MD-08, OPS-02, serta MD-07/MD-10/MD-11 sebagai modul Project Management: Staff Activity, Impact Indicator, Workplan Tracker) atau ke daftar **Parkir** di roadmap aktif (MD-09, BULK-02, TOOLS-01, CMS-01, COMM-01, COMM-02).
 
 ## Roadmap — Sumber Kebenaran (arsip)

@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [roadmap.md](./roadmap.md) · [sprint.md](./sprint.md) · [tech-debt.md](./tech-debt.md) · [changelog.md](./changelog.md)
 
+> **Ringkasan:** Panduan proses developer: aturan emas & checklist 5 menit update dokumen, peta dependensi docs, template update, acceptance criteria umum, dan checklist kepatuhan `standards/` saat implementasi. Baca saat bingung dokumen mana yang harus ikut diubah.
+
 > Panduan proses untuk developer: cara update dokumen status, urutan implementasi, dan checklist kepatuhan [standar kode](../standards/code-standards.md).
 > Konten stabil (jarang berubah) — dipisah dari `progress.md` (restrukturisasi 2026-07-12) agar file status tetap ramping.
 > Status delivery aktual ada di [`roadmap.md`](./roadmap.md); standar teknis di [`code-standards.md`](../standards/code-standards.md).

@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Proyek** (arsip). Indeks: [../../README.md](../../README.md) · Terkait: [../sprint.md](../sprint.md) · [../roadmap-mvp.md](../roadmap-mvp.md)
 
+> **Ringkasan:** Arsip beku tabel Work Item sprint sampai 2026-09-30 (sebelum rencana per rilis). Tidak diperbarui; buka hanya untuk riwayat — cari dengan `grep "#nnn"`, jangan baca utuh. Status issue kini di `../sprint.md` § Rencana Rilis.
+
 Dipindah dari `sprint.md` 2026-10-12 agar berkas aktif hanya memuat rencana berjalan. Isi tidak diubah.
 
 

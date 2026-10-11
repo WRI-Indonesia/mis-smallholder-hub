@@ -58,6 +58,17 @@ describe("docs — lint", () => {
     expect(tanpa, "tambahkan `> Bagian dari dokumentasi **Area**. Indeks: …` (lihat docs/README.md §Konvensi docs)").toEqual([]);
   });
 
+  it("berkas besar (≥ 2.000 kata, di luar qa/ & changelog/) punya baris Ringkasan di baris ke-5", () => {
+    const words = (t: string) => t.split(/\s+/).filter(Boolean).length;
+    const tanpa = docs
+      .filter((f) => !f.includes(`${join("docs", "qa")}/`) && !f.includes(join("project", "changelog")))
+      .filter((f) => {
+        const text = readFileSync(f, "utf8");
+        return words(text) >= 2000 && !(text.split("\n")[4] ?? "").startsWith("> **Ringkasan:** ");
+      });
+    expect(tanpa, "tambahkan `> **Ringkasan:** …` di baris ke-5 (lihat docs/README.md §Konvensi docs)").toEqual([]);
+  });
+
   it("heading tidak dinomori, kecuali daftar berurutan yang disengaja", () => {
     const allowed = new Set([join("docs", "standards", "principles.md"), join("docs", "standards", "versioning.md")]);
     const numbered = docs

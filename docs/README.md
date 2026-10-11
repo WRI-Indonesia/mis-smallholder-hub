@@ -109,6 +109,8 @@ Baca satu berkas yang tepat, bukan menyisir folder. Kolom terakhir = tempat mema
 
 **Kepala berkas.** Baris kedua setelah judul: `> Bagian dari dokumentasi **Area**. Indeks: … · Terkait: …`; katalog `product/pages/` memakai `[← Induk](./README.md) · …`.
 
+**Ringkasan berkas besar.** Berkas ≥ 2.000 kata (di luar `qa/` dan `project/changelog/`) wajib punya baris ke-5 `> **Ringkasan:** …`: 2–3 kalimat berisi **isi**, **kapan dibaca**, dan bagian kunci / tempat kebenaran di kode — supaya pembaca (dan AI) bisa memutuskan relevan tidaknya tanpa membaca utuh. Tulis yang **stabil**: jangan memuat angka, status, atau tanggal yang cepat basi. **Perbarui ringkasan setiap kali cakupan berkas berubah** (seksi utama ditambah/dihapus/dipindah, berkas jadi arsip, sumber kebenaran pindah). Kehadirannya dijaga `src/test/docs-generated.test.ts` (berkas yang melewati 2.000 kata membuat test gagal); isinya diperiksa saat Cek Kepatuhan Docs.
+
 **Legenda status.**
 
 | Emoji | Arti | Dipakai di |

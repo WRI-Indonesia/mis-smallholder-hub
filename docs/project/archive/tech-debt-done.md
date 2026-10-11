@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Proyek** (arsip). Indeks: [../../README.md](../../README.md) · Terkait: [../tech-debt.md](../tech-debt.md)
 
+> **Ringkasan:** Arsip TD dan bug yang sudah selesai, masing-masing dengan resolusi + bukti commit. Baca hanya untuk riwayat sebuah TD (`grep "TD-nnn"`); TD baru yang selesai ditambahkan ke sini, register aktif di `../tech-debt.md`.
+
 Dipindah dari `tech-debt.md` 2026-10-12 agar register aktif tetap ringkas. TD/BUG yang selesai ditambahkan ke sini (bukti commit + tanggal); register aktif tetap di [`tech-debt.md`](../tech-debt.md).
 
 ## Register Bug (7/7 selesai)

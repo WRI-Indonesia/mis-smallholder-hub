@@ -2,6 +2,8 @@
 
 [← Menu Data Analyst](README.md) · [← Katalog halaman](../README.md)
 
+> **Ringkasan:** Katalog Ketersediaan Data › Semua Lembaga: aturan skor, hero, filter aktif, kartu domain, heatmap, radar (tampilan bawaan), matriks modul, Daftar Kerja, catatan performa. Baca sebelum mengubah skor atau tata letaknya; halaman per Lembaga di `data-completeness.md`.
+
 Sub menu `data-analyst-data-availability`, satu halaman: `/admin/data-analyst/data-availability` (DA-03, #193).
 
 > **Kerangka #417 (owner 2026-10-11, tata letak A "Ringkas, satu tempat")**: tinggi halaman bawaan 3.817 → **1.680 px** (32 Lembaga, 1.440 px), Daftar Kerja dalam satu scroll; skor, rumus, Excel 2 sheet, dan deep link Per Lembaga tidak berubah.

@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [roadmap.md](./roadmap.md) · [sprint.md](./sprint.md) · [changelog.md](./changelog.md) · [contributing.md](./contributing.md)
 
+> **Ringkasan:** Register debt & bug **aktif**: pembaruan berkala (log audit), ringkasan, satu seksi per TD aktif (status, prioritas, issue), urutan penanganan. Seksi aktif diparse untuk Metrik Rilis; TD yang selesai pindah ke `archive/tech-debt-done.md`. Baca sebelum membuka TD baru agar tak dobel.
+
 ## Pembaruan Berkala
 
 Kondisi per **2026-08-08** (audit menyeluruh): register bug lama **7/7 selesai**; **1 bug open** sebagai issue — **#237** tombol "Aktifkan kembali" Menu Management memanggil `deleteMenuItem` (reaktivasi tak pernah terjadi; temuan penulisan tutorial `a-5` di #207) — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **13 debt aktif** (semua diverifikasi ulang terhadap kode 2026-08-08 — tidak ada yang diam-diam sudah selesai); **TD-030/TD-031 dibuka 2026-08-05** dari #215/#217 (overlay hilang tanpa padanan publik & legend hardcoded); **TD-032 dibuka 2026-08-08** menampung 3 item mikro sisa issue #136 yang ditutup (debounce panel lahan, aria-label, lahan tetangga PDF); **TD-033 dibuka & diselesaikan 2026-08-10** (review pra-close #239 → lanjutan hari yang sama: ekstraksi `MatrixBody` + trim `ProductionMonthRow`). Tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani belum dimodelkan sebagai tabel — interim per-lahan sudah jalan; hierarki **final 3 level** diputuskan #189, refactor penuh menunggu data lengkap); selebihnya debt kualitas berukuran kecil–sedang.

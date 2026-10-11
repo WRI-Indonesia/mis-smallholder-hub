@@ -2,6 +2,8 @@
 
 [← Menu Bulk Upload](README.md) · [← Katalog halaman](../README.md)
 
+> **Ringkasan:** Katalog halaman Upload Data Lahan: tab Shapefile (aturan validasi & pesan error, alur upload, revisi), tab Detail Lahan (Excel), dan tab Patok (Excel/shapefile titik). Baca sebelum mengubah validasi atau alur unggah lahan; kode di `src/server/actions/bulk-upload-parcel.ts`.
+
 ## Diagram objek
 
 ```text

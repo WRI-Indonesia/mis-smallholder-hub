@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [erd.md](./erd.md) · [models.md](./models.md) · [indexes.md](./indexes.md) · [constraints.md](./constraints.md) · [security.md](./security.md) · [performance.md](./performance.md) · [dashboard-snapshots.md](./dashboard-snapshots.md)
 
+> **Ringkasan:** Alur migrasi Prisma, tingkat risiko per jenis migrasi, **Riwayat Migrasi** (dijaga test — wajib ditambah tiap migrasi baru), checklist pra-deploy, migrasi prod di luar rilis, kebijakan breaking change & backfill. Baca sebelum membuat atau menerapkan migrasi.
+
 <details>
 <summary><strong>Migration Strategy</strong> — Strategi migrasi dan versioning schema</summary>
 
