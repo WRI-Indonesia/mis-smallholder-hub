@@ -42,7 +42,7 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 
 | Atribut | Nilai |
 |---|---|
-| Sub menu | Data — Per Lembaga (`data-analyst-data-completeness`, order 3) |
+| Sub menu | Per Lembaga (`data-analyst-data-completeness`, order 2 di bawah induk Ketersediaan Data `data-analyst-availability` sejak #416; sebelumnya "Data — Per Lembaga", order 3 di Data Analyst) |
 | Route | `/admin/data-analyst/data-completeness` — query `?lembaga=<FarmerGroup.id>` (deep link dari DA-03 & kartu KPI Detail Lembaga), `?distrik=<District.id>` opsional |
 | File | `src/app/(admin)/admin/data-analyst/data-completeness/page.tsx` (Server Component) + `data-completeness-client.tsx` (Client Component) + `loading.tsx` |
 | Tipe | Halaman analisis 1 Lembaga Petani (filter → analisa otomatis → angka Index + radar → prioritas perbaikan → seksi collapsible per domain ber-checklist) |

@@ -90,6 +90,7 @@ import pUnduhSpasialLahan from "@/content/help/tutorial/p-12-unduh-spasial-lahan
 import pDashboardMonevBmp from "@/content/help/tutorial/p-13-dashboard-monev-bmp.md";
 import pDashboardRantaiPasok from "@/content/help/tutorial/p-16-dashboard-rantai-pasok.md";
 import pPetaRantaiPasok from "@/content/help/tutorial/p-17-peta-rantai-pasok.md";
+import pKetersediaanProduksi from "@/content/help/tutorial/p-18-ketersediaan-produksi.md";
 import pTumpangTindihLahan from "@/content/help/tutorial/p-14-tumpang-tindih-lahan.md";
 import pSprintMingguan from "@/content/help/tutorial/p-15-sprint-mingguan.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
@@ -237,6 +238,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "fire-alert", source: pFireAlert },
       { id: "peta-rantai-pasok", source: pPetaRantaiPasok },
       { id: "ketersediaan-data", source: pKetersediaanData },
+      { id: "ketersediaan-produksi", source: pKetersediaanProduksi },
       { id: "ringkasan-petani", source: pRingkasanPetani },
       { id: "komparasi-data-acuan", source: pKomparasiDataAcuan },
       { id: "tumpang-tindih-lahan", source: pTumpangTindihLahan },

@@ -53,7 +53,7 @@ Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, 
 | 1 | Report | `report` | `/admin/report` | 7 | [report/](./report/README.md) |
 | 2 | Map | `map` | `/admin/map` | 3 | [map/](./map/README.md) |
 | 3 | Master Data | `master-data` | `/admin/master-data` | 7 | [master-data/](./master-data/README.md) |
-| 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 5 | [data-analyst/](./data-analyst/README.md) |
+| 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 4 | [data-analyst/](./data-analyst/README.md) |
 | 5 | Platform Developer | `platform-developer` | `/admin/platform-developer` | 3 | [platform-developer/](./platform-developer/README.md) |
 | 6 | Tools | `tools` | `/admin/tools` | 2 | [tools/](./tools/README.md) |
 | 9 | Bantuan | `help` | `/admin/help` | — (tree bab/topik) | [help/](./help/README.md) |
@@ -84,7 +84,7 @@ Beberapa menu induk hanya berfungsi sebagai grup navigasi di sidebar:
 | `/admin/tools` | Redirect ke halaman snapshot |
 | `/admin/map` | Redirect ke `/admin/map/parcel` |
 | `/admin/settings` | Tidak ada `page.tsx` — grup navigasi saja |
-| `/admin/data-analyst` | Tidak ada `page.tsx` — hanya `layout.tsx` (metadata) |
+| `/admin/data-analyst` | Redirect ke `/admin/data-analyst/data-availability`; `/admin/data-analyst/availability` (induk Ketersediaan Data) idem |
 
 ## Kerangka umum halaman admin
 

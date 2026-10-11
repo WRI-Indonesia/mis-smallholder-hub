@@ -15,11 +15,11 @@ Halaman **Ketersediaan Data — Semua Lembaga** menilai kelengkapan data — buk
 
 Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan data langsung terlihat setelah halaman dimuat ulang.
 
-+ Skor per lembaga di sini **sama persis** dengan skor di halaman **Ketersediaan Data — Per Lembaga** (menu berikutnya di grup yang sama) — keduanya memakai perhitungan yang sama. Bedanya: halaman ini menampilkan semua lembaga sekaligus, sedangkan Per Lembaga membedah satu lembaga sampai ke daftar nama petaninya. Alurnya: ringkasan di sini → klik nama Lembaga → daftar kerja di Per Lembaga → perbaiki di Master Data.
++ Skor per lembaga di sini **sama persis** dengan skor di halaman **Ketersediaan Data — Per Lembaga** (menu berikutnya di grup Ketersediaan Data; menu ketiga, **Produksi**, menjawab pertanyaan lain: bulan apa yang sudah punya data produksi) — keduanya memakai perhitungan yang sama. Bedanya: halaman ini menampilkan semua lembaga sekaligus, sedangkan Per Lembaga membedah satu lembaga sampai ke daftar nama petaninya. Alurnya: ringkasan di sini → klik nama Lembaga → daftar kerja di Per Lembaga → perbaiki di Master Data.
 
 ## Langkah
 
-1. Buka menu **Data Analyst → Data — All Lembaga** (judul halamannya **Ketersediaan Data — Semua Lembaga**).
+1. Buka menu **Data Analyst → Ketersediaan Data → Semua Lembaga** (judul halamannya **Ketersediaan Data — Semua Lembaga**).
 2. Baca **hero** di atas: cincin **Skor Keseluruhan** dengan label bandnya, **distribusi Lembaga per band** (berapa yang kritis / perlu perhatian / baik / lengkap), tiga angka ringkas, dan **Aksi lintas Lembaga** — tiga kolom yang belum pernah diisi di banyak Lembaga beserta menu unggah massal untuk mengisinya.
 + Klik segmen distribusi (misalnya merah "kritis") untuk menyaring matriks dan panel di bawah ke Lembaga di band itu; klik lagi atau "hapus filter band" untuk melepasnya.
 3. Lihat lima **kartu domain** — skor besar berwarna band, bobotnya terhadap Skor Keseluruhan, jumlah entitas, dan berapa Lembaga yang kritis di domain itu.
