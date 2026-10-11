@@ -22,6 +22,7 @@ import {
   periodsOfYear,
   sortProductionGroups,
   summarizeRange,
+  yearCoverageAvg,
   yearOfPeriod,
   type ProductionSortKey,
 } from "@/lib/production-availability";
@@ -132,11 +133,19 @@ export function ProductionAvailabilityClient({
     const periods = periodsOfYear(year);
     let stale = 0;
     let silentThisYear = 0;
+    let weighted = 0;
+    let weight = 0;
     for (const g of rows) {
       if (summaries.get(g.id)?.stale) stale += 1;
       if (!periods.some((p) => (cellAt(g.cells, p)?.records ?? 0) > 0)) silentThisYear += 1;
+      const avg = yearCoverageAvg(g, year);
+      if (avg != null) {
+        weighted += avg * g.nonPsrParcels;
+        weight += g.nonPsrParcels;
+      }
     }
-    return { stale, silentThisYear };
+    // Rata-rata cakupan tahun terpilih, tertimbang lahan non-PSR (Lembaga besar berbobot lebih besar — pola Index Ketersediaan).
+    return { stale, silentThisYear, coverage: weight > 0 ? weighted / weight : null };
   }, [rows, year, summaries]);
 
   // Ekspor (K6): Sheet 1 Lembaga × bulan tahun terpilih + ringkasan; Sheet 2 lahan × bulan Lembaga terfilter.
@@ -260,8 +269,8 @@ export function ProductionAvailabilityClient({
             {helpSlot}
           </div>
           <p className="text-muted-foreground">
-            Bulan apa saja yang sudah punya data produksi, per Lembaga Petani — data per{" "}
-            <span className="font-medium text-foreground">{formatGeneratedAt(view.generatedAt)}</span>. Angka sel = % lahan aktif non-PSR yang punya record bulan itu. Tingkat: Distrik → Lembaga → petani → lahan; klik ▸ untuk membuka tingkat di bawahnya.
+            Bulan apa saja yang sudah punya data produksi, per Lembaga Petani. Angka sel = % lahan aktif non-PSR yang punya record pada bulan itu — data per{" "}
+            <span className="font-medium text-foreground">{formatGeneratedAt(view.generatedAt)}</span>.
           </p>
         </div>
 
@@ -311,15 +320,17 @@ export function ProductionAvailabilityClient({
       <Card>
         <CardContent className="pt-6">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm">
-              <span className="font-medium">
-                {districts ? `${formatNumber(districts.length)} Distrik · ` : ""}
-                {formatNumber(rows.length)} Lembaga · tahun {year}
-              </span>
-              <span className="text-muted-foreground">
-                {headline.silentThisYear > 0 ? ` · ${formatNumber(headline.silentThisYear)} tanpa record ${year}` : ""}
-                {headline.stale > 0 ? ` · ${formatNumber(headline.stale)} basi (jeda ≥ ${PRODUCTION_STALE_MONTHS} bulan)` : ""}
-              </span>
+            {/* Strip KPI: satu pandangan sebelum membaca sel — pola kartu ringkas Ketersediaan. */}
+            <div className="flex flex-wrap items-stretch gap-2">
+              <Kpi label="Tahun" value={String(year)} hint={`${districts ? `${formatNumber(districts.length)} Distrik · ` : ""}${formatNumber(rows.length)} Lembaga pada filter ini`} />
+              <Kpi
+                label={`Cakupan ${year}`}
+                value={headline.coverage == null ? "—" : `${formatNumber(Math.round(headline.coverage))}%`}
+                hint="Rata-rata 12 bulan % lahan non-PSR melapor, tertimbang jumlah lahan"
+                tone={headline.coverage == null ? "muted" : headline.coverage >= 80 ? "good" : headline.coverage >= 50 ? "warn" : "bad"}
+              />
+              <Kpi label={`Tanpa record ${year}`} value={formatNumber(headline.silentThisYear)} hint="Lembaga yang belum punya satu pun record pada tahun terpilih" tone={headline.silentThisYear > 0 ? "warn" : "good"} />
+              <Kpi label="Basi" value={formatNumber(headline.stale)} hint={`Lembaga yang periode terakhirnya ≥ ${PRODUCTION_STALE_MONTHS} bulan lalu`} tone={headline.stale > 0 ? "bad" : "good"} />
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
@@ -362,8 +373,12 @@ export function ProductionAvailabilityClient({
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
             <HeatLegend label="% lahan non-PSR melapor">
               <span className="inline-flex items-center gap-1.5">
-                <span className="inline-block h-3 w-4 rounded-sm border border-dashed border-muted-foreground/40 bg-muted/30" />
+                <span className="inline-block h-3 w-4 rounded-sm bg-muted/60" />
                 tidak ada record
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-3 w-4 rounded-sm border border-dashed border-muted-foreground/30" />
+                belum tiba
               </span>
             </HeatLegend>
             <div className="flex flex-wrap items-center gap-3">
@@ -374,7 +389,7 @@ export function ProductionAvailabilityClient({
                   {MARKERS[k].label}
                 </span>
               ))}
-              <span>· Jeda merah = basi (≥ {PRODUCTION_STALE_MONTHS} bulan sejak periode terakhir)</span>
+              <span>· Jeda merah = basi (≥ {PRODUCTION_STALE_MONTHS} bulan)</span>
             </div>
           </div>
         </CardContent>
@@ -385,6 +400,17 @@ export function ProductionAvailabilityClient({
         terpisah (kolom TP). Kolom <span className="font-medium">Bulan</span>{" "}memakai aturan &quot;bulan ber-data&quot; yang sama dengan penyetahunan produktivitas di Peta BMP dan Detail
         Lembaga, jadi angkanya identik.
       </p>
+    </div>
+  );
+}
+
+/** Kartu angka ringkas di atas kalender. */
+function Kpi({ label, value, hint, tone = "muted" }: { label: string; value: string; hint: string; tone?: "good" | "warn" | "bad" | "muted" }) {
+  const toneClass = { good: "text-emerald-700 dark:text-emerald-400", warn: "text-amber-700 dark:text-amber-400", bad: "text-rose-600", muted: "text-foreground" }[tone];
+  return (
+    <div className="min-w-[96px] rounded-md border bg-muted/20 px-3 py-1.5" title={hint}>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`text-lg font-bold leading-tight tabular-nums ${toneClass}`}>{value}</div>
     </div>
   );
 }

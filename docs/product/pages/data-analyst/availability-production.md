@@ -19,18 +19,19 @@ Halaman: Ketersediaan Data — Produksi (/admin/data-analyst/availability/produc
 │   ├── Reset (tampil bila ada filter/urutan/pencarian/tingkat non-bawaan) — hapus semua kunci URL + kosongkan Cari
 │   └── Excel (gate EXPORT) — 2 sheet (K6)
 └── Card kalender (ProductionCalendarTable)
-    ├── Ringkasan: n Lembaga · tahun · n tanpa record tahun ini · n basi
+    ├── Strip KPI (4 kartu): Tahun (n Distrik · n Lembaga) · Cakupan tahun (rata-rata 12 bulan, tertimbang lahan non-PSR; warna band) · Tanpa record tahun · Basi
     ├── Cari (client) · Urut (Select: cakupan | nama | bulan ber-data | periode terakhir) — ?urut= ?arah= · Per Distrik · Tutup semua (lipat Distrik+Lembaga+petani) · Buka Distrik (bawaan; "Buka semua" sengaja tidak ada: 30-an permintaan sekaligus) — `treeCommand {kind, seq}` ke tabel
     ├── Tabel pohon (table-fixed, border-spacing 2px, min-w 1280)
-    │   ├── Kolom: Lembaga · Lahan (non-PSR) · Jan…Des · Bulan (x/12) · Rentang · Jeda · Est. · TP
-    │   ├── Baris Distrik (bawaan nyala, tombol "Per Distrik" / ?tingkat=lembaga mematikan; bawaan terbuka) — agregat `groupRowsByDistrict`/`mergeCells`: Σ lahan melapor ÷ Σ lahan non-PSR Lembaga-Lembaganya
+    │   ├── Kolom: Distrik/Lembaga (sticky kiri) · Lahan (non-PSR) · Jan…Des (bulan berjalan ditebalkan, bulan belum tiba diredupkan) · Bulan (x/12) · Rentang ("Jan 25 – Jul 26") · Jeda · Penanda (chip E n% · 0 n · TP n)
+    │   ├── Area gulir sendiri `max-h calc(100vh-380px)`, thead sticky, min-w 1120 (muat 1280 px tanpa terpotong)
+    │   ├── Baris Distrik (bawaan nyala, tombol "Per Distrik" / ?tingkat=lembaga mematikan; bawaan terbuka; latar muted + pita primary; Lembaga di bawahnya hanya menampilkan kode, nama distrik tak diulang) — agregat `groupRowsByDistrict`/`mergeCells`: Σ lahan melapor ÷ Σ lahan non-PSR Lembaga-Lembaganya
     │   ├── Baris Lembaga (depth 1 di bawah Distrik) — ▸ buka petani (lazy: getProductionAvailabilityFarmers) · nama → Per Lembaga ?lembaga=
     │   │   ├── Baris petani — ▸ buka lahan (lazy: getProductionAvailabilityParcels) · nama → Detail Petani
     │   │   │   ├── Baris lahan — kode → Detail Lahan · badge PSR / "lain" · sel kg → Master Data Produksi (?farmerGroupId&period&search)
     │   │   │   └── Baris semu "Tanpa persil" — record tanpa ID Lahan petani itu
     │   │   └── Baris status: Memuat… / error (klik lagi = muat ulang) / kosong
-    │   └── Sel Lembaga/petani (CoverageCell): HeatCell % + penanda pojok E · 0 · TP; kosong bergaris = tanpa record; abu "n rec" = tanpa lahan non-PSR
-    └── Legenda: HeatLegend "% lahan non-PSR melapor" + swatch tanpa record · penanda · jeda merah
+    │   └── Sel Lembaga/petani (CoverageCell): HeatCell % + penanda pojok E · 0 · TP; abu polos = tanpa record; transparan = bulan belum tiba (> periode acuan); abu "n rec" = tanpa lahan non-PSR
+    └── Legenda: HeatLegend "% lahan non-PSR melapor" + swatch tanpa record + belum tiba · penanda · jeda merah
 ```
 
 ## Atribut halaman

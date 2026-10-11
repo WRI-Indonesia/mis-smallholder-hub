@@ -30,22 +30,24 @@ import type {
 
 type Loaded<T> = { state: "loading" } | { state: "error"; message: string } | { state: "ready"; data: T };
 
-/** Penanda kualitas di pojok sel (K5): E = Estimasi, 0 = ada record 0 kg, TP = tanpa persil. */
+/** Penanda kualitas (K5): E = Estimasi, 0 = ada record 0 kg, TP = tanpa persil. */
 export const MARKERS = {
   estimate: { code: "E", label: "Estimasi", className: "bg-amber-200 text-amber-900" },
   zero: { code: "0", label: "Record 0 kg", className: "bg-rose-200 text-rose-900" },
   noParcel: { code: "TP", label: "Tanpa persil", className: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100" },
 } as const;
 
-function Marker({ kind }: { kind: keyof typeof MARKERS }) {
+function Marker({ kind, children }: { kind: keyof typeof MARKERS; children?: React.ReactNode }) {
   const m = MARKERS[kind];
   return (
-    <span className={cn("rounded-[2px] px-0.5 text-[8px] font-bold leading-[10px]", m.className)} aria-label={m.label}>
+    <span className={cn("inline-flex items-center gap-0.5 rounded-[3px] px-1 text-[9px] font-bold leading-[13px]", m.className)} aria-label={m.label}>
       {m.code}
+      {children}
     </span>
   );
 }
 
+/** Penanda di pojok sel — hanya huruf, tanpa angka (angkanya di tooltip). */
 function MarkerStrip({ cell }: { cell: { estimateRecords: number; zeroRecords: number; noParcelRecords?: number } }) {
   const any = cell.estimateRecords > 0 || cell.zeroRecords > 0 || (cell.noParcelRecords ?? 0) > 0;
   if (!any) return null;
@@ -63,11 +65,38 @@ const monthLabel = (period: string) => {
   return `${MONTH_NAMES_ID[m - 1] ?? period} ${period.slice(0, 4)}`;
 };
 
-/** Sel Lembaga/petani × bulan: % lahan non-PSR melapor (K3) di atas skala heatmap; kosong = tanpa record. */
-function CoverageCell({ cell, nonPsrParcels, period, owner }: { cell: ProductionCellStats | undefined; nonPsrParcels: number; period: string; owner: string }) {
-  if (!cell || cell.records === 0) {
-    return <div className="h-7 w-full rounded-[3px] border border-dashed border-muted-foreground/20 bg-muted/30" title={`${monthLabel(period)} · ${owner}: tidak ada record`} aria-label="tidak ada record" />;
-  }
+/**
+ * Sel kosong: bulan yang BELUM TIBA (setelah periode acuan) diredam supaya tidak
+ * terbaca sebagai data bolong; bulan yang sudah lewat tanpa record = sel polos
+ * (tanpa garis putus-putus — 12 × 30 kotak bergaris hanya jadi derau).
+ */
+function EmptyCell({ period, owner, future, compact }: { period: string; owner: string; future: boolean; compact?: boolean }) {
+  return (
+    <div
+      className={cn("w-full rounded-[3px]", compact ? "h-6" : "h-7", future ? "bg-transparent" : "bg-muted/35")}
+      title={future ? `${monthLabel(period)}: belum tiba` : `${monthLabel(period)} · ${owner}: tidak ada record`}
+      aria-label={future ? "belum tiba" : "tidak ada record"}
+    />
+  );
+}
+
+/** Sel Distrik/Lembaga/petani × bulan: % lahan non-PSR melapor (K3) di atas skala heatmap. */
+function CoverageCell({
+  cell,
+  nonPsrParcels,
+  period,
+  owner,
+  future,
+  compact,
+}: {
+  cell: ProductionCellStats | undefined;
+  nonPsrParcels: number;
+  period: string;
+  owner: string;
+  future: boolean;
+  compact?: boolean;
+}) {
+  if (!cell || cell.records === 0) return <EmptyCell period={period} owner={owner} future={future} compact={compact} />;
   const pct = coveragePct(cell.parcelsReporting, nonPsrParcels);
   const rows = (
     <>
@@ -79,11 +108,12 @@ function CoverageCell({ cell, nonPsrParcels, period, owner }: { cell: Production
       {cell.noParcelRecords > 0 && <StatTooltipRow chip="bg-slate-500" label="Tanpa persil" value={formatNumber(cell.noParcelRecords)} />}
     </>
   );
+  const h = compact ? "h-6" : "h-7";
   if (pct == null) {
     // Tanpa lahan non-PSR → persen tak terdefinisi; tampilkan jumlah record, netral.
     return (
       <Tooltip>
-        <TooltipTrigger render={<div className="relative flex h-7 w-full items-center justify-center rounded-[3px] bg-slate-200 text-[11px] font-semibold tabular-nums text-slate-700 dark:bg-slate-700 dark:text-slate-100" />}>
+        <TooltipTrigger render={<div className={cn("relative flex w-full items-center justify-center rounded-[3px] bg-slate-200 text-[11px] font-semibold tabular-nums text-slate-700 dark:bg-slate-700 dark:text-slate-100", h)} />}>
           {formatNumber(cell.records)} rec
           <MarkerStrip cell={cell} />
         </TooltipTrigger>
@@ -95,7 +125,7 @@ function CoverageCell({ cell, nonPsrParcels, period, owner }: { cell: Production
   }
   return (
     <Tooltip>
-      <TooltipTrigger render={<HeatCell score={pct} className="relative" />}>
+      <TooltipTrigger render={<HeatCell score={pct} className={cn("relative", h)} />}>
         {formatNumber(Math.round(pct))}
         <MarkerStrip cell={cell} />
       </TooltipTrigger>
@@ -107,9 +137,13 @@ function CoverageCell({ cell, nonPsrParcels, period, owner }: { cell: Production
 }
 
 /** Sel lahan × bulan: kg; 0 kg merah; Estimasi bertanda; PSR dibisukan. Klik → Master Data Produksi (Lembaga + periode + petani). */
-function ParcelCell({ cell, period, isPsr, href }: { cell: ProductionParcelCell | undefined; period: string; isPsr: boolean; href: string }) {
+function ParcelCell({ cell, period, isPsr, href, future }: { cell: ProductionParcelCell | undefined; period: string; isPsr: boolean; href: string; future: boolean }) {
   if (!cell || cell.records === 0) {
-    return <div className={cn("flex h-6 items-center justify-center text-[10px] text-muted-foreground/50", isPsr && "bg-muted/40")} title={`${monthLabel(period)}: tidak ada record`}>—</div>;
+    return (
+      <div className={cn("flex h-6 items-center justify-center rounded-[3px] text-[10px] text-muted-foreground/40", isPsr && "bg-muted/40", future && "opacity-40")} title={future ? `${monthLabel(period)}: belum tiba` : `${monthLabel(period)}: tidak ada record`}>
+        {future ? "" : "—"}
+      </div>
+    );
   }
   const zero = cell.kg === 0;
   return (
@@ -129,6 +163,10 @@ function ParcelCell({ cell, period, isPsr, href }: { cell: ProductionParcelCell 
 
 const productionHref = (groupId: string, period: string, search?: string) =>
   `/admin/master-data/production?farmerGroupId=${encodeURIComponent(groupId)}&period=${period}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+
+/** Jumlah bulan tahun terpilih yang punya ≥1 record pada deretan sel. */
+const monthsWithRecords = (cells: { period: string; records: number }[], periods: string[]) =>
+  periods.filter((p) => (cellAt(cells, p)?.records ?? 0) > 0).length;
 
 const EMPTY_SUMMARY: ProductionRangeSummary = {
   firstPeriod: null,
@@ -151,9 +189,57 @@ const gapTitle = (s: ProductionRangeSummary) =>
       ? `Periode terakhir ${s.lastPeriod} melampaui bulan berjalan — periksa tahun pada record (salah ketik?)`
       : `${s.gapMonths} bulan sejak ${s.lastPeriod}${s.stale ? " — basi" : ""}`;
 
-/** Jumlah bulan tahun terpilih yang punya ≥1 record pada deretan sel. */
-const monthsWithRecords = (cells: { period: string; records: number }[], periods: string[]) =>
-  periods.filter((p) => (cellAt(cells, p)?.records ?? 0) > 0).length;
+/** "2025-01" → "Jan 25": muat di kolom sempit, tetap terbaca. */
+const shortPeriod = (p: string) => `${MONTH_SHORT_ID[Number(p.slice(5, 7)) - 1] ?? p} ${p.slice(2, 4)}`;
+
+/** Empat kolom ringkasan rentang penuh — sama untuk baris Distrik dan Lembaga. */
+function SummaryCells({ sum, year }: { sum: ProductionRangeSummary; year: number }) {
+  const monthsYear = sum.monthsByYear[String(year)] ?? 0;
+  const none = sum.totalRecords === 0;
+  return (
+    <>
+      <td className="px-1 py-0 text-center text-xs tabular-nums" title={`Bulan ber-data per tahun: ${Object.entries(sum.monthsByYear).map(([y, n]) => `${y}: ${n}`).join(" · ") || "—"}`}>
+        {none ? (
+          <span className="text-muted-foreground/60">—</span>
+        ) : (
+          <>
+            <span className={cn("font-semibold", monthsYear === 12 ? "text-emerald-700 dark:text-emerald-400" : monthsYear === 0 ? "text-muted-foreground" : "")}>{monthsYear}</span>
+            <span className="text-muted-foreground">/12</span>
+          </>
+        )}
+      </td>
+      <td className="whitespace-nowrap px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground" title={sum.firstPeriod ? `${sum.firstPeriod} – ${sum.lastPeriod}` : "Tidak ada record"}>
+        {sum.firstPeriod && sum.lastPeriod ? `${shortPeriod(sum.firstPeriod)} – ${shortPeriod(sum.lastPeriod)}` : "—"}
+      </td>
+      <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : sum.futureLast ? "font-semibold text-amber-600" : "text-muted-foreground")} title={gapTitle(sum)}>
+        {sum.gapMonths == null ? "—" : sum.futureLast ? `${sum.gapMonths}!` : sum.gapMonths}
+      </td>
+      <td className="px-1 py-0">
+        <div className="flex h-7 items-center justify-center gap-1">
+          {sum.estimateRecords > 0 && (
+            <span title={`${formatNumber(sum.estimateRecords)} dari ${formatNumber(sum.totalRecords)} record berlabel Estimasi`}>
+              <Marker kind="estimate">{Math.round(sum.estimatePct)}%</Marker>
+            </span>
+          )}
+          {sum.zeroRecords > 0 && (
+            <span title={`${formatNumber(sum.zeroRecords)} record 0 kg`}>
+              <Marker kind="zero">{formatNumber(sum.zeroRecords)}</Marker>
+            </span>
+          )}
+          {sum.noParcelRecords > 0 && (
+            <span title={`${formatNumber(sum.noParcelRecords)} record tanpa ID Lahan`}>
+              <Marker kind="noParcel">{formatNumber(sum.noParcelRecords)}</Marker>
+            </span>
+          )}
+          {sum.estimateRecords === 0 && sum.zeroRecords === 0 && sum.noParcelRecords === 0 && <span className="text-xs text-muted-foreground/60">—</span>}
+        </div>
+      </td>
+    </>
+  );
+}
+
+/** Sel nama lengket di kiri — latar opak supaya sel bulan yang tergulir di bawahnya tidak tembus. */
+const NAME_CELL = "sticky left-0 z-10 bg-card px-1 py-0 pr-2 transition-colors";
 
 export function ProductionCalendarTable({
   groups,
@@ -180,6 +266,7 @@ export function ProductionCalendarTable({
   emptyMessage: string;
 }) {
   const periods = periodsOfYear(year);
+  const isFuture = (p: string) => p > referencePeriod;
   // Cache anak berkunci tahun — ganti tahun tidak membuang yang sudah dimuat untuk tahun lain.
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedFarmers, setExpandedFarmers] = useState<Set<string>>(new Set());
@@ -276,24 +363,25 @@ export function ProductionCalendarTable({
     </button>
   );
 
+  const COLS = periods.length + 6;
   const indent = (depth: number) => ({ paddingLeft: depth * 18 });
   const stateRow = (depth: number, content: React.ReactNode, key: string) => (
     <tr key={key}>
-      <td colSpan={periods.length + 7} className="px-2 py-1.5 text-xs text-muted-foreground" style={indent(depth)}>
+      <td colSpan={COLS} className="px-2 py-1.5 text-xs text-muted-foreground" style={indent(depth)}>
         {content}
       </td>
     </tr>
   );
 
+  /** Satu Lembaga + (bila terbuka) petani → lahan. `depth` 0 tanpa Distrik, 1 di bawah Distrik. */
   const renderGroup = (g: ProductionAvailabilityGroupRow, depth: number) => {
     const open = expandedGroups.has(g.id);
     const sum = summaries.get(g.id) ?? EMPTY_SUMMARY;
-    const monthsYear = sum.monthsByYear[String(year)] ?? 0;
     const kids = farmers.get(`${year}:${g.id}`);
     return (
       <Fragment key={g.id}>
         <tr className="group/row align-middle">
-          <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
+          <td className={cn(NAME_CELL, "group-hover/row:bg-muted/50")}>
             <div className="flex h-7 min-w-0 items-center gap-1" style={indent(depth)}>
               <button
                 type="button"
@@ -314,10 +402,8 @@ export function ProductionCalendarTable({
                 <span className="truncate">{g.name}</span>
                 <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
               </Link>
-              <span className="shrink-0 truncate text-[11px] text-muted-foreground">
-                {g.code ? `${g.code} · ` : ""}
-                {g.districtName}
-              </span>
+              {/* Di bawah Distrik, nama distrik tidak diulang — cukup kode. */}
+              <span className="shrink-0 truncate text-[11px] text-muted-foreground">{depth > 0 ? (g.code ?? "") : [g.code, g.districtName].filter(Boolean).join(" · ")}</span>
             </div>
           </td>
           <td className="px-1 py-0 text-right text-xs tabular-nums text-muted-foreground" title={`${formatNumber(g.nonPsrParcels)} lahan non-PSR dari ${formatNumber(g.totalParcels)} lahan aktif · ${formatNumber(g.totalFarmers)} petani`}>
@@ -325,29 +411,14 @@ export function ProductionCalendarTable({
           </td>
           {periods.map((p) => (
             <td key={p} className="p-0">
-              <CoverageCell cell={cellAt(g.cells, p)} nonPsrParcels={g.nonPsrParcels} period={p} owner={g.name} />
+              <CoverageCell cell={cellAt(g.cells, p)} nonPsrParcels={g.nonPsrParcels} period={p} owner={g.name} future={isFuture(p)} />
             </td>
           ))}
-          <td className="px-1 py-0 text-center text-xs tabular-nums" title={`Bulan ber-data per tahun: ${Object.entries(sum.monthsByYear).map(([y, n]) => `${y}: ${n}`).join(" · ") || "—"}`}>
-            <span className={cn(monthsYear === 12 && "font-semibold text-emerald-700 dark:text-emerald-400")}>{monthsYear}</span>
-            <span className="text-muted-foreground">/12</span>
-          </td>
-          <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">
-            {sum.firstPeriod ? `${sum.firstPeriod} – ${sum.lastPeriod}` : "—"}
-          </td>
-          <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : sum.futureLast ? "font-semibold text-amber-600" : "text-muted-foreground")} title={gapTitle(sum)}>
-            {sum.gapMonths == null ? "—" : sum.futureLast ? `${sum.gapMonths}!` : sum.gapMonths}
-          </td>
-          <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.estimateRecords > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")} title={`${formatNumber(sum.estimateRecords)} dari ${formatNumber(sum.totalRecords)} record berlabel Estimasi`}>
-            {sum.totalRecords > 0 ? `${formatNumber(Math.round(sum.estimatePct))}%` : "—"}
-          </td>
-          <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.noParcelRecords > 0 ? "text-slate-700 dark:text-slate-200" : "text-muted-foreground")} title={`${formatNumber(sum.noParcelRecords)} record tanpa ID Lahan`}>
-            {sum.noParcelRecords > 0 ? formatNumber(sum.noParcelRecords) : "—"}
-          </td>
+          <SummaryCells sum={sum} year={year} />
         </tr>
 
         {open && kids?.state === "loading" && stateRow(depth + 1, <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat petani…</span>, `${g.id}-loading`)}
-        {open && kids?.state === "error" && stateRow(depth + 1, <span className="text-destructive">{kids.message}</span>, `${g.id}-error`)}
+        {open && kids?.state === "error" && stateRow(depth + 1, <span className="text-destructive">{kids.message} — klik ▸ lagi untuk mencoba ulang.</span>, `${g.id}-error`)}
         {open && kids?.state === "ready" && kids.data.length === 0 && stateRow(depth + 1, "Tidak ada petani aktif dalam cakupan akses Anda.", `${g.id}-empty`)}
         {open &&
           kids?.state === "ready" &&
@@ -359,7 +430,7 @@ export function ProductionCalendarTable({
             return (
               <Fragment key={f.id}>
                 <tr className="group/row align-middle text-[13px]">
-                  <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
+                  <td className={cn(NAME_CELL, "group-hover/row:bg-muted/50")}>
                     <div className="flex h-6 min-w-0 items-center gap-1" style={indent(depth + 1)}>
                       <button
                         type="button"
@@ -381,23 +452,21 @@ export function ProductionCalendarTable({
                   </td>
                   {periods.map((p) => (
                     <td key={p} className="p-0">
-                      <CoverageCell cell={cellAt(f.cells, p)} nonPsrParcels={f.nonPsrParcels} period={p} owner={f.name} />
+                      <CoverageCell cell={cellAt(f.cells, p)} nonPsrParcels={f.nonPsrParcels} period={p} owner={f.name} future={isFuture(p)} compact />
                     </td>
                   ))}
                   <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{fMonths}/12</td>
-                  <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{fLast ?? "—"}</td>
-                  <td className="px-1 py-0" />
-                  <td className="px-1 py-0" />
-                  <td className="px-1 py-0" />
+                  <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{fLast ? shortPeriod(fLast) : "—"}</td>
+                  <td className="px-1 py-0" colSpan={2} />
                 </tr>
                 {fOpen && fKids?.state === "loading" && stateRow(depth + 2, <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat lahan…</span>, `${f.id}-loading`)}
-                {fOpen && fKids?.state === "error" && stateRow(depth + 2, <span className="text-destructive">{fKids.message}</span>, `${f.id}-error`)}
+                {fOpen && fKids?.state === "error" && stateRow(depth + 2, <span className="text-destructive">{fKids.message} — klik ▸ lagi untuk mencoba ulang.</span>, `${f.id}-error`)}
                 {fOpen && fKids?.state === "ready" && fKids.data.parcels.length === 0 && fKids.data.noParcel.length === 0 && stateRow(depth + 2, "Petani ini belum punya lahan aktif maupun record produksi.", `${f.id}-empty`)}
                 {fOpen &&
                   fKids?.state === "ready" &&
                   fKids.data.parcels.map((p) => (
                     <tr key={p.id} className={cn("group/row align-middle text-xs", p.isPsr && "text-muted-foreground")}>
-                      <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
+                      <td className={cn(NAME_CELL, "group-hover/row:bg-muted/50")}>
                         <div className="flex h-6 min-w-0 items-center gap-2" style={indent(depth + 2)}>
                           <span className="inline-block w-4" />
                           <Link href={`/admin/master-data/parcels/${p.id}`} className="truncate font-mono text-[11px] hover:underline" title={`${p.parcelCode} — buka Detail Lahan`}>
@@ -412,16 +481,16 @@ export function ProductionCalendarTable({
                       </td>
                       {periods.map((per) => (
                         <td key={per} className="p-0">
-                          <ParcelCell cell={cellAt(p.cells, per)} period={per} isPsr={p.isPsr} href={productionHref(g.id, per, f.farmerCode)} />
+                          <ParcelCell cell={cellAt(p.cells, per)} period={per} isPsr={p.isPsr} href={productionHref(g.id, per, f.farmerCode)} future={isFuture(per)} />
                         </td>
                       ))}
                       <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{monthsWithRecords(p.cells, periods)}/12</td>
-                      <td className="px-1 py-0" colSpan={4} />
+                      <td className="px-1 py-0" colSpan={3} />
                     </tr>
                   ))}
                 {fOpen && fKids?.state === "ready" && fKids.data.noParcel.length > 0 && (
                   <tr key={`${f.id}-np`} className="group/row align-middle text-xs text-muted-foreground">
-                    <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
+                    <td className={cn(NAME_CELL, "group-hover/row:bg-muted/50")}>
                       <div className="flex h-6 min-w-0 items-center gap-2" style={indent(depth + 2)}>
                         <span className="inline-block w-4" />
                         <span className="italic" title="Record petani ini yang tidak ber-ID Lahan — tidak masuk persen cakupan">Tanpa persil</span>
@@ -431,11 +500,11 @@ export function ProductionCalendarTable({
                     <td className="px-1 py-0" />
                     {periods.map((per) => (
                       <td key={per} className="p-0">
-                        <ParcelCell cell={cellAt(fKids.data.noParcel, per)} period={per} isPsr={false} href={productionHref(g.id, per, f.farmerCode)} />
+                        <ParcelCell cell={cellAt(fKids.data.noParcel, per)} period={per} isPsr={false} href={productionHref(g.id, per, f.farmerCode)} future={isFuture(per)} />
                       </td>
                     ))}
                     <td className="px-1 py-0 text-center text-[11px] tabular-nums">{monthsWithRecords(fKids.data.noParcel, periods)}/12</td>
-                    <td className="px-1 py-0" colSpan={4} />
+                    <td className="px-1 py-0" colSpan={3} />
                   </tr>
                 )}
               </Fragment>
@@ -444,39 +513,50 @@ export function ProductionCalendarTable({
       </Fragment>
     );
   };
+
   if (groups.length === 0) {
     return <div className="flex min-h-[160px] items-center justify-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[1280px] table-fixed border-separate border-spacing-[2px] text-sm">
+    // Area gulir sendiri: header & kolom nama lengket, jadi 30+ baris Lembaga +
+    // petani tetap terbaca kolom bulannya; lebar minimum muat layar 1280 tanpa terpotong.
+    <div className="relative max-h-[calc(100vh-380px)] min-h-[320px] overflow-auto rounded-md border">
+      <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-[2px] text-sm">
         <colgroup>
-          <col className="w-[280px]" />
-          <col className="w-[64px]" />
+          <col className="w-[260px]" />
+          <col className="w-[56px]" />
           {periods.map((p) => (
-            <col key={p} className="w-[56px]" />
+            <col key={p} className="w-[48px]" />
           ))}
-          <col className="w-[68px]" />
-          <col className="w-[128px]" />
-          <col className="w-[56px]" />
-          <col className="w-[64px]" />
-          <col className="w-[56px]" />
+          <col className="w-[52px]" />
+          <col className="w-[104px]" />
+          <col className="w-[44px]" />
+          <col className="w-[96px]" />
         </colgroup>
-        <thead>
-          <tr className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <th className="py-1.5 pr-3 text-left font-semibold">{headBtn("name", districts ? "Distrik / Lembaga Petani" : "Lembaga Petani")}</th>
-            <th className="px-1 py-1.5 text-right font-semibold" title="Lahan aktif non-PSR — penyebut persen cakupan">Lahan</th>
+        <thead className="sticky top-0 z-20 bg-card">
+          <tr className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <th className="sticky left-0 z-30 bg-card py-2 pr-3 text-left font-semibold">{headBtn("name", districts ? "Distrik / Lembaga" : "Lembaga Petani")}</th>
+            <th className="px-1 py-2 text-right font-semibold" title="Lahan aktif non-PSR — penyebut persen cakupan">
+              Lahan
+            </th>
             {periods.map((p, i) => (
-              <th key={p} className="px-0 py-1.5 text-center font-semibold" title={`${MONTH_NAMES_ID[i]} ${year}`}>
+              <th
+                key={p}
+                className={cn("px-0 py-2 text-center font-semibold", isFuture(p) && "text-muted-foreground/40", p === referencePeriod && "text-foreground")}
+                title={`${MONTH_NAMES_ID[i]} ${year}${isFuture(p) ? " — belum tiba" : p === referencePeriod ? " — bulan berjalan" : ""}`}
+              >
                 {MONTH_SHORT_ID[i]}
               </th>
             ))}
-            <th className="px-1 py-1.5 text-center font-semibold">{headBtn("months", "Bulan", `Bulan ber-data ${year} (aturan penyetahunan Peta BMP)`)}</th>
-            <th className="px-1 py-1.5 text-center font-semibold" title="Periode pertama – terakhir yang punya record (rentang penuh, bukan hanya tahun terpilih)">Rentang</th>
-            <th className="px-1 py-1.5 text-center font-semibold">{headBtn("last", "Jeda", `Bulan sejak periode terakhir ke ${referencePeriod}; merah bila ≥ ${PRODUCTION_STALE_MONTHS}`)}</th>
-            <th className="px-1 py-1.5 text-center font-semibold" title="% record berlabel Estimasi (rentang penuh)">Est.</th>
-            <th className="px-1 py-1.5 text-center font-semibold" title="Record tanpa ID Lahan (rentang penuh)">TP</th>
+            <th className="px-1 py-2 text-center font-semibold">{headBtn("months", "Bulan", `Bulan ber-data ${year} (aturan penyetahunan Peta BMP)`)}</th>
+            <th className="px-1 py-2 text-center font-semibold" title="Periode pertama – terakhir yang punya record (rentang penuh, bukan hanya tahun terpilih)">
+              Rentang
+            </th>
+            <th className="px-1 py-2 text-center font-semibold">{headBtn("last", "Jeda", `Bulan sejak periode terakhir ke ${referencePeriod}; merah bila ≥ ${PRODUCTION_STALE_MONTHS}`)}</th>
+            <th className="px-1 py-2 text-center font-semibold" title="Rentang penuh: % record Estimasi · record 0 kg · record tanpa ID Lahan">
+              Penanda
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -484,18 +564,18 @@ export function ProductionCalendarTable({
             ? districts.map((d) => {
                 const open = !collapsedDistricts.has(d.id);
                 const sum = summaries.get(d.id) ?? EMPTY_SUMMARY;
-                const monthsYear = sum.monthsByYear[String(year)] ?? 0;
                 return (
                   <Fragment key={d.id}>
-                    <tr className="group/row align-middle bg-muted/20 font-medium">
-                      <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
-                        <div className="flex h-7 min-w-0 items-center gap-1">
+                    <tr className="group/row align-middle font-semibold">
+                      <td className={cn(NAME_CELL, "bg-muted group-hover/row:bg-muted")}>
+                        <div className="flex h-8 min-w-0 items-center gap-1">
+                          <span className="mr-1 h-5 w-1 shrink-0 rounded-full bg-primary" aria-hidden />
                           <button
                             type="button"
                             onClick={() => toggleDistrict(d.id)}
                             aria-expanded={open}
                             aria-label={`${open ? "Tutup" : "Buka"} Lembaga di ${d.name}`}
-                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            className="rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
                           >
                             <ChevronRight className={cn("h-4 w-4 transition-transform", open && "rotate-90")} />
                           </button>
@@ -503,31 +583,17 @@ export function ProductionCalendarTable({
                           <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
                             {formatNumber(d.groups.length)} Lembaga · {formatNumber(d.totalFarmers)} petani
                           </span>
-                          <span className="ml-1 shrink-0 text-[10px] font-normal uppercase tracking-wider text-muted-foreground/70">Distrik</span>
                         </div>
                       </td>
-                      <td className="px-1 py-0 text-right text-xs tabular-nums text-muted-foreground" title={`${formatNumber(d.nonPsrParcels)} lahan non-PSR dari ${formatNumber(d.totalParcels)} lahan aktif`}>
+                      <td className="rounded-[3px] bg-muted/40 px-1 py-0 text-right text-xs tabular-nums text-muted-foreground" title={`${formatNumber(d.nonPsrParcels)} lahan non-PSR dari ${formatNumber(d.totalParcels)} lahan aktif`}>
                         {formatNumber(d.nonPsrParcels)}
                       </td>
                       {periods.map((p) => (
                         <td key={p} className="p-0">
-                          <CoverageCell cell={cellAt(d.cells, p)} nonPsrParcels={d.nonPsrParcels} period={p} owner={`Distrik ${d.name}`} />
+                          <CoverageCell cell={cellAt(d.cells, p)} nonPsrParcels={d.nonPsrParcels} period={p} owner={`Distrik ${d.name}`} future={isFuture(p)} />
                         </td>
                       ))}
-                      <td className="px-1 py-0 text-center text-xs tabular-nums" title={`Bulan ber-data per tahun (gabungan Lembaga): ${Object.entries(sum.monthsByYear).map(([y, n]) => `${y}: ${n}`).join(" · ") || "—"}`}>
-                        <span className={cn(monthsYear === 12 && "font-semibold text-emerald-700 dark:text-emerald-400")}>{monthsYear}</span>
-                        <span className="text-muted-foreground">/12</span>
-                      </td>
-                      <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{sum.firstPeriod ? `${sum.firstPeriod} – ${sum.lastPeriod}` : "—"}</td>
-                      <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : sum.futureLast ? "font-semibold text-amber-600" : "text-muted-foreground")} title={gapTitle(sum)}>
-                        {sum.gapMonths == null ? "—" : sum.futureLast ? `${sum.gapMonths}!` : sum.gapMonths}
-                      </td>
-                      <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.estimateRecords > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
-                        {sum.totalRecords > 0 ? `${formatNumber(Math.round(sum.estimatePct))}%` : "—"}
-                      </td>
-                      <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.noParcelRecords > 0 ? "text-slate-700 dark:text-slate-200" : "text-muted-foreground")}>
-                        {sum.noParcelRecords > 0 ? formatNumber(sum.noParcelRecords) : "—"}
-                      </td>
+                      <SummaryCells sum={sum} year={year} />
                     </tr>
                     {open && d.groups.map((g) => renderGroup(g, 1))}
                   </Fragment>
