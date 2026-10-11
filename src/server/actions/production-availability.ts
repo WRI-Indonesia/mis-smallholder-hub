@@ -159,7 +159,10 @@ export async function getProductionAvailabilityFarmers(groupId: string, year: nu
   if (!Number.isInteger(year)) return [];
   const access = await getAccessContext();
   const group = await prisma.farmerGroup.findFirst({
-    where: { id: groupId, isActive: true, ...farmerGroupAccessFilter(access) },
+    // AND, bukan spread: di mode BY_FARMER_GROUP filter scope = `{ id: { in } }` dan spread
+    // menimpa `id: groupId` → Lembaga mana pun "lolos" lalu data Lembaga di luar scope ikut
+    // termuat (review pra-rilis v1.7.0, dijaga production-availability-guard.test.ts).
+    where: { AND: [{ id: groupId, isActive: true }, farmerGroupAccessFilter(access)] },
     select: { id: true },
   });
   if (!group) return [];
@@ -208,13 +211,18 @@ export async function getProductionAvailabilityFarmers(groupId: string, year: nu
  * bertanda. Record tanpa persil tidak ikut (ada di Sheet 1 per Lembaga).
  */
 export async function getProductionAvailabilityGroupParcels(groupId: string, year: number): Promise<ProductionAvailabilityGroupParcelRow[]> {
-  if (!(await hasPermission(MENU_KEY, "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses ketersediaan data produksi");
+  // Hanya untuk ekspor → wajib EXPORT di server, bukan sekadar tombol tersembunyi
+  // (review pra-rilis v1.7.0: VIEW saja bisa menarik seluruh lahan × bulan lewat aksi ini).
+  if (!(await hasPermission(MENU_KEY, "EXPORT"))) {
+    throw new Error("Tidak memiliki izin untuk mengekspor ketersediaan data produksi");
   }
   if (!Number.isInteger(year)) return [];
   const access = await getAccessContext();
   const group = await prisma.farmerGroup.findFirst({
-    where: { id: groupId, isActive: true, ...farmerGroupAccessFilter(access) },
+    // AND, bukan spread: di mode BY_FARMER_GROUP filter scope = `{ id: { in } }` dan spread
+    // menimpa `id: groupId` → Lembaga mana pun "lolos" lalu data Lembaga di luar scope ikut
+    // termuat (review pra-rilis v1.7.0, dijaga production-availability-guard.test.ts).
+    where: { AND: [{ id: groupId, isActive: true }, farmerGroupAccessFilter(access)] },
     select: { id: true },
   });
   if (!group) return [];

@@ -22,6 +22,8 @@ import {
   periodsOfYear,
   sortProductionGroups,
   summarizeRange,
+  summarizeYear,
+  percentUnavailableNote,
   yearCoverageAvg,
   yearOfPeriod,
   type ProductionSortKey,
@@ -175,21 +177,22 @@ export function ProductionAvailabilityClient({
           { header: "Periode pertama", key: "first", width: 12 },
           { header: "Periode terakhir", key: "last", width: 12 },
           { header: "Jeda (bulan)", key: "gap", width: 10 },
-          { header: "Record", key: "records", width: 9 },
-          { header: "Record Estimasi", key: "estimate", width: 12 },
-          { header: "Record 0 kg", key: "zero", width: 10 },
-          { header: "Record tanpa persil", key: "noParcel", width: 14 },
+          // Per tahun terpilih (owner 2026-10-12) — satu cakupan dengan kolom bulan & Sheet 2.
+          { header: `Record ${year}`, key: "records", width: 11 },
+          { header: `Record Estimasi ${year}`, key: "estimate", width: 14 },
+          { header: `Record 0 kg ${year}`, key: "zero", width: 12 },
+          { header: `Record tanpa persil ${year}`, key: "noParcel", width: 16 },
+          { header: "Catatan", key: "note", width: 30 },
         ],
         data: rows.map((g) => {
           const s = summaries.get(g.id) ?? summarizeRange(g.cells, view.referencePeriod);
+          const ys = summarizeYear(g.cells, year, view.referencePeriod);
           const months: Record<string, number | string> = {};
           for (const p of periods) {
             const c = cellAt(g.cells, p);
-            if (!c || c.records === 0) months[p] = "";
-            else {
-              const pct = coveragePct(c.parcelsReporting, g.nonPsrParcels);
-              months[p] = pct == null ? `${c.records} rec` : Math.round(pct);
-            }
+            const pct = c && c.records > 0 ? coveragePct(c.parcelsReporting, g.nonPsrParcels) : null;
+            // Kolom bulan selalu angka atau kosong (dulu teks "12 rec" bila penyebut 0) — alasannya di Catatan.
+            months[p] = pct == null ? "" : Math.round(pct);
           }
           return {
             name: g.name,
@@ -204,10 +207,11 @@ export function ProductionAvailabilityClient({
             first: s.firstPeriod ?? "",
             last: s.lastPeriod ?? "",
             gap: s.gapMonths ?? "",
-            records: s.totalRecords,
-            estimate: s.estimateRecords,
-            zero: s.zeroRecords,
-            noParcel: s.noParcelRecords,
+            records: ys.totalRecords,
+            estimate: ys.estimateRecords,
+            zero: ys.zeroRecords,
+            noParcel: ys.noParcelRecords,
+            note: percentUnavailableNote(g.nonPsrParcels, g.totalParcels, ys.totalRecords),
           };
         }),
       };

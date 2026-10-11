@@ -1,5 +1,5 @@
 {
-  "// catatan": "Gate lokal `npm run typecheck` (#288): sama dengan tsconfig.json TETAPI mencakup src/test/** dan scripts/seed/seed-menu-key.ts (TD-053b, review #412 — skrip seed TS harus ikut typecheck; seed-menu-only.ts belum karena prisma/seeds/seed-role-permissions.ts punya error tipe lama). tsconfig.json sendiri mengecualikan src/test sejak v0.38.0 supaya tahap 'Running TypeScript' di `next build` pada server staging/prod (heap Node ±1 GB) tidak kehabisan memori — pemeriksaan tipe berkas test tetap wajib, di sini.",
+  "// catatan": "Gate lokal `npm run typecheck` (#288): sama dengan tsconfig.json TETAPI mencakup src/test/** dan SEMUA berkas TS di scripts/ (termasuk scripts/seed/* — seed-menu-key.ts & seed-menu-only.ts — dan scripts/migrations/*) kecuali scripts/local, scripts/qa, scripts/dump-prod; prisma/seeds tetap dikecualikan (TD-053b, review #412; komentar dibetulkan review pra-rilis v1.7.0 — skrip baru di scripts/ otomatis ikut gate). tsconfig.json sendiri mengecualikan src/test sejak v0.38.0 supaya tahap 'Running TypeScript' di `next build` pada server staging/prod (heap Node ±1 GB) tidak kehabisan memori — pemeriksaan tipe berkas test tetap wajib, di sini.",
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "tsBuildInfoFile": ".next/cache/tsconfig.typecheck.tsbuildinfo"

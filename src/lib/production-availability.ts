@@ -82,6 +82,24 @@ export function summarizeRange(cells: ProductionCellStats[], referencePeriod: st
 }
 
 /**
+ * Ringkasan SATU tahun (sel periode `YYYY-…`) — kolom Record/Estimasi/0 kg/tanpa
+ * persil Sheet 1 Excel harus satu cakupan dengan kolom bulannya dan Sheet 2
+ * (review pra-rilis v1.7.0, keputusan owner 2026-10-12: semua angka per tahun).
+ */
+export function summarizeYear(cells: ProductionCellStats[], year: number, referencePeriod: string): ProductionRangeSummary {
+  return summarizeRange(cells.filter((c) => c.period.startsWith(`${year}-`)), referencePeriod);
+}
+
+/**
+ * Catatan baris Sheet 1 bila % bulan tak bisa dihitung (penyebut lahan non-PSR = 0)
+ * padahal ada record di tahun itu — sel bulan dibiarkan kosong (kolom tetap angka).
+ */
+export function percentUnavailableNote(nonPsrParcels: number, totalParcels: number, recordsInYear: number): string {
+  if (nonPsrParcels > 0 || recordsInYear === 0) return "";
+  return totalParcels > 0 ? "Semua lahan PSR — % bulan tak dihitung" : "Tanpa lahan aktif — % bulan tak dihitung";
+}
+
+/**
  * Tahun yang punya data di seluruh Lembaga, terbaru dulu. Tahun berjalan selalu
  * ikut (bawaan tampilan, K4) walau belum ada record — kalender kosong lebih
  * jujur daripada diam-diam melompat ke tahun lalu.

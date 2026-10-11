@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { inflateSync } from "node:zlib";
 import { isWinAnsiChar, toWinAnsiText } from "@/lib/pdf-winansi";
 import { buildLandParcelReportDoc } from "@/lib/report-land-parcel-pdf";
+import { buildPDF } from "@/lib/pdf";
 
 // Temuan #2 QA v1.7.0: "≥" di ringkasan PDF Laporan Lahan membuat jsPDF menulis
 // baris itu sebagai UTF-16 → tercetak `Selisih Luas "e 0,50 Ha`. Lint/test lama
@@ -71,3 +72,23 @@ describe("PDF Laporan Lahan — teks metadata & sections tanpa UTF-16", () => {
     expect(runs).toContain("KT >= A");
   });
 });
+
+describe("buildPDF (eksportir bersama Report Petani/KT/Pelatihan/Produksi) — tanpa UTF-16", () => {
+  it("judul, metadata, tajuk & sel tabel dipetakan ke WinAnsi (review pra-rilis v1.7.0)", () => {
+    const doc = buildPDF({
+      title: "Laporan ≥ 2026",
+      metadata: [{ label: "Filter", value: "Luas ≥ 1 ha → Siak" }],
+      columns: [{ header: "Catatan ✓", key: "note" }],
+      data: [{ note: "KT ≈ Maju" }],
+    });
+    const out = doc.output();
+    // buildPDF mungkin tak memampatkan stream — baca string literal langsung bila tak ada Flate.
+    const runs = /FlateDecode/.test(out) ? pdfTextRuns(out) : [...out.matchAll(/\(((?:\\.|[^\\)])*)\)\s*Tj/g)].map((m) => m[1]);
+    expect(runs.some((r) => r.includes("\u0000"))).toBe(false);
+    expect(runs).toContain("Laporan >= 2026");
+    expect(runs).toContain("Luas >= 1 ha -> Siak");
+    expect(runs).toContain("Catatan v");
+    expect(runs).toContain("KT ~ Maju");
+  });
+});
+

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { cleanGroupInput } from "@/lib/group-placeholder";
-import { BLANK_TOKENS, PENDING_TOKENS } from "@/lib/land-parcel-detail-import";
+import { BLANK_TOKENS, PENDING_TOKENS, validateParcelDetailRows } from "@/lib/land-parcel-detail-import";
 import { parcelGroupValue } from "@/lib/report-land-parcel";
 import { landParcelSchema } from "@/validations/land-parcel.schema";
 import { landParcelDetailRowSchema } from "@/validations/land-parcel-detail.schema";
@@ -25,23 +25,47 @@ describe("cleanGroupInput", () => {
     ["KT-1", "KT-1"],
     ["Tidak  Ada", null], // spasi ganda (review #374)
     ["Tidak\u00a0Ada", null], // NBSP
-    ["n/a", null], // token kosong berkas Excel - satu daftar dengan import (TD-046)
-    ["NULL", null],
-    ["Belum ada", null],
+    // Owner 2026-10-12 (review pra-rilis v1.7.0): HANYA "Tidak Ada"/"-" — token import lain bisa nilai sah.
+    ["n/a", "n/a"],
+    ["NA", "NA"],
+    ["0", "0"],
+    ["Belum ada", "Belum ada"],
+    ["proses", "proses"],
     ["Nama", "Nama"], // bukan token walau mengandung "na"
     ["KT  Maju", "KT Maju"], // spasi ganda dirapatkan, sama dengan pengelompokan
   ])("%j → %j", (input, expected) => {
     expect(cleanGroupInput(input)).toBe(expected);
   });
 
-  it("penjaga drift TD-046: setiap token yang dikosongkan import Detail Lahan juga kosong di form/Zod", () => {
-    for (const t of [...BLANK_TOKENS, ...PENDING_TOKENS]) expect(cleanGroupInput(t), t).toBeNull();
-    expect(cleanGroupInput("0")).toBeNull(); // review #412: "0" dari form dulu tersimpan sebagai KT bernama 0
+  it("token import STDB/surat (BLANK/PENDING_TOKENS) BUKAN aturan KT/Blok — selain 'Tidak Ada'/'-'/kosong, nilainya dipertahankan", () => {
+    for (const t of [...BLANK_TOKENS, ...PENDING_TOKENS]) {
+      const expected = t.trim() === "" || /^-+$/.test(t) || t === "tidak ada" ? null : t;
+      expect(cleanGroupInput(t), t).toBe(expected);
+    }
     expect(cleanGroupInput("Blok 0")).toBe("Blok 0");
   });
 
+  it("import Detail Lahan membaca KT/Blok mentah lalu cleanGroupInput — sama dengan form (Blok '0', KT 'NA' tersimpan)", () => {
+    const parcels = [
+      { parcelUid: "u1", parcelId: "CTH.0001.A", farmerCode: "CTH.F1", farmerName: "X", farmerDbId: "f1", subGroupLv2: null, blok: null },
+      { parcelUid: "u2", parcelId: "CTH.0002.A", farmerCode: "CTH.F2", farmerName: "Y", farmerDbId: "f2", subGroupLv2: null, blok: null },
+    ];
+    const rows = validateParcelDetailRows(
+      [
+        { ID: "CTH.0001.A", PETANI: "CTH.F1", KT: "NA", BLOK: "0" },
+        { ID: "CTH.0002.A", PETANI: "CTH.F2", KT: "Tidak Ada", BLOK: "-" },
+      ],
+      { parcelId: "ID", farmerId: "PETANI", subGroupLv2: "KT", blok: "BLOK" },
+      parcels,
+    );
+    expect(rows[0].data?.subGroupLv2).toBe("NA");
+    expect(rows[0].data?.blok).toBe("0");
+    // "Tidak Ada" / "-" = kosong → baris tanpa data detail apa pun ditolak dengan pesan itu.
+    expect(rows[1]._errors).toEqual([expect.stringContaining("Tidak ada data detail")]);
+  });
+
   it("sejalan dengan parcelGroupValue (pengelompokan Excel/peta #371/#372)", () => {
-    for (const v of ["Tidak Ada", "Tidak  Ada", "Tidak\u00a0 Ada", "-", "KT Maju", "  ", "n/a", "none"]) expect(cleanGroupInput(v) === null).toBe(parcelGroupValue(v) === null);
+    for (const v of ["Tidak Ada", "Tidak  Ada", "Tidak\u00a0 Ada", "-", "KT Maju", "  ", "n/a", "none", "0"]) expect(cleanGroupInput(v) === null).toBe(parcelGroupValue(v) === null);
   });
 });
 

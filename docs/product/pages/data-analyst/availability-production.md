@@ -68,7 +68,7 @@ Tiga kueri paralel saat halaman dibuka: daftar Lembaga (Prisma) + penyebut per L
 
 ## Ekspor Excel (K6)
 
-`exportMultiSheetToExcel` (client, `exceljs` dinamis). **Sheet 1** `Lembaga <tahun>`: Distrik · Kategori · Lembaga · Kode (urutan owner 2026-10-11), petani, lahan aktif, lahan non-PSR, 12 kolom % (atau "n rec" / kosong), bulan ber-data, periode pertama/terakhir, jeda, record, Estimasi, 0 kg, tanpa persil — mengikuti filter & urutan layar. **Sheet 2** `Lahan <abrv>`: lahan × bulan (kg) + pemilik untuk Lembaga yang difilter (`getProductionAvailabilityGroupParcels`); tanpa filter Lembaga → satu baris petunjuk. Nama berkas `ketersediaan-produksi-<tahun>[-<abrv>]-<yyyymmdd>.xlsx`.
+`exportMultiSheetToExcel` (client, `exceljs` dinamis). **Sheet 1** `Lembaga <tahun>`: Distrik · Kategori · Lembaga · Kode (urutan owner 2026-10-11), petani, lahan aktif, lahan non-PSR, 12 kolom % (angka atau kosong — penyebut non-PSR 0 → kosong + kolom **Catatan**, bukan teks "n rec" di kolom angka), bulan ber-data, periode pertama/terakhir & jeda (rentang penuh), **Record/Estimasi/0 kg/tanpa persil `<tahun>`** (`summarizeYear` — per tahun terpilih, satu cakupan dengan Sheet 2; keputusan owner 2026-10-12, review pra-rilis), Catatan (`percentUnavailableNote`) — mengikuti filter & urutan layar. Sheet 2 lewat aksi ber-guard **EXPORT** di server. **Sheet 2** `Lahan <abrv>`: lahan × bulan (kg) + pemilik untuk Lembaga yang difilter (`getProductionAvailabilityGroupParcels`); tanpa filter Lembaga → satu baris petunjuk. Nama berkas `ketersediaan-produksi-<tahun>[-<abrv>]-<yyyymmdd>.xlsx`.
 
 ## Tindak lanjut (epic #415)
 

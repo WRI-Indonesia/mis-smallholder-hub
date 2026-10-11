@@ -9,6 +9,8 @@ import {
   periodsOfYear,
   sortProductionGroups,
   summarizeRange,
+  summarizeYear,
+  percentUnavailableNote,
   yearCoverageAvg,
   yearOfPeriod,
 } from "@/lib/production-availability";
@@ -197,3 +199,28 @@ describe("production-availability — temuan review #416", () => {
     expect(sortProductionGroups([n, a, b], "months", false, 2026, "2026-05").map((g) => g.id)).toEqual(["a", "b", "n"]);
   });
 });
+
+describe("production-availability — Excel Sheet 1 per tahun (review pra-rilis v1.7.0, owner 2026-10-12)", () => {
+  it("summarizeYear menghitung hanya sel tahun terpilih; rentang penuh tetap di summarizeRange", () => {
+    const cells = [
+      cell("2025-11", { records: 5, estimateRecords: 2, zeroRecords: 1, noParcelRecords: 1 }),
+      cell("2026-01", { records: 3, estimateRecords: 1 }),
+      cell("2026-02", { records: 4, zeroRecords: 2 }),
+    ];
+    const y = summarizeYear(cells, 2026, "2026-10");
+    expect(y.totalRecords).toBe(7);
+    expect(y.estimateRecords).toBe(1);
+    expect(y.zeroRecords).toBe(2);
+    expect(y.noParcelRecords).toBe(0);
+    expect(summarizeRange(cells, "2026-10").totalRecords).toBe(12);
+    expect(summarizeYear(cells, 2024, "2026-10").totalRecords).toBe(0);
+  });
+
+  it("catatan % tak dihitung hanya bila penyebut non-PSR 0 DAN ada record tahun itu", () => {
+    expect(percentUnavailableNote(10, 12, 50)).toBe("");
+    expect(percentUnavailableNote(0, 4, 0)).toBe("");
+    expect(percentUnavailableNote(0, 4, 72)).toMatch(/Semua lahan PSR/);
+    expect(percentUnavailableNote(0, 0, 3)).toMatch(/Tanpa lahan aktif/);
+  });
+});
+
