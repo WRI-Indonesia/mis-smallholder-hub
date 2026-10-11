@@ -115,7 +115,49 @@ export function filterProductionGroups(
   });
 }
 
-/** Kunci urut baris Lembaga: cakupan tahun terpilih (rata-rata 12 bulan) terendah dulu, atau nama. */
+/** Baris agregat Distrik (tingkat teratas pohon, usulan owner 2026-10-11): sel = jumlah sel Lembaga-Lembaganya. */
+export interface ProductionAvailabilityDistrictRow {
+  id: string;
+  name: string;
+  totalFarmers: number;
+  totalParcels: number;
+  nonPsrParcels: number;
+  cells: ProductionCellStats[];
+  groups: ProductionAvailabilityGroupRow[];
+}
+
+/** Jumlahkan sel per periode dari beberapa deretan (Lembaga → Distrik). */
+export function mergeCells(lists: ProductionCellStats[][]): ProductionCellStats[] {
+  const acc = new Map<string, ProductionCellStats>();
+  for (const cells of lists) for (const c of cells) {
+    const m = acc.get(c.period) ?? { period: c.period, parcelsReporting: 0, records: 0, linkedRecords: 0, kg: 0, zeroRecords: 0, estimateRecords: 0, noParcelRecords: 0 };
+    m.parcelsReporting += c.parcelsReporting;
+    m.records += c.records;
+    m.linkedRecords += c.linkedRecords;
+    m.kg += c.kg;
+    m.zeroRecords += c.zeroRecords;
+    m.estimateRecords += c.estimateRecords;
+    m.noParcelRecords += c.noParcelRecords;
+    acc.set(c.period, m);
+  }
+  return [...acc.values()].sort((a, b) => a.period.localeCompare(b.period));
+}
+
+/** Kelompokkan baris Lembaga (yang sudah difilter & diurut) per Distrik; urutan Lembaga di dalamnya dipertahankan. */
+export function groupRowsByDistrict(groups: ProductionAvailabilityGroupRow[]): ProductionAvailabilityDistrictRow[] {
+  const byId = new Map<string, ProductionAvailabilityDistrictRow>();
+  for (const g of groups) {
+    const d = byId.get(g.districtId) ?? { id: g.districtId, name: g.districtName, totalFarmers: 0, totalParcels: 0, nonPsrParcels: 0, cells: [], groups: [] };
+    d.totalFarmers += g.totalFarmers;
+    d.totalParcels += g.totalParcels;
+    d.nonPsrParcels += g.nonPsrParcels;
+    d.groups.push(g);
+    byId.set(g.districtId, d);
+  }
+  return [...byId.values()].map((d) => ({ ...d, cells: mergeCells(d.groups.map((g) => g.cells)) }));
+}
+
+/** Kunci urut baris Lembaga/Distrik: cakupan tahun terpilih (rata-rata 12 bulan) terendah dulu, atau nama. */
 export type ProductionSortKey = "coverage" | "name" | "months" | "last";
 
 /** Rata-rata % cakupan 12 bulan tahun terpilih (bulan tanpa record = 0; penyebut 0 → null). */
@@ -129,13 +171,21 @@ export function yearCoverageAvg(row: { cells: ProductionCellStats[]; nonPsrParce
   return sum / periods.length;
 }
 
-export function sortProductionGroups(
-  groups: ProductionAvailabilityGroupRow[],
+/** Bentuk minimal baris yang bisa diurut — dipakai baris Lembaga maupun Distrik. */
+export interface SortableProductionRow {
+  id: string;
+  name: string;
+  nonPsrParcels: number;
+  cells: ProductionCellStats[];
+}
+
+export function sortProductionGroups<T extends SortableProductionRow>(
+  groups: T[],
   key: ProductionSortKey,
   asc: boolean,
   year: number,
   referencePeriod: string,
-): ProductionAvailabilityGroupRow[] {
+): T[] {
   const dir = asc ? 1 : -1;
   const summary = new Map(groups.map((g) => [g.id, summarizeRange(g.cells, referencePeriod)]));
   // Nilai tak terdefinisi (tanpa lahan non-PSR / tanpa record) selalu di bawah

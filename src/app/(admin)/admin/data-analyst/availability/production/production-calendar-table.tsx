@@ -16,6 +16,7 @@ import {
   coveragePct,
   periodsOfYear,
   summarizeRange,
+  type ProductionAvailabilityDistrictRow,
   type ProductionSortKey,
 } from "@/lib/production-availability";
 import { getProductionAvailabilityFarmers, getProductionAvailabilityParcels } from "@/server/actions/production-availability";
@@ -135,6 +136,7 @@ const monthsWithRecords = (cells: { period: string; records: number }[], periods
 
 export function ProductionCalendarTable({
   groups,
+  districts,
   year,
   referencePeriod,
   sortKey,
@@ -142,6 +144,8 @@ export function ProductionCalendarTable({
   emptyMessage,
 }: {
   groups: ProductionAvailabilityGroupRow[];
+  /** Baris Distrik (tingkat teratas) atau `null` = tanpa tingkat Distrik. */
+  districts: ProductionAvailabilityDistrictRow[] | null;
   year: number;
   referencePeriod: string;
   sortKey: ProductionSortKey;
@@ -152,6 +156,15 @@ export function ProductionCalendarTable({
   // Cache anak berkunci tahun — ganti tahun tidak membuang yang sudah dimuat untuk tahun lain.
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedFarmers, setExpandedFarmers] = useState<Set<string>>(new Set());
+  // Distrik bawaan TERBUKA (himpunan yang ditutup, bukan yang dibuka — Distrik yang
+  // baru muncul karena filter berubah ikut terbuka tanpa klik).
+  const [collapsedDistricts, setCollapsedDistricts] = useState<Set<string>>(new Set());
+  const toggleDistrict = (id: string) => {
+    const next = new Set(collapsedDistricts);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setCollapsedDistricts(next);
+  };
   const [farmers, setFarmers] = useState<Map<string, Loaded<ProductionAvailabilityFarmerRow[]>>>(new Map());
   const [parcels, setParcels] = useState<Map<string, Loaded<ProductionAvailabilityParcelsResult>>>(new Map());
 
@@ -219,6 +232,165 @@ export function ProductionCalendarTable({
     </tr>
   );
 
+  const renderGroup = (g: ProductionAvailabilityGroupRow, depth: number) => {
+    const open = expandedGroups.has(g.id);
+    const sum = summarizeRange(g.cells, referencePeriod);
+    const monthsYear = sum.monthsByYear[String(year)] ?? 0;
+    const kids = farmers.get(`${year}:${g.id}`);
+    return (
+      <Fragment key={g.id}>
+        <tr className="group/row align-middle">
+          <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
+            <div className="flex h-7 min-w-0 items-center gap-1" style={indent(depth)}>
+              <button
+                type="button"
+                onClick={() => toggleGroup(g.id)}
+                aria-expanded={open}
+                aria-label={`${open ? "Tutup" : "Buka"} petani ${g.name}`}
+                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                disabled={g.totalFarmers === 0}
+                title={g.totalFarmers === 0 ? "Tidak ada petani aktif" : `${formatNumber(g.totalFarmers)} petani`}
+              >
+                <ChevronRight className={cn("h-4 w-4 transition-transform", open && "rotate-90", g.totalFarmers === 0 && "opacity-30")} />
+              </button>
+              <Link
+                href={`/admin/data-analyst/data-completeness?lembaga=${g.id}`}
+                className="flex min-w-0 items-center gap-1 font-medium leading-tight text-primary hover:underline"
+                title={`${g.name} — buka Ketersediaan Data › Per Lembaga`}
+              >
+                <span className="truncate">{g.name}</span>
+                <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
+              </Link>
+              <span className="shrink-0 truncate text-[11px] text-muted-foreground">
+                {g.code ? `${g.code} · ` : ""}
+                {g.districtName}
+              </span>
+            </div>
+          </td>
+          <td className="px-1 py-0 text-right text-xs tabular-nums text-muted-foreground" title={`${formatNumber(g.nonPsrParcels)} lahan non-PSR dari ${formatNumber(g.totalParcels)} lahan aktif · ${formatNumber(g.totalFarmers)} petani`}>
+            {formatNumber(g.nonPsrParcels)}
+          </td>
+          {periods.map((p) => (
+            <td key={p} className="p-0">
+              <CoverageCell cell={cellAt(g.cells, p)} nonPsrParcels={g.nonPsrParcels} period={p} owner={g.name} />
+            </td>
+          ))}
+          <td className="px-1 py-0 text-center text-xs tabular-nums" title={`Bulan ber-data per tahun: ${Object.entries(sum.monthsByYear).map(([y, n]) => `${y}: ${n}`).join(" · ") || "—"}`}>
+            <span className={cn(monthsYear === 12 && "font-semibold text-emerald-700 dark:text-emerald-400")}>{monthsYear}</span>
+            <span className="text-muted-foreground">/12</span>
+          </td>
+          <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">
+            {sum.firstPeriod ? `${sum.firstPeriod} – ${sum.lastPeriod}` : "—"}
+          </td>
+          <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : "text-muted-foreground")} title={sum.gapMonths == null ? "Tidak ada record" : `${sum.gapMonths} bulan sejak ${sum.lastPeriod}${sum.stale ? " — basi" : ""}`}>
+            {sum.gapMonths == null ? "—" : sum.gapMonths}
+          </td>
+          <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.estimateRecords > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")} title={`${formatNumber(sum.estimateRecords)} dari ${formatNumber(sum.totalRecords)} record berlabel Estimasi`}>
+            {sum.totalRecords > 0 ? `${formatNumber(Math.round(sum.estimatePct))}%` : "—"}
+          </td>
+          <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.noParcelRecords > 0 ? "text-slate-700 dark:text-slate-200" : "text-muted-foreground")} title={`${formatNumber(sum.noParcelRecords)} record tanpa ID Lahan`}>
+            {sum.noParcelRecords > 0 ? formatNumber(sum.noParcelRecords) : "—"}
+          </td>
+        </tr>
+
+        {open && kids?.state === "loading" && stateRow(depth + 1, <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat petani…</span>, `${g.id}-loading`)}
+        {open && kids?.state === "error" && stateRow(depth + 1, <span className="text-destructive">{kids.message}</span>, `${g.id}-error`)}
+        {open && kids?.state === "ready" && kids.data.length === 0 && stateRow(depth + 1, "Tidak ada petani aktif dalam cakupan akses Anda.", `${g.id}-empty`)}
+        {open &&
+          kids?.state === "ready" &&
+          kids.data.map((f) => {
+            const fOpen = expandedFarmers.has(f.id);
+            const fKids = parcels.get(`${year}:${f.id}`);
+            const fMonths = monthsWithRecords(f.cells, periods);
+            const fLast = [...f.cells].filter((c) => c.records > 0).map((c) => c.period).sort().pop();
+            return (
+              <Fragment key={f.id}>
+                <tr className="group/row align-middle text-[13px]">
+                  <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
+                    <div className="flex h-6 min-w-0 items-center gap-1" style={indent(depth + 1)}>
+                      <button
+                        type="button"
+                        onClick={() => toggleFarmer(f.id)}
+                        aria-expanded={fOpen}
+                        aria-label={`${fOpen ? "Tutup" : "Buka"} lahan ${f.name}`}
+                        className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", fOpen && "rotate-90")} />
+                      </button>
+                      <Link href={`/admin/master-data/farmers/${f.id}`} className="truncate hover:underline" title={`${f.name} · ${f.farmerCode} — buka Detail Petani`}>
+                        {f.name}
+                      </Link>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">{f.farmerCode}</span>
+                    </div>
+                  </td>
+                  <td className="px-1 py-0 text-right text-[11px] tabular-nums text-muted-foreground" title={`${formatNumber(f.nonPsrParcels)} lahan non-PSR dari ${formatNumber(f.totalParcels)} lahan aktif`}>
+                    {formatNumber(f.nonPsrParcels)}
+                  </td>
+                  {periods.map((p) => (
+                    <td key={p} className="p-0">
+                      <CoverageCell cell={cellAt(f.cells, p)} nonPsrParcels={f.nonPsrParcels} period={p} owner={f.name} />
+                    </td>
+                  ))}
+                  <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{fMonths}/12</td>
+                  <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{fLast ?? "—"}</td>
+                  <td className="px-1 py-0" />
+                  <td className="px-1 py-0" />
+                  <td className="px-1 py-0" />
+                </tr>
+                {fOpen && fKids?.state === "loading" && stateRow(depth + 2, <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat lahan…</span>, `${f.id}-loading`)}
+                {fOpen && fKids?.state === "error" && stateRow(depth + 2, <span className="text-destructive">{fKids.message}</span>, `${f.id}-error`)}
+                {fOpen && fKids?.state === "ready" && fKids.data.parcels.length === 0 && fKids.data.noParcel.length === 0 && stateRow(depth + 2, "Petani ini belum punya lahan aktif maupun record produksi.", `${f.id}-empty`)}
+                {fOpen &&
+                  fKids?.state === "ready" &&
+                  fKids.data.parcels.map((p) => (
+                    <tr key={p.id} className={cn("group/row align-middle text-xs", p.isPsr && "text-muted-foreground")}>
+                      <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
+                        <div className="flex h-6 min-w-0 items-center gap-2" style={indent(depth + 2)}>
+                          <span className="inline-block w-4" />
+                          <Link href={`/admin/master-data/parcels/${p.id}`} className="truncate font-mono text-[11px] hover:underline" title={`${p.parcelCode} — buka Detail Lahan`}>
+                            {p.parcelCode}
+                          </Link>
+                          {p.isPsr && <span className="rounded bg-muted px-1 text-[9px] font-semibold uppercase" title="PSR (peremajaan) — dikecualikan dari persen cakupan">PSR</span>}
+                          {!p.isOwn && <span className="rounded bg-amber-100 px-1 text-[9px] font-semibold text-amber-900 dark:bg-amber-900/40 dark:text-amber-200" title="Lahan ini bukan lahan aktif petani ini (milik petani lain atau revisi lama) tetapi ditunjuk record-nya">lain</span>}
+                        </div>
+                      </td>
+                      <td className="px-1 py-0 text-right text-[11px] tabular-nums text-muted-foreground" title="Luas (ha)">
+                        {p.area != null ? formatArea(p.area) : "—"}
+                      </td>
+                      {periods.map((per) => (
+                        <td key={per} className="p-0">
+                          <ParcelCell cell={cellAt(p.cells, per)} period={per} isPsr={p.isPsr} href={productionHref(g.id, per, f.farmerCode)} />
+                        </td>
+                      ))}
+                      <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{monthsWithRecords(p.cells, periods)}/12</td>
+                      <td className="px-1 py-0" colSpan={4} />
+                    </tr>
+                  ))}
+                {fOpen && fKids?.state === "ready" && fKids.data.noParcel.length > 0 && (
+                  <tr key={`${f.id}-np`} className="group/row align-middle text-xs text-muted-foreground">
+                    <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
+                      <div className="flex h-6 min-w-0 items-center gap-2" style={indent(depth + 2)}>
+                        <span className="inline-block w-4" />
+                        <span className="italic" title="Record petani ini yang tidak ber-ID Lahan — tidak masuk persen cakupan">Tanpa persil</span>
+                        <Marker kind="noParcel" />
+                      </div>
+                    </td>
+                    <td className="px-1 py-0" />
+                    {periods.map((per) => (
+                      <td key={per} className="p-0">
+                        <ParcelCell cell={cellAt(fKids.data.noParcel, per)} period={per} isPsr={false} href={productionHref(g.id, per, f.farmerCode)} />
+                      </td>
+                    ))}
+                    <td className="px-1 py-0 text-center text-[11px] tabular-nums">{monthsWithRecords(fKids.data.noParcel, periods)}/12</td>
+                    <td className="px-1 py-0" colSpan={4} />
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
+      </Fragment>
+    );
+  };
   if (groups.length === 0) {
     return <div className="flex min-h-[160px] items-center justify-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -240,7 +412,7 @@ export function ProductionCalendarTable({
         </colgroup>
         <thead>
           <tr className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <th className="py-1.5 pr-3 text-left font-semibold">{headBtn("name", "Lembaga Petani")}</th>
+            <th className="py-1.5 pr-3 text-left font-semibold">{headBtn("name", districts ? "Distrik / Lembaga Petani" : "Lembaga Petani")}</th>
             <th className="px-1 py-1.5 text-right font-semibold" title="Lahan aktif non-PSR — penyebut persen cakupan">Lahan</th>
             {periods.map((p, i) => (
               <th key={p} className="px-0 py-1.5 text-center font-semibold" title={`${MONTH_NAMES_ID[i]} ${year}`}>
@@ -255,165 +427,58 @@ export function ProductionCalendarTable({
           </tr>
         </thead>
         <tbody>
-          {groups.map((g) => {
-            const open = expandedGroups.has(g.id);
-            const sum = summarizeRange(g.cells, referencePeriod);
-            const monthsYear = sum.monthsByYear[String(year)] ?? 0;
-            const kids = farmers.get(`${year}:${g.id}`);
-            return (
-              <Fragment key={g.id}>
-                <tr className="group/row align-middle">
-                  <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
-                    <div className="flex h-7 min-w-0 items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => toggleGroup(g.id)}
-                        aria-expanded={open}
-                        aria-label={`${open ? "Tutup" : "Buka"} petani ${g.name}`}
-                        className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                        disabled={g.totalFarmers === 0}
-                        title={g.totalFarmers === 0 ? "Tidak ada petani aktif" : `${formatNumber(g.totalFarmers)} petani`}
-                      >
-                        <ChevronRight className={cn("h-4 w-4 transition-transform", open && "rotate-90", g.totalFarmers === 0 && "opacity-30")} />
-                      </button>
-                      <Link
-                        href={`/admin/data-analyst/data-completeness?lembaga=${g.id}`}
-                        className="flex min-w-0 items-center gap-1 font-medium leading-tight text-primary hover:underline"
-                        title={`${g.name} — buka Ketersediaan Data › Per Lembaga`}
-                      >
-                        <span className="truncate">{g.name}</span>
-                        <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
-                      </Link>
-                      <span className="shrink-0 truncate text-[11px] text-muted-foreground">
-                        {g.code ? `${g.code} · ` : ""}
-                        {g.districtName}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-1 py-0 text-right text-xs tabular-nums text-muted-foreground" title={`${formatNumber(g.nonPsrParcels)} lahan non-PSR dari ${formatNumber(g.totalParcels)} lahan aktif · ${formatNumber(g.totalFarmers)} petani`}>
-                    {formatNumber(g.nonPsrParcels)}
-                  </td>
-                  {periods.map((p) => (
-                    <td key={p} className="p-0">
-                      <CoverageCell cell={cellAt(g.cells, p)} nonPsrParcels={g.nonPsrParcels} period={p} owner={g.name} />
-                    </td>
-                  ))}
-                  <td className="px-1 py-0 text-center text-xs tabular-nums" title={`Bulan ber-data per tahun: ${Object.entries(sum.monthsByYear).map(([y, n]) => `${y}: ${n}`).join(" · ") || "—"}`}>
-                    <span className={cn(monthsYear === 12 && "font-semibold text-emerald-700 dark:text-emerald-400")}>{monthsYear}</span>
-                    <span className="text-muted-foreground">/12</span>
-                  </td>
-                  <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">
-                    {sum.firstPeriod ? `${sum.firstPeriod} – ${sum.lastPeriod}` : "—"}
-                  </td>
-                  <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : "text-muted-foreground")} title={sum.gapMonths == null ? "Tidak ada record" : `${sum.gapMonths} bulan sejak ${sum.lastPeriod}${sum.stale ? " — basi" : ""}`}>
-                    {sum.gapMonths == null ? "—" : sum.gapMonths}
-                  </td>
-                  <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.estimateRecords > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")} title={`${formatNumber(sum.estimateRecords)} dari ${formatNumber(sum.totalRecords)} record berlabel Estimasi`}>
-                    {sum.totalRecords > 0 ? `${formatNumber(Math.round(sum.estimatePct))}%` : "—"}
-                  </td>
-                  <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.noParcelRecords > 0 ? "text-slate-700 dark:text-slate-200" : "text-muted-foreground")} title={`${formatNumber(sum.noParcelRecords)} record tanpa ID Lahan`}>
-                    {sum.noParcelRecords > 0 ? formatNumber(sum.noParcelRecords) : "—"}
-                  </td>
-                </tr>
-
-                {open && kids?.state === "loading" && stateRow(1, <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat petani…</span>, `${g.id}-loading`)}
-                {open && kids?.state === "error" && stateRow(1, <span className="text-destructive">{kids.message}</span>, `${g.id}-error`)}
-                {open && kids?.state === "ready" && kids.data.length === 0 && stateRow(1, "Tidak ada petani aktif dalam cakupan akses Anda.", `${g.id}-empty`)}
-                {open &&
-                  kids?.state === "ready" &&
-                  kids.data.map((f) => {
-                    const fOpen = expandedFarmers.has(f.id);
-                    const fKids = parcels.get(`${year}:${f.id}`);
-                    const fMonths = monthsWithRecords(f.cells, periods);
-                    const fLast = [...f.cells].filter((c) => c.records > 0).map((c) => c.period).sort().pop();
-                    return (
-                      <Fragment key={f.id}>
-                        <tr className="group/row align-middle text-[13px]">
-                          <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
-                            <div className="flex h-6 min-w-0 items-center gap-1" style={indent(1)}>
-                              <button
-                                type="button"
-                                onClick={() => toggleFarmer(f.id)}
-                                aria-expanded={fOpen}
-                                aria-label={`${fOpen ? "Tutup" : "Buka"} lahan ${f.name}`}
-                                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                              >
-                                <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", fOpen && "rotate-90")} />
-                              </button>
-                              <Link href={`/admin/master-data/farmers/${f.id}`} className="truncate hover:underline" title={`${f.name} · ${f.farmerCode} — buka Detail Petani`}>
-                                {f.name}
-                              </Link>
-                              <span className="shrink-0 text-[10px] text-muted-foreground">{f.farmerCode}</span>
-                            </div>
-                          </td>
-                          <td className="px-1 py-0 text-right text-[11px] tabular-nums text-muted-foreground" title={`${formatNumber(f.nonPsrParcels)} lahan non-PSR dari ${formatNumber(f.totalParcels)} lahan aktif`}>
-                            {formatNumber(f.nonPsrParcels)}
-                          </td>
-                          {periods.map((p) => (
-                            <td key={p} className="p-0">
-                              <CoverageCell cell={cellAt(f.cells, p)} nonPsrParcels={f.nonPsrParcels} period={p} owner={f.name} />
-                            </td>
-                          ))}
-                          <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{fMonths}/12</td>
-                          <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{fLast ?? "—"}</td>
-                          <td className="px-1 py-0" />
-                          <td className="px-1 py-0" />
-                          <td className="px-1 py-0" />
-                        </tr>
-                        {fOpen && fKids?.state === "loading" && stateRow(2, <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat lahan…</span>, `${f.id}-loading`)}
-                        {fOpen && fKids?.state === "error" && stateRow(2, <span className="text-destructive">{fKids.message}</span>, `${f.id}-error`)}
-                        {fOpen && fKids?.state === "ready" && fKids.data.parcels.length === 0 && fKids.data.noParcel.length === 0 && stateRow(2, "Petani ini belum punya lahan aktif maupun record produksi.", `${f.id}-empty`)}
-                        {fOpen &&
-                          fKids?.state === "ready" &&
-                          fKids.data.parcels.map((p) => (
-                            <tr key={p.id} className={cn("group/row align-middle text-xs", p.isPsr && "text-muted-foreground")}>
-                              <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
-                                <div className="flex h-6 min-w-0 items-center gap-2" style={indent(2)}>
-                                  <span className="inline-block w-4" />
-                                  <Link href={`/admin/master-data/parcels/${p.id}`} className="truncate font-mono text-[11px] hover:underline" title={`${p.parcelCode} — buka Detail Lahan`}>
-                                    {p.parcelCode}
-                                  </Link>
-                                  {p.isPsr && <span className="rounded bg-muted px-1 text-[9px] font-semibold uppercase" title="PSR (peremajaan) — dikecualikan dari persen cakupan">PSR</span>}
-                                  {!p.isOwn && <span className="rounded bg-amber-100 px-1 text-[9px] font-semibold text-amber-900 dark:bg-amber-900/40 dark:text-amber-200" title="Lahan ini bukan lahan aktif petani ini (milik petani lain atau revisi lama) tetapi ditunjuk record-nya">lain</span>}
-                                </div>
-                              </td>
-                              <td className="px-1 py-0 text-right text-[11px] tabular-nums text-muted-foreground" title="Luas (ha)">
-                                {p.area != null ? formatArea(p.area) : "—"}
-                              </td>
-                              {periods.map((per) => (
-                                <td key={per} className="p-0">
-                                  <ParcelCell cell={cellAt(p.cells, per)} period={per} isPsr={p.isPsr} href={productionHref(g.id, per, f.farmerCode)} />
-                                </td>
-                              ))}
-                              <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{monthsWithRecords(p.cells, periods)}/12</td>
-                              <td className="px-1 py-0" colSpan={4} />
-                            </tr>
-                          ))}
-                        {fOpen && fKids?.state === "ready" && fKids.data.noParcel.length > 0 && (
-                          <tr key={`${f.id}-np`} className="group/row align-middle text-xs text-muted-foreground">
-                            <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
-                              <div className="flex h-6 min-w-0 items-center gap-2" style={indent(2)}>
-                                <span className="inline-block w-4" />
-                                <span className="italic" title="Record petani ini yang tidak ber-ID Lahan — tidak masuk persen cakupan">Tanpa persil</span>
-                                <Marker kind="noParcel" />
-                              </div>
-                            </td>
-                            <td className="px-1 py-0" />
-                            {periods.map((per) => (
-                              <td key={per} className="p-0">
-                                <ParcelCell cell={cellAt(fKids.data.noParcel, per)} period={per} isPsr={false} href={productionHref(g.id, per, f.farmerCode)} />
-                              </td>
-                            ))}
-                            <td className="px-1 py-0 text-center text-[11px] tabular-nums">{monthsWithRecords(fKids.data.noParcel, periods)}/12</td>
-                            <td className="px-1 py-0" colSpan={4} />
-                          </tr>
-                        )}
-                      </Fragment>
-                    );
-                  })}
-              </Fragment>
-            );
-          })}
+          {districts
+            ? districts.map((d) => {
+                const open = !collapsedDistricts.has(d.id);
+                const sum = summarizeRange(d.cells, referencePeriod);
+                const monthsYear = sum.monthsByYear[String(year)] ?? 0;
+                return (
+                  <Fragment key={d.id}>
+                    <tr className="group/row align-middle bg-muted/20 font-medium">
+                      <td className="rounded-md px-1 py-0 pr-2 transition-colors group-hover/row:bg-muted/50">
+                        <div className="flex h-7 min-w-0 items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleDistrict(d.id)}
+                            aria-expanded={open}
+                            aria-label={`${open ? "Tutup" : "Buka"} Lembaga di ${d.name}`}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            <ChevronRight className={cn("h-4 w-4 transition-transform", open && "rotate-90")} />
+                          </button>
+                          <span className="truncate">{d.name}</span>
+                          <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
+                            {formatNumber(d.groups.length)} Lembaga · {formatNumber(d.totalFarmers)} petani
+                          </span>
+                          <span className="ml-1 shrink-0 text-[10px] font-normal uppercase tracking-wider text-muted-foreground/70">Distrik</span>
+                        </div>
+                      </td>
+                      <td className="px-1 py-0 text-right text-xs tabular-nums text-muted-foreground" title={`${formatNumber(d.nonPsrParcels)} lahan non-PSR dari ${formatNumber(d.totalParcels)} lahan aktif`}>
+                        {formatNumber(d.nonPsrParcels)}
+                      </td>
+                      {periods.map((p) => (
+                        <td key={p} className="p-0">
+                          <CoverageCell cell={cellAt(d.cells, p)} nonPsrParcels={d.nonPsrParcels} period={p} owner={`Distrik ${d.name}`} />
+                        </td>
+                      ))}
+                      <td className="px-1 py-0 text-center text-xs tabular-nums" title={`Bulan ber-data per tahun (gabungan Lembaga): ${Object.entries(sum.monthsByYear).map(([y, n]) => `${y}: ${n}`).join(" · ") || "—"}`}>
+                        <span className={cn(monthsYear === 12 && "font-semibold text-emerald-700 dark:text-emerald-400")}>{monthsYear}</span>
+                        <span className="text-muted-foreground">/12</span>
+                      </td>
+                      <td className="px-1 py-0 text-center text-[11px] tabular-nums text-muted-foreground">{sum.firstPeriod ? `${sum.firstPeriod} – ${sum.lastPeriod}` : "—"}</td>
+                      <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.stale ? "font-semibold text-rose-600" : "text-muted-foreground")}>{sum.gapMonths == null ? "—" : sum.gapMonths}</td>
+                      <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.estimateRecords > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
+                        {sum.totalRecords > 0 ? `${formatNumber(Math.round(sum.estimatePct))}%` : "—"}
+                      </td>
+                      <td className={cn("px-1 py-0 text-center text-xs tabular-nums", sum.noParcelRecords > 0 ? "text-slate-700 dark:text-slate-200" : "text-muted-foreground")}>
+                        {sum.noParcelRecords > 0 ? formatNumber(sum.noParcelRecords) : "—"}
+                      </td>
+                    </tr>
+                    {open && d.groups.map((g) => renderGroup(g, 1))}
+                  </Fragment>
+                );
+              })
+            : groups.map((g) => renderGroup(g, 0))}
         </tbody>
       </table>
     </div>

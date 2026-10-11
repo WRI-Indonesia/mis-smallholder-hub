@@ -22,7 +22,8 @@ Halaman: Ketersediaan Data — Produksi (/admin/data-analyst/availability/produc
     ├── Cari (client) · Urut (Select: cakupan | nama | bulan ber-data | periode terakhir) — ?urut= ?arah=
     ├── Tabel pohon (table-fixed, border-spacing 2px, min-w 1280)
     │   ├── Kolom: Lembaga · Lahan (non-PSR) · Jan…Des · Bulan (x/12) · Rentang · Jeda · Est. · TP
-    │   ├── Baris Lembaga — ▸ buka petani (lazy: getProductionAvailabilityFarmers) · nama → Per Lembaga ?lembaga=
+    │   ├── Baris Distrik (bawaan nyala, tombol "Per Distrik" / ?tingkat=lembaga mematikan; bawaan terbuka) — agregat `groupRowsByDistrict`/`mergeCells`: Σ lahan melapor ÷ Σ lahan non-PSR Lembaga-Lembaganya
+    │   ├── Baris Lembaga (depth 1 di bawah Distrik) — ▸ buka petani (lazy: getProductionAvailabilityFarmers) · nama → Per Lembaga ?lembaga=
     │   │   ├── Baris petani — ▸ buka lahan (lazy: getProductionAvailabilityParcels) · nama → Detail Petani
     │   │   │   ├── Baris lahan — kode → Detail Lahan · badge PSR / "lain" · sel kg → Master Data Produksi (?farmerGroupId&period&search)
     │   │   │   └── Baris semu "Tanpa persil" — record tanpa ID Lahan petani itu
@@ -50,6 +51,7 @@ Halaman: Ketersediaan Data — Produksi (/admin/data-analyst/availability/produc
 ## Aturan angka (K3–K5, K8)
 
 - **Sel Lembaga × bulan** = `COUNT(DISTINCT lahan aktif non-PSR yang ditunjuk record bulan itu) ÷ lahan aktif non-PSR Lembaga`, dibatasi 100 % (record boleh menunjuk lahan petani lain se-Lembaga). Penyebut 0 → persen `null`, sel abu "n rec". Tanpa record → sel kosong bergaris (bukan 0 % merah — K8).
+- **Baris Distrik** (usulan owner 2026-10-11): sel = Σ lahan melapor ÷ Σ lahan non-PSR semua Lembaga di distrik itu (gabungan sel lewat `mergeCells`); ringkasan rentang dari sel gabungan; ikut kunci urut yang sama.
 - **Baris petani**: rumus sama atas lahan aktif non-PSR miliknya. **Baris lahan**: Σ kg bulan itu; 0 kg merah; PSR dibisukan.
 - **Lahan melapor** hanya menghitung lahan **aktif** (`LEFT JOIN tbl_land_parcel … is_active`); record ke lahan revisi lama/hilang tetap masuk `records`/`kg`.
 - **Bulan ber-data** (kolom Bulan, urut "months") = `dataMonthsPerYear` dari `productivity-annualize.ts` — satu definisi dengan pembagi penyetahunan Peta BMP / Detail Lembaga / Profil Lahan. Input `linked` = record ber-persil.

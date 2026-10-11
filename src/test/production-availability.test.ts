@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   availableYears,
+  cellAt,
   coveragePct,
   filterProductionGroups,
+  groupRowsByDistrict,
+  mergeCells,
   periodsOfYear,
   sortProductionGroups,
   summarizeRange,
@@ -145,5 +148,33 @@ describe("production-availability — tahun, filter, urutan", () => {
   it("urut nama & periode terakhir, arah menurun membalik", () => {
     expect(sortProductionGroups([b, a], "name", true, 2026, "2026-03").map((g) => g.id)).toEqual(["a", "b"]);
     expect(sortProductionGroups([a, b, d], "last", false, 2026, "2026-03").map((g) => g.id)).toEqual(["b", "a", "d"]);
+  });
+});
+
+describe("production-availability — tingkat Distrik (owner 2026-10-11)", () => {
+  const a = group("a", 10, [cell("2026-01", { parcelsReporting: 4, estimateRecords: 1 })], { name: "Alpha", districtId: "d1", districtName: "Siak", totalFarmers: 5 });
+  const b = group("b", 20, [cell("2026-01", { parcelsReporting: 10 }), cell("2026-02", { parcelsReporting: 2, noParcelRecords: 1 })], { name: "Beta", districtId: "d1", districtName: "Siak", totalFarmers: 7 });
+  const c = group("c", 3, [cell("2025-12")], { name: "Gamma", districtId: "d2", districtName: "Kampar" });
+
+  it("mergeCells menjumlahkan tiap kolom per periode dan mengurutkan periode", () => {
+    const m = mergeCells([a.cells, b.cells]);
+    expect(m.map((x) => x.period)).toEqual(["2026-01", "2026-02"]);
+    expect(m[0]).toMatchObject({ parcelsReporting: 14, records: 2, estimateRecords: 1, kg: 200 });
+    expect(m[1]).toMatchObject({ parcelsReporting: 2, noParcelRecords: 1 });
+  });
+
+  it("groupRowsByDistrict: penyebut & petani dijumlah, urutan Lembaga dipertahankan, sel digabung", () => {
+    const d = groupRowsByDistrict([b, a, c]);
+    expect(d.map((x) => x.id)).toEqual(["d1", "d2"]);
+    expect(d[0]).toMatchObject({ name: "Siak", nonPsrParcels: 30, totalFarmers: 12, totalParcels: 30 });
+    expect(d[0].groups.map((g) => g.id)).toEqual(["b", "a"]);
+    expect(coveragePct(cellAt(d[0].cells, "2026-01")!.parcelsReporting, d[0].nonPsrParcels)).toBeCloseTo((14 / 30) * 100, 6);
+    expect(d[1].groups).toHaveLength(1);
+  });
+
+  it("baris Distrik bisa diurut dengan kunci yang sama (cakupan menaik)", () => {
+    const d = sortProductionGroups(groupRowsByDistrict([a, b, c]), "coverage", true, 2026, "2026-03");
+    // Kampar: 0 % di 2026 (record hanya 2025) → paling rendah; Siak 46,7 %/12.
+    expect(d.map((x) => x.name)).toEqual(["Kampar", "Siak"]);
   });
 });

@@ -13,7 +13,7 @@ goal: Anda tahu Lembaga mana yang data produksinya bolong di bulan apa, sejak ka
 
 Dua halaman Ketersediaan Data lainnya (**Semua Lembaga**, **Per Lembaga**) menjawab *seberapa lengkap* data sebuah Lembaga lewat skor 0–100. Halaman **Produksi** menjawab pertanyaan yang berbeda: **bulan apa saja** yang sudah punya data produksi, dan bulan mana yang bolong.
 
-Bentuknya kalender: satu baris per Lembaga, satu kolom per bulan dalam tahun yang dipilih. Angka di tiap sel adalah **persen lahan aktif non-PSR yang punya minimal satu record produksi pada bulan itu**, diwarnai dengan skala yang sama dengan heatmap Ketersediaan Data (merah < 50, kuning 50 – <80, hijau ≥ 80, hijau tua 100).
+Bentuknya kalender: satu baris per Lembaga (dikelompokkan di bawah baris **Distrik**-nya), satu kolom per bulan dalam tahun yang dipilih. Angka di tiap sel adalah **persen lahan aktif non-PSR yang punya minimal satu record produksi pada bulan itu**, diwarnai dengan skala yang sama dengan heatmap Ketersediaan Data (merah < 50, kuning 50 – <80, hijau ≥ 80, hijau tua 100).
 
 + Lahan **PSR** (peremajaan) dikecualikan dari persen karena produksi 0 di lahan yang baru ditanam ulang memang wajar. Lahan PSR tetap tampil di baris lahan, berwarna abu.
 + Record produksi yang **tidak punya ID Lahan** tidak bisa dihitung sebagai "lahan melapor". Jumlahnya tampil terpisah (penanda **TP** dan kolom **TP**) supaya tidak hilang dari pandangan.
@@ -24,7 +24,7 @@ Bentuknya kalender: satu baris per Lembaga, satu kolom per bulan dalam tahun yan
 1. Buka menu **Data Analyst → Ketersediaan Data → Produksi**.
 2. Pilih **Tahun** di kanan atas (bawaan: tahun berjalan). Pilihan tahun hanya tahun yang punya data, plus tahun berjalan.
 + Tahun, filter **Kategori / Distrik / Lembaga**, dan urutan tersimpan di alamat halaman, jadi tampilan bisa di-bookmark atau dikirim ke rekan.
-3. Baca kalender per Lembaga: sel **kosong bergaris putus-putus** = tidak ada record sama sekali bulan itu; sel berwarna = ada record, angkanya persen lahan yang melapor. Arahkan kursor ke sel untuk melihat rinciannya: lahan melapor ÷ lahan non-PSR, jumlah record, total kg, dan penanda.
+3. Baca kalender: baris **Distrik** (tebal, bawaan terbuka) adalah gabungan semua Lembaga di kabupaten itu — lahan melapor dan lahan non-PSR dijumlahkan, lalu dipersenkan; klik **▸** di depannya untuk melipat/membuka Lembaga-Lembaganya, atau matikan tombol **Per Distrik** di header tabel untuk daftar Lembaga rata. Baca sel per Lembaga: sel **kosong bergaris putus-putus** = tidak ada record sama sekali bulan itu; sel berwarna = ada record, angkanya persen lahan yang melapor. Arahkan kursor ke sel untuk melihat rinciannya: lahan melapor ÷ lahan non-PSR, jumlah record, total kg, dan penanda.
 + Sel abu bertuliskan *n rec* berarti Lembaga/petani itu **tidak punya lahan non-PSR** sehingga persen tidak bisa dihitung — yang ditampilkan jumlah record-nya.
 + Penanda kecil di pojok sel: **E** = ada record berlabel *Estimasi* (hasil impor rekap, bukan angka timbangan), **0** = ada record 0 kg, **TP** = ada record tanpa ID Lahan.
 4. Baca kolom ringkasan di kanan — ini memakai **seluruh rentang data**, bukan hanya tahun yang dipilih:
@@ -34,7 +34,7 @@ Bentuknya kalender: satu baris per Lembaga, satu kolom per bulan dalam tahun yan
 6. Klik **▸** di depan nama petani untuk membuka **lahan-lahannya**. Sel lahan berisi hasil (kg) bulan itu; **0** merah = record 0 kg; **E** = Estimasi. Baris *Tanpa persil* (bila ada) menampung record petani itu yang tidak ber-ID Lahan.
 + Klik angka kg untuk melompat ke **Master Data → Produksi** yang sudah terfilter Lembaga, periode, dan petani tersebut.
 + Label **lain** pada kode lahan berarti lahan itu bukan lahan aktif petani tersebut (milik petani lain atau revisi lama) tetapi ditunjuk oleh record-nya — biasanya ID Lahan salah ketik saat unggah.
-7. Ubah **Urut** untuk menata baris: *Cakupan tahun terpilih* (bawaan, terendah dulu), *Nama*, *Bulan ber-data*, atau *Periode terakhir*; klik judul kolom yang sama untuk membalik arah. Kotak **Cari** menyaring nama, kode, atau distrik Lembaga.
+7. Ubah **Urut** untuk menata baris (berlaku untuk Distrik maupun Lembaga di dalamnya): *Cakupan tahun terpilih* (bawaan, terendah dulu), *Nama*, *Bulan ber-data*, atau *Periode terakhir*; klik judul kolom yang sama untuk membalik arah. Kotak **Cari** menyaring nama, kode, atau distrik Lembaga.
 8. Klik **Excel** (bila punya izin ekspor). Sheet pertama = matriks Lembaga × bulan tahun terpilih beserta kolom ringkasan. Sheet kedua = rincian **lahan × bulan** untuk Lembaga yang sedang dipilih di filter; bila filter Lembaga "Semua", sheet kedua hanya berisi petunjuk untuk memilih satu Lembaga dulu.
 
 > [!hati-hati] Sel kosong berarti **belum ada record di sistem**, bukan berarti kebun tidak panen. Lembaga yang panennya rutin tetap tampil kosong bila hasil panennya belum diunggah lewat **Bulk Upload → Upload Data Produksi**.

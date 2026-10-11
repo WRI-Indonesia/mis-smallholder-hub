@@ -17,6 +17,7 @@ import {
   cellAt,
   coveragePct,
   filterProductionGroups,
+  groupRowsByDistrict,
   periodsOfYear,
   sortProductionGroups,
   summarizeRange,
@@ -68,6 +69,9 @@ export function ProductionAvailabilityClient({
   const sortParam = get("urut");
   const sortKey: ProductionSortKey = SORT_KEYS.includes(sortParam as ProductionSortKey) ? (sortParam as ProductionSortKey) : "coverage";
   const sortAsc = get("arah") !== "turun";
+  // Tingkat Distrik di atas Lembaga (usulan owner 2026-10-11) — bawaan nyala; `?tingkat=lembaga` mematikannya.
+  const byDistrict = get("tingkat") !== "lembaga";
+  const setByDistrict = (v: boolean) => setMany({ tingkat: v ? null : "lembaga" });
   const [query, setQuery] = useState("");
 
   const keepGroup = (nextDistrictId: string | null, nextCategory: BmpFarmerGroupCategory | null): Record<string, string | null> => {
@@ -101,6 +105,11 @@ export function ProductionAvailabilityClient({
   const rows = useMemo(
     () => sortProductionGroups(filterProductionGroups(allGroups, { districtId, category, groupId, query }), sortKey, sortAsc, year, view.referencePeriod),
     [allGroups, districtId, category, groupId, query, sortKey, sortAsc, year, view.referencePeriod],
+  );
+  // Baris Distrik ikut kunci urut yang sama; Lembaga di dalamnya sudah terurut dari `rows`.
+  const districts = useMemo(
+    () => (byDistrict ? sortProductionGroups(groupRowsByDistrict(rows), sortKey, sortAsc, year, view.referencePeriod) : null),
+    [byDistrict, rows, sortKey, sortAsc, year, view.referencePeriod],
   );
 
   // Ringkasan header: Lembaga tampil · yang basi · yang tanpa record tahun ini.
@@ -233,7 +242,7 @@ export function ProductionAvailabilityClient({
           </div>
           <p className="text-muted-foreground">
             Bulan apa saja yang sudah punya data produksi, per Lembaga Petani — data per{" "}
-            <span className="font-medium text-foreground">{formatGeneratedAt(view.generatedAt)}</span>. Angka sel = % lahan aktif non-PSR yang punya record bulan itu. Klik ▸ untuk membuka petani, lalu lahan.
+            <span className="font-medium text-foreground">{formatGeneratedAt(view.generatedAt)}</span>. Angka sel = % lahan aktif non-PSR yang punya record bulan itu. Tingkat: Distrik → Lembaga → petani → lahan; klik ▸ untuk membuka tingkat di bawahnya.
           </p>
         </div>
 
@@ -279,6 +288,7 @@ export function ProductionAvailabilityClient({
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm">
               <span className="font-medium">
+                {districts ? `${formatNumber(districts.length)} Distrik · ` : ""}
                 {formatNumber(rows.length)} Lembaga · tahun {year}
               </span>
               <span className="text-muted-foreground">
@@ -306,10 +316,13 @@ export function ProductionAvailabilityClient({
               <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setMany({ arah: sortAsc ? "turun" : null })} title="Balik arah urutan">
                 {sortAsc ? "Menaik" : "Menurun"}
               </Button>
+              <Button variant={byDistrict ? "secondary" : "ghost"} size="sm" className="h-8 text-xs" onClick={() => setByDistrict(!byDistrict)} aria-pressed={byDistrict} title="Tingkat Distrik di atas Lembaga (baris agregat per kabupaten)">
+                Per Distrik
+              </Button>
             </div>
           </div>
 
-          <ProductionCalendarTable groups={rows} year={year} referencePeriod={view.referencePeriod} sortKey={sortKey} onSort={onSort} emptyMessage={emptyMessage} />
+          <ProductionCalendarTable groups={rows} districts={districts} year={year} referencePeriod={view.referencePeriod} sortKey={sortKey} onSort={onSort} emptyMessage={emptyMessage} />
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
             <HeatLegend label="% lahan non-PSR melapor">
