@@ -32,8 +32,7 @@ import { AvailabilityRadarGrid } from "./availability-radar-grid";
 import { MODULE_SORT_PREFIX, sortKeyLabel, sortMatrixRows, sortModuleRows, useMatrixRows, type MatrixSortKey, type ModuleSortKey } from "./matrix-rows";
 import { MatrixToolbar, rowsSummary, type MatrixSortOption, type MatrixView } from "./matrix-toolbar";
 import { CATEGORY_LABELS } from "./domain-meta";
-import { AvailabilityDomainLaggards } from "./availability-domain-laggards";
-import { AvailabilityAnomalyPanel } from "./availability-anomaly-panel";
+import { AvailabilityWorklist, WORKLIST_TABS, type WorklistTab } from "./availability-worklist";
 import type { AvailabilityDomainKey, AvailabilityScoreBand, BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
 import { formatGeneratedAt, formatPct } from "@/lib/format";
 
@@ -103,6 +102,8 @@ export function DataAvailabilityClient({
       ? sortParam
       : "health";
   const sortAsc = get("arah") !== "turun";
+  const kerjaParam = get("kerja");
+  const worklistTab: WorklistTab = WORKLIST_TABS.includes(kerjaParam as WorklistTab) ? (kerjaParam as WorklistTab) : "sistemik";
   // Urutan Cakupan modul (#417 B): `?urut=modul:<key>`; selainnya Nama (bawaan lama tampilan modul).
   const moduleSortKey: ModuleSortKey =
     sortParam?.startsWith(MODULE_SORT_PREFIX) && MODULE_CATALOG.some((m) => `${MODULE_SORT_PREFIX}${m.key}` === sortParam)
@@ -388,10 +389,8 @@ export function DataAvailabilityClient({
         )}
       </div>
 
-      {/* Baris bawah ditumpuk penuh-lebar: kartu tertinggal pendek, panel anomali
-          tinggi — berdampingan menyisakan 2/3 baris kosong (masukan owner). */}
-      <AvailabilityDomainLaggards groups={groups} />
-      <AvailabilityAnomalyPanel groups={groups} />
+      {/* Daftar Kerja bertab (#417 C): satu tempat untuk aksi sistemik, anomali per entitas, dan Lembaga tertinggal. */}
+      <AvailabilityWorklist groups={groups} tab={worklistTab} onTabChange={(t) => setMany({ kerja: t === "sistemik" ? null : t })} />
     </div>
   );
 }
