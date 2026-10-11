@@ -20,7 +20,7 @@ Halaman: Upload Data Petani (/admin/bulk-upload/farmers)
 │   ├── Peringatan merah: "* Harap pilih Lembaga Petani di atas terlebih dahulu."
 │   └── Info berkas: "Tipe file terdeteksi: XLSX/CSV (N baris data)"
 ├── Petakan Kolom Data
-│   ├── Grid Select per target field (8 field, badge Wajib/Opsional)
+│   ├── Daftar ringkas pemetaan (8 field; label · pilihan kolom · contoh nilai baris pertama — #420)
 │   ├── Opsi "-- Kosongkan --" + placeholder "Pilih kolom..."
 │   ├── Auto-match via AUTO_MATCH_RULES
 │   └── Tombol "Validasi Data"
@@ -72,7 +72,7 @@ Halaman: Upload Data Petani (/admin/bulk-upload/farmers)
 | Catatan langkah 1 | Teks bantuan | *"Pilih Lembaga Petani tujuan terlebih dahulu sebelum mengunggah data."* |
 | "2. Pilih File Data Petani" | Card + Input `type="file"` | Disabled selama lembaga belum dipilih; peringatan merah *"* Harap pilih Lembaga Petani di atas terlebih dahulu."* |
 | Info berkas | Teks | *"Tipe file terdeteksi: **XLSX/CSV** (N baris data)"* |
-| "Petakan Kolom Data" | Card + grid Select per field | Subjudul *"Cocokkan kolom dari file unggahan Anda dengan data target sistem."*; tiap field punya badge `Wajib`/`Opsional`, placeholder *"Pilih kolom..."*, opsi *"-- Kosongkan --"*, dan teks bantuan |
+| "Petakan Kolom Data" | Card + `GroupedFieldMapping` (`src/components/shared/grouped-field-mapping.tsx`, #420) tanpa grup (daftar ringkas) | Subjudul *"Cocokkan kolom dari file unggahan Anda dengan data target sistem."*; tiap baris: label (wajib bertanda `*`) + teks bantuan, pilihan kolom (*"-- Kosongkan --"* = tidak dipetakan), contoh nilai baris pertama; wajib yang kosong bertanda *"Wajib dipetakan"*; ringkasan *"n/8 field terpetakan"*; ubah pemetaan mengosongkan hasil validasi |
 | Target field | 8 field | `ID Petani`* (min 2 karakter), `Nama Petani`* (min 2 karakter), `Jenis Kelamin`* (L/P atau Laki-laki/Perempuan), `NIK` (16 digit angka), `Tempat Lahir`, `Tanggal Lahir` (sel tanggal / serial Excel, teks `DD/MM/YYYY` atau `YYYY-MM-DD` — `parseExcelDate` di `src/lib/excel-cell.ts`, #400), `Alamat`, `Tahun Bergabung` (1900-2100) |
 | Auto-match kolom | Otomatis | `AUTO_MATCH_RULES` mencocokkan header file (lowercase, trim) ke target field saat berkas dibaca |
 | "Validasi Data" | Tombol | Disabled saat memproses, belum ada baris, atau daftar ID existing masih dimuat (`loadingExistingIds` — cegah race validasi sebelum `existingFarmerIds` siap); loading state *"Memproses..."*; jika ada kolom wajib belum dipetakan → toast *"Kolom wajib berikut belum dipetakan: …"*; sukses → toast *"Validasi selesai"* |

@@ -11,7 +11,13 @@
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v1.7.0`)
 
-_(belum ada run)_
+| Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
+|---|---|---:|---:|---:|---:|---:|
+| 2026-10-11-staging.md | Smoke | 34 | 0 | 0 | 1 | 0 |
+| 2026-10-11-staging.md | Kasus uji | 13 | 0 | 0 | 1 | 4 |
+| 2026-10-11-staging.md | Regresi | 9 | 0 | 0 | 0 | 0 |
+
+_Semua Fail sudah merujuk issue._
 
 ## Keputusan
 

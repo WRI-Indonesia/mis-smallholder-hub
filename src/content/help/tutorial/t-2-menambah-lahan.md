@@ -23,20 +23,20 @@ Siapkan **ID Lahan** dan luasnya. ID Lahan harus unik untuk petani tersebut, dan
 
 1. Buka menu **Master Data → Lahan**, lalu klik **Tambah Lahan**.
 + Tabelnya memuat kolom Luas, Status Kepemilikan, Komoditas, dan Tahun Tanam. Gunakan tombol **Kolom** untuk menyembunyikan yang tak Anda perlukan — pengaturannya bertahan selama sesi.
-2. Pilih **Petani** lewat kotak pencarian. Yang muncul hanya petani dalam wilayah kerja akun Anda.
-+ Ketik ID Petani bila ada beberapa nama yang mirip — pencarian menelusuri nama dan ID sekaligus, sehingga lebih pasti daripada menebak dari nama saja.
-3. Isi **ID Lahan** dan **Luas (Hektar)**. Luas boleh berdesimal, misalnya `1.75`.
++ Form terbagi empat seksi berjudul — **Identitas**, **Kebun**, **Tanaman**, dan **Status & Catatan** — isi dari atas ke bawah.
+2. Seksi **Identitas**: pilih **Petani** lewat kotak pencarian, lalu isi **ID Lahan**. Yang muncul hanya petani dalam wilayah kerja akun Anda.
++ Ketik ID Petani bila ada beberapa nama yang mirip — pencarian menelusuri nama dan ID sekaligus, sehingga lebih pasti daripada menebak dari nama saja. Kolom **Revisi** di sebelah ID Lahan terisi otomatis.
+3. Seksi **Kebun**: isi **Luas (Hektar)**, lalu **Blok** dan **Kelompok Tani** kalau petani tergabung di sebuah kelompok. Luas boleh berdesimal, misalnya `1.75`.
 + Gunakan titik sebagai pemisah desimal, bukan koma. Luas inilah penyebut perhitungan produktivitas (Ton/Ha) di Dashboard BMP — luas yang keliru membuat produktivitas ikut keliru meski data panennya benar.
-4. Pilih **Status Kepemilikan**: Milik Sendiri, Sewa, atau Bagi Hasil.
-+ Kolom ini kerap diminta saat audit sertifikasi RSPO/ISPO untuk memastikan hak garap petani jelas.
-5. Isi **Komoditas** dan **Tahun Tanam** bila datanya ada. Tahun tanam dipakai memperkirakan umur tanaman.
++ Kelompok Tani menghasilkan angka Kelompok Tani di dashboard dan laporan. Kedua level ini untuk sementara disimpan **per lahan**, belum sebagai tabel tersendiri. Tulis namanya persis sama untuk semua lahan di kelompok yang sama — perbedaan satu spasi atau huruf besar-kecil akan terhitung sebagai dua kelompok berbeda.
+4. Seksi **Tanaman**: isi **Komoditas**, **Species**, dan **Tahun Tanam** bila datanya ada. Tahun tanam dipakai memperkirakan umur tanaman.
 + Komoditas sudah terisi **Kelapa Sawit** — seluruh lahan yang didata MIS saat ini kelapa sawit, jadi kolom ini tak perlu diisi ulang. Ganti isinya bila lahan tersebut memang komoditas lain; dikosongkan pun akan kembali terisi Kelapa Sawit, bukan dibiarkan kosong.
 + Umur tanaman menjelaskan banyak hal saat membaca produktivitas: sawit muda di bawah 4 tahun belum berbuah optimal, sementara di atas 25 tahun hasilnya menurun dan biasanya masuk rencana peremajaan.
-6. Centang **PSR** bila lahan sedang diremajakan — ini menjelaskan mengapa produksinya rendah atau nol.
+5. Masih di seksi **Tanaman**, centang **PSR** bila lahan sedang diremajakan — ini menjelaskan mengapa produksinya rendah atau nol.
 + Tanpa penanda ini, lahan PSR akan terbaca sebagai lahan bermasalah pada analisa ketersediaan data produksi, padahal nol hasil memang wajar selama peremajaan.
-7. Isi **Blok** dan **Kelompok Tani** kalau petani tergabung di sebuah kelompok. Kolom inilah yang menghasilkan angka Kelompok Tani di dashboard dan laporan.
-+ Kedua level ini untuk sementara disimpan **per lahan**, belum sebagai tabel tersendiri. Tulis namanya persis sama untuk semua lahan di kelompok yang sama — perbedaan satu spasi atau huruf besar-kecil akan terhitung sebagai dua kelompok berbeda.
-8. Klik **Buat**.
+6. Seksi **Status & Catatan**: pilih **Status Kepemilikan** (Milik Sendiri, Sewa, atau Bagi Hasil) dan tambahkan **Catatan** bila perlu.
++ Status kepemilikan kerap diminta saat audit sertifikasi RSPO/ISPO untuk memastikan hak garap petani jelas.
+7. Klik **Buat**.
 
 > [!penting] Kolom **Revisi** terisi otomatis dan bertambah setiap kali data lahan diperbarui. Itu jejak riwayat, bukan kolom yang perlu Anda isi.
 
@@ -58,4 +58,4 @@ Lahan muncul di tabel daftar. Cari **ID Lahan**-nya lewat kotak pencarian untuk 
 
 **Lahan tidak tampil di peta.** Wajar — lahan dari form belum punya poligon. Lihat tutorial **Mengunggah lahan dari shapefile**.
 
-+ Lahan tanpa poligon tetap dihitung penuh di kartu Total Luas Lahan, laporan, dan produktivitas. Yang tidak bisa hanyalah menampilkannya di peta dan menyertakannya di Laporan Lahan ber-peta.
++ Lahan tanpa poligon tetap dihitung penuh di total luas (kartu **Lahan** Main Dashboard), laporan, dan produktivitas. Yang tidak bisa hanyalah menampilkannya di peta dan menyertakannya di Laporan Lahan ber-peta.
