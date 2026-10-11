@@ -7,6 +7,7 @@ import {
   dayKind,
   isoWeekStart,
 } from "@/lib/release-metrics";
+import { parseActiveTechDebt } from "@/lib/tech-debt";
 
 const realMd = readFileSync(join(__dirname, "../../docs/project/metrics.md"), "utf-8");
 
@@ -218,3 +219,16 @@ describe("parseActiveTechDebt — register tech-debt.md nyata", () => {
     expect(() => parseActiveTechDebt("tanpa register")).toThrow(/Debt Register/);
   });
 });
+
+describe("metrics.md siklus berjalan ↔ register tech-debt", () => {
+  // Owner 2026-10-12: kartu "Tech debt aktif" (baris siklus berjalan, ditulis tangan) = 31
+  // sementara tabel di bawahnya (parse tech-debt.md live) = 23 — baris lupa diperbarui
+  // sesudah #412 menutup 10 TD. Kartu & tabel harus bercerita sama.
+  it("TD aktif baris siklus berjalan = jumlah debt aktif di tech-debt.md", () => {
+    const current = parseReleaseMetrics(realMd).find((r) => r.isProvisional);
+    if (!current) return; // tepat sesudah rilis tak ada baris siklus berjalan
+    const td = readFileSync(join(__dirname, "../../docs/project/tech-debt.md"), "utf-8");
+    expect(current.techDebt).toBe(parseActiveTechDebt(td).length);
+  });
+});
+
