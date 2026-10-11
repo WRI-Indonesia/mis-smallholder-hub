@@ -95,7 +95,7 @@ Satu baris per kuartal. Rilis K4 2026 mengikuti [sprint.md](./sprint.md). Rilis 
 | Kuartal | Tema | Fase | Rilis / tenggat |
 | ------- | ---- | ---- | --------------- |
 | **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 · GIS-01 (langkah awal #290) | **v1.3.0** dirilis 09-30 (jalur rilis, keamanan, performa) · **v1.4.0** 10-01 → 10-08 (kualitas data, Training Benefit & target kontrak) · **v1.5.0** dirilis 10-09 (limpahan v1.4.0: #317 Fase 3, #290, kerapian) · **v1.5.1** hotfix keamanan 10-10 · **v1.6.0** dirilis 10-10 (prototipe Rantai Pasok diperluas) · **v1.6.1** PATCH 10-11 → 10-25 (celah RBAC laten #409/#386/#384 + kerapian TD) |
-| | Supply Chain | SC-01 · SC-02 · SC-03 | **v1.7.0** 10-26 → 11-08 (prasyarat: lisensi UML #379; prototipe CSV ikut v1.4.0, diperluas di **v1.6.0** 2026-10-10) |
+| | Supply Chain | SC-01 · SC-02 · SC-03 · DA-08 (#416) | **v1.7.0** 10-26 → 11-08 (prasyarat: lisensi UML #379; prototipe CSV ikut v1.4.0, diperluas di **v1.6.0** 2026-10-10; + Ketersediaan Data › Produksi #416 — owner 2026-10-11) |
 | | Penyangga akhir tahun | tuntaskan PLATFORM-08 & DA-09 + concept note GIS-02/MD-12 + limpahan | **v1.8.0** 11-09 → 12-20 |
 | **K1 2027** (Jan–Mar) | Siap musim kemarau 2027 | GIS-01 · DA-05 | Fire Alert tuntas sebelum musim kemarau 2027 (#286) |
 | **K2 2027** (Apr–Jun) | NKT, deforestasi & sertifikasi | MD-08 · GIS-02 · MD-12 · DA-08 · MAP-04 | **Review tengah tahun Juni 2027**; concept note modul S2 selesai |
@@ -122,7 +122,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | GIS-01      | Fire Alert siap musim kemarau 2027                         | 🟠 Partial     | Next    | inti      |
 | DA-05       | Deteksi anomali data produksi                              | 🔲 Planned     | Next    | pendukung |
 | MD-08       | HCV/NKT: area NKT & patok NKT                              | 🟠 Partial     | Next    | inti      |
-| DA-08       | Ketersediaan data lanjutan                                 | 🔲 Planned     | Next    | pendukung |
+| DA-08       | Ketersediaan data lanjutan                                 | 🔲 Planned     | Now     | pendukung |
 | MAP-04      | Peta BMP: layer Monev BMP                                  | 🔲 Planned     | Next    | pendukung |
 | GIS-02      | GIS Deforestation: deteksi deforestasi lahan & boundary    | 🔲 Planned     | Next    | inti      |
 | MD-12       | Certification: modul sertifikasi RSPO/ISPO                 | 🔲 Planned     | Next    | inti      |
@@ -246,9 +246,9 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>DA-08</strong> · 🔲 Planned — Ketersediaan data lanjutan</summary>
 
-- **Evidence:** DA-02/DA-03 selesai di arsip MVP (#352). Tiga lanjutan keputusan #352 belum dikerjakan.
-- **Next step:** K2 2027: nilai eksplisit `NONE` sertifikasi agar "belum diisi" ≠ "tidak bersertifikat" (#355), bobot cakupan modul ke Index (#356), peta kesiapan data per Lembaga (#358).
-- **Selesai bila:** #355, #356, #358 ditutup.
+- **Evidence:** DA-02/DA-03 selesai di arsip MVP (#352). Tiga lanjutan keputusan #352 belum dikerjakan. **2026-10-11:** epic #415 — Ketersediaan Data jadi keluarga menu per entitas (parent level 2 + anak Semua Lembaga · Per Lembaga · Produksi), keputusan K1–K9 di issue; belum ada kode.
+- **Next step:** **v1.7.0:** #416 (A) — parent menu + kalender cakupan Produksi: tabel pohon Lembaga → petani → lahan, sel = % lahan aktif non-PSR melapor, pilih tahun, penanda Estimasi/0 kg/tanpa persil/basi, Excel 2 sheet; seed menu prod (pindah parent 2 menu lama, key tetap). Sesudahnya: kalender Pelatihan (B, issue menyusul). K2 2027: nilai eksplisit `NONE` sertifikasi agar "belum diisi" ≠ "tidak bersertifikat" (#355), bobot cakupan modul ke Index (#356), peta kesiapan data per Lembaga (#358).
+- **Selesai bila:** #416, #355, #356, #358 ditutup (epic #415 ditutup saat semua anak yang modulnya sudah ada selesai).
 
 </details>
 
