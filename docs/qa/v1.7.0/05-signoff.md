@@ -4,9 +4,9 @@
 
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
-| Developer | | | Go / No-go | gate lokal hijau; `02` lengkap; temuan blocker/major diperbaiki |
-| QA | | | Go / No-go | run staging: semua P0 Pass; Fail tersisa hanya minor ber-issue |
-| Owner | | | Go / No-go | known issues diterima |
+| Developer | Claude | 2026-10-12 | Go | gate lokal hijau (2.937 test, build); `02` lengkap (18 kasus + TC-PREP N/A); 3 temuan diperbaiki — #418 major, glyph PDF & kolom Override minor |
+| QA | Claude (run staging) | 2026-10-12 | Go | run staging `2026-10-11-staging.md` (s.d. `e9e6f7f`): smoke 34 · kasus 18 · regresi 9 Pass · 0 Fail; ketiga temuan diuji ulang Pass; TC berakun memakai akun uji owner (dikembalikan ke OPERATOR · Rokan Hulu · tanpa override) |
+| Owner | Sofyan | 2026-10-12 | Go | known issues (README) diterima |
 
 ## Setelah perbaikan temuan — apa yang diulang
 

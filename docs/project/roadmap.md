@@ -67,7 +67,7 @@ Bobot dipakai formula **Roadmap %** ([standards/versioning.md](../standards/vers
 
 Kolom ini adalah **satu-satunya sumber klasifikasi** (dibaca mesin oleh section Detail Roadmap di dashboard Metrik Rilis). Mengubah bobot sebuah fase = mengubah baseline → wajib dicatat di Decision Log.
 
-**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. **v1.4.0 (berjalan, 2026-10-07):** OPS-02 🟠 → ✅ (#232 TC-232-01) → pendukung 1,5/17 → **4,5/35 = 12,9%**; DQ-01 🔲 → 🟠 (#366 di prod) → inti 4/18 → **5,5/35 = 15,7%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md).
+**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. **v1.4.0 (berjalan, 2026-10-07):** OPS-02 🟠 → ✅ (#232 TC-232-01) → pendukung 1,5/17 → **4,5/35 = 12,9%**; DQ-01 🔲 → 🟠 (#366 di prod) → inti 4/18 → **5,5/35 = 15,7%**. **v1.7.0 (2026-10-12):** DA-08 🔲 → 🟠 (#416 · #417) → **7/35 = 20,0%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md).
 
 </details>
 
@@ -124,7 +124,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | GIS-01      | Fire Alert siap musim kemarau 2027                         | 🟠 Partial     | Next    | inti      |
 | DA-05       | Deteksi anomali data produksi                              | 🔲 Planned     | Next    | pendukung |
 | MD-08       | HCV/NKT: area NKT & patok NKT                              | 🟠 Partial     | Next    | inti      |
-| DA-08       | Ketersediaan data lanjutan                                 | 🔲 Planned     | Now     | pendukung |
+| DA-08       | Ketersediaan data lanjutan                                 | 🟠 Partial     | Now     | pendukung |
 | MAP-04      | Peta BMP: layer Monev BMP                                  | 🔲 Planned     | Next    | pendukung |
 | GIS-02      | GIS Deforestation: deteksi deforestasi lahan & boundary    | 🔲 Planned     | Next    | inti      |
 | MD-12       | Certification: modul sertifikasi RSPO/ISPO                 | 🔲 Planned     | Next    | inti      |
@@ -246,10 +246,10 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 </details>
 
 <details>
-<summary><strong>DA-08</strong> · 🔲 Planned — Ketersediaan data lanjutan</summary>
+<summary><strong>DA-08</strong> · 🟠 Partial — Ketersediaan data lanjutan</summary>
 
-- **Evidence:** DA-02/DA-03 selesai di arsip MVP (#352). Tiga lanjutan keputusan #352 belum dikerjakan. **2026-10-11:** epic #415 — Ketersediaan Data jadi keluarga menu per entitas (parent level 2 + anak Semua Lembaga · Per Lembaga · Produksi), keputusan K1–K9 di issue. **Kode #416 ✅ 2026-10-11 di `mvp`** (menu induk + Produksi, pohon 3 tingkat, Excel 2 sheet, tutorial p-18). **Kode #417 ✅ 2026-10-11** (Semua Lembaga ringkas: tinggi 3.817 → 1.680 px, sub-nav keluarga menu). Staging `bb045d7` + **seed menu staging ✅** 2026-10-11 (TC-416-01..03 & TC-417-01..03 Pass); menunggu rilis v1.7.0 + seed menu **prod** (`seed-menu-only.ts`, dry-run 2 dibuat · 2 diperbarui).
-- **Next step:** **v1.7.0 (MINOR, 10-11 → 10-25):** #416 (A) — parent menu + kalender cakupan Produksi: tabel pohon Lembaga → petani → lahan, sel = % lahan aktif non-PSR melapor, pilih tahun, penanda Estimasi/0 kg/tanpa persil/basi, Excel 2 sheet; seed menu prod (pindah parent 2 menu lama, key tetap). Lalu **#417** — tata letak Semua Lembaga ringkas & satu tempat (audit UI/UX 2026-10-11: hero 1 baris, filter aktif, matriks Ringkas 10 + toolbar sticky, Daftar Kerja bertab, istilah & a11y; setelah #416 agar sub-nav keluarga menu dibuat sekali). Sesudahnya: kalender Pelatihan (B, issue menyusul). K2 2027: nilai eksplisit `NONE` sertifikasi agar "belum diisi" ≠ "tidak bersertifikat" (#355), bobot cakupan modul ke Index (#356), peta kesiapan data per Lembaga (#358).
+- **Evidence:** DA-02/DA-03 selesai di arsip MVP (#352). Tiga lanjutan keputusan #352 belum dikerjakan. **2026-10-11:** epic #415 — Ketersediaan Data jadi keluarga menu per entitas (parent level 2 + anak Semua Lembaga · Per Lembaga · Produksi), keputusan K1–K9 di issue. **Kode #416 ✅ 2026-10-11 di `mvp`** (menu induk + Produksi, pohon 3 tingkat, Excel 2 sheet, tutorial p-18). **Kode #417 ✅ 2026-10-11** (Semua Lembaga ringkas: tinggi 3.817 → 1.680 px, sub-nav keluarga menu). Staging `bb045d7` + **seed menu staging ✅** 2026-10-11 (TC-416-01..03 & TC-417-01..03 Pass); **v1.7.0 (2026-10-12): 🔲 → 🟠 Partial** — #416 & #417 dirilis (QA staging 0 Fail) + seed menu prod (`seed-menu-only.ts`, 2 dibuat · 2 diperbarui).
+- **Next step:** kalender Pelatihan (B, issue menyusul). K2 2027: nilai eksplisit `NONE` sertifikasi agar "belum diisi" ≠ "tidak bersertifikat" (#355), bobot cakupan modul ke Index (#356), peta kesiapan data per Lembaga (#358).
 - **Selesai bila:** #416, #417, #355, #356, #358 ditutup (epic #415 ditutup saat semua anak yang modulnya sudah ada selesai).
 
 </details>
