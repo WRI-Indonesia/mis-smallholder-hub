@@ -48,11 +48,12 @@ const SORT_KEYS = Object.keys(SORT_LABEL) as ProductionSortKey[];
 export function ProductionAvailabilityClient({
   view,
   canExport,
-  helpSlot,
+  navSlot,
 }: {
   view: ProductionAvailabilityView;
   canExport: boolean;
-  helpSlot?: React.ReactNode;
+  /** Judul "Ketersediaan Data" + sub-nav keluarga menu (server component, #417 A). */
+  navSlot?: React.ReactNode;
 }) {
   const { get, setMany } = useUrlFilters();
   const allGroups = view.groups;
@@ -263,12 +264,9 @@ export function ProductionAvailabilityClient({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">Ketersediaan Data — Produksi</h1>
-            {helpSlot}
-          </div>
-          <p className="text-muted-foreground">
+        <div className="min-w-0 flex-1 space-y-2">
+          {navSlot}
+          <p className="text-sm text-muted-foreground">
             Bulan apa saja yang sudah punya data produksi, per Lembaga Petani. Angka sel = % lahan aktif non-PSR yang punya record pada bulan itu — data per{" "}
             <span className="font-medium text-foreground">{formatGeneratedAt(view.generatedAt)}</span>.
           </p>

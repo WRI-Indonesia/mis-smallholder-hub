@@ -23,12 +23,13 @@ import {
   moduleCoverageTotals,
 } from "@/lib/data-availability-aggregation";
 import { MODULE_CATALOG, MODULE_DOMAIN_LABELS } from "@/lib/data-completeness-registry";
-import { AvailabilityHero } from "./availability-hero";
+import { AvailabilityHero, BAND_SHORT } from "./availability-hero";
+import { ActiveFilterBar, type ActiveFilterChip } from "./active-filter-bar";
 import { AvailabilityDomainCards } from "./availability-domain-cards";
 import { AvailabilityMatrix } from "./availability-matrix";
 import { AvailabilityModuleMatrix } from "./availability-module-matrix";
 import { AvailabilityRadarGrid } from "./availability-radar-grid";
-import type { MatrixSortKey } from "./matrix-rows";
+import { sortKeyLabel, type MatrixSortKey } from "./matrix-rows";
 import { CATEGORY_LABELS } from "./domain-meta";
 import { AvailabilityDomainLaggards } from "./availability-domain-laggards";
 import { AvailabilityAnomalyPanel } from "./availability-anomaly-panel";
@@ -42,11 +43,12 @@ const BANDS: AvailabilityScoreBand[] = ["full", "good", "warn", "bad"];
 export function DataAvailabilityClient({
   view,
   canExport,
-  helpSlot,
+  navSlot,
 }: {
   view: DataAvailabilityView;
   canExport: boolean;
-  helpSlot?: React.ReactNode;
+  /** Judul "Ketersediaan Data" + sub-nav keluarga menu (server component, #417 A). */
+  navSlot?: React.ReactNode;
 }) {
   // Filter disimpan di query string (TD-021) agar tampilan bisa di-bookmark &
   // dikirim ke rekan, dan bertahan saat halaman dimuat ulang.
@@ -145,6 +147,19 @@ export function DataAvailabilityClient({
       : null;
   const groups = useMemo(() => (band ? filterAvailabilityGroups({ groups: scope }, { band }) : scope), [scope, band]);
 
+  // Chip filter aktif (#417 A): kunci URL `kategori distrik lembaga band urut/arah`.
+  // Tampilan (`tampilan`) bukan filter — tidak ikut chip maupun Reset.
+  const filterChips: ActiveFilterChip[] = [
+    ...(category ? [{ id: "kategori", label: "Kategori", value: CATEGORY_LABELS[category], onRemove: () => setCategory(null) }] : []),
+    ...(districtId ? [{ id: "distrik", label: "Distrik", value: districtOptions.find((d) => d.id === districtId)?.name ?? "—", onRemove: () => setDistrictId(null) }] : []),
+    ...(groupId ? [{ id: "lembaga", label: "Lembaga", value: allGroups.find((g) => g.id === groupId)?.name ?? "—", onRemove: () => setGroupId(null) }] : []),
+    ...(band ? [{ id: "band", label: "Tingkat skor", value: BAND_SHORT[band], onRemove: () => setBand(null) }] : []),
+    ...(sortKey !== "health" || !sortAsc
+      ? [{ id: "urut", label: "Urut", value: `${sortKeyLabel(sortKey)} ${sortAsc ? "↑" : "↓"}`, onRemove: () => setSort("health", true) }]
+      : []),
+  ];
+  const resetFilters = () => setMany({ kategori: null, distrik: null, lembaga: null, band: null, urut: null, arah: null });
+
   const totals = useMemo(() => availabilityTotals(scope), [scope]);
   const moduleTotals = useMemo(() => moduleCoverageTotals(groups), [groups]);
 
@@ -229,17 +244,11 @@ export function DataAvailabilityClient({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">Ketersediaan Data — Semua Lembaga</h1>
-            {helpSlot}
-          </div>
-          <p className="text-muted-foreground">
-            Kelengkapan data 5 domain lintas Lembaga Petani — data per{" "}
-            <span className="font-medium text-foreground">
-              {formatGeneratedAt(view.generatedAt)}
-            </span>
-            . Klik nama Lembaga untuk rinciannya.
+        <div className="min-w-0 flex-1 space-y-2">
+          {navSlot}
+          <p className="text-sm text-muted-foreground">
+            Kelengkapan data 5 domain lintas Lembaga Petani · data per{" "}
+            <span className="font-medium text-foreground">{formatGeneratedAt(view.generatedAt)}</span>. Klik nama Lembaga untuk rinciannya.
           </p>
         </div>
 
@@ -298,8 +307,11 @@ export function DataAvailabilityClient({
         </div>
       </div>
 
-      {/* Hero: skor, distribusi band (filter), angka ringkas; aksi lintas Lembaga mengikuti irisan band (sama dengan panel anomali) */}
-      <AvailabilityHero totals={totals} distribution={distribution} actionGroups={groups} activeBand={band} onBandChange={setBand} />
+      {/* Filter aktif (#417 A, T3): satu tempat untuk melihat & melepas pilihan filter/urutan. */}
+      <ActiveFilterBar chips={filterChips} onReset={resetFilters} />
+
+      {/* Hero satu baris: skor, kalimat ringkas, sebaran Lembaga per tingkat skor (segmen = filter). */}
+      <AvailabilityHero totals={totals} distribution={distribution} activeBand={band} onBandChange={setBand} />
 
       {/* Kartu domain — skor memimpin; klik = urutkan matriks pada domain itu */}
       <AvailabilityDomainCards

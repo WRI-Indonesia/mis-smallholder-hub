@@ -2,6 +2,7 @@ import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getProductionAvailabilityView } from "@/server/actions/production-availability";
 import { ProductionAvailabilityClient } from "./production-availability-client";
+import { AvailabilityNav } from "../availability-nav";
 
 export default async function ProductionAvailabilityPage() {
   await requirePermission("data-analyst-availability-production");
@@ -18,7 +19,7 @@ export default async function ProductionAvailabilityPage() {
       <ProductionAvailabilityClient
         view={view}
         canExport={permissions.includes("EXPORT")}
-        helpSlot={<HelpHint menuKey="data-analyst-availability-production" />}
+        navSlot={<AvailabilityNav active="data-analyst-availability-production" helpSlot={<HelpHint menuKey="data-analyst-availability-production" />} />}
       />
     </div>
   );
