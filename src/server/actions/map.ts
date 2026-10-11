@@ -41,8 +41,10 @@ async function requireView() {
 /**
  * Opsi filter Provinsi/Distrik/Lembaga dipakai dua halaman (Peta Lahan & Peta
  * BMP), jadi cukup salah satu izin VIEW (#384) — pola `requireBoundaryRead`
- * di `fire-boundary.ts` / proxy `/api/map-hotspot`. `map-parcel` dicek dulu
- * (pemanggil terbanyak) agar pemegangnya tak membayar query izin kedua.
+ * di `fire-boundary.ts` / proxy `/api/map-hotspot`. Urutan cek tidak
+ * berpengaruh pada biaya: `getEffectiveMenuPermissions` di-`cache()` per
+ * request, jadi cek kedua hanya membaca peta izin yang sama (TD-060: helper
+ * `hasAnyPermission` bersama belum ada).
  */
 async function requireFilterView() {
   if (!(await hasPermission(MENU_KEY, VIEW)) && !(await hasPermission(BMP_MENU_KEY, VIEW))) {
@@ -128,7 +130,7 @@ export async function getMapData(
   filters: MapFilters
 ): Promise<ActionResult<MapDataWire>> {
   if (!(await hasPermission(MENU_KEY, VIEW))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+    return { success: false, error: DENIED };
   }
 
   const parsed = mapFilterSchema.safeParse(filters);
@@ -214,7 +216,7 @@ export async function getMapData(
  */
 export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<MapMarkerWire>> {
   if (!(await hasPermission(MENU_KEY, VIEW))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+    return { success: false, error: DENIED };
   }
   const parsed = mapFilterSchema.safeParse(filters);
   if (!parsed.success) return { success: false, error: "Filter tidak valid" };
@@ -266,7 +268,7 @@ export async function getBmpMapData(
   filters: BmpMapFilters
 ): Promise<ActionResult<BmpMapDataWire>> {
   if (!(await hasPermission(BMP_MENU_KEY, VIEW))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+    return { success: false, error: DENIED };
   }
 
   const parsed = bmpMapFilterSchema.safeParse(filters);
