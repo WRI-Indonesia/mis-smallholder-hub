@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CurrentReleaseSummary } from "@/lib/release-plan";
 import { cn } from "@/lib/utils";
 import type { TechDebtItem } from "@/lib/tech-debt";
@@ -114,7 +115,9 @@ type ChartTab = "rvs" | "roadmap" | "test";
 const CHART_H = 300;
 
 /** Panah tren; warna mengikuti arah yang "baik" untuk metrik itu. */
-function TrendIcon({ dir, goodWhen }: { dir: number; goodWhen: "up" | "down" }) {
+function TrendIcon({ dir, goodWhen }: { dir: number | null; goodWhen: "up" | "down" }) {
+  // Nilai/pembanding tak tercatat → tanpa ikon (jangan klaim "tetap" tanpa data — review #421).
+  if (dir == null) return null;
   if (dir === 0) return <Minus className="h-4 w-4 text-muted-foreground" aria-label="tetap" />;
   const good = (dir > 0 && goodWhen === "up") || (dir < 0 && goodWhen === "down");
   const Icon = dir > 0 ? ArrowUpRight : ArrowDownRight;
@@ -126,7 +129,9 @@ function CurrentReleaseCard({ summary, planUpdatedAt, canOpenPlan }: { summary: 
   if (!summary) {
     return (
       <Card className="border border-border/60 shadow-sm">
-        <CardContent className="flex h-full items-center p-4 text-sm text-muted-foreground">Tidak ada rilis yang sedang dikejar.</CardContent>
+        <CardContent className="flex h-full items-center p-4 text-sm text-muted-foreground">
+          {canOpenPlan ? "Tidak ada rilis yang sedang dikejar." : "Ringkasan rilis berjalan hanya untuk pengguna dengan akses Rencana Pengembangan."}
+        </CardContent>
       </Card>
     );
   }
@@ -268,7 +273,7 @@ export function MetricsDashboardClient({
   // Arah TD: bandingkan dua nilai TD tercatat terakhir.
   const tdSeries = releases.map((r) => r.techDebt).filter((v): v is number => v != null);
   const tdPrev = tdSeries.length > 1 ? tdSeries[tdSeries.length - 2] : null;
-  const tdDir = td != null && tdPrev != null ? Math.sign(td - tdPrev) : 0;
+  const tdDir = td != null && tdPrev != null ? Math.sign(td - tdPrev) : null;
 
   // Tanda delta dihitung, bukan prefix hardcode — nilai negatif jangan
   // dirender "+-2,0" (#229). Formatter sudah membawa "-" untuk nilai negatif.
@@ -278,7 +283,16 @@ export function MetricsDashboardClient({
   // kumulatif sejak awal proyek tak menjawab "rilis kemarin menambah apa" (#392).
   const lastTestReleased = lastReleased?.testCount ?? null;
   const prevTestReleased = lastOf(released.slice(0, -1), (r) => r.testCount);
-  const testDelta = lastTestReleased != null && prevTestReleased != null ? lastTestReleased - prevTestReleased : null;
+  // Arah Test = nilai SEKARANG vs rilis terakhir (sama dengan TD: nilai terakhir vs
+  // sebelumnya). Tepat sesudah rilis (belum ada pertambahan) → perolehan rilis itu (review #421).
+  const testSinceRelease = lastTest != null && lastTestReleased != null && lastTest !== lastTestReleased ? lastTest - lastTestReleased : null;
+  const testDelta =
+    testSinceRelease ?? (lastTestReleased != null && prevTestReleased != null ? lastTestReleased - prevTestReleased : null);
+  const testDeltaLabel =
+    testSinceRelease != null && lastReleased ? `sejak ${lastReleased.version}` : lastReleased ? `di ${lastReleased.version}` : "";
+  // Roadmap kartu "Rilis terakhir" = nilai SAAT rilis itu, bukan baris siklus berjalan;
+  // nilai kini (roadmap.md live) disebut terpisah bila berbeda (review #421).
+  const releasedRoadmapPct = lastReleased?.roadmapPct ?? last.roadmapPct;
 
   // Roadmap: angka lintas baseline tak sebanding — sebut nilai beku baseline
   // sebelumnya (titik terakhir sebelum reset terbaru), bukan selisih sejak v0.9.0.
@@ -318,14 +332,29 @@ export function MetricsDashboardClient({
                   <a href={releaseUrl(lastReleased.version)} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline-offset-2 hover:underline">
                     {lastReleased.version}
                   </a>
-                  {lastReleased.releasedAt ? ` · ${fmtDate(lastReleased.releasedAt)}` : ""}
                 </span>
               )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground" title="Release Value Score: skor kumulatif nilai kerja yang dirilis — fitur/UX, perbaikan bug, performa terukur, test baru, review, dan tech debt ditutup (docs/standards/versioning.md §3).">
-                  RVS (nilai kumulatif) <span aria-hidden>ⓘ</span>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  RVS (nilai kumulatif)
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="rounded-full px-0.5 leading-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                          aria-label="Apa itu RVS?"
+                        />
+                      }
+                    >
+                      ⓘ
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      Release Value Score: skor kumulatif nilai kerja yang dirilis — fitur/UX, perbaikan bug, performa terukur, test baru, review, dan tech debt ditutup. Anchor v0.9.0 = 1.000 (docs/standards/versioning.md §3).
+                    </TooltipContent>
+                  </Tooltip>
                 </p>
                 <p className="text-[28px] leading-tight font-medium tabular-nums">{lastReleased ? fmtRvs(lastReleased) : "—"}</p>
                 <p className="text-xs text-muted-foreground tabular-nums">
@@ -339,8 +368,9 @@ export function MetricsDashboardClient({
                 title={`Buka rincian ${fmtInt(roadmap.total)} fase penyusun angka ini`}
               >
                 <p className="text-xs text-muted-foreground">Progres roadmap · rincian ↓</p>
-                <p className="text-[28px] leading-tight font-medium tabular-nums">{fmtPct1(last.roadmapPct)}</p>
+                <p className="text-[28px] leading-tight font-medium tabular-nums">{fmtPct1(releasedRoadmapPct)}</p>
                 <p className="text-xs text-muted-foreground tabular-nums">
+                  {Math.abs(roadmap.pct - releasedRoadmapPct) >= 0.05 && <>kini {fmtPct1(roadmap.pct)} · </>}
                   {fmtPoints(roadmap.earned)}/{fmtInt(roadmap.max)} poin · {fmtInt(roadmap.total)} fase
                   {frozenPct != null && ` · baseline lama beku ${fmtPct1(frozenPct)}`}
                 </p>
@@ -367,7 +397,7 @@ export function MetricsDashboardClient({
           {...openProps("td", `Tech debt aktif ${td != null ? fmtInt(td) : ""} — klik untuk daftar lengkap`)}
           className={cn(
             "cursor-pointer bg-card p-3 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring",
-            tdDir > 0 && "bg-amber-500/5"
+            tdDir != null && tdDir > 0 && "bg-amber-500/5"
           )}
         >
           <p className="text-xs text-muted-foreground">Tech debt aktif · daftar ↓</p>
@@ -398,10 +428,10 @@ export function MetricsDashboardClient({
           </p>
           <p className="mt-0.5 flex items-center gap-1 text-lg font-medium tabular-nums">
             {lastTest != null ? fmtInt(lastTest) : "—"}
-            <TrendIcon dir={testDelta != null ? Math.sign(testDelta) : 0} goodWhen="up" />
+            <TrendIcon dir={testDelta != null ? Math.sign(testDelta) : null} goodWhen="up" />
           </p>
           <p className="text-xs text-muted-foreground tabular-nums">
-            {testDelta != null && lastReleased ? `${plus(testDelta)}${fmtInt(testDelta)} di ${lastReleased.version}` : "—"}
+            {testDelta != null ? `${plus(testDelta)}${fmtInt(testDelta)} ${testDeltaLabel}` : "—"}
             {firstTest != null ? ` · awal ≈${fmtInt(firstTest)}` : ""}
           </p>
         </div>
@@ -411,10 +441,11 @@ export function MetricsDashboardClient({
       <Card className="border border-border/60 shadow-sm">
         <Tabs value={chartTab} onValueChange={(v) => setChartTab(v as ChartTab)}>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-2">
-            <TabsList>
-              <TabsTrigger value="rvs">Kurva RVS</TabsTrigger>
-              <TabsTrigger value="roadmap">Progres roadmap</TabsTrigger>
-              <TabsTrigger value="test">Jumlah test</TabsTrigger>
+            {/* Label ringkas + scroll horizontal: muat di 360 px (review #421). */}
+            <TabsList className="max-w-full overflow-x-auto">
+              <TabsTrigger value="rvs">RVS</TabsTrigger>
+              <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
+              <TabsTrigger value="test">Test</TabsTrigger>
             </TabsList>
             <TimeWindowButtons value={windowDays} onChange={setWindowDays} windows={availableWindows(spanDays)} />
           </CardHeader>

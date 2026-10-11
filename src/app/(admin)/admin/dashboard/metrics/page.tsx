@@ -13,8 +13,9 @@ export default async function ReleaseMetricsPage() {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
   // Kartu "Rilis berjalan" (#421): ringkasan dari sprint.md (parser bersama Rencana
   // Pengembangan); tautan ke halaman itu hanya bila pengguna boleh membukanya.
-  const current = summarizeCurrentRelease(releasePlan, today);
+  // Data rencana hanya dikirim bila ber-VIEW Rencana Pengembangan (override revoke dihormati — review #421).
   const canOpenPlan = await hasPermission("data-analyst-sprint", "VIEW");
+  const current = canOpenPlan ? summarizeCurrentRelease(releasePlan, today) : null;
 
   return (
     <div className="p-6">
