@@ -16,6 +16,9 @@
 | 2026-10-11-staging.md | Smoke | 34 | 0 | 0 | 1 | 0 |
 | 2026-10-11-staging.md | Kasus uji | 18 | 0 | 0 | 1 | 0 |
 | 2026-10-11-staging.md | Regresi | 9 | 0 | 0 | 0 | 0 |
+| 2026-10-12-prod.md | Smoke | 12 | 0 | 2 | 0 | 0 |
+| 2026-10-12-prod.md | Kasus uji | 3 | 0 | 4 | 1 | 0 |
+| 2026-10-12-prod.md | Regresi | 0 | 0 | 3 | 0 | 0 |
 
 _Semua Fail sudah merujuk issue._
 
