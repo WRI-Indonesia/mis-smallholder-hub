@@ -4,6 +4,30 @@
  * agar dapat di-unit-test (mapping atribut → field + null-handling).
  */
 
+/** Field target Upload Poligon Lahan — dipindah dari komponen client (#419) agar template ZIP & parser satu sumber. */
+export const PARCEL_UPLOAD_FIELDS = [
+  { key: "parcelId", label: "ID Lahan", required: true, desc: "ID unik Lahan per petani" },
+  { key: "farmerId", label: "ID Petani", required: true, desc: "ID Petani terdaftar (contoh: CTH.14.01.10.2012.0001)" },
+  { key: "area", label: "Luas (ha)", required: false, desc: "Angka desimal luas hektar" },
+  {
+    key: "landStatus",
+    label: "Status Kepemilikan",
+    required: false,
+    desc: "e.g. Owned, Leased, Shared",
+  },
+  { key: "cropType", label: "Komoditas", required: false, desc: "e.g. Kelapa Sawit, Karet" },
+  { key: "plantingYear", label: "Tahun Tanam", required: false, desc: "Tahun 1900-2100" },
+  { key: "subGroupLv2", label: "Kelompok Tani", required: false, desc: "Nama Kelompok Tani" },
+  { key: "blok", label: "Blok", required: false, desc: "Blok kebun" },
+  { key: "revision", label: "Revisi", required: false, desc: "Angka revisi (default 0)" },
+  { key: "notes", label: "Catatan", required: false, desc: "Catatan tambahan" },
+  // Sepadan (#326): ditulis ke satelit identitas lahan (utuh lintas revisi); sel terisi menimpa, kosong dibiarkan.
+  { key: "borderNorth", label: "Sepadan Utara", required: false, desc: "Kolom DBF: bts_utara / sep_utara / utara" },
+  { key: "borderEast", label: "Sepadan Timur", required: false, desc: "Kolom DBF: bts_timur / sep_timur / timur" },
+  { key: "borderSouth", label: "Sepadan Selatan", required: false, desc: "Kolom DBF: bts_selatan / sep_selatan / selatan" },
+  { key: "borderWest", label: "Sepadan Barat", required: false, desc: "Kolom DBF: bts_barat / sep_barat / barat" },
+] as const;
+
 /** Alias atribut shapefile (lowercase) → key field `LandParcel`. */
 export const PARCEL_AUTO_MATCH_RULES: Record<string, string[]> = {
   parcelId: ["parcel_id", "parcelid", "lahan_id", "id lahan", "id_lahan", "id", "parcel_code", "kode_lahan", "kd_lahan"],

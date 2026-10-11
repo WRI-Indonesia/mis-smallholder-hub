@@ -21,6 +21,10 @@ Siapkan **satu berkas ZIP** berisi shapefile lengkap: `.shp`, `.dbf`, `.shx`, da
 
 Tabel atribut `.dbf` harus memuat **ID Petani** dan **ID Lahan**, karena dari situlah poligon dicocokkan ke petani yang sudah terdaftar.
 
+Belum tahu nama atributnya? Klik **Unduh Template (ZIP)** di kanan atas Langkah 1.
+
++ ZIP template berisi shapefile contoh 1 poligon fiktif (`CTH.…`) dengan atribut yang langsung dikenali sistem — `parcel_id`, `farmer_id`, `luas_ha`, `status`, `komoditas`, `thn_tanam`, `poktan`, `blok`, `revisi`, `catatan`, `sepadan_u/t/s/b` — plus **BACA-SAYA.txt** (mana yang wajib dan formatnya). Buka di QGIS/ArcGIS, ganti poligon contoh dengan batas lahan Anda, isi atributnya, lalu ZIP ulang keempat berkasnya.
+
 ## Langkah
 
 1. Buka menu **Bulk Upload → Upload Data Lahan**; pastikan tab **Poligon (Shapefile ZIP)** yang aktif (tab bawaan).

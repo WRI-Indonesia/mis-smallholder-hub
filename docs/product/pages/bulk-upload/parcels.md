@@ -11,6 +11,8 @@ Halaman: Upload Data Lahan (/admin/bulk-upload/parcels)
 ├── Tabs (#296/#329): "Poligon (Shapefile ZIP)" [bawaan] · "Detail Lahan (Excel)" · "Patok (Excel/Shapefile titik)"
 │   └── (tab Detail & Patok — lihat bagian masing-masing di bawah)
 ├── Langkah 1 — Pilih ZIP Shapefile
+│   ├── Tombol "Unduh Template (ZIP)" (kanan atas kartu, #419)
+│   │   └── template_poligon_lahan.zip — shp/shx/dbf/prj/cpg (1 poligon CTH.*) + BACA-SAYA.txt
 │   ├── Input type="file" (accept=".zip" — .shp/.dbf/.shx/.prj)
 │   ├── Info berkas: "Shapefile: nama.zip (N fitur/baris terdeteksi)"
 │   └── Toast parsing: sukses / kosong / gagal
@@ -52,7 +54,7 @@ Halaman: Upload Data Lahan (/admin/bulk-upload/parcels)
 | Server action / data | `parseShapefile()`, `getFarmersForMapping()`, `getExistingParcelIds()`, `bulkCreateLandParcels()` — `src/server/actions/bulk-upload-parcel.ts`; tab Excel: `getParcelsForDetailMapping()` (lazy saat tab dibuka), `bulkSaveLandParcelDetails()` — `src/server/actions/bulk-upload-parcel-detail.ts`; tab Patok: `parseShapefile()` (ZIP Point), `matchLandMarkerUploadParcels()`, `bulkUpsertLandMarkers()` — `src/server/actions/land-marker.ts` |
 | Helper | `PARCEL_AUTO_MATCH_RULES`, `autoMatchColumns()`, `normalizeAttr()` dari `src/lib/parcel-bulk-mapping.ts` |
 | Format file diterima | Tab Poligon: **hanya** ZIP Shapefile `.zip` berisi `.shp`, `.dbf`, `.shx`, `.prj`; selain itu toast *"Hanya mendukung berkas ZIP Shapefile (.zip)"*. Tab Detail: `.xlsx` dan `.csv` (`accept=".xlsx,.csv"`). Tab Patok: `.xlsx`, `.csv`, atau `.zip` shapefile Point |
-| Tombol unduh template | Tab Poligon: **tidak ada** (sumber data adalah shapefile); tab Detail: `Unduh Template Excel` → `template_detail_lahan.xlsx` + `Template NKT` → `template_nkt_lahan.xlsx`; tab Patok: `Unduh Template Excel` → `Template_Patok_Lahan.xlsx` |
+| Tombol unduh template | Tab Poligon: `Unduh Template (ZIP)` → `template_poligon_lahan.zip` (#419 — shapefile contoh 1 poligon fiktif, atribut DBF ≤ 10 karakter = alias `PARCEL_AUTO_MATCH_RULES`, + `BACA-SAYA.txt`); tab Detail: `Unduh Template Excel` → `template_detail_lahan.xlsx` + `Template NKT` → `template_nkt_lahan.xlsx`; tab Patok: `Unduh Template Excel` → `Template_Patok_Lahan.xlsx` |
 | Redirect setelah simpan | `/admin/master-data/parcels` |
 
 ## Objek halaman

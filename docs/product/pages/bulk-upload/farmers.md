@@ -14,6 +14,8 @@ Halaman: Upload Data Petani (/admin/bulk-upload/farmers)
 │   ├── Empty state: "Lembaga Petani tidak ditemukan."
 │   └── Catatan: "Pilih Lembaga Petani tujuan terlebih dahulu..."
 ├── Langkah 2 — Pilih File Data Petani
+│   ├── Tombol "Unduh Template Excel" (kanan atas kartu, aktif walau lembaga belum dipilih, #419)
+│   │   └── template_upload_petani.xlsx — sheet "Data" (8 tajuk alias + 2 contoh CTH.*) + "Petunjuk"
 │   ├── Input type="file" (accept=".xlsx,.csv"), disabled bila lembaga belum dipilih
 │   ├── Peringatan merah: "* Harap pilih Lembaga Petani di atas terlebih dahulu."
 │   └── Info berkas: "Tipe file terdeteksi: XLSX/CSV (N baris data)"
@@ -57,7 +59,7 @@ Halaman: Upload Data Petani (/admin/bulk-upload/farmers)
 | Guard | `requirePermission("bulk-upload-farmers")`; aksi data guard `hasPermission("bulk-upload-farmers", "VIEW"\|"CREATE")` |
 | Server action / data | `getFarmerGroupsForMapping()` (daftar Lembaga dibatasi scope pengguna — TD-029), `getExistingFarmerIds(farmerGroupId)`, `bulkCreateFarmers()` — semua di `src/server/actions/bulk-upload.ts` |
 | Format file diterima | `.xlsx` dan `.csv` (`accept=".xlsx,.csv"`); selain itu toast *"Hanya mendukung berkas Excel (.xlsx) atau CSV"* (`src/lib/excel-sheet-reader.ts`) |
-| Tombol unduh template | **Tidak ada** di halaman ini (hanya unduh hasil validasi) |
+| Tombol unduh template | **Ada** sejak #419 (owner 2026-10-11; sebelumnya sengaja tanpa template) — "Unduh Template Excel" → `template_upload_petani.xlsx`. Tajuk = label `FARMER_UPLOAD_FIELDS` (`src/lib/farmer-upload-fields.ts`) yang dijamin terpetakan otomatis (test `bulk-upload-templates.test.ts`); pencocokan kolom dinamis tetap berlaku untuk berkas lapangan |
 | Redirect setelah simpan | `/admin/master-data/farmers` |
 
 ## Objek halaman

@@ -17,6 +17,8 @@ Berbeda dari unggah petani, di sini **tidak perlu memilih lembaga** lebih dulu �
 
 Tersedia berkas contoh: tombol **Unduh Template Excel** di kanan atas Langkah 1.
 
++ Template berisi sheet **Data** (judul kolom + 2 baris contoh ber-ID fiktif `CTH.…` — hapus sebelum diisi) dan sheet **Petunjuk** (kolom wajib dan formatnya). Judul kolomnya langsung dikenali sistem, jadi pada Langkah 2 semua kolom sudah tercocokkan otomatis. Template versi lama (judul seperti `Periode (YYYY-MM)`) juga tetap dikenali.
+
 ## Langkah
 
 1. Buka menu **Bulk Upload → Upload Data Produksi**.

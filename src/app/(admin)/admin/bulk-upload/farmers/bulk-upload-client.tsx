@@ -49,6 +49,9 @@ import {
   ChevronsUpDown,
 } from "lucide-react";
 import { bulkCreateFarmers, getExistingFarmerIds } from "@/server/actions/bulk-upload";
+import { FARMER_UPLOAD_FIELDS, FARMER_AUTO_MATCH_RULES } from "@/lib/farmer-upload-fields";
+import { FARMER_TEMPLATE } from "@/lib/bulk-upload-templates";
+import { downloadExcelTemplate } from "@/lib/bulk-upload-template-download";
 
 interface FarmerGroup {
   id: string;
@@ -81,46 +84,8 @@ interface FarmerValidatedRow {
   joinedYear?: number | null;
 }
 
-const TARGET_FIELDS = [
-  { key: "farmerId", label: "ID Petani", required: true, desc: "Minimal 2 karakter" },
-  { key: "name", label: "Nama Petani", required: true, desc: "Minimal 2 karakter" },
-  { key: "gender", label: "Jenis Kelamin", required: true, desc: "L/P atau Laki-laki/Perempuan" },
-  { key: "nik", label: "NIK", required: false, desc: "16 digit angka (opsional)" },
-  { key: "birthPlace", label: "Tempat Lahir", required: false, desc: "Opsional" },
-  { key: "birthDate", label: "Tanggal Lahir", required: false, desc: "Format tanggal (opsional)" },
-  { key: "address", label: "Alamat", required: false, desc: "Opsional" },
-  {
-    key: "joinedYear",
-    label: "Tahun Bergabung",
-    required: false,
-    desc: "Tahun 1900-2100 (opsional)",
-  },
-];
-
-const AUTO_MATCH_RULES: Record<string, string[]> = {
-  farmerId: ["id petani", "farmer id", "id", "farmer_id", "kode petani", "kode_petani"],
-  name: ["nama", "name", "nama petani", "farmer name", "fullname", "nama_petani"],
-  gender: ["jenis kelamin", "gender", "sex", "lp", "l/p", "jk", "kelamin"],
-  nik: ["nik", "no. ktp", "ktp", "national id", "no_ktp"],
-  birthPlace: ["tempat lahir", "birth place", "birthplace", "tempat_lahir"],
-  birthDate: [
-    "tanggal lahir",
-    "birth date",
-    "birthdate",
-    "tanggal_lahir",
-    "tgl lahir",
-    "tgl_lahir",
-  ],
-  address: ["alamat", "address", "domisili"],
-  joinedYear: [
-    "tahun bergabung",
-    "joined year",
-    "joinedyear",
-    "tahun_bergabung",
-    "thn bergabung",
-    "thn_bergabung",
-  ],
-};
+const TARGET_FIELDS = FARMER_UPLOAD_FIELDS;
+const AUTO_MATCH_RULES = FARMER_AUTO_MATCH_RULES;
 
 export function BulkUploadClient({ farmerGroups, permissions }: Props) {
   const router = useRouter();
@@ -579,7 +544,19 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
       {/* Step 2: Upload File */}
       <Card className="p-6">
         <div className="flex flex-col gap-2">
-          <Label className="text-base font-semibold">2. Pilih File Data Petani</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-base font-semibold">2. Pilih File Data Petani</Label>
+            {/* Template (#419): tajuk = alias auto-match; nama kolom berkas lapangan tetap boleh beda. */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadExcelTemplate(FARMER_TEMPLATE)}
+              className="text-xs h-8 gap-1.5"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Unduh Template Excel
+            </Button>
+          </div>
           <div className="flex items-center gap-4 mt-2">
             <Input
               type="file"

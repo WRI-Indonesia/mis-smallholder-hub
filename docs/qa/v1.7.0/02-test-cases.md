@@ -144,3 +144,23 @@ Harapan:
 - Popover daftar Lembaga terbuka; tiap nama tertaut ke Per Lembaga. Label memakai "Lahan", bukan "Persil".
 Baseline dev: `availability-layout.test.ts` (7), `matrix-rows.test.ts` (12); tinggi halaman bawaan 1.680 px terukur lokal 2026-10-11.
 
+## #419 — Template file di semua fitur Upload Massal
+
+### TC-419-01 · Tujuh tombol template terunduh & isinya benar [P1] (4 mnt)
+Prasyarat: login ADMIN/SUPERADMIN.
+Langkah:
+1. Bulk Upload › Petani, Produksi, Lahan (tab Poligon · Detail · Patok), Pohon → klik setiap tombol **Unduh Template**.
+2. Buka tiap berkas: Excel → sheet `Data` + `Petunjuk`; ZIP → berkas rata di akar + `BACA-SAYA.txt`.
+Harapan:
+- Petani: 8 tajuk (ID Petani … Tahun Bergabung) + 2 contoh `CTH.*`, kolom NIK berformat teks; tombol aktif walau Lembaga belum dipilih.
+- Produksi: tajuk `ID Petani · Periode · Tanggal Panen · Panen Ke- · Hasil Panen (kg) · ID Lahan · Catatan`.
+- Poligon: `template_poligon_lahan.{shp,shx,dbf,prj,cpg}` 1 poligon fiktif; Pohon: `template_pohon_sawit.*` 2 titik; atribut ≤ 10 karakter.
+
+### TC-419-02 · Template diunggah ulang apa adanya → terpetakan otomatis [P0] [regresi] (4 mnt)
+Langkah:
+1. Unggah kembali template Produksi tanpa diubah (juga satu berkas bertajuk template lama `Periode (YYYY-MM)` dkk., bila ada) → lihat Petakan Atribut Kolom.
+2. Unggah template Petani (pilih Lembaga dulu), Poligon ZIP, dan Pohon ZIP tanpa diubah → Validasi.
+Harapan:
+- Semua kolom wajib sudah terpetakan otomatis (tanpa pilih manual); validasi menolak baris contoh karena ID fiktif **tidak terdaftar**, bukan karena kolom/atribut tidak dikenali.
+- Pohon: pratinjau "Lahan tidak ditemukan" untuk `CTH.0001.A…`; Poligon: peta pratinjau menampilkan persegi contoh di Riau.
+Baseline dev: `bulk-upload-templates.test.ts` (11: tajuk = alias parser, tajuk lama Produksi, workbook Data+Petunjuk, ZIP dibaca shpjs).

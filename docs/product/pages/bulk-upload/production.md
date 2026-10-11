@@ -11,7 +11,7 @@ Halaman: Upload Data Produksi (/admin/bulk-upload/production)
 ├── Langkah 1 — Pilih File Data Produksi
 │   ├── Input type="file" (.xlsx / .csv)
 │   ├── Tombol "Unduh Template Excel" (kanan atas kartu)
-│   │   └── template_bulk_upload_produksi.xlsx — sheet "Template Produksi"
+│   │   └── template_upload_produksi.xlsx — sheet "Data" + "Petunjuk" (#419)
 │   └── Info berkas: "Tipe File: XLSX/CSV (N baris terdeteksi)"
 ├── Langkah 2 — Petakan Atribut Kolom
 │   ├── Grid Select per target field (7 field, wajib/opsional)
@@ -44,7 +44,7 @@ Halaman: Upload Data Produksi (/admin/bulk-upload/production)
 | Guard | `requirePermission("bulk-upload-production")`; aksi guard `hasPermission("bulk-upload-production", …)` |
 | Server action / data | `getFarmersForProductionMapping()`, `getExistingProductionRecords()`, `bulkCreateProductionRecords()` — `src/server/actions/bulk-upload-production.ts` |
 | Format file diterima | `.xlsx` dan `.csv`; selain itu toast *"Hanya mendukung berkas Excel (.xlsx) atau CSV"* |
-| Tombol unduh template | **Ada** — "Unduh Template Excel" → `template_bulk_upload_produksi.xlsx` |
+| Tombol unduh template | **Ada** — "Unduh Template Excel" → `template_upload_produksi.xlsx` |
 | Access context | `getFarmersForProductionMapping()`/`getExistingProductionRecords()` sudah difilter per mode `ALL` / `BY_FARMER_GROUP` / `BY_DISTRICT` |
 | Redirect setelah simpan | `/admin/master-data/production` |
 
@@ -55,7 +55,7 @@ Halaman: Upload Data Produksi (/admin/bulk-upload/production)
 | "Upload Massal Produksi" | Heading (`h2`) | Deskripsi: *"Unggah data produksi petani menggunakan file Excel (.xlsx) atau CSV dengan pencocokan kolom dinamis."* |
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `bulk-upload-production` (`findTutorialForMenu`), dibuka di tab baru |
 | "1. Pilih File Data Produksi" | Card + Input `type="file"` | Keterangan *"Unggah file Excel (.xlsx) atau CSV yang berisi data transaksi panen / produksi petani."* |
-| "Unduh Template Excel" | Tombol (kanan atas kartu 1) | Membuat workbook sheet `Template Produksi` berisi header `ID Petani`, `Periode (YYYY-MM)`, `Tanggal Panen (DD/MM/YYYY)`, `Panen Ke- (1-4)`, `Hasil Panen (kg)`, `ID Lahan (Opsional)`, `Catatan (Opsional)` + 2 baris contoh (`FARMER-001` / `FARMER-002`) |
+| "Unduh Template Excel" | Tombol (kanan atas kartu 1) | `downloadExcelTemplate(PRODUCTION_TEMPLATE)` (#419): sheet `Data` bertajuk `ID Petani`, `Periode`, `Tanggal Panen`, `Panen Ke-`, `Hasil Panen (kg)`, `ID Lahan`, `Catatan` — label `PRODUCTION_UPLOAD_FIELDS`, **terpetakan otomatis** (dulu tajuk bersufiks format tak dikenali alias → 6/7 kolom dipetakan manual; tajuk lama itu kini jadi alias) — + 2 baris contoh `CTH.*`; sheet `Petunjuk` (wajib + format). Kolom ID/Periode berformat teks |
 | Info berkas | Teks | *"Tipe File: **XLSX/CSV** (N baris terdeteksi)"* |
 | "2. Petakan Atribut Kolom" | Card + grid Select | Subjudul *"Cocokkan kolom dari berkas yang diunggah dengan data target sistem produksi."* |
 | Target field | 7 field | `ID Petani`* (contoh FARMER-001), `Periode`* (YYYY-MM), `Tanggal Panen`* (harus sesuai bulan periode; teks `DD/MM/YYYY` atau `YYYY-MM-DD` via `parseExcelDate`, #400), `Panen Ke-`* (1 s/d 4), `Hasil Panen (kg)`* (> 0), `ID Lahan` (opsional, CUID sistem), `Catatan` (maks 500 karakter) |

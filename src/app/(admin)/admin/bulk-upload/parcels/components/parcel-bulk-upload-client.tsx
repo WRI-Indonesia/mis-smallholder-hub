@@ -29,10 +29,13 @@ import { parseShapefile, bulkCreateLandParcels, checkUploadParcelOverlaps } from
 import { DEFAULT_CROP_TYPE } from "@/validations/land-parcel.schema";
 import { readFileAsBase64 } from "@/lib/file-base64";
 import {
+  PARCEL_UPLOAD_FIELDS,
   PARCEL_AUTO_MATCH_RULES,
   autoMatchColumns,
   normalizeAttr,
 } from "@/lib/parcel-bulk-mapping";
+import { PARCEL_POLYGON_TEMPLATE } from "@/lib/bulk-upload-templates";
+import { downloadShapefileTemplate } from "@/lib/bulk-upload-template-download";
 import { cleanGroupInput } from "@/lib/group-placeholder";
 import { LAND_BORDER_SIDE_LABELS } from "@/lib/land-parcel-satellite-format";
 import { cleanFreeTextCell } from "@/lib/land-parcel-detail-import";
@@ -103,28 +106,7 @@ interface Props {
   permissions: string[];
 }
 
-const TARGET_FIELDS = [
-  { key: "parcelId", label: "ID Lahan", required: true, desc: "ID unik Lahan per petani" },
-  { key: "farmerId", label: "ID Petani", required: true, desc: "ID Petani WRI (e.g. FARMER-001)" },
-  { key: "area", label: "Luas (ha)", required: false, desc: "Angka desimal luas hektar" },
-  {
-    key: "landStatus",
-    label: "Status Kepemilikan",
-    required: false,
-    desc: "e.g. Owned, Leased, Shared",
-  },
-  { key: "cropType", label: "Komoditas", required: false, desc: "e.g. Kelapa Sawit, Karet" },
-  { key: "plantingYear", label: "Tahun Tanam", required: false, desc: "Tahun 1900-2100" },
-  { key: "subGroupLv2", label: "Kelompok Tani", required: false, desc: "Nama Kelompok Tani" },
-  { key: "blok", label: "Blok", required: false, desc: "Blok kebun" },
-  { key: "revision", label: "Revisi", required: false, desc: "Angka revisi (default 0)" },
-  { key: "notes", label: "Catatan", required: false, desc: "Catatan tambahan" },
-  // Sepadan (#326): ditulis ke satelit identitas lahan (utuh lintas revisi); sel terisi menimpa, kosong dibiarkan.
-  { key: "borderNorth", label: "Sepadan Utara", required: false, desc: "Kolom DBF: bts_utara / sep_utara / utara" },
-  { key: "borderEast", label: "Sepadan Timur", required: false, desc: "Kolom DBF: bts_timur / sep_timur / timur" },
-  { key: "borderSouth", label: "Sepadan Selatan", required: false, desc: "Kolom DBF: bts_selatan / sep_selatan / selatan" },
-  { key: "borderWest", label: "Sepadan Barat", required: false, desc: "Kolom DBF: bts_barat / sep_barat / barat" },
-];
+const TARGET_FIELDS = PARCEL_UPLOAD_FIELDS;
 
 // Aturan auto-match + normalisasi dipisah ke `@/lib/parcel-bulk-mapping` (teruji).
 const AUTO_MATCH_RULES = PARCEL_AUTO_MATCH_RULES;
@@ -571,7 +553,19 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       {/* Step 1: Upload File */}
       <Card className="p-6">
         <div className="flex flex-col gap-2">
-          <Label className="text-base font-semibold">1. Pilih ZIP Shapefile</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-base font-semibold">1. Pilih ZIP Shapefile</Label>
+            {/* Template (#419): ZIP contoh 1 poligon fiktif + BACA-SAYA.txt (atribut DBF = alias parser). */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadShapefileTemplate(PARCEL_POLYGON_TEMPLATE)}
+              className="text-xs h-8 gap-1.5"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Unduh Template (ZIP)
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
             Unggah arsip ZIP (.zip) yang berisi berkas .shp, .dbf, .shx, dan .prj dari shapefile
             lahan.
