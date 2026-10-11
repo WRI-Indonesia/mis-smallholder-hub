@@ -298,14 +298,18 @@ export function ProductionCalendarTable({
 
   const loadFarmers = useCallback((id: string, y: number) => {
     const key = `${y}:${id}`;
-    setFarmers((m) => (m.has(key) ? m : new Map(m).set(key, { state: "loading" })));
+    // Entri error juga diganti "loading" saat dicoba ulang: spinner tampil dan `needsLoad`
+    // tak memicu permintaan ganda selama yang pertama berjalan (review pra-rilis v1.7.0).
+    setFarmers((m) => (m.has(key) && m.get(key)!.state !== "error" ? m : new Map(m).set(key, { state: "loading" })));
     getProductionAvailabilityFarmers(id, y)
       .then((data) => setFarmers((m) => new Map(m).set(key, { state: "ready", data })))
       .catch((e: unknown) => setFarmers((m) => new Map(m).set(key, { state: "error", message: e instanceof Error ? e.message : "Gagal memuat" })));
   }, []);
   const loadParcels = useCallback((id: string, y: number) => {
     const key = `${y}:${id}`;
-    setParcels((m) => (m.has(key) ? m : new Map(m).set(key, { state: "loading" })));
+    // Entri error juga diganti "loading" saat dicoba ulang: spinner tampil dan `needsLoad`
+    // tak memicu permintaan ganda selama yang pertama berjalan (review pra-rilis v1.7.0).
+    setParcels((m) => (m.has(key) && m.get(key)!.state !== "error" ? m : new Map(m).set(key, { state: "loading" })));
     getProductionAvailabilityParcels(id, y)
       .then((data) => setParcels((m) => new Map(m).set(key, { state: "ready", data })))
       .catch((e: unknown) => setParcels((m) => new Map(m).set(key, { state: "error", message: e instanceof Error ? e.message : "Gagal memuat" })));

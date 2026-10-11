@@ -59,7 +59,7 @@ src/
 <!-- GENERATED:tech-summary — npm run build:docs; jangan sunting tangan -->
 | Aspek | Angka | Sumber |
 |---|---|---|
-| Berkas test | **190** | `src/test/**/*.test.ts(x)` — jumlah kasus uji per rilis di [metrics.md](../project/metrics.md) |
+| Berkas test | **192** | `src/test/**/*.test.ts(x)` — jumlah kasus uji per rilis di [metrics.md](../project/metrics.md) |
 | Server Actions | **43 berkas** | `src/server/actions/` — satu berkas per domain, seluruh akses data lewat sini |
 | Prisma | **26 berkas skema · 41 model · 21 enum · 41 migrasi** | `prisma/schema/`, `prisma/migrations/` |
 | Menu | **10 top-level · 40 sub menu · 4 level-3** | `prisma/seeds/data/menu.csv` |

@@ -36,6 +36,7 @@ Bentuknya kalender: satu baris per Lembaga (dikelompokkan di bawah baris **Distr
 + Label **lain** pada kode lahan berarti lahan itu bukan lahan aktif petani tersebut (milik petani lain atau revisi lama) tetapi ditunjuk oleh record-nya — biasanya ID Lahan salah ketik saat unggah.
 7. Ubah **Urut** untuk menata baris (berlaku untuk Distrik maupun Lembaga di dalamnya): *Cakupan tahun terpilih* (bawaan, terendah dulu), *Nama*, *Bulan ber-data*, atau *Periode terakhir*; klik judul kolom yang sama untuk membalik arah. Kotak **Cari** menyaring nama, kode, atau distrik Lembaga.
 8. Klik **Excel** (bila punya izin ekspor). Sheet pertama = matriks Lembaga × bulan tahun terpilih beserta kolom ringkasan. Sheet kedua = rincian **lahan × bulan** untuk Lembaga yang sedang dipilih di filter; bila filter Lembaga "Semua", sheet kedua hanya berisi petunjuk untuk memilih satu Lembaga dulu.
++ Semua angka di sheet pertama untuk **tahun terpilih** — kolom Record, Estimasi, 0 kg, dan tanpa persil bertajuk tahunnya, sama cakupannya dengan sheet kedua; hanya periode pertama/terakhir dan jeda yang menggambarkan seluruh rentang data. Kolom bulan selalu berisi angka % atau kosong; Lembaga yang semua lahannya PSR (persen tak bisa dihitung) diberi keterangan di kolom **Catatan**.
 
 > [!hati-hati] Sel kosong berarti **belum ada record di sistem**, bukan berarti kebun tidak panen. Lembaga yang panennya rutin tetap tampil kosong bila hasil panennya belum diunggah lewat **Bulk Upload → Upload Data Produksi**.
 

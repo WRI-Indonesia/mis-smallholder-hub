@@ -104,7 +104,8 @@ Prasyarat: login SUPERADMIN; filter Lembaga = satu Lembaga yang punya produksi t
 Langkah:
 1. Klik **Excel**; buka berkas.
 Harapan:
-- Sheet 1 `Lembaga <tahun>`: kolom Distrik · Kategori · Lembaga Petani · Kode · … · 12 bulan · ringkasan; baris sesuai filter.
+- Sheet 1 `Lembaga <tahun>`: kolom Distrik · Kategori · Lembaga Petani · Kode · … · 12 bulan · ringkasan; baris sesuai filter. Sejak review pra-rilis (owner 2026-10-12): tajuk `Record <tahun>` dst. = jumlah tahun itu saja (sama dengan Sheet 2), kolom bulan tanpa teks "n rec", kolom **Catatan** untuk Lembaga semua-PSR.
+- Akun dengan VIEW tanpa EXPORT: tombol Excel tak tampil **dan** aksi Sheet 2 ditolak server ("Tidak memiliki izin untuk mengekspor …").
 - Sheet 2 `Lahan <abrv>`: lahan × bulan (kg) + pemilik; tidak ada kolom kosong/meluber.
 Baseline dev: `production-availability.test.ts` (17 test), review #416 10 temuan ✅ (`5da9581`).
 

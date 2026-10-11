@@ -1,17 +1,14 @@
 /**
- * Isian pengganti "kosong" pada Kelompok Tani / Blok yang diketik apa adanya
- * di data sumber — "Tidak Ada" (417 lahan di 3 Lembaga, #374), "-", dan token
- * kosong umum berkas Excel ("n/a", "null", "none", ...). SATU daftar untuk
- * penjaga input (skema Zod lahan & import Detail Lahan lewat `cleanGroupInput`)
- * dan pengelompokan Excel/peta (`parcelGroupValue`, #371/#372) — sebelumnya
- * `cleanCell` import dan `cleanGroupInput` tidak sepakat (TD-046, #412).
- * `cleanCell` (import Detail Lahan) tetap punya daftar lebih luas untuk kolom
- * STDB/surat ("belum dapat", "proses") — itu semantik "sedang diurus", bukan KT/Blok.
+ * Isian pengganti "kosong" pada Kelompok Tani / Blok: HANYA "Tidak Ada" (417
+ * lahan di 3 Lembaga, #374) dan "-" (keputusan owner 2026-10-12, review
+ * pra-rilis v1.7.0). #412 sempat memperluasnya ke semua token kosong import
+ * ("0", "na", "belum", "proses", …) — itu membuang nilai sah tanpa peringatan
+ * (Blok "0", KT bersingkatan "NA"). SATU aturan untuk penjaga input (skema Zod
+ * lahan, upload shapefile, import Detail Lahan — kolom KT/Blok dibaca mentah lalu
+ * lewat `cleanGroupInput`) dan pengelompokan Excel/peta (`parcelGroupValue`).
+ * Token STDB/surat ("belum dapat", "proses") tetap milik `cleanCell` import.
  */
-export const EMPTY_GROUP_TOKENS = new Set([
-  "tidak ada", "belum ada", "belum", "belum dapat", "dalam proses", "sedang diurus", "proses", "belum terbit", "tidak terbit",
-  "n/a", "na", "null", "nil", "none", "0",
-]);
+export const EMPTY_GROUP_TOKENS = new Set(["tidak ada"]);
 
 /** Token kosong KT/Blok: salah satu daftar di atas (tak peka huruf besar) atau hanya tanda "-". Pencocokan Set, bukan RegExp (review #412: metakarakter). */
 export function isEmptyGroupToken(value: string): boolean {

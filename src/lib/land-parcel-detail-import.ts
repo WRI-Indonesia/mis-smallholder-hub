@@ -67,7 +67,7 @@ export const LAND_DOCUMENT_TYPE_LABELS: Record<LandDocumentTypeCode, string> = {
  * memang tak diisi. Untuk kolom STDB keduanya kini dibedakan; untuk kolom lain
  * (jenis/nomor surat, luas) tidak ada tahapan, jadi keduanya tetap = kosong.
  */
-// Diekspor untuk penjaga drift: setiap token yang dikosongkan import juga dikosongkan `cleanGroupInput` KT/Blok (TD-046, test group-placeholder).
+// Kolom KT/Blok TIDAK memakai daftar ini — dibaca mentah lalu `cleanGroupInput` (hanya "Tidak Ada"/"-", owner 2026-10-12).
 export const PENDING_TOKENS = new Set(["n/a", "na", "belum dapat", "belum ada", "belum", "tidak ada", "dalam proses", "sedang diurus", "proses", "belum terbit", "tidak terbit"]);
 export const BLANK_TOKENS = new Set(["", "-", "0", "null", "nil", "none"]);
 const EMPTY_TOKENS = new Set([...BLANK_TOKENS, ...PENDING_TOKENS]);
@@ -440,6 +440,17 @@ function rawNktStatusCell(value: unknown): string {
  */
 const PENDING_AWARE_KEYS: ReadonlySet<ParcelDetailFieldKey> = new Set(["stdbNumber"]);
 
+/**
+ * Kolom KT/Blok dibaca MENTAH (trim saja): aturan kosongnya milik
+ * `cleanGroupInput` (hanya "Tidak Ada"/"-") — `cleanCell` akan membuang "0",
+ * "belum", "na" yang di KT/Blok bisa nilai sah (owner 2026-10-12).
+ */
+const GROUP_KEYS: ReadonlySet<ParcelDetailFieldKey> = new Set(["subGroupLv2", "blok"]);
+function rawGroupCell(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value).trim().replace(/\s+/g, " ");
+}
+
 function readRaw(row: RawRow, mapping: Mapping): Record<ParcelDetailFieldKey, string> {
   const out = {} as Record<ParcelDetailFieldKey, string>;
   for (const f of PARCEL_DETAIL_TARGET_FIELDS) {
@@ -448,7 +459,9 @@ function readRaw(row: RawRow, mapping: Mapping): Record<ParcelDetailFieldKey, st
       ? ""
       : f.key === "nktStatus"
         ? rawNktStatusCell(row[col])
-        : FREE_TEXT_KEYS.has(f.key) || PENDING_AWARE_KEYS.has(f.key)
+        : GROUP_KEYS.has(f.key)
+          ? rawGroupCell(row[col])
+          : FREE_TEXT_KEYS.has(f.key) || PENDING_AWARE_KEYS.has(f.key)
           ? cleanFreeTextCell(row[col])
           : cleanCell(row[col]);
   }
