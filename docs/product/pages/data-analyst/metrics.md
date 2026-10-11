@@ -6,41 +6,36 @@ Sub menu `dashboard-metrics`, satu halaman: `/admin/dashboard/metrics` (#227). D
 
 ## Diagram objek
 
-Layout disederhanakan pada #250 (keputusan owner 2026-08-13, mencabut sebagian spec #227 §3): halaman disusun mengikuti tiga pertanyaan berurutan — **sekarang di mana** → **lajunya bagaimana** → **apa isinya**. Dua aturan yang dipegang: tidak ada angka yang tampil dua kali di layar yang sama, dan tidak ada kontrol waktu per chart (sumbu X ketiga grafik harus sebanding).
+Layout disederhanakan pada #250 (keputusan owner 2026-08-13, mencabut sebagian spec #227 §3) lalu dirombak **#421** (owner 2026-10-12, "ringkasan dulu, grafik bertab"): **apa yang sudah dirilis & sedang dikejar** → **sehat atau tidak** → **lajunya bagaimana** → **apa isinya**. Dua aturan yang dipegang: tidak ada angka yang tampil dua kali di layar yang sama, dan tidak ada kontrol waktu per chart (sumbu X ketiga grafik harus sebanding).
 
 ```text
 Halaman: Metrik Rilis (/admin/dashboard/metrics)
 ├── Header
 │   ├── Judul "Metrik rilis" + rentang tanggal + jumlah rilis
 │   └── Badge "terukur sejak v0.21.0" + HelpHint
-├── Baris KPI (3 kartu, auto-fit) — kartu "Kualitas" DIHAPUS (mengulang jalur kualitas di bawah)
-│   ├── RVS sekarang ("+Δ di <rilis terakhir> · anchor v0.9.0 = 1.000") — #392
-│   ├── Roadmap (% tertimbang; "<poin>/<maks> poin · <n> fase · baseline lama beku <x>%") — DAPAT DIKLIK
-│   │   → akordeon Detail roadmap; tak lagi "pt sejak v0.9.0" (lintas baseline, tak sebanding — #392)
-│   └── Test otomatis ("+N di <rilis terakhir> · awal ≈440") — #392
-├── Kontrol rentang waktu TUNGGAL (time-window.tsx)
-│   ├── Pilihan: "1 Minggu" · "1 Bulan" · "6 Bulan" · "1 Tahun" · "Semua" (TIME_WINDOWS)
-│   ├── Menyaring data (windowSlice), BUKAN zoom kanvas → sumbu X ketiga grafik identik
-│   └── Pilihan yang sudah setara "Semua" disembunyikan mengikuti umur data (availableWindows)
-├── Tiga grafik sebaris (lg:grid-cols-3) di atas kerangka bersama time-series-chart.tsx
-│   ├── Kurva RVS — line (TANPA area: domain Y ikut data, area ber-baseline terpotong menyesatkan)
-│   │   ├── Sumbu X waktu PROPORSIONAL kalender (jeda antar rilis terlihat)
-│   │   ├── Estimasi (pra-v0.21.0): ruas garis putus-putus + titik berongga
-│   │   ├── Anotasi vertikal "mulai diukur" — hanya bila rilis terukur pertama ada di rentang
-│   │   └── Tooltip hover: versi · tanggal · RVS (≈ bila estimasi) · Δ
-│   ├── Progres roadmap — stepped line, domain Y dinamis ±margin clamp 0–100, shading + label
-│   │   plateau (plateau dihitung dari seluruh riwayat BASELINE AKTIF, digambar terpotong di tepi rentang)
-│   │   ├── Garis TERPUTUS per baseline (#392): batas = baris metrics.md bercatatan "Roadmap direset"
-│   │   │   (`roadmapBaseline`); segmen lama opacity 0,35; garis vertikal putus + label "reset <tgl>",
-│   │   │   "baseline lama beku <x>%", "baseline baru <y>%"; >1 baseline tampak → sumbu Y 0–100
-│   │   ├── Tooltip menyebut baseline titik itu (lama/dibekukan · awal baseline baru · aktif)
-│   │   └── Aksi "lihat rincian" di kanan judul → akordeon Detail roadmap
-│   └── Jumlah test — line, sumbu Y mengikuti data, anotasi lonjakan terbesar; warna = seri RVS
-├── Jalur Kualitas (1 baris, 4 sel bergaris rambut — dulu 4 kartu setinggi KPI)
+├── Baris ringkasan (lg:grid-cols-2) — #421
+│   ├── Rilis terakhir: versi (tautan GitHub Release) · tanggal; RVS (ⓘ definisi, "+Δ dari rilis ini ·
+│   │   anchor v0.9.0 = 1.000") · Progres roadmap ("<poin>/<maks> poin · <n> fase · baseline lama beku <x>%")
+│   │   — Progres roadmap = tombol → akordeon Detail roadmap
+│   └── Rilis berjalan (CurrentReleaseCard): `summarizeCurrentRelease(releasePlan, today)` dari sprint.md
+│       (rilis berjalan, atau rilis lewat target belum dirilis): versi + judul, target + "hari ke-n/N, sisa n hari"
+│       / "lewat n hari", progressbar butir selesai (tanpa Digeser), poin, dikerjakan, menunggu keputusan
+│       (kuning); tautan "Rencana Pengembangan" hanya bila VIEW `data-analyst-sprint` (dicek server)
+├── Jalur kesehatan (1 baris, 4 sel bergaris rambut) — dipindah ke atas grafik (#421)
 │   ├── Bug terbuka (0 → normal; >0 → latar warning)
-│   ├── Tech debt aktif + indikator arah (naik/turun/tetap) — DAPAT DIKLIK → akordeon Tech debt
-│   ├── Audit Bantuan (done/total + persen menu ber-tutorial)
-│   └── Payload peta (delta 2 titik terukur — sengaja bukan grafik)
+│   ├── Tech debt aktif + panah arah (hijau turun / kuning naik) — DAPAT DIKLIK → akordeon Tech debt
+│   ├── Bantuan (done/total + persen menu ber-tutorial)
+│   └── Test otomatis + panah arah (hijau naik) + "+N di <rilis terakhir> · awal ≈440"
+│   (kartu **Payload peta DIHAPUS** #421 — terakhir diukur v0.35.0, tak pernah otomatis; riwayat di Daftar rilis)
+├── Kartu grafik bertab (Tabs: Kurva RVS · Progres roadmap · Jumlah test; tinggi 300 px) + kontrol
+│   rentang waktu TUNGGAL di kanan (time-window.tsx — berlaku untuk ketiga tab) — dulu tiga grafik 200 px sebaris
+│   ├── Rentang: "1 Minggu" · "1 Bulan" · "6 Bulan" · "1 Tahun" · "Semua" (TIME_WINDOWS); menyaring data
+│   │   (windowSlice), BUKAN zoom; pilihan setara "Semua" disembunyikan (availableWindows)
+│   ├── Kurva RVS — line (TANPA area), sumbu X proporsional kalender, estimasi putus-putus + titik
+│   │   berongga, anotasi "mulai diukur", tooltip versi · tanggal · RVS · Δ
+│   ├── Progres roadmap — stepped line, plateau, garis TERPUTUS per baseline (#392: "reset <tgl>",
+│   │   segmen lama opacity 0,35); tautan "lihat rincian fase" → akordeon Detail roadmap
+│   └── Jumlah test — line, anotasi lonjakan terbesar
 ├── Detail roadmap (collapsible, default tertutup; meta "<Roadmap %> · <jumlah> fase", mis. "8,6% · 26 fase" sejak reset 2026-09-30)
 │   ├── Dari mana angkanya — inti (×2, "fase komitmen roadmap") · pendukung (×1) · total poin · Roadmap % + "sisa … pp menuju target roadmap"
 │   ├── Sebaran per stream — satu kotak = satu fase, lebar ∝ bobot, panjang baris ∝ porsi stream
@@ -73,7 +68,7 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 |---|---|
 | Menu key | `dashboard-metrics` (parent **`data-analyst`** di database — lihat catatan di [README menu](README.md); label "Metrik Rilis", icon `Activity`, order 5). Route tetap `/admin/dashboard/metrics`. |
 | File | `src/app/(admin)/admin/dashboard/metrics/page.tsx` (+ `loading.tsx`) |
-| Client | `metrics-dashboard-client.tsx` (orkestrasi + KPI + jalur kualitas + akordeon), `time-series-chart.tsx` (kerangka bersama 3 grafik: sumbu, ResizeObserver, tooltip, marka, render-prop anotasi), `rvs-curve-chart.tsx`, `metrics-small-charts.tsx`, `rvs-period-bars.tsx`, `roadmap-detail.tsx`, `time-window.tsx`, `metrics-shared.ts` (palet tervalidasi, formatter id-ID, `windowSlice`, `niceTicks`) |
+| Client | `metrics-dashboard-client.tsx` (orkestrasi + ringkasan Rilis terakhir/berjalan + jalur kesehatan + grafik bertab + akordeon; #421), `time-series-chart.tsx` (kerangka bersama 3 grafik: sumbu, ResizeObserver, tooltip, marka, render-prop anotasi), `rvs-curve-chart.tsx`, `metrics-small-charts.tsx`, `rvs-period-bars.tsx`, `roadmap-detail.tsx`, `time-window.tsx`, `metrics-shared.ts` (palet tervalidasi, formatter id-ID, `windowSlice`, `niceTicks`) |
 | Guard | `requirePermission("dashboard-metrics")`; seed RolePermission VIEW untuk ADMIN & MANAGEMENT, SUPERADMIN lewat bypass peran → efektif SUPERADMIN/ADMIN/MANAGEMENT (dijaga `src/test/menu-access.test.ts`) |
 | Sumber data | **`docs/project/metrics.md`** + **`docs/project/roadmap.md`** + `docs/project/tech-debt.md`, di-bundle webpack `asset/source` → `src/lib/release-metrics-data.ts` → parser murni `release-metrics.ts` (`parseReleaseMetrics`, `bucketRvsGains`), `roadmap.ts` (`parseRoadmapPhases`, `parseStreamLabels`, `parseHorizonLabels`, `summarizeRoadmap`, `groupRemainingByHorizon`), `tech-debt.ts`; TIDAK ada server action / query DB |
 | Validasi | Parser melempar saat format tabel rusak, RVS turun, roadmap turun tanpa catatan, tanggal mundur, baris berjalan bukan terakhir (`src/test/release-metrics.test.ts`); tabel Phase Status: jumlah kolom salah, status/horizon/bobot di luar Definisi, kode fase ganda (`src/test/roadmap.test.ts`) — build/test gagal, bukan salah render |
