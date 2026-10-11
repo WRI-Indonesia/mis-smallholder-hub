@@ -11,6 +11,7 @@ Sumber: `git log <tag>..HEAD`, `gh issue list --state closed`, `docs/project/cha
 | 3 | #384 | Filter Peta BMP menerima `map-bmp` | Map › Peta BMP · Peta Lahan | — | — | — | `TC-384-01` |
 | 4 | #387 | Temuan kecil audit test | Master Data › Pelatihan · Lahan (riwayat revisi) | — | — | t-3 | `TC-387-01` |
 | 5 | #416 | Ketersediaan Data › Produksi + induk menu | Data Analyst › Ketersediaan Data › Semua Lembaga · Per Lembaga · **Produksi** | — | `data-analyst-availability` · `data-analyst-availability-production` (+ 2 menu lama pindah induk) | p-18 (baru), p-6, a-1, l-6, 3-3, r-5 | `TC-416-01..03` |
+| 6 | #417 | Semua Lembaga: tata letak ringkas & satu tempat | Data Analyst › Ketersediaan Data › Semua Lembaga (+ sub-nav di Per Lembaga & Produksi) | — | — | p-6, 3-3, r-5, a-1 | `TC-417-01..03` |
 
 ## Di luar lingkup pengujian (sengaja)
 

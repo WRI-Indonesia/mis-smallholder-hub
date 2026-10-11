@@ -15,7 +15,7 @@ export interface ActiveFilterChip {
  * Baris "filter aktif" (#417 A, T3): satu tempat yang memperlihatkan semua
  * pilihan filter & urutan yang sedang berlaku, masing-masing bisa dilepas, plus
  * Reset semua. Tidak tampil bila tak ada pilihan — tampilan bawaan tetap bersih.
- * Menggantikan tautan kecil "hapus filter band" di hero.
+ * Menggantikan tautan kecil "hapus filter band" (istilah lama) di hero.
  */
 export function ActiveFilterBar({ chips, onReset }: { chips: ActiveFilterChip[]; onReset: () => void }) {
   if (chips.length === 0) return null;

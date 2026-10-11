@@ -108,3 +108,39 @@ Harapan:
 - Sheet 2 `Lahan <abrv>`: lahan × bulan (kg) + pemilik; tidak ada kolom kosong/meluber.
 Baseline dev: `production-availability.test.ts` (17 test), review #416 10 temuan ✅ (`5da9581`).
 
+## #417 — Ketersediaan Data › Semua Lembaga: tata letak ringkas & satu tempat
+
+### TC-417-01 · Kerangka ringkas, filter aktif, bookmark lama [P0] [regresi] (5 mnt)
+Prasyarat: seed menu #416 sudah `--apply`; login SUPERADMIN; layar ≥ 1.440 px.
+Langkah:
+1. Buka Data Analyst › Ketersediaan Data › Semua Lembaga tanpa parameter.
+2. Klik segmen "perhatian" di bar sebaran, lalu chip **Urutkan** pada kartu Produksi.
+3. Klik ✕ pada chip "Tingkat skor", lalu **Reset semua**.
+4. Buka URL lama `?tampilan=inti&band=bad&urut=produksi`.
+Harapan:
+- Langkah 1: tab Semua Lembaga · Per Lembaga · Produksi di bawah judul; hero satu baris; radar 10 kartu + "Tampilkan 22 lagi"; Daftar Kerja tampak dalam ≤ 2 scroll; tanpa baris Filter aktif.
+- Langkah 2: baris Filter aktif berisi chip "Tingkat skor: perhatian" dan "Urut: produksi ↑"; kartu Produksi bertuliskan **Terurut**.
+- Langkah 3: chip hilang satu per satu; Reset mengembalikan URL bersih.
+- Langkah 4: tampilan Heatmap, chip "kritis" & "produksi ↑" tampil.
+
+### TC-417-02 · Toolbar matriks & tiga tampilan [P1] (4 mnt)
+Prasyarat: login OPERATOR ter-scope 1 Distrik.
+Langkah:
+1. Gulir matriks radar ke bawah; amati toolbar.
+2. Pindah ke Heatmap; periksa kolom domain.
+3. Pindah ke Cakupan modul; klik judul satu modul; ketik nama Lembaga di Cari.
+Harapan:
+- Toolbar (status · ⓘ · tab · Urut · arah · Cari) tetap terlihat saat digulir.
+- Heatmap: kelima kolom domain terlihat tanpa scroll mendatar (≥ 1.024 px konten).
+- Modul: URL memuat `urut=modul:<key>`; pencarian menyaring baris; hanya Lembaga dalam scope.
+
+### TC-417-03 · Daftar Kerja bertab [P1] (3 mnt)
+Prasyarat: login SUPERADMIN.
+Langkah:
+1. Di Daftar Kerja, buka tab Per entitas lalu Tertinggal per domain; muat ulang halaman.
+2. Di tab Sistemik, buka tombol "n Lembaga ▾" satu baris dengan keyboard (Tab lalu Enter).
+Harapan:
+- Tab terakhir bertahan setelah muat ulang (`?kerja=`); badge jumlah di tiap tab.
+- Popover daftar Lembaga terbuka; tiap nama tertaut ke Per Lembaga. Label memakai "Lahan", bukan "Persil".
+Baseline dev: `availability-layout.test.ts` (7), `matrix-rows.test.ts` (12); tinggi halaman bawaan 1.680 px terukur lokal 2026-10-11.
+

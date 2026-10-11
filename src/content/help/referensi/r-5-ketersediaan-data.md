@@ -4,7 +4,7 @@ icon: Gauge
 menuKey: data-analyst-data-availability
 permission: VIEW
 href: /admin/data-analyst/data-availability
-hrefLabel: Buka Ketersediaan Data — Semua Lembaga
+hrefLabel: Buka Ketersediaan Data › Semua Lembaga
 ---
 
 ## Index Ketersediaan Data
@@ -43,7 +43,7 @@ Setiap baris checklist berchip jenis:
 
 ## Temuan anomali
 
-**Per entitas** — satu baris per petani/persil yang bermasalah; jumlahnya masuk badge "n temuan" dan panel Anomali Terbanyak bagian *Per entitas*.
+**Per entitas** — satu baris per petani/persil yang bermasalah; jumlahnya masuk badge "n temuan" dan **Daftar Kerja › Per entitas** di halaman Semua Lembaga.
 
 **Sistemik** — bila satu check "kolom kosong" (Inti, Lapangan, Relasi) kosong pada ≥ 95 % entitas Lembaga (dan Lembaga punya ≥ 10 entitas), anomali itu dilipat menjadi **satu** temuan agregat "kolom belum pernah diisi". Check validitas, kualitas, dan paket pelatihan tidak pernah dilipat. Skor domain tidak berubah oleh pelipatan ini — hanya cara menghitung temuannya. Daftar lengkap tetap tersedia di Excel.
 
