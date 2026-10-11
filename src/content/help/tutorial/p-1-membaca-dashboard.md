@@ -20,10 +20,10 @@ Angka di sini **dibaca dari snapshot**, bukan dihitung ulang tiap halaman dibuka
 ## Langkah
 
 1. Buka menu **Dashboard → Main Dashboard**.
-2. Baca baris kartu ringkasan di bagian atas.
-+ Empat belas kartu, mencakup total petani (beserta rincian laki-laki/perempuan), kelompok tani, persil dan luas lahan, cakupan tiap paket pelatihan, serta status sertifikasi RSPO, ISPO, dan SAP/MAP.
-3. Klik salah satu dari lima kartu pertama untuk membuka rincian angkanya.
-+ Total Lembaga Petani menampilkan daftar lembaganya; Total Kelompok Tani menampilkan jumlah KT per lembaga; ketiga kartu sertifikasi menampilkan lembaga mana saja yang sudah tersertifikasi dan mana yang masih plan. Rincian selalu mengikuti filter yang sedang aktif, jadi jumlah barisnya sama dengan angka di kartu. Dari daftar rincian, klik nama lembaga untuk membuka halaman detailnya di Master Data. Sembilan kartu lainnya tidak memiliki rincian.
+2. Baca lima kartu ringkasan di bagian atas: **Kelembagaan**, **Sertifikasi & assurance**, **Petani**, **Lahan**, dan **Pelatihan**.
++ **Kelembagaan** memuat jumlah Lembaga Petani dan Kelompok Tani. **Sertifikasi & assurance** memuat RSPO, ISPO, dan SAP/MAP (lembaga tersertifikasi · jumlah plan). **Petani** memuat total petani beserta bar komposisi laki-laki/perempuan. **Lahan** memuat jumlah persil dan total luas. **Pelatihan** memuat jumlah petani per paket dengan bar persentase terhadap total petani.
+3. Klik baris yang bertanda panah ↗ — Lembaga Petani, Kelompok Tani, atau salah satu sertifikasi — untuk membuka rincian angkanya.
++ Lembaga Petani menampilkan daftar lembaganya; Kelompok Tani menampilkan jumlah KT per lembaga; tiap baris sertifikasi menampilkan lembaga mana saja yang sudah tersertifikasi dan mana yang masih plan. Rincian selalu mengikuti filter yang sedang aktif, jadi jumlah barisnya sama dengan angka di kartu. Dari daftar rincian, klik nama lembaga untuk membuka halaman detailnya di Master Data. Angka petani, lahan, dan pelatihan tidak memiliki rincian.
 4. Gunakan filter **Distrik**, **Lembaga Petani**, dan **Tahun** untuk mempersempit.
 + Filter bekerja seketika karena mengiris snapshot yang sudah dimuat, tanpa memuat ulang halaman. Filter Tahun menyaring angka turunan petani berdasarkan Tahun Bergabung — bukan menyaring lembaga.
 5. Klik titik lembaga di peta untuk membuka panel informasinya.

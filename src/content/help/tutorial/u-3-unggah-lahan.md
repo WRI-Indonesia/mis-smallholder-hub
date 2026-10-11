@@ -21,6 +21,10 @@ Siapkan **satu berkas ZIP** berisi shapefile lengkap: `.shp`, `.dbf`, `.shx`, da
 
 Tabel atribut `.dbf` harus memuat **ID Petani** dan **ID Lahan**, karena dari situlah poligon dicocokkan ke petani yang sudah terdaftar.
 
+Belum tahu nama atributnya? Klik **Unduh Template (ZIP)** di kanan atas Langkah 1.
+
++ ZIP template berisi shapefile contoh 1 poligon fiktif (`CTH.…`) dengan atribut yang langsung dikenali sistem — `parcel_id`, `farmer_id`, `luas_ha`, `status`, `komoditas`, `thn_tanam`, `poktan`, `blok`, `revisi`, `catatan`, `sepadan_u/t/s/b` — plus **BACA-SAYA.txt** (mana yang wajib dan formatnya). Buka di QGIS/ArcGIS, ganti poligon contoh dengan batas lahan Anda, isi atributnya, lalu ZIP ulang keempat berkasnya.
+
 ## Langkah
 
 1. Buka menu **Bulk Upload → Upload Data Lahan**; pastikan tab **Poligon (Shapefile ZIP)** yang aktif (tab bawaan).
@@ -28,6 +32,7 @@ Tabel atribut `.dbf` harus memuat **ID Petani** dan **ID Lahan**, karena dari si
 2. Pada **Langkah 1**, pilih berkas `.zip`. Sistem membaca isinya dan menyebut jumlah fitur yang terdeteksi.
 + Bila jumlah fitur jauh berbeda dari yang Anda harapkan, hentikan di sini — biasanya berarti ZIP-nya memuat layer yang salah.
 3. Pada **Langkah 2 — Petakan Atribut Kolom**, cocokkan kolom tabel atribut dengan kolom sistem.
++ Kolom sistem dikelompokkan (mis. Identitas, Atribut lahan, Kelompok & Blok, Sepadan). Header tiap grup menunjukkan berapa kolomnya sudah terpetakan; grup yang kolomnya tidak ada di berkas tertutup dengan tanda *tak ada di berkas* — buka bila ingin memetakan manual. Di samping tiap pilihan tampil **contoh nilai dari baris data pertama**, jadi salah petakan langsung terlihat sebelum validasi.
 + Kolom **Kelompok Tani** yang berisi **"Tidak Ada"** atau **"-"** disimpan sebagai kosong — lahan itu tercatat *tanpa Kelompok Tani*, bukan ber-KT bernama "Tidak Ada". Hal yang sama berlaku di form Tambah/Edit Lahan.
 + Nama kolom di shapefile sering terpotong menjadi 10 karakter (batas format DBF), misalnya `ID_PETANI` jadi `ID_PETAN`. Itu normal — cocokkan berdasarkan isinya, bukan namanya. **Komoditas** boleh dibiarkan tak dipetakan: baris yang kosong otomatis tersimpan sebagai **Kelapa Sawit**, dan pratinjau sudah menampilkannya begitu — jadi yang Anda lihat sama dengan yang tersimpan.
 + Bila tabel atribut memuat **sepadan** (dengan siapa/apa lahan berbatasan di sisi Utara/Timur/Selatan/Barat), petakan ke empat kolom **Sepadan …**. Kolom bernama `BTS_UTARA`, `SEP_UTARA`, atau `UTARA` (dan padanannya untuk timur/selatan/barat) dikenali otomatis. Sepadan disimpan pada *identitas* lahan, jadi tetap utuh saat poligonnya direvisi; sel yang terisi menimpa nilai lama, sel kosong dibiarkan.

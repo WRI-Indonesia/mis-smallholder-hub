@@ -21,6 +21,8 @@ Siapkan **satu berkas ZIP** berisi shapefile lengkap: `.shp`, `.dbf`, `.shx`, da
 
 Tabel atribut `.dbf` wajib memuat kolom `parcel_id` berisi **ID Lahan** persis seperti yang terdaftar di Master Data Lahan — dari situlah titik dicocokkan ke lahannya. Satu ZIP boleh memuat titik untuk beberapa lahan sekaligus; sistem mengelompokkannya otomatis.
 
++ Contoh format: klik **Unduh Template (ZIP)** di kanan atas kotak berkas — shapefile titik berisi 2 pohon fiktif dengan atribut `parcel_id`, `tree_id`, `no`, `category`, `vigor`, `source`, `model_ver`, plus **BACA-SAYA.txt**.
+
 > [!penting] Lahannya harus **sudah terdaftar dan aktif** lebih dulu. Unggahan pohon tidak bisa membuat lahan baru — daftarkan lahannya lewat Master Data atau Upload Lahan sebelum mengunggah pohonnya.
 
 ## Langkah

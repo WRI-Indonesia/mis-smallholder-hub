@@ -361,7 +361,7 @@ export function toUploadPayload(rows: MarkerUploadValidatedRow[]) {
 /** Kolom template unduhan (urutan = MARKER_UPLOAD_FIELDS). */
 export const MARKER_UPLOAD_TEMPLATE_COLUMNS = MARKER_UPLOAD_FIELDS.map((f) => ({ header: f.label, key: f.key, width: f.key === "notes" ? 32 : 18 }));
 export const MARKER_UPLOAD_TEMPLATE_EXAMPLE: Record<MarkerUploadFieldKey, string | number> = {
-  parcelId: "ICS-XXXX-01.0001.A",
+  parcelId: "CTH.0001.A.14.01.10.2012", // fiktif (#419), gaya ID contoh template lain
   farmerCode: "",
   code: "",
   sequenceNo: 1,

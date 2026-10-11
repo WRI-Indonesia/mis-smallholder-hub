@@ -76,7 +76,7 @@ Peran: SUPERADMIN, lalu OPERATOR · Langkah: pilih Lembaga (analisa otomatis), k
 Peran: SUPERADMIN · Langkah: buka ketiganya · Harapan: angka terisi; Peta Data memuat tabel baru rilis ini.
 
 ### SM-24 · Bulk Upload › Petani · Produksi · Lahan (tiap tab) · Pohon [P0] (3 mnt)
-Peran: ADMIN · Langkah: tiap tab terbuka, unduh template (Produksi, Lahan, Pohon) · Harapan: template terunduh; Upload **Petani** tanpa template (pencocokan kolom dinamis, by design).
+Peran: ADMIN · Langkah: tiap tab terbuka, unduh template di **ketujuh** tombol (Petani, Produksi, Lahan › Poligon ZIP · Detail · NKT · Patok, Pohon ZIP) · Harapan: template terunduh; tajuk/atribut template langsung terpetakan otomatis saat diunggah ulang (#419).
 
 ### SM-25 · Tools › Dashboard Snapshot · Snapshot BMP [P2] (1 mnt)
 Peran: SUPERADMIN · Langkah: daftar terbuka (tanpa generate) · Harapan: terbuka.

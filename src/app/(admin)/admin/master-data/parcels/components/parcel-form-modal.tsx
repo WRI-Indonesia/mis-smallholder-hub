@@ -109,99 +109,179 @@ export function ParcelFormModal({ open, onClose, parcel, farmers, onSaved }: Pro
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Lahan" : "Tambah Lahan"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Petani</Label>
-            <Popover open={farmerComboOpen} onOpenChange={setFarmerComboOpen}>
-              <PopoverTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={farmerComboOpen}
-                    className="w-full justify-between h-9 font-normal text-left"
-                  >
-                    {selectedFarmerId ? (
-                      <span>
-                        {currentFarmer?.name} ({currentFarmer?.farmerId})
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">Pilih Petani</span>
-                    )}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                }
-              />
-              <PopoverContent className="w-[470px] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Cari petani..." />
-                  <CommandList className="max-h-[200px]">
-                    <CommandEmpty>Petani tidak ditemukan.</CommandEmpty>
-                    <CommandGroup>
-                      {farmers.map((f) => (
-                        <CommandItem
-                          key={f.id}
-                          value={`${f.name} ${f.farmerId}`}
-                          onSelect={() => {
-                            setSelectedFarmerId(f.id);
-                            setFarmerComboOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedFarmerId === f.id ? "opacity-100" : "opacity-0",
-                            )}
-                          />
-                          {f.name} ({f.farmerId})
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            {errors.farmerId && <p className="text-sm text-destructive">{errors.farmerId[0]}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={onSubmit} className="space-y-5">
+          {/* #420: 4 seksi berjudul (dulu 12 field datar); field & validasi tidak berubah. */}
+          <FormSection title="Identitas">
             <div className="space-y-2">
-              <Label htmlFor="parcelId">ID Lahan</Label>
-              <Input id="parcelId" name="parcelId" defaultValue={parcel?.parcelId ?? ""} required />
-              {errors.parcelId && <p className="text-sm text-destructive">{errors.parcelId[0]}</p>}
+              <Label>Petani</Label>
+              <Popover open={farmerComboOpen} onOpenChange={setFarmerComboOpen}>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={farmerComboOpen}
+                      className="w-full justify-between h-9 font-normal text-left"
+                    >
+                      {selectedFarmerId ? (
+                        <span>
+                          {currentFarmer?.name} ({currentFarmer?.farmerId})
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Pilih Petani</span>
+                      )}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  }
+                />
+                <PopoverContent className="w-[470px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Cari petani..." />
+                    <CommandList className="max-h-[200px]">
+                      <CommandEmpty>Petani tidak ditemukan.</CommandEmpty>
+                      <CommandGroup>
+                        {farmers.map((f) => (
+                          <CommandItem
+                            key={f.id}
+                            value={`${f.name} ${f.farmerId}`}
+                            onSelect={() => {
+                              setSelectedFarmerId(f.id);
+                              setFarmerComboOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedFarmerId === f.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                            {f.name} ({f.farmerId})
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {errors.farmerId && <p className="text-sm text-destructive">{errors.farmerId[0]}</p>}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="parcelId">ID Lahan</Label>
+                <Input id="parcelId" name="parcelId" defaultValue={parcel?.parcelId ?? ""} required />
+                {errors.parcelId && <p className="text-sm text-destructive">{errors.parcelId[0]}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Revisi</Label>
+                <p className="text-sm font-mono h-9 flex items-center px-3 border rounded-md bg-muted/40 text-muted-foreground">
+                  {parcel?.revision ?? 0}
+                  {parcel && <span className="ml-2 text-xs">(otomatis bertambah saat disimpan)</span>}
+                </p>
+              </div>
+            </div>
+          </FormSection>
+
+          <FormSection title="Kebun">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="area">Luas (Hektar)</Label>
+                <Input
+                  id="area"
+                  name="area"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Contoh: 1.5"
+                  defaultValue={parcel?.area ?? ""}
+                />
+                {errors.area && <p className="text-sm text-destructive">{errors.area[0]}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="blok">Blok</Label>
+                <Input
+                  id="blok"
+                  name="blok"
+                  defaultValue={parcel?.blok ?? ""}
+                  placeholder="Blok kebun"
+                />
+                {errors.blok && <p className="text-sm text-destructive">{errors.blok[0]}</p>}
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="area">Luas (Hektar)</Label>
+              <Label htmlFor="subGroupLv2">Kelompok Tani</Label>
               <Input
-                id="area"
-                name="area"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Contoh: 1.5"
-                defaultValue={parcel?.area ?? ""}
+                id="subGroupLv2"
+                name="subGroupLv2"
+                defaultValue={parcel?.subGroupLv2 ?? ""}
+                placeholder="Nama Kelompok Tani"
               />
-              {errors.area && <p className="text-sm text-destructive">{errors.area[0]}</p>}
+              {errors.subGroupLv2 && (
+                <p className="text-sm text-destructive">{errors.subGroupLv2[0]}</p>
+              )}
             </div>
-          </div>
+          </FormSection>
 
-          <div className="space-y-2">
-            <Label htmlFor="blok">Blok</Label>
-            <Input
-              id="blok"
-              name="blok"
-              defaultValue={parcel?.blok ?? ""}
-              placeholder="Blok kebun"
-            />
-            {errors.blok && <p className="text-sm text-destructive">{errors.blok[0]}</p>}
-          </div>
+          <FormSection title="Tanaman">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cropType">Komoditas</Label>
+                <Input
+                  id="cropType"
+                  name="cropType"
+                  defaultValue={parcel?.cropType ?? DEFAULT_CROP_TYPE}
+                  placeholder="Contoh: Kelapa Sawit"
+                />
+                {errors.cropType && <p className="text-sm text-destructive">{errors.cropType[0]}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="species">Species</Label>
+                <Input
+                  id="species"
+                  name="species"
+                  defaultValue={parcel?.species ?? ""}
+                  placeholder="Contoh: Elaeis guineensis"
+                />
+                {errors.species && <p className="text-sm text-destructive">{errors.species[0]}</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="plantingYear">Tahun Tanam</Label>
+                <Input
+                  id="plantingYear"
+                  name="plantingYear"
+                  type="number"
+                  min={1900}
+                  max={2100}
+                  placeholder="Contoh: 2018"
+                  defaultValue={parcel?.plantingYear ?? ""}
+                />
+                {errors.plantingYear && (
+                  <p className="text-sm text-destructive">{errors.plantingYear[0]}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="isPsr">PSR (Peremajaan Sawit Rakyat)</Label>
+                <label className="flex items-center gap-2 h-9 px-3 border rounded-md text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="isPsr"
+                    name="isPsr"
+                    defaultChecked={parcel?.isPsr ?? false}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  Lahan sedang PSR (replanting)
+                </label>
+              </div>
+            </div>
+          </FormSection>
 
-          <div className="grid grid-cols-2 gap-4">
+          <FormSection title="Status & Catatan">
             <div className="space-y-2">
               <Label htmlFor="landStatus">Status Kepemilikan</Label>
               <Select name="landStatus" defaultValue={parcel?.landStatus ?? ""}>
@@ -219,91 +299,16 @@ export function ParcelFormModal({ open, onClose, parcel, farmers, onSaved }: Pro
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cropType">Komoditas</Label>
-              <Input
-                id="cropType"
-                name="cropType"
-                defaultValue={parcel?.cropType ?? DEFAULT_CROP_TYPE}
-                placeholder="Contoh: Kelapa Sawit"
+              <Label htmlFor="notes">Catatan</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                defaultValue={parcel?.notes ?? ""}
+                placeholder="Catatan tambahan..."
               />
-              {errors.cropType && <p className="text-sm text-destructive">{errors.cropType[0]}</p>}
+              {errors.notes && <p className="text-sm text-destructive">{errors.notes[0]}</p>}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="species">Species</Label>
-              <Input
-                id="species"
-                name="species"
-                defaultValue={parcel?.species ?? ""}
-                placeholder="Contoh: Elaeis guineensis"
-              />
-              {errors.species && <p className="text-sm text-destructive">{errors.species[0]}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="isPsr">PSR (Peremajaan Sawit Rakyat)</Label>
-              <label className="flex items-center gap-2 h-9 px-3 border rounded-md text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="isPsr"
-                  name="isPsr"
-                  defaultChecked={parcel?.isPsr ?? false}
-                  className="h-4 w-4 accent-primary"
-                />
-                Lahan sedang PSR (replanting)
-              </label>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="plantingYear">Tahun Tanam</Label>
-              <Input
-                id="plantingYear"
-                name="plantingYear"
-                type="number"
-                min={1900}
-                max={2100}
-                placeholder="Contoh: 2018"
-                defaultValue={parcel?.plantingYear ?? ""}
-              />
-              {errors.plantingYear && (
-                <p className="text-sm text-destructive">{errors.plantingYear[0]}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Revisi</Label>
-              <p className="text-sm font-mono h-9 flex items-center px-3 border rounded-md bg-muted/40 text-muted-foreground">
-                {parcel?.revision ?? 0}
-                {parcel && <span className="ml-2 text-xs">(otomatis bertambah saat disimpan)</span>}
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="subGroupLv2">Kelompok Tani</Label>
-            <Input
-              id="subGroupLv2"
-              name="subGroupLv2"
-              defaultValue={parcel?.subGroupLv2 ?? ""}
-              placeholder="Nama Kelompok Tani"
-            />
-            {errors.subGroupLv2 && (
-              <p className="text-sm text-destructive">{errors.subGroupLv2[0]}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Catatan</Label>
-            <Textarea
-              id="notes"
-              name="notes"
-              defaultValue={parcel?.notes ?? ""}
-              placeholder="Catatan tambahan..."
-            />
-            {errors.notes && <p className="text-sm text-destructive">{errors.notes[0]}</p>}
-          </div>
+          </FormSection>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>
@@ -317,5 +322,18 @@ export function ParcelFormModal({ open, onClose, parcel, farmers, onSaved }: Pro
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Seksi berjudul kecil di form Lahan (#420). */
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section aria-label={title} className="space-y-3">
+      <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+        <span className="h-px flex-1 bg-border" aria-hidden />
+      </h3>
+      {children}
+    </section>
   );
 }

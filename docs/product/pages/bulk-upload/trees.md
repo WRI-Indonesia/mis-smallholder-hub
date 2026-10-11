@@ -9,6 +9,8 @@ Halaman: Pohon Sawit (/admin/bulk-upload/trees)
 ├── Header
 │   └── h2 "Upload Massal Pohon Sawit" + HelpHint + deskripsi
 ├── Langkah 1 — Pilih ZIP Shapefile titik
+│   ├── Tombol "Unduh Template (ZIP)" (kanan atas kartu, #419)
+│   │   └── template_pohon_sawit.zip — shapefile Point 2 titik CTH.* + BACA-SAYA.txt
 │   ├── Input type="file" (accept=".zip" — .shp/.dbf/.shx/.prj, tipe Point WGS84)
 │   ├── Keterangan atribut yang dibaca (parcel_id wajib; tree_id, no, lon/lat,
 │   │   category, vigor, source, model_ver opsional)

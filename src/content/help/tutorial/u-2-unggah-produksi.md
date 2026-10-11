@@ -17,12 +17,14 @@ Berbeda dari unggah petani, di sini **tidak perlu memilih lembaga** lebih dulu �
 
 Tersedia berkas contoh: tombol **Unduh Template Excel** di kanan atas Langkah 1.
 
++ Template berisi sheet **Data** (judul kolom + 2 baris contoh ber-ID fiktif `CTH.…` — hapus sebelum diisi) dan sheet **Petunjuk** (kolom wajib dan formatnya). Judul kolomnya langsung dikenali sistem, jadi pada Langkah 2 semua kolom sudah tercocokkan otomatis. Template versi lama (judul seperti `Periode (YYYY-MM)`) juga tetap dikenali.
+
 ## Langkah
 
 1. Buka menu **Bulk Upload → Upload Data Produksi**.
 2. Klik **Unduh Template Excel** bila Anda ingin memakai format bawaan.
 3. Pada **Langkah 1**, pilih berkas `.xlsx` atau `.csv`.
-4. Pada **Langkah 2 — Petakan Atribut Kolom**, cocokkan kolom berkas dengan kolom sistem: ID Petani, Periode, Tanggal Panen, Panen Ke-, Hasil Panen (kg), ID Lahan, dan Catatan (opsional).
+4. Pada **Langkah 2 — Petakan Atribut Kolom**, cocokkan kolom berkas dengan kolom sistem: ID Petani, Periode, Tanggal Panen, Panen Ke-, Hasil Panen (kg), ID Lahan, dan Catatan (opsional). Di samping tiap pilihan tampil contoh nilai dari baris data pertama — cara tercepat memastikan kolomnya benar.
 + **Tanggal Panen** boleh berupa sel tanggal Excel, atau teks `dd/mm/yyyy` (seperti di template) atau `yyyy-mm-dd`. Tahun dua digit, tahun di luar 1900–2100, tanggal yang tidak ada, tanggal bernama bulan, dan angka yang bukan tanggal (mis. tahun saja) ditolak sebagai error.
 + ID Lahan bersifat opsional di sini, tetapi sangat dianjurkan. Tanpa itu produksinya tidak bisa dikaitkan ke luas lahan, sehingga tak muncul pada perhitungan produktivitas per persil.
 5. Klik **Validasi Data Produksi**.

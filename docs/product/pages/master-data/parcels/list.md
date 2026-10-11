@@ -57,6 +57,8 @@ Halaman: Lahan (/admin/master-data/parcels)
 
 ## Dialog: `ParcelFormModal` (`parcels/components/parcel-form-modal.tsx`)
 
+Tata letak (#420): 4 seksi berjudul — **Identitas** (Petani · ID Lahan · Revisi) · **Kebun** (Luas · Blok · Kelompok Tani) · **Tanaman** (Komoditas · Species · Tahun Tanam · PSR) · **Status & Catatan** (Status Kepemilikan · Catatan); dialog bergulir (`max-h-[90vh]`). Field & validasi tidak berubah.
+
 Judul `Tambah Lahan` / `Edit Lahan`; aksi `createLandParcel` / `updateLandParcel`; validasi `landParcelSchema` / `updateLandParcelSchema` (`src/validations/land-parcel.schema.ts`). Geometry tidak dikirim dari form — polygon existing dipertahankan server.
 
 | Field | Input |
