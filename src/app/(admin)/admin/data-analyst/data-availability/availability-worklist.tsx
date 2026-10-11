@@ -1,11 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { AlertTriangle, ChevronDown, ClipboardList, Columns3, ListOrdered } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { domainLaggards, topAnomalies, topSystemicAnomalies, AVAILABILITY_DOMAIN_KEYS } from "@/lib/data-availability-aggregation";
-import { anomalyDef, SYSTEMIC_THRESHOLD } from "@/lib/data-completeness-registry";
+import { anomalyDef, SYSTEMIC_THRESHOLD, uiCheckLabel } from "@/lib/data-completeness-registry";
 import type { AvailabilityAnomalySummary, AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
 import { DomainLaggardsGrid } from "./availability-domain-laggards";
@@ -15,12 +16,8 @@ export type WorklistTab = "sistemik" | "entitas" | "tertinggal";
 export const WORKLIST_TABS: WorklistTab[] = ["sistemik", "entitas", "tertinggal"];
 export const WORKLIST_TOP_N = 8;
 
-/**
- * Istilah UI (#417 D): registri check masih menulis "persil" (kunci & kolom Excel
- * Per Lembaga tetap, supaya berkas lama tidak putus); di layar dibaca "lahan",
- * sama dengan menu lain.
- */
-export const uiAnomalyLabel = (label: string) => label.replace(/\bPersil\b/g, "Lahan").replace(/\bpersil\b/g, "lahan");
+/** Istilah UI "lahan" (bukan "persil") — helper bersama registri, juga dipakai Per Lembaga (review #417). */
+export const uiAnomalyLabel = uiCheckLabel;
 
 /** Daftar Lembaga terdampak — tombol "n Lembaga ▾" yang bisa dibuka keyboard & sentuh (bukan tooltip hover saja, T4). */
 function AffectedGroups({ a }: { a: AvailabilityAnomalySummary }) {
@@ -97,11 +94,19 @@ function WorkRow({ a, max, chip, showFix }: { a: AvailabilityAnomalySummary; max
  * yang tampil (termasuk tingkat skor). Tab di URL (`?kerja=`).
  */
 export function AvailabilityWorklist({ groups, tab, onTabChange }: { groups: AvailabilityGroupEntry[]; tab: WorklistTab; onTabChange: (t: WorklistTab) => void }) {
-  const systemic = topSystemicAnomalies(groups, WORKLIST_TOP_N);
-  const perEntity = topAnomalies(groups, WORKLIST_TOP_N);
-  // Badge Tertinggal = Lembaga unik yang muncul di lima kolom (berskor < 100 %).
-  const laggardIds = new Set(AVAILABILITY_DOMAIN_KEYS.flatMap((k) => domainLaggards(groups, k, 5).filter((r) => r.score < 100).map((r) => r.id)));
-  const counts: Record<WorklistTab, number> = { sistemik: systemic.length, entitas: perEntity.length, tertinggal: laggardIds.size };
+  // Dihitung sekali per pilihan filter (review #417: dulu ulang tiap ketikan Cari).
+  // Badge = JUMLAH SEBENARNYA jenis anomali, bukan panjang daftar yang dipotong 8.
+  const { systemic, perEntity, counts } = useMemo(() => {
+    const systemicAll = topSystemicAnomalies(groups, Number.MAX_SAFE_INTEGER);
+    const perEntityAll = topAnomalies(groups, Number.MAX_SAFE_INTEGER);
+    // Badge Tertinggal = Lembaga unik yang muncul di lima kolom (berskor < 100 %).
+    const laggardIds = new Set(AVAILABILITY_DOMAIN_KEYS.flatMap((k) => domainLaggards(groups, k, 5).filter((r) => r.score < 100).map((r) => r.id)));
+    return {
+      systemic: systemicAll.slice(0, WORKLIST_TOP_N),
+      perEntity: perEntityAll.slice(0, WORKLIST_TOP_N),
+      counts: { sistemik: systemicAll.length, entitas: perEntityAll.length, tertinggal: laggardIds.size } satisfies Record<WorklistTab, number>,
+    };
+  }, [groups]);
   const META: Record<WorklistTab, { label: string; icon: typeof Columns3 }> = {
     sistemik: { label: "Sistemik (unggah massal)", icon: Columns3 },
     entitas: { label: "Per entitas", icon: AlertTriangle },
@@ -122,7 +127,7 @@ export function AvailabilityWorklist({ groups, tab, onTabChange }: { groups: Ava
                 <TabsTrigger key={t} value={t} className="gap-1.5 text-xs">
                   <Icon className="h-3.5 w-3.5" />
                   {META[t].label}
-                  <span className="rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums" aria-label={`${counts[t]} butir`}>
+                  <span className="rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums" aria-label={`${counts[t]} butir`} data-count={counts[t]}>
                     {counts[t]}
                   </span>
                 </TabsTrigger>
@@ -140,7 +145,7 @@ export function AvailabilityWorklist({ groups, tab, onTabChange }: { groups: Ava
             {systemic.length === 0 ? (
               <p className="text-sm text-muted-foreground">Tidak ada kolom yang kosong sistemik pada pilihan filter ini.</p>
             ) : (
-              <ol className="grid gap-x-8 gap-y-3 md:grid-cols-2">
+              <ol className="grid gap-x-8 gap-y-3 md:grid-cols-2" aria-label={counts.sistemik > systemic.length ? `${systemic.length} teratas dari ${counts.sistemik}` : undefined}>
                 {systemic.map((a) => (
                   <WorkRow key={a.key} a={a} max={systemic[0].count} chip="bg-slate-400" showFix />
                 ))}

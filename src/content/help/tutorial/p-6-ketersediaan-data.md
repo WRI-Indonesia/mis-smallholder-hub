@@ -15,7 +15,7 @@ Halaman **Ketersediaan Data › Semua Lembaga** menilai kelengkapan data — buk
 
 Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan data langsung terlihat setelah halaman dimuat ulang.
 
-+ Skor per lembaga di sini **sama persis** dengan skor di halaman **Ketersediaan Data — Per Lembaga** (menu berikutnya di grup Ketersediaan Data; menu ketiga, **Produksi**, menjawab pertanyaan lain: bulan apa yang sudah punya data produksi) — keduanya memakai perhitungan yang sama. Bedanya: halaman ini menampilkan semua lembaga sekaligus, sedangkan Per Lembaga membedah satu lembaga sampai ke daftar nama petaninya. Alurnya: ringkasan di sini → klik nama Lembaga → daftar kerja di Per Lembaga → perbaiki di Master Data.
++ Skor per lembaga di sini **sama persis** dengan skor di tab **Per Lembaga** (menu berikutnya di grup Ketersediaan Data; menu ketiga, **Produksi**, menjawab pertanyaan lain: bulan apa yang sudah punya data produksi) — keduanya memakai perhitungan yang sama. Bedanya: halaman ini menampilkan semua lembaga sekaligus, sedangkan Per Lembaga membedah satu lembaga sampai ke daftar nama petaninya. Alurnya: ringkasan di sini → klik nama Lembaga → daftar kerja di Per Lembaga → perbaiki di Master Data.
 
 ## Langkah
 
@@ -47,7 +47,7 @@ Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan 
 
 **Semua skor 0 / halaman kosong** — kemungkinan tidak ada lembaga dalam cakupan akses Anda, atau pilihan filter terlalu sempit. Klik **Reset semua** di baris Filter aktif.
 
-**Radar/matriks hanya menampilkan 10 Lembaga** — itu tampilan bawaan (10 terendah menurut urutan aktif). Klik **Tampilkan n lagi** di bawah grid. Bila jumlahnya tetap sedikit, periksa baris **Filter aktif** (misalnya chip "Tingkat skor") dan klik ✕ atau **Reset semua**.
+**Radar/matriks hanya menampilkan 10 Lembaga** — itu tampilan bawaan (10 terendah menurut urutan aktif). Klik **Tampilkan n lagi** di bawah grid. Bila jumlahnya tetap sedikit, periksa baris **Filter aktif** (misalnya chip "Tingkat skor" atau "Cari") dan klik ✕ atau **Reset semua** — Reset juga mengosongkan kotak Cari.
 
 **Skor tidak berubah setelah data diperbaiki** — muat ulang halamannya; angka dihitung saat halaman dibuka.
 

@@ -23,7 +23,8 @@ import {
   moduleCoverageTotals,
 } from "@/lib/data-availability-aggregation";
 import { MODULE_CATALOG, MODULE_DOMAIN_LABELS } from "@/lib/data-completeness-registry";
-import { AvailabilityHero, BAND_SHORT } from "./availability-hero";
+import { AvailabilityHero } from "./availability-hero";
+import { BAND_SHORT } from "@/lib/score-band-styles";
 import { ActiveFilterBar, type ActiveFilterChip } from "./active-filter-bar";
 import { AvailabilityDomainCards } from "./availability-domain-cards";
 import { AvailabilityMatrix } from "./availability-matrix";
@@ -33,7 +34,7 @@ import { MODULE_SORT_PREFIX, sortKeyLabel, sortMatrixRows, sortModuleRows, useMa
 import { MatrixToolbar, rowsSummary, type MatrixSortOption, type MatrixView } from "./matrix-toolbar";
 import { CATEGORY_LABELS } from "./domain-meta";
 import { AvailabilityWorklist, WORKLIST_TABS, type WorklistTab } from "./availability-worklist";
-import type { AvailabilityDomainKey, AvailabilityScoreBand, BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
+import type { AvailabilityDomainKey, AvailabilityGroupEntry, AvailabilityScoreBand, BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
 import { formatGeneratedAt, formatPct } from "@/lib/format";
 
 /** Pilihan Urut radar & heatmap (kunci sama dengan judul kolom heatmap & chip kartu domain). */
@@ -49,6 +50,7 @@ const MODULE_SORT_OPTIONS: MatrixSortOption[] = [
   ...MODULE_CATALOG.map((m) => ({ value: `${MODULE_SORT_PREFIX}${m.key}`, label: m.short })),
 ];
 const BANDS: AvailabilityScoreBand[] = ["full", "good", "warn", "bad"];
+const NO_ROWS: AvailabilityGroupEntry[] = [];
 
 export function DataAvailabilityClient({
   view,
@@ -109,6 +111,9 @@ export function DataAvailabilityClient({
     sortParam?.startsWith(MODULE_SORT_PREFIX) && MODULE_CATALOG.some((m) => `${MODULE_SORT_PREFIX}${m.key}` === sortParam)
       ? sortParam.slice(MODULE_SORT_PREFIX.length)
       : "name";
+  // `arah` hanya berlaku untuk modul bila `urut` memang kunci modul atau "name" — bookmark
+  // lama (urut domain + arah turun dari heatmap) tidak membalik urut nama modul (review #417).
+  const moduleSortAsc = sortParam?.startsWith(MODULE_SORT_PREFIX) || sortParam === "name" ? sortAsc : true;
 
   // Lembaga terpilih yang tidak lagi masuk irisan Distrik/Kategori baru
   // di-reset (pola DistrictGroupFilter) — bukan diam-diam menampilkan irisan
@@ -185,12 +190,12 @@ export function DataAvailabilityClient({
     ...(groupId ? [{ id: "lembaga", label: "Lembaga", value: allGroups.find((g) => g.id === groupId)?.name ?? "—", onRemove: () => setGroupId(null) }] : []),
     ...(band ? [{ id: "band", label: "Tingkat skor", value: BAND_SHORT[band], onRemove: () => setBand(null) }] : []),
     ...(matrixView === "modul"
-      ? moduleSortKey !== "name" || !sortAsc
+      ? moduleSortKey !== "name" || !moduleSortAsc
         ? [
             {
               id: "urut",
               label: "Urut",
-              value: `${moduleSortKey === "name" ? "nama" : (MODULE_CATALOG.find((m) => m.key === moduleSortKey)?.short ?? moduleSortKey)} ${sortAsc ? "↑" : "↓"}`,
+              value: `${moduleSortKey === "name" ? "nama" : (MODULE_CATALOG.find((m) => m.key === moduleSortKey)?.short ?? moduleSortKey)} ${moduleSortAsc ? "↑" : "↓"}`,
               onRemove: () => setModuleSort("name", true),
             },
           ]
@@ -199,16 +204,24 @@ export function DataAvailabilityClient({
         ? [{ id: "urut", label: "Urut", value: `${sortKeyLabel(sortKey)} ${sortAsc ? "↑" : "↓"}`, onRemove: () => setSort("health", true) }]
         : []),
   ];
-  const resetFilters = () => setMany({ kategori: null, distrik: null, lembaga: null, band: null, urut: null, arah: null });
+  // Pencarian ikut menyempitkan matriks → tampil sebagai chip dan ikut Reset (review #417).
+  if (query.trim()) filterChips.push({ id: "cari", label: "Cari", value: query.trim(), onRemove: () => setQuery("") });
+  const resetFilters = () => {
+    setMany({ kategori: null, distrik: null, lembaga: null, band: null, urut: null, arah: null });
+    setQuery("");
+  };
 
   const totals = useMemo(() => availabilityTotals(scope), [scope]);
   const moduleTotals = useMemo(() => moduleCoverageTotals(groups), [groups]);
 
   const domainSort = useCallback((rows: typeof groups) => sortMatrixRows(rows, sortKey, sortAsc), [sortKey, sortAsc]);
-  const moduleSort = useCallback((rows: typeof groups) => sortModuleRows(rows, moduleSortKey, sortAsc), [moduleSortKey, sortAsc]);
-  const domainRows = useMatrixRows(groups, domainSort, query, showAll);
-  const moduleRows = useMatrixRows(groups, moduleSort, query, showAll);
-  const activeRows = matrixView === "modul" ? moduleRows : domainRows;
+  const moduleSort = useCallback((rows: typeof groups) => sortModuleRows(rows, moduleSortKey, moduleSortAsc), [moduleSortKey, moduleSortAsc]);
+  // Hanya tampilan aktif yang diurut (review #417): tampilan lain menerima daftar kosong.
+  const isModuleView = matrixView === "modul";
+  const domainRows = useMatrixRows(isModuleView ? NO_ROWS : groups, domainSort, query, showAll);
+  const moduleRows = useMatrixRows(isModuleView ? groups : NO_ROWS, moduleSort, query, showAll);
+  const activeRows = isModuleView ? moduleRows : domainRows;
+  const rowsView = { ...activeRows, query, showAll, onToggleShowAll: () => setShowAll((v) => !v) };
   const criticalCount = useMemo(() => bandDistribution(groups).bad, [groups]);
 
   // Kartu domain → radar/heatmap diurut menaik pada domain itu (tampilan modul
@@ -351,6 +364,7 @@ export function DataAvailabilityClient({
         totals={totals}
         groups={scope}
         activeSort={matrixView !== "modul" && AVAILABILITY_DOMAIN_KEYS.includes(sortKey as AvailabilityDomainKey) ? (sortKey as AvailabilityDomainKey) : null}
+        activeSortAsc={sortAsc}
         onSelect={selectDomain}
       />
 
@@ -363,27 +377,24 @@ export function DataAvailabilityClient({
           status={rowsSummary(groups.length, criticalCount, activeRows.limited.length)}
           sortOptions={matrixView === "modul" ? MODULE_SORT_OPTIONS : DOMAIN_SORT_OPTIONS}
           sortValue={matrixView === "modul" ? (moduleSortKey === "name" ? "name" : `${MODULE_SORT_PREFIX}${moduleSortKey}`) : sortKey}
-          sortAsc={sortAsc}
+          sortAsc={isModuleView ? moduleSortAsc : sortAsc}
           onSortChange={(v) =>
             matrixView === "modul" ? setModuleSort(v.startsWith(MODULE_SORT_PREFIX) ? v.slice(MODULE_SORT_PREFIX.length) : "name", true) : setSort(v as MatrixSortKey, true)
           }
-          onDirectionToggle={() => (matrixView === "modul" ? setModuleSort(moduleSortKey, !sortAsc) : setSort(sortKey, !sortAsc))}
+          onDirectionToggle={() => (isModuleView ? setModuleSort(moduleSortKey, !moduleSortAsc) : setSort(sortKey, !sortAsc))}
           query={query}
           onQueryChange={setQuery}
         />
         {matrixView === "radar" ? (
-          <AvailabilityRadarGrid {...domainRows} query={query} showAll={showAll} onToggleShowAll={() => setShowAll((v) => !v)} />
+          <AvailabilityRadarGrid rows={rowsView} />
         ) : matrixView === "heatmap" ? (
-          <AvailabilityMatrix {...domainRows} query={query} showAll={showAll} onToggleShowAll={() => setShowAll((v) => !v)} sortKey={sortKey} sortAsc={sortAsc} onSortChange={setSort} />
+          <AvailabilityMatrix rows={rowsView} sortKey={sortKey} sortAsc={sortAsc} onSortChange={setSort} />
         ) : (
           <AvailabilityModuleMatrix
-            {...moduleRows}
+            rows={rowsView}
             totals={moduleTotals}
-            query={query}
-            showAll={showAll}
-            onToggleShowAll={() => setShowAll((v) => !v)}
             sortKey={moduleSortKey}
-            sortAsc={sortAsc}
+            sortAsc={moduleSortAsc}
             onSortChange={setModuleSort}
           />
         )}

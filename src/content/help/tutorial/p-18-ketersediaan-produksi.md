@@ -5,7 +5,7 @@ menuKey: data-analyst-availability-production
 permission: VIEW
 duration: 6
 href: /admin/data-analyst/availability/production
-hrefLabel: Buka Ketersediaan Data — Produksi
+hrefLabel: Buka Ketersediaan Data › Produksi
 goal: Anda tahu Lembaga mana yang data produksinya bolong di bulan apa, sejak kapan tidak melapor, dan petani/lahan mana yang jadi penyebabnya.
 ---
 

@@ -13,6 +13,7 @@ import type { AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber, formatPct } from "@/lib/format";
 import { entryDomainScores } from "./domain-meta";
 import { emptyRowsMessage, MatrixLimitToggle } from "./matrix-toolbar";
+import type { MatrixRowsView } from "./matrix-rows";
 import { RadarDetailDialog } from "./availability-radar-dialog";
 
 function RadarCard({ entry, onOpen }: { entry: AvailabilityGroupEntry; onOpen: () => void }) {
@@ -47,7 +48,7 @@ function RadarCard({ entry, onOpen }: { entry: AvailabilityGroupEntry; onOpen: (
         className="relative block w-full cursor-zoom-in rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         aria-label={`Perbesar radar ${entry.name}`}
       >
-        <RadarChart name={entry.name} total={entry.healthScore} scores={entryDomainScores(entry)} />
+        <RadarChart name={entry.name} total={entry.healthScore} scores={entryDomainScores(entry)} roomyLabels />
         <span className="pointer-events-none absolute right-1 top-1 inline-flex items-center gap-1 rounded-md border bg-background/90 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover/radar:opacity-100 group-focus-within/radar:opacity-100">
           <Maximize2 className="h-3 w-3" /> Perbesar
         </span>
@@ -70,22 +71,11 @@ function RadarCard({ entry, onOpen }: { entry: AvailabilityGroupEntry; onOpen: (
  * mengikuti lebar KONTEN lewat container query, bukan viewport (T1).
  */
 export function AvailabilityRadarGrid({
-  sorted,
-  limited,
-  query,
-  canLimit,
-  showAll,
-  hiddenCount,
-  onToggleShowAll,
+  rows,
 }: {
-  sorted: AvailabilityGroupEntry[];
-  limited: AvailabilityGroupEntry[];
-  query: string;
-  canLimit: boolean;
-  showAll: boolean;
-  hiddenCount: number;
-  onToggleShowAll: () => void;
+  rows: MatrixRowsView;
 }) {
+  const { sorted, limited, query, canLimit, showAll, hiddenCount, onToggleShowAll } = rows;
   // Modal: Lembaga terpilih disimpan sebagai id (bukan indeks) supaya tetap
   // menunjuk Lembaga yang sama bila urutan/irisan berubah, dan `open` terpisah
   // agar isi tetap terpasang selama animasi tutup. Indeks pada `sorted` (bukan

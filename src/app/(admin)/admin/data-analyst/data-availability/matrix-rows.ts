@@ -92,3 +92,15 @@ export function useMatrixRows(
     canLimit: canLimitRows(sorted.length, searching),
   };
 }
+
+/** Satu objek baris untuk ketiga tampilan (review #417: tujuh prop yang sama disalin tiga kali). */
+export interface MatrixRowsView {
+  sorted: AvailabilityGroupEntry[];
+  limited: AvailabilityGroupEntry[];
+  canLimit: boolean;
+  hiddenCount: number;
+  query: string;
+  showAll: boolean;
+  onToggleShowAll: () => void;
+}
+

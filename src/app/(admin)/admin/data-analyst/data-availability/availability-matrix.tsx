@@ -8,9 +8,9 @@ import { HeatCell, HeatLegend } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
 import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainScoreOf, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
 import { BAND_BAR, bandLabel } from "@/lib/score-band-styles";
-import type { AvailabilityGroupEntry } from "@/types/dashboard";
+
 import { formatNumber, formatPct } from "@/lib/format";
-import type { MatrixSortKey } from "./matrix-rows";
+import type { MatrixRowsView, MatrixSortKey } from "./matrix-rows";
 import { emptyRowsMessage, MatrixLimitToggle } from "./matrix-toolbar";
 
 /** Sel skor domain — heatmap solid (#352 putaran 4), tooltip terstruktur (#213). */
@@ -34,28 +34,17 @@ function ScoreCell({ score, label, groupName }: { score: number; label: string; 
  * tampil di samping nama hanya bila kartu cukup lebar (container query).
  */
 export function AvailabilityMatrix({
-  sorted,
-  limited,
-  query,
-  canLimit,
-  showAll,
-  hiddenCount,
-  onToggleShowAll,
+  rows,
   sortKey,
   sortAsc,
   onSortChange,
 }: {
-  sorted: AvailabilityGroupEntry[];
-  limited: AvailabilityGroupEntry[];
-  query: string;
-  canLimit: boolean;
-  showAll: boolean;
-  hiddenCount: number;
-  onToggleShowAll: () => void;
+  rows: MatrixRowsView;
   sortKey: MatrixSortKey;
   sortAsc: boolean;
   onSortChange: (key: MatrixSortKey, asc: boolean) => void;
 }) {
+  const { sorted, limited, query, canLimit, showAll, hiddenCount, onToggleShowAll } = rows;
   // Klik judul yang sama = balik arah; judul lain = kunci baru, menaik
   // (nama A→Z; kolom skor: yang paling rendah muncul dulu).
   const toggleSort = (key: MatrixSortKey) => onSortChange(key, key === sortKey ? !sortAsc : true);

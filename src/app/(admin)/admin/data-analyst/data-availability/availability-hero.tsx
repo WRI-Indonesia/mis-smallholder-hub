@@ -6,19 +6,11 @@ import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-too
 import { ScoreGauge } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
 import { scoreBand } from "@/lib/data-availability-aggregation";
-import { BAND_BAR, BAND_TEXT, BAND_LABEL } from "@/lib/score-band-styles";
+import { BAND_BAR, BAND_SHORT, BAND_TEXT, BAND_LABEL } from "@/lib/score-band-styles";
 import type { AvailabilityBandDistribution, AvailabilityScoreBand, AvailabilityTotals } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
 
 const BAND_ORDER: AvailabilityScoreBand[] = ["bad", "warn", "good", "full"];
-
-/** Nama pendek tingkat skor untuk label di dalam segmen (BAND_LABEL lengkap tetap di tooltip & aria). */
-export const BAND_SHORT: Record<AvailabilityScoreBand, string> = {
-  bad: "kritis",
-  warn: "perhatian",
-  good: "baik",
-  full: "lengkap",
-};
 
 /**
  * Hero DA-03 satu baris (#417 A, keputusan K1): cincin Skor Keseluruhan ·

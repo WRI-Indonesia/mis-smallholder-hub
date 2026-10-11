@@ -4,6 +4,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { AvailabilityHero } from "@/app/(admin)/admin/data-analyst/data-availability/availability-hero";
 import { ActiveFilterBar } from "@/app/(admin)/admin/data-analyst/data-availability/active-filter-bar";
 import { uiAnomalyLabel, WORKLIST_TABS } from "@/app/(admin)/admin/data-analyst/data-availability/availability-worklist";
+import { AvailabilityDomainCards } from "@/app/(admin)/admin/data-analyst/data-availability/availability-domain-cards";
+import { BAND_SHORT } from "@/lib/score-band-styles";
 import type { AvailabilityTotals } from "@/types/dashboard";
 
 /**
@@ -80,3 +82,21 @@ describe("Daftar Kerja — tab & istilah (#417 C/D)", () => {
     expect(uiAnomalyLabel("Petani tanpa NIK")).toBe("Petani tanpa NIK");
   });
 });
+
+describe("review #417", () => {
+  it("chip kartu domain aktif menyebut arah yang sebenarnya (menurun = tertinggi dulu)", () => {
+    const render = (asc: boolean) =>
+      renderToStaticMarkup(createElement(AvailabilityDomainCards, { totals, groups: [], activeSort: "produksi", activeSortAsc: asc, onSelect: () => {} }));
+    expect(render(true)).toContain("Produksi, terendah dulu");
+    expect(render(false)).toContain("Produksi, tertinggi dulu");
+  });
+
+  it("nama pendek tingkat skor satu sumber (chip, segmen hero, legenda)", () => {
+    expect(BAND_SHORT).toEqual({ bad: "kritis", warn: "perhatian", good: "baik", full: "lengkap" });
+  });
+
+  it("uiCheckLabel juga menangkap bentuk berimbuhan tanda hubung", () => {
+    expect(uiAnomalyLabel("Persil-persil tanpa surat")).toBe("Lahan-lahan tanpa surat");
+  });
+});
+

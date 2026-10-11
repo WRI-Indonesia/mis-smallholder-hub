@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownUp, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowDownUp, ArrowUp } from "lucide-react";
 import { BandBar } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
 import { BAND_THRESHOLDS, AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainCriticalCount, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
@@ -29,11 +29,14 @@ export function AvailabilityDomainCards({
   totals,
   groups,
   activeSort,
+  activeSortAsc = true,
   onSelect,
 }: {
   totals: AvailabilityTotals;
   groups: AvailabilityGroupEntry[];
   activeSort: AvailabilityDomainKey | null;
+  /** Arah urut aktif — chip memperlihatkan ↑/↓ yang sebenarnya (review #417). */
+  activeSortAsc?: boolean;
   onSelect: (key: AvailabilityDomainKey) => void;
 }) {
   return (
@@ -78,13 +81,17 @@ export function AvailabilityDomainCards({
               type="button"
               onClick={() => onSelect(key)}
               aria-pressed={active}
-              aria-label={active ? `Matriks terurut menurut ${AVAILABILITY_DOMAIN_LABELS[key]} — klik untuk kembali ke Skor Total` : `Urutkan matriks menurut ${AVAILABILITY_DOMAIN_LABELS[key]}, terendah dulu`}
+              aria-label={
+                active
+                  ? `Matriks terurut menurut ${AVAILABILITY_DOMAIN_LABELS[key]}, ${activeSortAsc ? "terendah" : "tertinggi"} dulu — klik untuk kembali ke Skor Total`
+                  : `Urutkan matriks menurut ${AVAILABILITY_DOMAIN_LABELS[key]}, terendah dulu`
+              }
               className={cn(
                 "mt-3 inline-flex items-center gap-1 self-start rounded-full border px-2 py-0.5 text-xs transition-colors",
                 active ? "border-primary bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              {active ? <ArrowUp className="h-3 w-3" /> : <ArrowDownUp className="h-3 w-3" />}
+              {active ? activeSortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" /> : <ArrowDownUp className="h-3 w-3" />}
               {active ? "Terurut" : "Urutkan"}
             </button>
           </div>

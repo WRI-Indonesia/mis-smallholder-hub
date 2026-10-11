@@ -10,9 +10,9 @@ import { scoreBand } from "@/lib/data-availability-aggregation";
 import { MODULE_CATALOG, MODULE_DOMAIN_LABELS } from "@/lib/data-completeness-registry";
 import { BAND_BAR, BAND_LABEL } from "@/lib/score-band-styles";
 import { cn } from "@/lib/utils";
-import type { AvailabilityGroupEntry, AvailabilityModuleCoverage, AvailabilityModuleSummary } from "@/types/dashboard";
+import type { AvailabilityModuleCoverage, AvailabilityModuleSummary } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
-import type { ModuleSortKey } from "./matrix-rows";
+import type { MatrixRowsView, ModuleSortKey } from "./matrix-rows";
 import { emptyRowsMessage, MatrixLimitToggle } from "./matrix-toolbar";
 
 /**
@@ -23,30 +23,19 @@ import { emptyRowsMessage, MatrixLimitToggle } from "./matrix-toolbar";
  * kolom nama lengket (15 modul tak muat satu layar).
  */
 export function AvailabilityModuleMatrix({
-  sorted,
-  limited,
+  rows,
   totals,
-  query,
-  canLimit,
-  showAll,
-  hiddenCount,
-  onToggleShowAll,
   sortKey,
   sortAsc,
   onSortChange,
 }: {
-  sorted: AvailabilityGroupEntry[];
-  limited: AvailabilityGroupEntry[];
+  rows: MatrixRowsView;
   totals: AvailabilityModuleSummary[];
-  query: string;
-  canLimit: boolean;
-  showAll: boolean;
-  hiddenCount: number;
-  onToggleShowAll: () => void;
   sortKey: ModuleSortKey;
   sortAsc: boolean;
   onSortChange: (key: ModuleSortKey, asc: boolean) => void;
 }) {
+  const { sorted, limited, query, canLimit, showAll, hiddenCount, onToggleShowAll } = rows;
   const totalsByKey = useMemo(() => new Map(totals.map((t) => [t.key, t])), [totals]);
   const toggleSort = (key: ModuleSortKey) => onSortChange(key, key === sortKey ? !sortAsc : true);
 

@@ -122,9 +122,13 @@ function RadarLayers({
 }
 
 /** Bingkai SVG radar — label kiri/kanan ("Produksi 100") butuh ±50 px di luar jari-jari. */
-// #417 B (T6): label 9 → 11 px — viewBox dilebarkan agar "Pelatihan 85,2" tak terpotong.
-const CHART_FRAME: RadarFrame = { cx: 136, cy: 94, r: 56 };
-const CHART_VIEW = { w: 272, h: 180 };
+const CHART_FRAME: RadarFrame = { cx: 118, cy: 92, r: 56 };
+const CHART_VIEW = { w: 236, h: 172 };
+// #417 B (T6): grid Semua Lembaga — label 11 px, viewBox dilebarkan agar "Pelatihan 85,2"
+// tak terpotong. Hanya bila diminta (`roomyLabels`): strip Per Lembaga & modal tetap
+// memakai bingkai lama (review #417 — perubahan bersama sempat mengecilkan keduanya).
+const ROOMY_FRAME: RadarFrame = { cx: 136, cy: 94, r: 56 };
+const ROOMY_VIEW = { w: 272, h: 180 };
 const CHART_LABEL_OFFSET = 13;
 
 /**
@@ -142,6 +146,7 @@ export function RadarChart({
   showValues = true,
   onAxisClick,
   className,
+  roomyLabels,
 }: {
   name: string;
   total: number;
@@ -150,25 +155,29 @@ export function RadarChart({
   showValues?: boolean;
   onAxisClick?: (key: AvailabilityDomainKey) => void;
   className?: string;
+  /** Label sumbu 11 px dengan viewBox lebih lebar (grid kartu kecil Semua Lembaga). */
+  roomyLabels?: boolean;
 }) {
+  const frame = roomyLabels && !large ? ROOMY_FRAME : CHART_FRAME;
+  const view = roomyLabels && !large ? ROOMY_VIEW : CHART_VIEW;
   // `overflow-visible`: label kiri (anchor end) bisa melewati tepi viewBox pada
   // metrik glyph yang lebih lebar — jangan terpotong (review #352 putaran 4).
   // Dengan label bisa diklik, svg = grup berisi tautan (bukan `img` yang
   // menyembunyikan anaknya dari teknologi bantu).
   return (
     <svg
-      viewBox={`0 0 ${CHART_VIEW.w} ${CHART_VIEW.h}`}
+      viewBox={`0 0 ${view.w} ${view.h}`}
       className={cn("h-auto w-full overflow-visible", className)}
       role={onAxisClick ? "group" : "img"}
       aria-label={`Radar ${name}`}
     >
       <RadarLayers
-        frame={CHART_FRAME}
-        labelRadius={CHART_FRAME.r + CHART_LABEL_OFFSET}
+        frame={frame}
+        labelRadius={frame.r + CHART_LABEL_OFFSET}
         total={total}
         scores={scores}
         showValues={showValues}
-        labelClass={large ? "text-[7px]" : "text-[11px]"}
+        labelClass={large ? "text-[7px]" : roomyLabels ? "text-[11px]" : "text-[9px]"}
         dotRadius={large ? 2.5 : 3}
         onAxisClick={onAxisClick}
       />

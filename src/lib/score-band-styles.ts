@@ -37,5 +37,13 @@ export const BAND_LABEL: Record<AvailabilityScoreBand, string> = {
   bad: `<${T.warn} — kritis`,
 };
 
+/** Nama pendek tingkat skor — chip filter, label segmen hero, legenda heat (#417; satu sumber). */
+export const BAND_SHORT: Record<AvailabilityScoreBand, string> = {
+  bad: "kritis",
+  warn: "perhatian",
+  good: "baik",
+  full: "lengkap",
+};
+
 /** Label band untuk sebuah skor, mis. "50 – <80 — perlu perhatian". */
 export const bandLabel = (score: number) => BAND_LABEL[scoreBand(score)];
