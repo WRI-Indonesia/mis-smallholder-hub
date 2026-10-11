@@ -9,13 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -36,6 +29,8 @@ import {
 } from "@/lib/parcel-bulk-mapping";
 import { PARCEL_POLYGON_TEMPLATE } from "@/lib/bulk-upload-templates";
 import { downloadShapefileTemplate } from "@/lib/bulk-upload-template-download";
+import { GroupedFieldMapping } from "@/components/shared/grouped-field-mapping";
+import { PARCEL_POLYGON_MAPPING_GROUPS } from "@/lib/upload-mapping-groups";
 import { cleanGroupInput } from "@/lib/group-placeholder";
 import { LAND_BORDER_SIDE_LABELS } from "@/lib/land-parcel-satellite-format";
 import { cleanFreeTextCell } from "@/lib/land-parcel-detail-import";
@@ -597,37 +592,15 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {TARGET_FIELDS.map((f) => (
-              <div key={f.key} className="space-y-2 border p-3 rounded-lg bg-card/50">
-                <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-sm">
-                    {f.label} {f.required && <span className="text-red-500">*</span>}
-                  </Label>
-                  <Badge variant={f.required ? "default" : "outline"} className="text-[10px]">
-                    {f.required ? "Wajib" : "Opsional"}
-                  </Badge>
-                </div>
-                <Select
-                  value={mapping[f.key] || ""}
-                  onValueChange={(val) => setMapping((prev) => ({ ...prev, [f.key]: val || "" }))}
-                >
-                  <SelectTrigger className="w-full h-9">
-                    <SelectValue placeholder="Pilih kolom..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_empty">-- Kosongkan --</SelectItem>
-                    {headers.map((h) => (
-                      <SelectItem key={h} value={h}>
-                        {h}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-[10px] text-muted-foreground block">{f.desc}</span>
-              </div>
-            ))}
-          </div>
+          {/* #420: grup berkategori (pengganti 14 kartu). */}
+          <GroupedFieldMapping
+            fields={TARGET_FIELDS}
+            groups={PARCEL_POLYGON_MAPPING_GROUPS}
+            headers={headers}
+            mapping={mapping}
+            sample={features[0]?.properties}
+            onChange={(key, header) => setMapping((prev) => ({ ...prev, [key]: header }))}
+          />
 
           <div className="flex justify-end gap-2 pt-2">
             <Button

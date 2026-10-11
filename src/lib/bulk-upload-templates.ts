@@ -124,9 +124,9 @@ function exampleSquare(lon: number, lat: number, d = 0.0009): Polygon {
 
 const PARCEL_ATTR: { name: string; field: (typeof PARCEL_UPLOAD_FIELDS)[number]["key"]; guide: string; example: Cell }[] = [
   { name: "parcel_id", field: "parcelId", guide: "ID Lahan unik per petani", example: EXAMPLE_PARCEL_ID },
-  { name: "farmer_id", field: "farmerId", guide: "ID Petani terdaftar di Lembaga terpilih", example: EXAMPLE_FARMER_ID },
+  { name: "farmer_id", field: "farmerId", guide: "ID Petani yang sudah terdaftar", example: EXAMPLE_FARMER_ID },
   { name: "luas_ha", field: "area", guide: "Luas (ha), desimal lebih dari 0", example: 1.0 },
-  { name: "status", field: "landStatus", guide: "Status kepemilikan, teks bebas", example: "Milik Sendiri" },
+  { name: "status", field: "landStatus", guide: "Owned (milik sendiri) / Leased (sewa) / Shared (bagi hasil) — nilai form Lahan", example: "Owned" },
   { name: "komoditas", field: "cropType", guide: "Teks; kosong → Kelapa Sawit", example: "Kelapa Sawit" },
   { name: "thn_tanam", field: "plantingYear", guide: "Tahun 1900–2100", example: 2010 },
   { name: "poktan", field: "subGroupLv2", guide: "Nama Kelompok Tani", example: "KT Contoh" },

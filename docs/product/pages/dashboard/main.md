@@ -15,21 +15,12 @@ Halaman: Main Dashboard (/admin/dashboard/main)
 │   ├── Distrik (combobox)
 │   ├── Lembaga Petani (combobox)
 │   └── Tahun Bergabung (select)
-├── Kartu KPI (14 — 5 pertama bisa diklik → dialog rincian)
-│   ├── Total Lembaga Petani
-│   ├── Total Kelompok Tani
-│   ├── Sertifikasi RSPO
-│   ├── Sertifikasi ISPO
-│   ├── Assurance SAP/MAP
-│   ├── Total Petani
-│   ├── Petani Laki-laki
-│   ├── Petani Perempuan
-│   ├── Total Persil Lahan
-│   ├── Total Luas Lahan
-│   ├── Paket 1 - BMP/NKT/RSPO
-│   ├── Paket 2 - MK
-│   ├── Paket 2 - HSE
-│   └── Paket 3 & 4 - GEDSI/BUSDEV
+├── Kartu tematik (5 — #420; dulu 14 kartu; baris ↗ bisa diklik → dialog rincian)
+│   ├── Kelembagaan: Lembaga Petani ↗ · Kelompok Tani ↗
+│   ├── Sertifikasi & assurance: RSPO ↗ · ISPO ↗ · Assurance SAP/MAP ↗ (lembaga · plan)
+│   ├── Petani: total + bar komposisi Laki-laki / Perempuan (jumlah · %)
+│   ├── Lahan: Persil lahan · Total luas
+│   └── Pelatihan (lebar 2 kolom): 4 paket — bar % dari total petani + jumlah
 ├── Dialog rincian kartu (#206)
 │   ├── Header: ikon + judul kartu + deskripsi
 │   ├── Chip ringkasan (angka sama dengan kartu)
@@ -78,7 +69,7 @@ Halaman: Main Dashboard (/admin/dashboard/main)
 | Filter Distrik | Combobox (Popover + Command) | Placeholder cari "Cari distrik...", opsi "Semua Distrik" + daftar distrik dari snapshot; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani...", opsi "Semua Lembaga Petani" + daftar Lembaga hasil irisan; empty: "Kelompok tani tidak ditemukan." |
 | Filter Tahun Bergabung | Select | "Semua Tahun" + daftar tahun dari `byYear` snapshot (desc) |
-| Kartu KPI (14 kartu) | Kartu KPI | Lihat rincian di bawah; 5 kartu pertama bisa diklik (juga Enter/Space, `role="button"`) → dialog rincian angka (#206) |
+| Kartu tematik (5) | Kartu KPI | Lihat rincian di bawah (#420); baris Lembaga/KT/sertifikasi berupa `<button>` (Enter/Space, panah ↗ saat hover) → dialog rincian angka (#206) |
 | Peta sebaran | Peta (MapLibre / react-map-gl) | Marker titik Lembaga Petani dengan clustering; lihat rincian di bawah |
 | Panel info Lembaga | Kartu detail | Muncul saat satu Lembaga dipilih; judul = nama Lembaga, sub = kode (mono), badge sertifikasi |
 | Empty state panel info | Empty state | Ikon `MapPin` + "Pilih Lembaga Petani" + "Klik marker di peta untuk melihat detail informasi Lembaga Petani dan statistik petani." |
@@ -87,22 +78,14 @@ Halaman: Main Dashboard (/admin/dashboard/main)
 
 ## Kartu KPI (`DashboardSummaryCards`)
 
-| # | Judul kartu | Nilai | Sub | Dialog rincian (#206) |
-|---|---|---|---|---|
-| 1 | Total Lembaga Petani | jumlah Lembaga | — | Daftar lembaga (nama, kode, distrik) |
-| 2 | Total Kelompok Tani | jumlah KT per-lahan | — | Jumlah KT per lembaga + baris Total |
-| 3 | Sertifikasi RSPO | "{n} lembaga" | "Tersertifikasi · {n} plan" | Seksi Tersertifikasi / Plan + badge tahun |
-| 4 | Sertifikasi ISPO | "{n} lembaga" | "Tersertifikasi · {n} plan" | Seksi Tersertifikasi / Plan + badge tahun |
-| 5 | Assurance SAP/MAP | "{n} lembaga" | "Tersertifikasi · {n} plan" | Seksi Ter-assurance / Plan + badge tahun |
-| 6 | Total Petani | jumlah petani | — | — |
-| 7 | Petani Laki-laki | jumlah | — | — |
-| 8 | Petani Perempuan | jumlah | — | — |
-| 9 | Total Persil Lahan | jumlah persil | — | — |
-| 10 | Total Luas Lahan | "{n} ha" | — | — |
-| 11 | Paket 1 - BMP/NKT/RSPO | "{n} petani" | — | — |
-| 12 | Paket 2 - MK | "{n} petani" | — | — |
-| 13 | Paket 2 - HSE | "{n} petani" | — | — |
-| 14 | Paket 3 & 4 - GEDSI/BUSDEV | "{n} petani" | — | — |
+| Kartu | Baris / isi | Nilai | Dialog rincian (#206) |
+|---|---|---|---|
+| Kelembagaan | Lembaga Petani | jumlah Lembaga | Daftar lembaga (nama, kode, distrik) |
+| Kelembagaan | Kelompok Tani | jumlah KT per-lahan | Jumlah KT per lembaga + baris Total |
+| Sertifikasi & assurance | RSPO · ISPO · Assurance SAP/MAP | "{n} lembaga · {n} plan" | Seksi Tersertifikasi (Ter-assurance) / Plan + badge tahun |
+| Petani | total + bar L/P | jumlah petani; L & P jumlah + % (dari L+P) | — |
+| Lahan | Persil lahan · Total luas | jumlah persil · "{n} ha" | — |
+| Pelatihan | Paket 1 BMP/NKT/RSPO · Paket 2 MK · Paket 2 HSE · Paket 3 & 4 GEDSI/BUSDEV | "{n} petani · {p}%" (p = n ÷ total petani) | — |
 
 Kartu sertifikasi bersifat year-independent (tidak ikut filter Tahun).
 

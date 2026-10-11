@@ -164,3 +164,25 @@ Harapan:
 - Semua kolom wajib sudah terpetakan otomatis (tanpa pilih manual); validasi menolak baris contoh karena ID fiktif **tidak terdaftar**, bukan karena kolom/atribut tidak dikenali.
 - Pohon: pratinjau "Lahan tidak ditemukan" untuk `CTH.0001.A…`; Poligon: peta pratinjau menampilkan persegi contoh di Riau.
 Baseline dev: `bulk-upload-templates.test.ts` (11: tajuk = alias parser, tajuk lama Produksi, workbook Data+Petunjuk, ZIP dibaca shpjs).
+
+## #420 — Tata letak berkelompok (pemetaan kolom, Dashboard Main, form Lahan)
+
+### TC-420-01 · Pemetaan kolom berkelompok di 5 halaman Upload Massal [P0] [regresi] (5 mnt)
+Langkah:
+1. Lahan › Detail Lahan: unggah berkas Detail Lahan nyata (atau template) → lihat langkah 2.
+2. Ulangi di Poligon (ZIP), Patok (Excel), Petani (pilih Lembaga), Produksi.
+3. Di Detail Lahan, buka grup yang tertutup, petakan 1 kolom manual, lalu Validasi.
+Harapan:
+- Detail Lahan: 5 grup (Identitas · Legalitas · Kelompok & Blok · Sepadan · NKT); header "n/m"; grup tanpa kolom terdeteksi tertutup "tak ada di berkas"; Bawaan NKT di ujung grup NKT. Poligon 4 grup, Patok 3 grup; Petani & Produksi satu daftar ringkas.
+- Di samping tiap pilihan tampil contoh nilai baris pertama; field wajib kosong bertanda "Wajib dipetakan".
+- Hasil validasi sama dengan sebelum perubahan (pemetaan otomatis & aturan tidak berubah); memilih "-- Kosongkan --" benar-benar mengosongkan (dulu tersimpan `_empty`).
+
+### TC-420-02 · Dashboard Main 5 kartu tematik [P1] (3 mnt)
+Langkah: buka Main Dashboard → ganti filter Distrik/Tahun → klik baris Lembaga Petani, Kelompok Tani, dan satu sertifikasi.
+Harapan: kartu Kelembagaan · Sertifikasi & assurance · Petani (bar L/P) · Lahan · Pelatihan (4 bar % dari total petani), satu warna aksen; angka sama dengan dashboard sebelumnya; dialog rincian terbuka dari baris ↗. Tools › Snapshot Detail memakai kartu yang sama tanpa dialog.
+
+### TC-420-03 · Form Tambah/Edit Lahan berseksi [P2] (2 mnt)
+Langkah: Master Data › Lahan → Tambah Lahan (lalu Batal) dan Edit 1 lahan (simpan tanpa ubah).
+Harapan: 4 seksi (Identitas · Kebun · Tanaman · Status & Catatan) berisi 12 field yang sama; simpan berhasil seperti sebelumnya.
+Baseline dev: `upload-mapping-groups.test.ts` (7: tiap field tepat satu grup, format contoh, render statis); verifikasi browser lokal 2026-10-11 (Poligon template 14/14, Detail Lahan 5 grup, Dashboard, form Lahan).
+

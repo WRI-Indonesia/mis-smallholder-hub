@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { AlertCircle, ArrowRight, CheckCircle2, Download, Loader2, MapPin, RefreshCw } from "lucide-react";
@@ -28,6 +27,8 @@ import {
   type MarkerUploadValidatedRow,
 } from "@/lib/land-marker-upload";
 import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_TYPE_LABELS, MARKER_MAX_DISTANCE_M, MARKER_SNAP_M, fmtCoord, labelOf } from "@/lib/land-marker";
+import { GroupedFieldMapping } from "@/components/shared/grouped-field-mapping";
+import { MARKER_MAPPING_GROUPS } from "@/lib/upload-mapping-groups";
 import { parseShapefile } from "@/server/actions/bulk-upload-parcel";
 import { bulkUpsertLandMarkers, matchLandMarkerUploadParcels } from "@/server/actions/land-marker";
 
@@ -225,33 +226,18 @@ export function ParcelMarkerUploadClient({ permissions }: Props) {
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-            {MARKER_UPLOAD_FIELDS.map((f) => (
-              <div key={f.key} className="space-y-1.5 border p-3 rounded-lg bg-card/50">
-                <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-sm">{f.label} {f.required && <span className="text-red-500">*</span>}</Label>
-                  <Badge variant={f.required ? "default" : "outline"} className="text-[10px]">{f.required ? "Wajib" : "Opsional"}</Badge>
-                </div>
-                <Select
-                  value={mapping[f.key] || "_empty"}
-                  onValueChange={(val) => {
-                    setMapping((prev) => ({ ...prev, [f.key]: !val || val === "_empty" ? "" : val }));
-                    setValidated([]);
-                  }}
-                >
-                  <SelectTrigger className="w-full h-9">
-                    <SelectValue>{(v: string) => (!v || v === "_empty" ? "-- Kosongkan --" : v)}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_empty">-- Kosongkan --</SelectItem>
-                    {headers.map((h) => (
-                      <SelectItem key={h} value={h}>{h}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
-          </div>
+          {/* #420: grup berkategori (pengganti 11 kartu). */}
+          <GroupedFieldMapping
+            fields={MARKER_UPLOAD_FIELDS}
+            groups={MARKER_MAPPING_GROUPS}
+            headers={headers}
+            mapping={mapping as Record<string, string>}
+            sample={records[0]}
+            onChange={(key, header) => {
+              setMapping((prev) => ({ ...prev, [key]: header }));
+              setValidated([]);
+            }}
+          />
         </Card>
       )}
 

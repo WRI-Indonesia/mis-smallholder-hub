@@ -13,6 +13,7 @@ Sumber: `git log <tag>..HEAD`, `gh issue list --state closed`, `docs/project/cha
 | 5 | #416 | Ketersediaan Data › Produksi + induk menu | Data Analyst › Ketersediaan Data › Semua Lembaga · Per Lembaga · **Produksi** | — | `data-analyst-availability` · `data-analyst-availability-production` (+ 2 menu lama pindah induk) | p-18 (baru), p-6, a-1, l-6, 3-3, r-5 | `TC-416-01..03` |
 | 6 | #417 | Semua Lembaga: tata letak ringkas & satu tempat | Data Analyst › Ketersediaan Data › Semua Lembaga (+ sub-nav di Per Lembaga & Produksi) | — | — | p-6, 3-3, r-5, a-1 | `TC-417-01..03` |
 | 7 | #419 | Template file di semua fitur Upload Massal (+ tajuk template Produksi terpetakan otomatis) — ditambahkan owner 2026-10-11 di tengah QA staging | Bulk Upload › Petani · Produksi · Lahan (Poligon) · Pohon | — | — | u-1, u-2, u-3, u-4 | `TC-419-01..02`, SM-24 |
+| 8 | #420 | Pemetaan kolom Upload Massal berkelompok + Dashboard Main 5 kartu tematik + form Lahan berseksi — ditambahkan owner 2026-10-11 | Bulk Upload (5 halaman pemetaan) · Dashboard › Main · Tools › Snapshot Detail · Master Data › Lahan (form) | — | — | u-1, u-2, u-3, u-5, u-6, p-1 | `TC-420-01..03`, SM-02, SM-24 |
 
 ## Di luar lingkup pengujian (sengaja)
 

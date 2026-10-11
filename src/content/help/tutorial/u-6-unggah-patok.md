@@ -26,6 +26,7 @@ Dua bentuk berkas diterima di tab yang sama:
 1. Buka menu **Bulk Upload → Upload Data Lahan**, pilih tab **Patok (Excel/Shapefile titik)**, lalu pilih berkasnya.
 + Untuk shapefile, sistem memberi tahu bila ada fitur yang bukan titik (dilewati).
 2. Periksa **Pemetaan kolom**. Kolom wajib (ID Lahan, Lintang, Bujur) harus terpetakan; kolom lain boleh dikosongkan.
++ Kolom sistem dikelompokkan (mis. Lahan & koordinat, Nomor patok, Kondisi & pemasangan). Header tiap grup menunjukkan berapa kolomnya sudah terpetakan; grup yang kolomnya tidak ada di berkas tertutup dengan tanda *tak ada di berkas* — buka bila ingin memetakan manual. Di samping tiap pilihan tampil **contoh nilai dari baris data pertama**, jadi salah petakan langsung terlihat sebelum validasi.
 3. Klik **Validasi**. Sistem mencocokkan ID Lahan dengan lahan aktif dalam akses Anda dan menampilkan pratinjau per baris.
 + **Perbarui patok** — baris memuat **Kode Patok** yang dikenal, atau nomor patok itu sudah ada di lahan; koordinat dan atributnya akan diperbarui (sumber koordinat menjadi *GPS lapangan*). Bila patok itu dipakai lahan tetangga, koordinat barunya berlaku juga di sana.
 + **Patok baru** — nomor belum ada (atau kosong → nomor berikutnya). Titik yang berjarak ≤ 5 m dari patok lahan tetangga akan **ditautkan** ke patok itu, bukan dibuat baru. Mengunggah berkas yang sama dua kali tanpa kolom No Patok aman: titik ≤ 5 m dari patok lahan itu sendiri dianggap patok yang sama dan hanya diperbarui.
