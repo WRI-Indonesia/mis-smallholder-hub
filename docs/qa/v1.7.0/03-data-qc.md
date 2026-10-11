@@ -1,4 +1,4 @@
-# 03 · QC data & DB — v1.6.1
+# 03 · QC data & DB — v1.7.0
 
 > Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
 

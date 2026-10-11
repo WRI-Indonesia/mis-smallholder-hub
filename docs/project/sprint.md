@@ -8,7 +8,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 ### Rencana Rilis
 
-Terakhir diperbarui: 2026-10-10
+Terakhir diperbarui: 2026-10-11
 
 Rencana disusun **per rilis**, bukan per minggu (keputusan owner 2026-09-30): pengembangan dikerjakan satu orang sambil cleaning data dan kunjungan ke distrik, jadi ada minggu yang padat dan ada minggu tanpa coding sama sekali — ritme mingguan membuat minggu kosong tampak seperti sprint gagal. Setiap rilis punya **tanggal mulai dan target**; kemajuan diukur dalam poin, velocity dalam **poin per minggu kalender** rilis yang sudah lewat. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Riwayat: disusun 2026-09-28 dari triase 42 issue terbuka sebagai 6 sprint mingguan; 2026-09-30 dipetakan ke rilis — setiap rilis dimulai sehari setelah rilis sebelumnya (v1.1.0 dirilis 2026-09-23), agar velocity mencerminkan siklus sebenarnya (Sprint 1 selesai → v1.2.0, sisa Sprint 1 + Sprint 2–4 → v1.3.0, Sprint 5–6 → v1.4.0), backlog jadi tabel satu issue per baris, tabel Work Item diarsipkan. **v1.3.0 dirilis lebih awal 2026-09-30** (keputusan owner): sisa butirnya digeser ke rilis baru **v1.4.0** (10-01 → 10-25), sehingga Supply Chain menjadi **v1.5.0** dan penyangga akhir tahun **v1.6.0** (tanggal tetap). Setiap rilis berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner dan sebaiknya diputuskan di awal rilis.
 
@@ -100,20 +100,24 @@ Keputusan owner 2026-10-10: batch prototipe di `mvp` sejak v1.5.0 (ada `feat:` �
 | 3 | **#406** Istilah "petani aktif" → "petani terdaftar" | Kerapian | S | Teks UI, judul kolom Excel Monev BMP, Bantuan, docs. **✅ 2026-10-10** (`c473eef`, ditutup dengan retro) | ✅ Selesai | — |
 | 4 | **Rilis v1.6.0** | Rilis | M | Tanpa migrasi/seed/menu baru. `mvp → staging` 2026-10-10 → QA `docs/qa/v1.6.0/` → bump → PR `staging → main` → tag. ✅ 2026-10-10: ikut audit `/audit` penuh (Bantuan 25, docs, TD, 126 test guard) + perbaikan auto-pan popup peta; run staging smoke 17 · kasus 11 Pass · 0 Fail (OPERATOR & DONOR login oleh owner) | ✅ Selesai | ✅ Diputuskan 2026-10-10: Go hari ini (pengecualian 1 rilis/hari, Decision Log) |
 
-#### Rilis v1.6.1 · 2026-10-11 → 2026-10-25 — PATCH: celah RBAC laten & kerapian TD
+#### Rilis v1.7.0 · 2026-10-11 → 2026-10-25 — MINOR: celah RBAC laten, kerapian TD & Ketersediaan Data › Produksi
 
 Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semula di v1.8.0 dikerjakan lebih awal sebagai PATCH, bersama batch TD cepat. Tanpa fitur baru.
 
+**Renumbering 2026-10-11 (owner):** fitur #416 (epic #415) dikerjakan dan di-commit ke `mvp` pada 2026-10-11 bersama perbaikan di atas; owner memilih **ikut rilis berikutnya** → ada `feat:` → nomor menjadi **v1.7.0 MINOR** (bukan PATCH v1.6.1). Supply Chain versi DB bergeser ke **v1.8.0**, penyangga akhir tahun ke **v1.9.0**. Paket QA `docs/qa/v1.6.1/` dinamai ulang `docs/qa/v1.7.0/`. **Rilis wajib disertai seed menu** di staging & prod (`seed-menu-only.ts`: 2 dibuat · 2 diperbarui).
+
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
-| 1 | **#409** Buat/ubah Lembaga Petani tak memeriksa distrik tujuan dalam scope | Keamanan | S | Distrik tujuan wajib dalam scope (pola `createFarmer`) + test guard semantik. Kode ✅ 2026-10-10 (di `mvp`): helper `canPlaceGroupInDistrict`, Bantuan `t-0` | 🟡 Dikerjakan | — |
-| 2 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | Keamanan | M | Sisa butir 2: tolak role di atas pemanggil & ubah role/status diri sendiri; penugasan wilayah `user-data-access` dalam batas pemanggil (komentar 2026-10-10). Kode ✅ 2026-10-10 (di `mvp`): `src/lib/user-admin-guard.ts`, Bantuan `a-2` | 🟡 Dikerjakan | ✅ Diputuskan 2026-10-10: kunci SUPERADMIN + akun sendiri; kelola pengguna hanya scope ALL; Role & Permission hanya SUPERADMIN |
-| 3 | **#384** Peta BMP: filter memakai guard `map-parcel` | Keamanan | S | Helper filter peta menerima `map-parcel` ATAU `map-bmp` + test; hapus catatan keterbatasan `docs/product/pages/map/bmp.md`. Kode ✅ 2026-10-11 (di `mvp`): `requireFilterView` di 3 helper opsi filter + 9 test `map-guard`; TC-384-01; review 5 temuan diterapkan (TD-060 dibuka) | 🟡 Dikerjakan | — |
-| 4 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | Kerapian | S | Butir 1 `getMenuItems` wajib sesi (duplikat #410 ditutup) + butir 2–7 (butir 5 & 7 = keputusan revisi lahan) | 🟡 Dikerjakan | ✅ Diputuskan 2026-10-11: butir 5 = perbarui aturan (form = koreksi di tempat, upload ulang = baris baru), butir 7 = biarkan, kunci dengan test & komentar; butir 2 & 4 diterima apa adanya (dicatat di kode/docs). Kode ✅ 2026-10-11 (di `mvp`): butir 1 sesi wajib, 3 `modifiedBy`, 6 tolak pindah Lembaga berpeserta; TC-387-01 |
+| 1 | **#409** Buat/ubah Lembaga Petani tak memeriksa distrik tujuan dalam scope | Keamanan | S | Distrik tujuan wajib dalam scope (pola `createFarmer`) + test guard semantik. Kode ✅ 2026-10-10 (di `mvp`): helper `canPlaceGroupInDistrict`, Bantuan `t-0` | ✅ Kode di `mvp` | — |
+| 2 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | Keamanan | M | Sisa butir 2: tolak role di atas pemanggil & ubah role/status diri sendiri; penugasan wilayah `user-data-access` dalam batas pemanggil (komentar 2026-10-10). Kode ✅ 2026-10-10 (di `mvp`): `src/lib/user-admin-guard.ts`, Bantuan `a-2` | ✅ Kode di `mvp` | ✅ Diputuskan 2026-10-10: kunci SUPERADMIN + akun sendiri; kelola pengguna hanya scope ALL; Role & Permission hanya SUPERADMIN |
+| 3 | **#384** Peta BMP: filter memakai guard `map-parcel` | Keamanan | S | Helper filter peta menerima `map-parcel` ATAU `map-bmp` + test; hapus catatan keterbatasan `docs/product/pages/map/bmp.md`. Kode ✅ 2026-10-11 (di `mvp`): `requireFilterView` di 3 helper opsi filter + 9 test `map-guard`; TC-384-01; review 5 temuan diterapkan (TD-060 dibuka) | ✅ Kode di `mvp` | — |
+| 4 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | Kerapian | S | Butir 1 `getMenuItems` wajib sesi (duplikat #410 ditutup) + butir 2–7 (butir 5 & 7 = keputusan revisi lahan) | ✅ Kode di `mvp` | ✅ Diputuskan 2026-10-11: butir 5 = perbarui aturan (form = koreksi di tempat, upload ulang = baris baru), butir 7 = biarkan, kunci dengan test & komentar; butir 2 & 4 diterima apa adanya (dicatat di kode/docs). Kode ✅ 2026-10-11 (di `mvp`): butir 1 sesi wajib, 3 `modifiedBy`, 6 tolak pindah Lembaga berpeserta; TC-387-01 |
 | 5 | **#412** Batch 10 TD cepat (TD-008·026·032·044·046·049·051·053·054·059) | Kerapian | M | Tiap TD → Arsip `tech-debt.md` dengan bukti commit | 🔲 Todo | — |
-| 6 | **Rilis v1.6.1** | Rilis | S | Semua butir di atas → staging → QA → prod | 🔲 Todo | Go rilis |
+| 6 | **#416** Ketersediaan Data A — parent menu + kalender cakupan Produksi | Fitur | L | Parent "Ketersediaan Data" (level 2) + pindah 2 menu skor lama (key/URL tetap) + halaman Produksi: tabel pohon Lembaga → petani → lahan (lazy), sel = % lahan aktif non-PSR melapor, pilih tahun, ringkasan rentang penuh (`dataMonthsPerYear`), penanda Estimasi/0 kg/tanpa persil/basi, Excel 2 sheet, Bantuan + seed menu prod. Epic #415 (DA-08) | ✅ Kode di `mvp` (5 commit 2026-10-11, review 10 temuan ✅ `5da9581`) | ✅ Diputuskan 2026-10-11 (3 tahap): struktur menu, definisi sel, pohon, tahun, penanda, Excel 2 sheet; target v1.7.0 (bukan v1.8.0) |
+| 7 | **#417** Ketersediaan Data — Semua Lembaga: tata letak ringkas & satu tempat | Kerapian | M | Audit 2026-10-11 (halaman 3.817 px, info rangkap 3 tempat, kontrol di 5 tempat, heatmap memotong kolom Produksi): hero 1 baris, baris filter aktif + Reset, kartu domain ber-chip urut, matriks Ringkas 10 + toolbar sticky (modul ikut URL/cari), satu Daftar Kerja bertab (Sistemik · Per entitas · Tertinggal), istilah *band/irisan/Persil* → tingkat skor/pilihan filter/Lahan, `aria-label` segmen band, sub-nav keluarga menu; Bantuan p-6 ditulis ulang. Setelah #416 (sub-nav dibuat sekali). Epic #415 | 🔲 Todo | ✅ Diputuskan 2026-10-11 (3 pertanyaan ber-preview): tata letak A "ringkas, satu tempat"; bawaan tetap Radar tetapi Ringkas 10; setelah #416, v1.7.0 |
+| 8 | **Rilis v1.7.0** | Rilis | S | Semua butir di atas → `mvp → staging` → **seed menu staging** (dry-run → `--apply`) → QA `docs/qa/v1.7.0/` (TC-409/386/384/387/416 + SM-22b) → bump MINOR → PR `staging → main` → **seed menu prod** → tag | 🔲 Todo | Go rilis; ✅ 2026-10-11 owner: #416 ikut, nomor MINOR |
 
-#### Rilis v1.7.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
+#### Rilis v1.8.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
@@ -124,11 +128,9 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 5 | **#381** Peta Rantai Pasok + Report | Fitur | L | Garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel | 🔲 Todo | Prototipe CSV (Dashboard Sankey + Peta, bukan DB) dirilis 2026-10-06 untuk diskusi; diperluas 2026-10-10 (4 tab Aliran, tabel Mill & Lembaga, Excel 3 sheet, Peta dirombak) — versi final menunggu #380 |
 | 6 | **#382** Analisa volume, jarak & risiko Mill | Fitur | M | Jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker, risiko NKT & tumpang tindih per Mill. Prototipe CSV 2026-10-10: Sorotan (konsentrasi · ketergantungan · kepastian · jarak titik Lembaga) + kolom Jarak | 🔲 Todo | ✅ Diputuskan 2026-10-10: ambang 80%, koperasi Lembaga sendiri dikecualikan |
 | 7 | **#366** Detail Lahan Siak — sisa APKASDU | Data | S | Dari v1.5.0. 1.360 baris APKASDU ditahan sampai ada berkas ber-ID lahan baru; skrip idempoten yang sama (dry-run → dump prod → `--write`) | 🔲 Todo | ✅ Diputuskan 2026-10-07: APKASDU ditahan |
-| 8 | **#416** Ketersediaan Data A — parent menu + kalender cakupan Produksi | Fitur | L | Parent "Ketersediaan Data" (level 2) + pindah 2 menu skor lama (key/URL tetap) + halaman Produksi: tabel pohon Lembaga → petani → lahan (lazy), sel = % lahan aktif non-PSR melapor, pilih tahun, ringkasan rentang penuh (`dataMonthsPerYear`), penanda Estimasi/0 kg/tanpa persil/basi, Excel 2 sheet, Bantuan + seed menu prod. Epic #415 (DA-08) | 🔲 Todo | ✅ Diputuskan 2026-10-11 (3 tahap): struktur menu, definisi sel, pohon, tahun, penanda, Excel 2 sheet; target v1.7.0 (bukan v1.8.0) |
-| 9 | **#417** Ketersediaan Data — Semua Lembaga: tata letak ringkas & satu tempat | Kerapian | M | Audit 2026-10-11 (halaman 3.817 px, info rangkap 3 tempat, kontrol di 5 tempat, heatmap memotong kolom Produksi): hero 1 baris, baris filter aktif + Reset, kartu domain ber-chip urut, matriks Ringkas 10 + toolbar sticky (modul ikut URL/cari), satu Daftar Kerja bertab (Sistemik · Per entitas · Tertinggal), istilah *band/irisan/Persil* → tingkat skor/pilihan filter/Lahan, `aria-label` segmen band, sub-nav keluarga menu; Bantuan p-6 ditulis ulang. Setelah #416 (sub-nav dibuat sekali). Epic #415 | 🔲 Todo | ✅ Diputuskan 2026-10-11 (3 pertanyaan ber-preview): tata letak A "ringkas, satu tempat"; bawaan tetap Radar tetapi Ringkas 10; setelah #416, v1.7.0 |
-| 10 | **Rilis v1.7.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
+| 8 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
 
-#### Rilis v1.8.0 · 2026-11-09 → 2026-12-20 — Penyangga akhir tahun: tuntaskan fase K4 2026 & siapkan 2027
+#### Rilis v1.9.0 · 2026-11-09 → 2026-12-20 — Penyangga akhir tahun: tuntaskan fase K4 2026 & siapkan 2027
 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
@@ -138,9 +140,9 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 4 | **#317** Tumpang tindih lahan — Fase 4 layer Peta Lahan | Fitur | M | Layer tumpang tindih di Peta Lahan → #317 & fase DA-09 tuntas | 🔲 Todo | — |
 | 5 | Concept note **GIS-02 Deforestation** | Fitur | S | Sumber data tutupan hutan + lisensi, tahun *cut-off*, ambang luas, butuh GeoServer (GIS-04) atau tidak → issue induk | 🔲 Todo | Sumber data & cut-off |
 | 6 | Concept note **MD-12 Certification** | Fitur | S | Skema (RSPO/ISPO), unit sertifikasi Lembaga vs petani, siklus audit & temuan, dokumen S3 → issue induk | 🔲 Todo | Cakupan skema |
-| 7 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas + limpahan v1.6.0/v1.7.0 yang digeser ke sini | 🔲 Todo | Go rilis |
+| 7 | **Rilis v1.9.0** | Rilis | M | Semua butir di atas + limpahan v1.7.0/v1.8.0 yang digeser ke sini | 🔲 Todo | Go rilis |
 
-#### Backlog terurut (setelah v1.8.0)
+#### Backlog terurut (setelah v1.9.0)
 
 | # | Issue | Status | Catatan |
 | - | ----- | ------ | ------- |

@@ -1,4 +1,4 @@
-# 02 · Kasus uji per issue — v1.6.1
+# 02 · Kasus uji per issue — v1.7.0
 
 > Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
 
@@ -72,4 +72,39 @@ Langkah:
 Harapan:
 - Tombol **Tambah Lembaga Petani** tidak tampil.
 - Kolom Distrik di form ubah tampil sebagai teks terkunci (bukan dropdown); ubah nama lalu **Simpan** berhasil dan distrik tidak berubah.
+
+## #416 — Ketersediaan Data › Produksi (menu induk + kalender cakupan)
+
+### TC-416-01 · Menu tiga tingkat & kalender Distrik → Lembaga → petani → lahan [P0] [regresi] (5 mnt)
+Prasyarat: seed menu sudah `--apply` di env ini; login SUPERADMIN.
+Langkah:
+1. Sidebar: Data Analyst → **Ketersediaan Data** ▾ → Semua Lembaga · Per Lembaga · **Produksi**; buka Semua Lembaga dan Per Lembaga (URL lama).
+2. Buka **Produksi**: ganti Tahun ke tahun lalu, lalu kembali; klik ▸ satu Distrik → ▸ satu Lembaga → ▸ satu petani.
+3. Arahkan kursor ke satu sel Lembaga berwarna; klik satu sel kg di baris lahan.
+4. Klik **Tutup semua**, lalu **Buka Distrik**; ubah Urut, lalu klik **Reset**.
+Harapan:
+- Kedua halaman lama terbuka seperti biasa; judul menu Semua Lembaga / Per Lembaga.
+- Kalender terisi; baris petani dan lahan dimuat (indikator "Memuat…" lalu baris muncul); sel kg membuka Master Data Produksi terfilter Lembaga + periode + petani dan daftar tidak kosong.
+- Tooltip sel menampilkan lahan melapor / lahan non-PSR, record, Σ kg.
+- Tutup semua melipat semua baris; Reset mengosongkan parameter URL dan mengembalikan tahun berjalan.
+
+### TC-416-02 · Scope & izin [P0] [regresi] (4 mnt)
+Prasyarat: akun OPERATOR ter-scope 1 Distrik; akun DONOR.
+Langkah:
+1. OPERATOR membuka Produksi; catat Distrik/Lembaga yang tampil; buka ▸ satu Lembaga.
+2. OPERATOR membuka URL `/admin/data-analyst/availability/production?lembaga=<id Lembaga di luar scope>`.
+3. DONOR mencari menu Ketersediaan Data di sidebar dan membuka URL Produksi langsung.
+Harapan:
+- Langkah 1: hanya Distrik/Lembaga dalam scope; baris petani termuat.
+- Langkah 2: filter Lembaga diabaikan (tautan basi → bawaan), tidak ada data Lembaga lain.
+- Langkah 3: menu tidak tampil; URL langsung ditolak (redirect/403).
+
+### TC-416-03 · Ekspor Excel 2 sheet [P1] (3 mnt)
+Prasyarat: login SUPERADMIN; filter Lembaga = satu Lembaga yang punya produksi tahun berjalan.
+Langkah:
+1. Klik **Excel**; buka berkas.
+Harapan:
+- Sheet 1 `Lembaga <tahun>`: kolom Distrik · Kategori · Lembaga Petani · Kode · … · 12 bulan · ringkasan; baris sesuai filter.
+- Sheet 2 `Lahan <abrv>`: lahan × bulan (kg) + pemilik; tidak ada kolom kosong/meluber.
+Baseline dev: `production-availability.test.ts` (17 test), review #416 10 temuan ✅ (`5da9581`).
 
