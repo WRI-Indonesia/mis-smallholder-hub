@@ -26,7 +26,7 @@ const CP1252_EXTRA = new Set("€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•�
 
 export function isWinAnsiChar(ch: string): boolean {
   const code = ch.codePointAt(0)!;
-  return ch === "\n" || (code >= 0x20 && code <= 0x7e) || (code >= 0xa0 && code <= 0xff) || CP1252_EXTRA.has(ch);
+  return ch === "\n" || ch === "\r" || ch === "\t" || (code >= 0x20 && code <= 0x7e) || (code >= 0xa0 && code <= 0xff) || CP1252_EXTRA.has(ch);
 }
 
 /** Petakan simbol umum ke padanan ASCII; karakter lain di luar WinAnsi → "?" (bukan merusak seluruh baris). */

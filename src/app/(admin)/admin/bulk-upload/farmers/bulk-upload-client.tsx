@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import { bulkCreateFarmers, getExistingFarmerIds } from "@/server/actions/bulk-upload";
 import { FARMER_UPLOAD_FIELDS, FARMER_AUTO_MATCH_RULES } from "@/lib/farmer-upload-fields";
-import { FARMER_TEMPLATE } from "@/lib/bulk-upload-templates";
+import { FARMER_TEMPLATE, TEMPLATE_EXAMPLE_ERROR, isTemplateExampleId } from "@/lib/bulk-upload-templates";
 import { downloadExcelTemplate } from "@/lib/bulk-upload-template-download";
 import { GroupedFieldMapping } from "@/components/shared/grouped-field-mapping";
 
@@ -156,6 +156,8 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
       errors.push("ID Petani wajib diisi");
     } else if (rawFarmerId.length < 2) {
       errors.push("ID Petani minimal 2 karakter");
+    } else if (isTemplateExampleId(rawFarmerId)) {
+      errors.push(TEMPLATE_EXAMPLE_ERROR);
     } else {
       if (duplicatesInFile.has(rawFarmerId)) {
         errors.push(`ID Petani duplikat di dalam file: "${rawFarmerId}"`);
@@ -591,7 +593,11 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
             headers={headers}
             mapping={mapping}
             sample={rawRows[0]}
-            onChange={(key, header) => setMapping((prev) => ({ ...prev, [key]: header }))}
+            onChange={(key, header) => {
+              setMapping((prev) => ({ ...prev, [key]: header }));
+              // Pemetaan berubah = hasil validasi lama tidak berlaku (review #420; paritas Detail/Patok).
+              setValidatedData([]);
+            }}
           />
 
           <div className="flex justify-end gap-2 pt-2">

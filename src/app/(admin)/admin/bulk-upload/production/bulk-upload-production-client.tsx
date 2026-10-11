@@ -482,7 +482,11 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
             headers={headers}
             mapping={mapping}
             sample={rawRows[0]}
-            onChange={(key, header) => setMapping((prev) => ({ ...prev, [key]: header }))}
+            onChange={(key, header) => {
+              setMapping((prev) => ({ ...prev, [key]: header }));
+              // Pemetaan berubah = hasil validasi lama tidak berlaku (review #420; paritas Detail/Patok).
+              setValidatedData([]);
+            }}
           />
 
           <div className="flex justify-end gap-2 pt-2">

@@ -5,7 +5,8 @@
  * ada di `bulk-upload-template-download.ts` (client-only).
  *
  * ID contoh selalu fiktif (`CTH.*`, repo publik) — bila template diunggah apa
- * adanya, barisnya ditolak "tidak terdaftar", bukan "kolom tidak dikenali".
+ * adanya, barisnya ditolak: Produksi/Lahan/Pohon "tidak terdaftar"; Petani
+ * (ID baru memang sah) lewat `isTemplateExampleId` di klien DAN server (review #419).
  */
 import type { Feature, Point, Polygon } from "geojson";
 import { FARMER_UPLOAD_FIELDS } from "@/lib/farmer-upload-fields";
@@ -13,6 +14,14 @@ import { PRODUCTION_UPLOAD_FIELDS } from "@/lib/production-upload-fields";
 import { PARCEL_UPLOAD_FIELDS } from "@/lib/parcel-bulk-mapping";
 
 export const EXAMPLE_FARMER_ID = "CTH.14.01.10.2012.0001";
+export const EXAMPLE_ID_PREFIX = "CTH.";
+
+/** ID berawalan `CTH.` = baris contoh template — tak pernah boleh tersimpan sebagai data. */
+export function isTemplateExampleId(id: unknown): boolean {
+  return typeof id === "string" && id.trim().toUpperCase().startsWith(EXAMPLE_ID_PREFIX);
+}
+
+export const TEMPLATE_EXAMPLE_ERROR = "ID contoh dari template (CTH.…) — hapus baris contoh sebelum mengunggah";
 export const EXAMPLE_PARCEL_ID = "CTH.0001.A.14.01.10.2012";
 
 type Cell = string | number | null;

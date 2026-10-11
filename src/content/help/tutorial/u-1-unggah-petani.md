@@ -21,7 +21,7 @@ Kolom di Excel Anda **tidak harus bernama persis** seperti di sistem — nanti a
 
 Belum punya berkas? Klik **Unduh Template Excel** di kanan atas Langkah 2 — tombol ini aktif walau Lembaga belum dipilih.
 
-+ Template berisi sheet **Data** (8 judul kolom yang langsung dikenali sistem + 2 baris contoh ber-ID fiktif `CTH.…` — hapus sebelum diisi) dan sheet **Petunjuk** (kolom wajib dan formatnya). Kolom **NIK** sudah berformat teks agar angka nol di depan tidak hilang.
++ Template berisi sheet **Data** (8 judul kolom yang langsung dikenali sistem + 2 baris contoh ber-ID fiktif `CTH.…` — hapus sebelum diisi; bila terlupa, baris itu ditandai **Error** dan tidak ikut tersimpan) dan sheet **Petunjuk** (kolom wajib dan formatnya). Kolom **NIK** sudah berformat teks agar angka nol di depan tidak hilang.
 
 ## Langkah
 

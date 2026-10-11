@@ -5,6 +5,7 @@
  * dinamis (pola `parcel-spatial-download.ts`).
  */
 import type { FeatureCollection } from "geojson";
+import { toast } from "sonner";
 import {
   shapefileTemplateReadme,
   type ExcelTemplateSpec,
@@ -41,17 +42,36 @@ export async function buildExcelTemplate(spec: ExcelTemplateSpec) {
   guide.addRow([]);
   const gh = guide.addRow(["Kolom", "Wajib", "Format / keterangan"]);
   gh.font = { bold: true };
-  spec.columns.forEach((c) => guide.addRow([c.header, c.required ? "Ya" : "Tidak", c.guide]));
+  // Nama kolom DIKUTIP: tanpa kutip, baris "ID Petani | Ya | …" lolos deteksi tajuk alias,
+  // dan bila sheet Data kosong pembaca jatuh ke sheet ini sebagai data (review #419).
+  spec.columns.forEach((c) => guide.addRow([`"${c.header}"`, c.required ? "Ya" : "Tidak", c.guide]));
   guide.getColumn(1).width = 24;
   guide.getColumn(2).width = 8;
   guide.getColumn(3).width = 70;
   return wb;
 }
 
-export async function downloadExcelTemplate(spec: ExcelTemplateSpec) {
-  const wb = await buildExcelTemplate(spec);
-  const buffer = await wb.xlsx.writeBuffer();
-  saveBlob(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), spec.filename);
+// Satu unduhan template sekali jalan; galat (mis. chunk exceljs/shp-write gagal dimuat
+// sesudah deploy) jadi toast, bukan klik yang diam-diam tak berefek (review #419).
+let busy = false;
+async function guarded(task: () => Promise<void>) {
+  if (busy) return;
+  busy = true;
+  try {
+    await task();
+  } catch (err) {
+    console.error("[template] gagal membuat template", err);
+    toast.error("Gagal membuat template — muat ulang halaman lalu coba lagi");
+  } finally {
+    busy = false;
+  }
+}
+
+export function downloadExcelTemplate(spec: ExcelTemplateSpec): Promise<void> {
+  return guarded(async () => {
+    const [wb, { downloadWorkbook }] = await Promise.all([buildExcelTemplate(spec), import("@/lib/xlsx")]);
+    await downloadWorkbook(wb, spec.filename.replace(/\.xlsx$/i, ""));
+  });
 }
 
 /** ZIP shapefile contoh (shp/shx/dbf/prj WGS84 + cpg UTF-8) + BACA-SAYA.txt, satu layer bernama `spec.base`. */
@@ -64,21 +84,17 @@ export async function buildShapefileTemplateZip(spec: ShapefileTemplateSpec): Pr
     compression: "DEFLATE",
     types: spec.geometry === "polygon" ? { polygon: spec.base } : { point: spec.base },
   });
-  // shp-write menaruh berkas di folder & tanpa .cpg; ratakan ke akar ZIP agar
-  // pengguna langsung melihat keempat berkas + petunjuk saat membuka ZIP.
-  const src = await JSZip.loadAsync(raw);
-  const out = new JSZip();
-  for (const entry of Object.values(src.files)) {
-    if (entry.dir) continue;
-    const name = entry.name.split("/").pop()!;
-    out.file(name, await entry.async("uint8array"));
-  }
+  // shp-write 0.4.x menulis di akar ZIP (tanpa `folder`) tetapi tanpa .cpg; tambahkan
+  // .cpg (QGIS membaca DBF sebagai UTF-8) + petunjuk ke arsip yang sama.
+  const out = await JSZip.loadAsync(raw);
   out.file(`${spec.base}.cpg`, "UTF-8");
   out.file("BACA-SAYA.txt", shapefileTemplateReadme(spec));
   return out.generateAsync({ type: "uint8array", compression: "DEFLATE" });
 }
 
-export async function downloadShapefileTemplate(spec: ShapefileTemplateSpec) {
-  const bytes = await buildShapefileTemplateZip(spec);
-  saveBlob(new Blob([bytes as BlobPart], { type: "application/zip" }), `${spec.base}.zip`);
+export function downloadShapefileTemplate(spec: ShapefileTemplateSpec): Promise<void> {
+  return guarded(async () => {
+    const bytes = await buildShapefileTemplateZip(spec);
+    saveBlob(new Blob([bytes as BlobPart], { type: "application/zip" }), `${spec.base}.zip`);
+  });
 }

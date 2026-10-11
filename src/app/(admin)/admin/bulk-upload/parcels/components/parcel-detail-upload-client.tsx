@@ -418,7 +418,6 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
               // Pemetaan berubah = hasil validasi lama tidak berlaku lagi.
               setValidated([]);
             }}
-            forceOpenGroups={nktDefaults.status || nktDefaults.categories.length > 0 ? ["nkt"] : []}
             groupExtra={{ nkt: nktDefaultsBlock }}
           />
           <div className="flex justify-end pt-2">
