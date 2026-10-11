@@ -20,7 +20,7 @@ type Row = Record<string, unknown>;
 type Expect = string | number | null | ((v: string, rows: Row[]) => boolean);
 interface Check {
   id: string;
-  section: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H";
+  section: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I";
   purpose: string;
   sql: string;
   /** Kolom yang ditampilkan sebagai "aktual" (bawaan: seluruh kolom baris pertama digabung " · "). */
@@ -33,7 +33,7 @@ interface Check {
 
 const args = process.argv.slice(2);
 const opt = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
-const sections = (opt("--section") ?? "A,B,C,D,E,F,G,H").split(",").map((s) => s.trim().toUpperCase());
+const sections = (opt("--section") ?? "A,B,C,D,E,F,G,H,I").split(",").map((s) => s.trim().toUpperCase());
 const parcelId = opt("--parcel") ?? null;
 
 function dbLabel(url: string | undefined): string {
@@ -54,9 +54,11 @@ const MIGRATIONS_MONEV = ["20260918120000_bmp_assessment", "20260920100000_bmp_a
 /** Rilis setelah v0.36.0 — #353 bagian E (skema) + #352 P4 (menu); deploy = #357. */
 const MIGRATIONS_353E = ["20260921120000_drop_activity_status_tree_surveyed_at"];
 /** Label & order menu Ketersediaan Data dari `prisma/seeds/data/menu.csv` (#352 P4; label disamakan ke prod #364) — DB yang belum di-seed tampil ✗ di F3. */
+// Label & order mengikuti menu.csv terkini: #352 P4 → #364 (label prod) → #416 (anak induk
+// Ketersediaan Data, judul dipendekkan). Ubah di sini setiap kali menu.csv mengubah baris ini.
 const MENU_352 = [
-  { key: "data-analyst-data-availability", title: "Data — All Lembaga", order: 2 },
-  { key: "data-analyst-data-completeness", title: "Data — Per Lembaga", order: 3 },
+  { key: "data-analyst-data-availability", title: "Semua Lembaga", order: 1 },
+  { key: "data-analyst-data-completeness", title: "Per Lembaga", order: 2 },
 ];
 /** Subquery jumlah izin aktif satu menu (kunci literal dari daftar cek, bukan masukan pengguna). */
 const permCount = (menuKey: string) => `(select count(*) from rbac_role_permission where menu_key='${menuKey}' and is_active)::int`;
@@ -214,7 +216,7 @@ const CHECKS: Check[] = [
     pick: (r) => `enum ${r[0]?.e} · kolom ${r[0]?.c}`, expect: (_v, rows) => Number(rows[0]?.e) === 0 && Number(rows[0]?.c) === 0, expectLabel: "enum 0 · kolom 0",
   },
   {
-    id: "F3", section: "F", purpose: "menu Ketersediaan Data: label & order = menu.csv (#352 P4; ✗ = seed-menu-only belum dijalankan)",
+    id: "F3", section: "F", purpose: "menu Ketersediaan Data: label & order = menu.csv (#352 P4 → #416; ✗ = seed-menu-only belum dijalankan)",
     sql: `select key, title, "order" from tbl_menu_item where key = any($1::text[]) order by "order"`,
     pick: (r) => r.map((x) => `${x.title}:${x.order}`).join(" · ") || "(tidak ada)",
     expect: (_v, rows) => MENU_352.every((m) => rows.some((x) => x.key === m.key && x.title === m.title && Number(x.order) === m.order)),
@@ -275,6 +277,24 @@ const CHECKS: Check[] = [
     sql: `select (select count(*) from tbl_menu_item where key in ('dashboard-supply-chain','map-supply-chain') and is_active)::int as menu, ${permCount("dashboard-supply-chain")} as dash, ${permCount("map-supply-chain")} as map`,
     pick: (r) => `${r[0]?.menu} menu · ${r[0]?.dash} + ${r[0]?.map} izin`,
     expect: (_v, rows) => Number(rows[0]?.menu) === 2 && Number(rows[0]?.dash) === 16 && Number(rows[0]?.map) === 16, expectLabel: "2 menu · 16 + 16 izin (ADMIN 5 · DONOR 2 · MANAGEMENT 3 · OPERATOR 3 · SUPERADMIN 3)",
+  },
+  // ── I · v1.7.0 — keluarga menu Ketersediaan Data (#416/#417) ──
+  {
+    id: "I1", section: "I", purpose: "induk data-analyst-availability + 3 anak (Semua Lembaga · Per Lembaga · Produksi) (✗ = seed-menu-only.ts belum --apply)",
+    sql: `select (select count(*) from tbl_menu_item where key='data-analyst-availability' and parent_key='data-analyst' and is_active)::int as induk, (select count(*) from tbl_menu_item where key in ('data-analyst-data-availability','data-analyst-data-completeness','data-analyst-availability-production') and parent_key='data-analyst-availability' and is_active)::int as anak, (select string_agg(key || '=' || title, ' · ' order by "order") from tbl_menu_item where parent_key='data-analyst-availability') as judul`,
+    pick: (r) => `${r[0]?.induk} induk · ${r[0]?.anak}/3 anak · ${r[0]?.judul ?? "—"}`,
+    expect: (_v, rows) => Number(rows[0]?.induk) === 1 && Number(rows[0]?.anak) === 3, expectLabel: "1 induk · 3/3 anak (Semua Lembaga · Per Lembaga · Produksi)",
+  },
+  {
+    id: "I2", section: "I", purpose: "izin induk & Produksi — 4 peran × VIEW/EXPORT/PRINT, tanpa DONOR",
+    sql: `select ${permCount("data-analyst-availability")} as induk, ${permCount("data-analyst-availability-production")} as prod, (select count(*) from rbac_role_permission where menu_key in ('data-analyst-availability','data-analyst-availability-production') and role='DONOR' and is_active)::int as donor`,
+    pick: (r) => `${r[0]?.induk} + ${r[0]?.prod} izin · DONOR ${r[0]?.donor}`,
+    expect: (_v, rows) => Number(rows[0]?.induk) === 12 && Number(rows[0]?.prod) === 12 && Number(rows[0]?.donor) === 0, expectLabel: "12 + 12 izin · DONOR 0",
+  },
+  {
+    id: "I3", section: "I", purpose: "override per user pada 2 menu yang pindah induk (informatif — tetap berlaku, key tak berubah; induk baru mewariskan izin)",
+    sql: `select coalesce(string_agg(menu_key || ':' || permission || (case when granted then '+' else '-' end), ' '), '(tidak ada)') as v from rbac_user_permission_override where menu_key in ('data-analyst-data-availability','data-analyst-data-completeness','data-analyst-availability','data-analyst-availability-production') and is_active`,
+    expect: null, expectLabel: "informatif",
   },
 ];
 
