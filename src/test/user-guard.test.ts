@@ -67,6 +67,12 @@ describe("guard — settings-users + level", () => {
     expect(args.select).not.toHaveProperty("password");
     expect(args.where.OR).toHaveLength(2);
   });
+
+  it("kolom Override hanya menghitung override AKTIF (pencabutan = soft delete; temuan QA staging v1.7.0)", async () => {
+    await actions.getUsers();
+    const args = db.user.findMany.mock.calls[0][0];
+    expect(args.select.permissionOverrides.where).toEqual({ isActive: true });
+  });
 });
 
 describe("createUser / updateUser — Zod, email unik, hash, audit", () => {

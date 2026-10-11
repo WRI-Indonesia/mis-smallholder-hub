@@ -17,6 +17,7 @@ Sumber: `git log <tag>..HEAD`, `gh issue list --state closed`, `docs/project/cha
 | 9 | #412 | Batch 10 TD cepat (indeks induk ke anak pertama yang boleh, Excel auto-fit, angka form, a11y matriks, …) | Semua halaman induk menu (redirect) · ekspor Excel · form ber-angka | — | — | — | SM (navigasi induk & unduhan Excel), baseline test dev |
 | 10 | #418 | Dropdown menu crash Base UI #31 (temuan #1 QA) | Report › Lahan (filter Jenis Surat) · Settings › Role & Permission (Preset) | — | — | — | SM-07, SM-26 (uji ulang) |
 | 11 | temuan #2 (#305) | Glyph `≥`/`→` rusak di PDF Laporan Lahan | Report › Lahan (PDF) | — | — | — | TC-REV-06 (uji ulang) |
+| 12 | #421 | Metrik Rilis: ringkasan dulu (Rilis terakhir + Rilis berjalan), strip kesehatan, grafik bertab; Payload peta dihapus | Platform Developer › Metrik Rilis | — | — | p-8 | `TC-421-01` |
 
 ## Di luar lingkup pengujian (sengaja)
 

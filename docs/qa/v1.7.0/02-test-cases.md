@@ -188,3 +188,13 @@ Langkah: Master Data › Lahan → Tambah Lahan (lalu Batal) dan Edit 1 lahan (s
 Harapan: 4 seksi (Identitas · Kebun · Tanaman · Status & Catatan) berisi 12 field yang sama; simpan berhasil seperti sebelumnya.
 Baseline dev: `upload-mapping-groups.test.ts` (7: tiap field tepat satu grup, format contoh, render statis); verifikasi browser lokal 2026-10-11 (Poligon template 14/14, Detail Lahan 5 grup, Dashboard, form Lahan).
 
+## #421 — Metrik Rilis: ringkasan dulu, grafik bertab
+
+### TC-421-01 · Rilis terakhir + Rilis berjalan + strip kesehatan + grafik bertab [P2] (3 mnt)
+Prasyarat: login ADMIN/MANAGEMENT/SUPERADMIN.
+Langkah: Platform Developer › Metrik Rilis → baca dua kartu atas → fokus/ketuk ⓘ RVS → ganti tab RVS · Roadmap · Test dan rentang waktu → klik Tech debt aktif.
+Harapan:
+- Rilis terakhir = versi rilis terakhir + RVS + Δ + Progres roadmap nilai saat rilis; Rilis berjalan = versi berjalan, target · hari ke-n · sisa hari, butir/poin (= Rencana Pengembangan); kartu Payload peta **tidak ada**.
+- Tooltip definisi RVS muncul lewat keyboard; satu grafik besar, rentang berlaku ketiga tab; Tech debt membuka daftar (angka kartu = tabel).
+- Akun tanpa VIEW Rencana Pengembangan: kartu Rilis berjalan hanya keterangan (tanpa data rencana).
+
