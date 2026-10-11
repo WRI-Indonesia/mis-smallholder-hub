@@ -3,7 +3,8 @@ import { matches, type Row } from "./prisma-where";
 
 /**
  * Guard 3 lapis action Peta Lahan (`src/server/actions/map.ts`) — tanpa DB:
- * `requireView` (map-parcel VIEW) di semua pintu baca, getMapData (izin → Zod →
+ * `requireFilterView` (map-parcel ATAU map-bmp VIEW, #384) di opsi filter,
+ * `requireView` (map-parcel VIEW) di pintu baca popup, getMapData (izin → Zod →
  * scope lewat AND), popup lahan (pelatihan petani & produksi lahan ber-scope
  * id + isActive), dan Profil Lahan (map-parcel PRINT). getMapMarkers sudah di
  * `nkt-report-map-marker-guard.test.ts`; getBmpMapData di
@@ -71,11 +72,8 @@ beforeEach(() => {
   passport.fetchParcelPassport.mockResolvedValue({ success: true, data: {} });
 });
 
-describe("requireView — map-parcel VIEW di semua pintu baca", () => {
+describe("requireView — map-parcel VIEW di pintu baca popup", () => {
   const cases: [string, () => Promise<unknown>][] = [
-    ["getProvincesForMap", () => map.getProvincesForMap()],
-    ["getDistrictsForMap", () => map.getDistrictsForMap("P1")],
-    ["getFarmerGroupsForMap", () => map.getFarmerGroupsForMap("D1")],
     ["getFarmerTraining", () => map.getFarmerTraining("F1")],
     ["getParcelProduction", () => map.getParcelProduction("LP1")],
   ];
@@ -87,6 +85,41 @@ describe("requireView — map-parcel VIEW di semua pintu baca", () => {
       expect(getAccessContext).not.toHaveBeenCalled();
       expectNoDb();
       expect(passport.computeFarmerTrainingItems).not.toHaveBeenCalled();
+    });
+  }
+});
+
+// Opsi filter dipakai Peta Lahan DAN Peta BMP (#384): cukup salah satu VIEW,
+// map-parcel dicek dulu (pola requireBoundaryRead / proxy map-hotspot).
+describe("requireFilterView — opsi filter: map-parcel ATAU map-bmp VIEW", () => {
+  const cases: [string, () => Promise<unknown>][] = [
+    ["getProvincesForMap", () => map.getProvincesForMap()],
+    ["getDistrictsForMap", () => map.getDistrictsForMap("P1")],
+    ["getFarmerGroupsForMap", () => map.getFarmerGroupsForMap("D1")],
+  ];
+  for (const [name, call] of cases) {
+    it(`${name}: tanpa keduanya → melempar tanpa kueri (kedua izin dicek, map-parcel dulu)`, async () => {
+      hasPermission.mockResolvedValue(false);
+      await expect(call()).rejects.toThrow(DENIED);
+      expect(hasPermission.mock.calls).toEqual([
+        ["map-parcel", "VIEW"],
+        ["map-bmp", "VIEW"],
+      ]);
+      expect(getAccessContext).not.toHaveBeenCalled();
+      expectNoDb();
+    });
+
+    it(`${name}: hanya map-bmp VIEW (pengguna Peta BMP tanpa Peta Lahan) → boleh`, async () => {
+      hasPermission.mockImplementation(async (menu: string) => menu === "map-bmp");
+      await expect(call()).resolves.toBeDefined();
+      expect(hasPermission).toHaveBeenCalledWith("map-bmp", "VIEW");
+      expect(getAccessContext).toHaveBeenCalled();
+    });
+
+    it(`${name}: map-parcel VIEW → map-bmp tidak dicek`, async () => {
+      hasPermission.mockImplementation(async (menu: string) => menu === "map-parcel");
+      await expect(call()).resolves.toBeDefined();
+      expect(hasPermission).toHaveBeenCalledExactlyOnceWith("map-parcel", "VIEW");
     });
   }
 });

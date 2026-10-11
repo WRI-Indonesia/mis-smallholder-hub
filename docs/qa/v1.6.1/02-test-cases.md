@@ -26,6 +26,20 @@ Harapan:
 - Langkah 1: halaman gagal memuat daftar dengan pesan "Pengelolaan pengguna hanya untuk akun tanpa batasan wilayah".
 - Langkah 2: sel kembali seperti semula + pemberitahuan "Hanya SUPERADMIN yang dapat mengubah Role & Permission".
 
+## #384 — Peta BMP: opsi filter menerima `map-bmp` tanpa `map-parcel`
+
+### TC-384-01 · Pengguna hanya `map-bmp` bisa memuat filter Peta BMP [P1] (4 mnt)
+Prasyarat: SUPERADMIN + satu akun uji non-SUPERADMIN (mis. `qa-operator`). Di Settings › User Management › Hak Akses Menu akun uji: **cabut** VIEW `Map › Peta Lahan` (override revoke), pastikan VIEW `Map › Peta BMP` tetap ada.
+Langkah:
+1. Login akun uji → Map › Peta BMP.
+2. Pilih Provinsi, lalu Distrik, lalu Lembaga; tunggu peta memuat.
+3. Buka Map › Peta Lahan lewat URL `/admin/map/parcel`.
+4. Pulihkan override akun uji.
+Harapan:
+- Langkah 1–2: halaman terbuka, ketiga dropdown terisi tanpa toast "Tidak memiliki izin untuk mengakses data ini"; lahan tampil.
+- Langkah 3: diarahkan keluar (tanpa izin `map-parcel`) — izin peta lahan tidak ikut terbuka.
+Baseline dev: `map-guard.test.ts` — `requireFilterView` menolak bila keduanya tidak ada, menerima `map-bmp` saja, dan tidak mengecek `map-bmp` bila `map-parcel` ada.
+
 ## #409 — Distrik tujuan Lembaga wajib dalam scope
 
 Prasyarat umum: akun **ADMIN** yang dibatasi per distrik (UserDistrict/UserProvince) dan akun **ADMIN** yang dibatasi per Lembaga (UserFarmerGroup), keduanya ber-izin CREATE/EDIT Master Data › Lembaga Petani. Login akun dilakukan owner.
