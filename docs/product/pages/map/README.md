@@ -23,7 +23,7 @@ Menu: Map (/admin/map → redirect /admin/map/parcel)
 | Icon | `Map` |
 | Sub menu | 3 — Peta Lahan (`map-parcel`), Peta BMP (`map-bmp`), Peta Rantai Pasok (`map-supply-chain`, prototipe #379) |
 | Order | 2 |
-| Catatan | `src/app/(admin)/admin/map/page.tsx` hanya `redirect("/admin/map/parcel")` — tidak ada halaman induk. |
+| Catatan | `src/app/(admin)/admin/map/page.tsx` hanya `redirectToFirstAccessibleChild("map")` (bawaan `/admin/map/parcel` — sejak TD-051 (#412): ke **anak pertama (urut `order`) yang boleh diakses pengguna**, termasuk override per user; tanpa anak yang boleh → `/admin`) — tidak ada halaman induk. |
 
 Sumber metadata menu: `prisma/seeds/data/menu.csv`. Semua halaman berada di bawah guard NextAuth (`middleware.ts`) dan tiga lapis keamanan (menu permission, access context, soft delete).
 

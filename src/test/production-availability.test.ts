@@ -1,0 +1,226 @@
+import { describe, expect, it } from "vitest";
+import {
+  availableYears,
+  cellAt,
+  coveragePct,
+  filterProductionGroups,
+  groupRowsByDistrict,
+  mergeCells,
+  periodsOfYear,
+  sortProductionGroups,
+  summarizeRange,
+  summarizeYear,
+  percentUnavailableNote,
+  yearCoverageAvg,
+  yearOfPeriod,
+} from "@/lib/production-availability";
+import { PRODUCTION_STALE_MONTHS } from "@/lib/data-completeness-registry";
+import { dataMonthsPerYear } from "@/lib/productivity-annualize";
+import type { ProductionAvailabilityGroupRow, ProductionCellStats } from "@/types/production-availability";
+
+/** Sel sintetis: `kg` bawaan 100 per record, semua ber-persil kecuali `noParcel`. */
+const cell = (period: string, over: Partial<ProductionCellStats> = {}): ProductionCellStats => {
+  const records = over.records ?? 1;
+  const noParcelRecords = over.noParcelRecords ?? 0;
+  return {
+    period,
+    parcelsReporting: over.parcelsReporting ?? records - noParcelRecords,
+    records,
+    linkedRecords: over.linkedRecords ?? records - noParcelRecords,
+    kg: over.kg ?? records * 100,
+    zeroRecords: over.zeroRecords ?? 0,
+    estimateRecords: over.estimateRecords ?? 0,
+    noParcelRecords,
+  };
+};
+
+const group = (id: string, nonPsr: number, cells: ProductionCellStats[], over: Partial<ProductionAvailabilityGroupRow> = {}): ProductionAvailabilityGroupRow => ({
+  id,
+  name: over.name ?? id.toUpperCase(),
+  code: over.code ?? null,
+  abrv: over.abrv ?? null,
+  category: over.category ?? "SWADAYA",
+  districtId: over.districtId ?? "d1",
+  districtName: over.districtName ?? "Siak",
+  totalFarmers: over.totalFarmers ?? 10,
+  totalParcels: over.totalParcels ?? nonPsr,
+  nonPsrParcels: nonPsr,
+  cells,
+});
+
+describe("production-availability — periode & persen (K3, K4)", () => {
+  it("periodsOfYear menghasilkan 12 periode YYYY-MM urut", () => {
+    const p = periodsOfYear(2026);
+    expect(p).toHaveLength(12);
+    expect(p[0]).toBe("2026-01");
+    expect(p[11]).toBe("2026-12");
+    expect(yearOfPeriod("2026-07")).toBe(2026);
+    expect(yearOfPeriod("2026-13")).toBeNaN();
+  });
+
+  it("coveragePct = lahan melapor ÷ lahan non-PSR, dibatasi 100, null bila penyebut 0", () => {
+    expect(coveragePct(4, 8)).toBe(50);
+    expect(coveragePct(9, 8)).toBe(100); // record menunjuk lahan petani lain dalam Lembaga
+    expect(coveragePct(3, 0)).toBeNull();
+    expect(coveragePct(0, 8)).toBe(0);
+  });
+
+  it("yearCoverageAvg: bulan tanpa record = 0, 12 pembagi; null tanpa lahan non-PSR", () => {
+    const g = group("a", 10, [cell("2026-01", { parcelsReporting: 10 }), cell("2026-02", { parcelsReporting: 5 })]);
+    expect(yearCoverageAvg(g, 2026)).toBeCloseTo((100 + 50) / 12, 6);
+    expect(yearCoverageAvg(group("b", 0, [cell("2026-01")]), 2026)).toBeNull();
+  });
+});
+
+describe("production-availability — ringkasan rentang penuh (K4, K5)", () => {
+  const cells = [
+    cell("2025-11", { records: 3 }),
+    cell("2025-12", { records: 3, estimateRecords: 3 }),
+    cell("2026-01", { records: 4, zeroRecords: 1 }),
+    cell("2026-03", { records: 2, noParcelRecords: 1 }),
+  ];
+
+  it("periode pertama/terakhir, jeda ke acuan, dan penanda dijumlahkan", () => {
+    const s = summarizeRange(cells, "2026-05");
+    expect(s.firstPeriod).toBe("2025-11");
+    expect(s.lastPeriod).toBe("2026-03");
+    expect(s.gapMonths).toBe(2);
+    expect(s.stale).toBe(false);
+    expect(s.totalRecords).toBe(12);
+    expect(s.estimateRecords).toBe(3);
+    expect(s.estimatePct).toBeCloseTo(25, 6);
+    expect(s.zeroRecords).toBe(1);
+    expect(s.noParcelRecords).toBe(1);
+  });
+
+  it(`basi bila jeda ≥ PRODUCTION_STALE_MONTHS (${PRODUCTION_STALE_MONTHS}) — ambang DA-02 yang sama`, () => {
+    expect(summarizeRange(cells, `2026-0${3 + PRODUCTION_STALE_MONTHS}`).stale).toBe(true);
+    expect(summarizeRange(cells, `2026-0${2 + PRODUCTION_STALE_MONTHS}`).stale).toBe(false);
+  });
+
+  it("bulan ber-data per tahun memakai aturan penyetahunan Peta BMP (dataMonthsPerYear)", () => {
+    const s = summarizeRange(cells, "2026-05");
+    const expected = dataMonthsPerYear(cells.map((c) => ({ period: c.period, kg: c.kg, linked: c.linkedRecords })));
+    expect(s.monthsByYear).toEqual(expected);
+    expect(s.monthsByYear).toEqual({ "2025": 2, "2026": 2 });
+  });
+
+  it("tanpa record → semua null/0, tidak basi (tak bisa dinilai)", () => {
+    const s = summarizeRange([], "2026-05");
+    expect(s.firstPeriod).toBeNull();
+    expect(s.gapMonths).toBeNull();
+    expect(s.stale).toBe(false);
+    expect(s.estimatePct).toBe(0);
+  });
+
+  it("periode tak valid dan sel 0 record diabaikan", () => {
+    const s = summarizeRange([cell("2026-1", {}), cell("2026-02", { records: 0 }), cell("2026-04")], "2026-05");
+    expect(s.firstPeriod).toBe("2026-04");
+    expect(s.totalRecords).toBe(1);
+  });
+});
+
+describe("production-availability — tahun, filter, urutan", () => {
+  const a = group("a", 10, [cell("2024-06"), cell("2026-01", { parcelsReporting: 2 })], { name: "Alpha", districtId: "d1", category: "EX_PLASMA", code: "ICS-1" });
+  const b = group("b", 10, [cell("2026-01", { parcelsReporting: 9 }), cell("2026-02", { parcelsReporting: 9 })], { name: "Beta", districtId: "d2", districtName: "Kampar" });
+  const c = group("c", 0, [cell("2025-07")], { name: "Gamma" });
+  const d = group("d", 5, [], { name: "Delta" });
+
+  it("availableYears: tahun ber-record + tahun berjalan, terbaru dulu", () => {
+    expect(availableYears([a, b, c, d], 2026)).toEqual([2026, 2025, 2024]);
+    expect(availableYears([d], 2026)).toEqual([2026]);
+  });
+
+  it("filter distrik / kategori / Lembaga / pencarian (nama, kode, distrik)", () => {
+    const all = [a, b, c, d];
+    expect(filterProductionGroups(all, { districtId: "d2" }).map((g) => g.id)).toEqual(["b"]);
+    expect(filterProductionGroups(all, { category: "EX_PLASMA" }).map((g) => g.id)).toEqual(["a"]);
+    expect(filterProductionGroups(all, { groupId: "c" }).map((g) => g.id)).toEqual(["c"]);
+    expect(filterProductionGroups(all, { query: "ics-1" }).map((g) => g.id)).toEqual(["a"]);
+    expect(filterProductionGroups(all, { query: "kampar" }).map((g) => g.id)).toEqual(["b"]);
+    expect(filterProductionGroups(all, { query: "   " })).toHaveLength(4);
+  });
+
+  it("urut cakupan menaik: terendah dulu, yang tak bisa dinilai (tanpa lahan non-PSR) paling bawah", () => {
+    const sorted = sortProductionGroups([a, b, c, d], "coverage", true, 2026, "2026-03").map((g) => g.id);
+    // d = 0 % (tanpa record), a = 20 %/12, b = 180 %/12, c = null → terakhir.
+    expect(sorted).toEqual(["d", "a", "b", "c"]);
+  });
+
+  it("urut nama & periode terakhir, arah menurun membalik", () => {
+    expect(sortProductionGroups([b, a], "name", true, 2026, "2026-03").map((g) => g.id)).toEqual(["a", "b"]);
+    expect(sortProductionGroups([a, b, d], "last", false, 2026, "2026-03").map((g) => g.id)).toEqual(["b", "a", "d"]);
+  });
+});
+
+describe("production-availability — tingkat Distrik (owner 2026-10-11)", () => {
+  const a = group("a", 10, [cell("2026-01", { parcelsReporting: 4, estimateRecords: 1 })], { name: "Alpha", districtId: "d1", districtName: "Siak", totalFarmers: 5 });
+  const b = group("b", 20, [cell("2026-01", { parcelsReporting: 10 }), cell("2026-02", { parcelsReporting: 2, noParcelRecords: 1 })], { name: "Beta", districtId: "d1", districtName: "Siak", totalFarmers: 7 });
+  const c = group("c", 3, [cell("2025-12")], { name: "Gamma", districtId: "d2", districtName: "Kampar" });
+
+  it("mergeCells menjumlahkan tiap kolom per periode dan mengurutkan periode", () => {
+    const m = mergeCells([a.cells, b.cells]);
+    expect(m.map((x) => x.period)).toEqual(["2026-01", "2026-02"]);
+    expect(m[0]).toMatchObject({ parcelsReporting: 14, records: 2, estimateRecords: 1, kg: 200 });
+    expect(m[1]).toMatchObject({ parcelsReporting: 2, noParcelRecords: 1 });
+  });
+
+  it("groupRowsByDistrict: penyebut & petani dijumlah, urutan Lembaga dipertahankan, sel digabung", () => {
+    const d = groupRowsByDistrict([b, a, c]);
+    expect(d.map((x) => x.id)).toEqual(["d1", "d2"]);
+    expect(d[0]).toMatchObject({ name: "Siak", nonPsrParcels: 30, totalFarmers: 12, totalParcels: 30 });
+    expect(d[0].groups.map((g) => g.id)).toEqual(["b", "a"]);
+    expect(coveragePct(cellAt(d[0].cells, "2026-01")!.parcelsReporting, d[0].nonPsrParcels)).toBeCloseTo((14 / 30) * 100, 6);
+    expect(d[1].groups).toHaveLength(1);
+  });
+
+  it("baris Distrik bisa diurut dengan kunci yang sama (cakupan menaik)", () => {
+    const d = sortProductionGroups(groupRowsByDistrict([a, b, c]), "coverage", true, 2026, "2026-03");
+    // Kampar: 0 % di 2026 (record hanya 2025) → paling rendah; Siak 46,7 %/12.
+    expect(d.map((x) => x.name)).toEqual(["Kampar", "Siak"]);
+  });
+});
+
+describe("production-availability — temuan review #416", () => {
+  it("periode terakhir melampaui acuan → jeda dipaksa 0, ditandai futureLast, tidak basi", () => {
+    const s = summarizeRange([cell("2027-01")], "2026-10");
+    expect(s.gapMonths).toBe(0);
+    expect(s.futureLast).toBe(true);
+    expect(s.stale).toBe(false);
+    expect(summarizeRange([cell("2026-08")], "2026-10").futureLast).toBe(false);
+  });
+
+  it("urut 'last' & 'months': baris tanpa record selalu paling bawah, menaik maupun menurun", () => {
+    const a = group("a", 5, [cell("2026-03")], { name: "Alpha" });
+    const b = group("b", 5, [cell("2026-01")], { name: "Beta" });
+    const n = group("n", 5, [], { name: "Nihil" });
+    expect(sortProductionGroups([n, a, b], "last", true, 2026, "2026-05").map((g) => g.id)).toEqual(["b", "a", "n"]);
+    expect(sortProductionGroups([n, a, b], "last", false, 2026, "2026-05").map((g) => g.id)).toEqual(["a", "b", "n"]);
+    expect(sortProductionGroups([n, a, b], "months", false, 2026, "2026-05").map((g) => g.id)).toEqual(["a", "b", "n"]);
+  });
+});
+
+describe("production-availability — Excel Sheet 1 per tahun (review pra-rilis v1.7.0, owner 2026-10-12)", () => {
+  it("summarizeYear menghitung hanya sel tahun terpilih; rentang penuh tetap di summarizeRange", () => {
+    const cells = [
+      cell("2025-11", { records: 5, estimateRecords: 2, zeroRecords: 1, noParcelRecords: 1 }),
+      cell("2026-01", { records: 3, estimateRecords: 1 }),
+      cell("2026-02", { records: 4, zeroRecords: 2 }),
+    ];
+    const y = summarizeYear(cells, 2026, "2026-10");
+    expect(y.totalRecords).toBe(7);
+    expect(y.estimateRecords).toBe(1);
+    expect(y.zeroRecords).toBe(2);
+    expect(y.noParcelRecords).toBe(0);
+    expect(summarizeRange(cells, "2026-10").totalRecords).toBe(12);
+    expect(summarizeYear(cells, 2024, "2026-10").totalRecords).toBe(0);
+  });
+
+  it("catatan % tak dihitung hanya bila penyebut non-PSR 0 DAN ada record tahun itu", () => {
+    expect(percentUnavailableNote(10, 12, 50)).toBe("");
+    expect(percentUnavailableNote(0, 4, 0)).toBe("");
+    expect(percentUnavailableNote(0, 4, 72)).toMatch(/Semua lahan PSR/);
+    expect(percentUnavailableNote(0, 0, 3)).toMatch(/Tanpa lahan aktif/);
+  });
+});
+

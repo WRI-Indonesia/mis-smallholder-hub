@@ -8,7 +8,7 @@ import { trainingParticipantScoreSchema, addParticipantsSchema } from "@/validat
 import type { TrainingParticipantScoreInput } from "@/validations/training-participant.schema";
 import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 import { getPresignedUrl } from "@/lib/s3";
-import { isTrainingEvidenceKeyFor } from "@/lib/training-evidence";
+import { hasTrainingEvidence, isTrainingEvidenceKeyFor } from "@/lib/training-evidence";
 
 import {
   getAccessContext,
@@ -118,7 +118,7 @@ export async function getTrainingActivityById(id: string) {
   let evidenceUrl: string | null = null;
   // #385: presigned URL hanya untuk kunci milik pelatihan ini — baris yang
   // menyimpan kunci objek lain (sebelum validasi tulis ada) tidak membuka tautan.
-  if (activity.evidenceKey && isTrainingEvidenceKeyFor(activity.evidenceKey, activity.id)) {
+  if (hasTrainingEvidence(activity)) {
     try {
       evidenceUrl = await getPresignedUrl(activity.evidenceKey);
     } catch (err) {
@@ -184,7 +184,7 @@ export async function updateTrainingActivity(input: UpdateTrainingActivityInput)
   // Verify activity exists, is active, and is within the user's scope before updating
   const existing = await prisma.trainingActivity.findFirst({
     where: { id, isActive: true, ...farmerAccessFilter(access) },
-    select: { id: true, evidenceKey: true },
+    select: { id: true, evidenceKey: true, farmerGroupId: true },
   });
   if (!existing) return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda" };
 
@@ -204,6 +204,19 @@ export async function updateTrainingActivity(input: UpdateTrainingActivityInput)
   });
   if (!targetGroup) {
     return { success: false, error: "Tidak memiliki izin untuk memindahkan pelatihan ke lembaga petani ini" };
+  }
+
+  // #387 butir 6: peserta = petani Lembaga penyelenggara (`addTrainingParticipants`
+  // memvalidasinya). Memindahkan kegiatan ke Lembaga lain akan meninggalkan
+  // peserta "asing" — tolak selama masih ada peserta aktif; kosongkan dulu.
+  if (data.farmerGroupId !== existing.farmerGroupId) {
+    const participants = await prisma.trainingParticipant.count({ where: { activityId: id, isActive: true } });
+    if (participants > 0) {
+      return {
+        success: false,
+        error: { farmerGroupId: [`Pelatihan masih punya ${participants} peserta dari Lembaga asal — kosongkan peserta dulu sebelum memindahkannya ke Lembaga lain`] },
+      };
+    }
   }
 
   await prisma.trainingActivity.update({

@@ -1,6 +1,6 @@
 import type { Position } from "geojson";
 import type { ParcelNodes } from "@/lib/parcel-node-coords";
-import { EMPTY_GROUP_PLACEHOLDER } from "@/lib/group-placeholder";
+import { isEmptyGroupToken } from "@/lib/group-placeholder";
 import type {
   LandParcelLegalFilters,
   LandParcelReportResult,
@@ -258,8 +258,11 @@ export const LAND_PARCEL_EXPORT_COLUMNS: readonly LandParcelExportColumn[] = [
 export function landParcelExportColumns(
   show: (col: LandParcelOptionalCol) => boolean,
   opts: { excel?: boolean } = {},
-): { header: string; key: string }[] {
-  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => (!c.col || show(c.col)) && (!c.excelOnly || opts.excel)).map(({ header, key }) => ({ header, key }));
+): { header: string; key: string; width?: number; wrap?: boolean }[] {
+  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => (!c.col || show(c.col)) && (!c.excelOnly || opts.excel)).map(({ header, key }) =>
+    // Koordinat (#370): satu perilaku dengan Peta Lahan — lebar 80, wrap (TD-044).
+    key === "koordinat" ? { header, key, width: 80, wrap: true } : { header, key },
+  );
 }
 
 /**
@@ -326,7 +329,7 @@ const sheetCollator = new Intl.Collator("id-ID", { numeric: true, sensitivity: "
  */
 export function parcelGroupValue(v: string | null | undefined): string | null {
   const t = v?.trim().replace(/\s+/g, " ");
-  return t && !EMPTY_GROUP_PLACEHOLDER.test(t) ? t : null;
+  return t && !isEmptyGroupToken(t) ? t : null;
 }
 
 /** Urutan natural nama grup ("2 F" < "11 F"); null ("Tanpa …") di akhir. */

@@ -64,6 +64,8 @@ interface Props {
   districts: District[];
   permissions: string[];
   isSuperAdmin: boolean;
+  /** Akun ber-scope Lembaga (BY_FARMER_GROUP): tanpa tombol Tambah, distrik terkunci saat ubah (#409). */
+  groupScoped?: boolean;
 }
 
 // Urutan sort kolom sertifikasi/assurance: Tersertifikasi (per tahun, tanpa
@@ -72,7 +74,7 @@ const certSortValue = (year: number | null, status: string | null) =>
   status === "CERTIFIED" ? `0-${year ?? 9999}` : status === "PLANNED" ? `1-${year ?? 9999}` : null;
 
 
-export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin }: Props) {
+export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin, groupScoped = false }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const [showForm, setShowForm] = useState(false);
@@ -286,7 +288,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
     </div>
   );
 
-  const toolbarRight = permissions.includes("CREATE") ? (
+  const toolbarRight = permissions.includes("CREATE") && !groupScoped ? (
     <Button
       size="sm"
       onClick={() => {
@@ -416,6 +418,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
         }}
         group={editGroup}
         districts={districts}
+        lockDistrict={groupScoped}
       />
     </>
   );

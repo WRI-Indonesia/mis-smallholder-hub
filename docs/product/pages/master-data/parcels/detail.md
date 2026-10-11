@@ -2,6 +2,8 @@
 
 [← Lahan](README.md) · [← Katalog halaman](../../README.md)
 
+> **Ringkasan:** Katalog Detail Lahan: header & tombol (Profil Lahan PDF, Edit, Nonaktifkan), kartu ringkasan, tab Informasi (peta, sepadan, NKT, lahan tetangga), Legalitas, Program, Produksi (+ modal bulan), Patok. Baca sebelum mengubah halaman detail satu lahan.
+
 ## Diagram objek
 
 ```text

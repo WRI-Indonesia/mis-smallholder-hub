@@ -14,6 +14,7 @@ import {
   type LpGridCell,
   type LpLabelRect,
 } from "@/lib/report-land-parcel";
+import { toWinAnsiText } from "@/lib/pdf-winansi";
 
 const EMERALD: [number, number, number] = [16, 185, 129];
 const AREA_FILL: [number, number, number] = [209, 240, 224];
@@ -364,11 +365,11 @@ export function buildLandParcelReportDoc({
     const x = MARGIN + (idx % 2) * 90;
     const y = currentY + Math.floor(idx / 2) * 6;
     doc.setFont("helvetica", "bold");
-    const labelText = `${m.label}:`;
+    const labelText = toWinAnsiText(`${m.label}:`);
     const labelWidth = doc.getTextWidth(labelText);
     doc.text(labelText, x, y);
     doc.setFont("helvetica", "normal");
-    doc.text(m.value, x + labelWidth + 2, y);
+    doc.text(toWinAnsiText(m.value), x + labelWidth + 2, y);
   });
   currentY += Math.ceil(metadata.length / 2) * 6 + 4;
 
@@ -379,12 +380,13 @@ export function buildLandParcelReportDoc({
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...SLATE_700);
-    doc.text(section.title, MARGIN, currentY);
+    doc.text(toWinAnsiText(section.title), MARGIN, currentY);
     currentY += 5;
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...SLATE_500);
     for (const line of section.lines) {
-      const wrapped = doc.splitTextToSize(line, sectionWidth) as string[];
+      // Font bawaan (WinAnsi) tak punya "≥" dkk. — teks layar tetap, dipetakan di sini (temuan #2 QA v1.7.0).
+      const wrapped = doc.splitTextToSize(toWinAnsiText(line), sectionWidth) as string[];
       doc.text(wrapped, MARGIN, currentY);
       currentY += wrapped.length * 4.2;
     }
@@ -409,7 +411,8 @@ export function buildLandParcelReportDoc({
     h: pageHeight - currentY - MARGIN - noteH,
     pad: 6,
   };
-  const linesByNo = new Map(mapParcels.map((p) => [p.no, p.labelLines]));
+  // Label peta dibersihkan SEBELUM diukur (fitLabelToBox/getTextWidth) — WinAnsi (review #419).
+  const linesByNo = new Map(mapParcels.map((p) => [p.no, p.labelLines.map(toWinAnsiText)]));
   const fullLayout = buildLandParcelMapLayout(mapParcels, mapBox);
   const split =
     grid.rows * grid.cols > 1 ? splitParcelsIntoGrid(mapParcels, grid.rows, grid.cols) : null;
@@ -479,7 +482,7 @@ export function buildLandParcelReportDoc({
   if (fullLayout.skippedNos.length > 0) {
     noteParts.push(`${fullLayout.skippedNos.length} lahan tanpa geometri tidak tergambar (No ${fullLayout.skippedNos.join(", ")}).`);
   }
-  doc.text(noteParts.join(" "), MARGIN, pageHeight - MARGIN + 3, { maxWidth: pageWidth - MARGIN * 2 });
+  doc.text(toWinAnsiText(noteParts.join(" ")), MARGIN, pageHeight - MARGIN + 3, { maxWidth: pageWidth - MARGIN * 2 });
 
   // ── Halaman per sel grid (atlas) ──
   if (useGrid) {
@@ -488,7 +491,7 @@ export function buildLandParcelReportDoc({
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...SLATE_800);
-      doc.text(`Peta ${cell.label} (${idx + 1}/${split!.cells.length}) — ${cell.parcels.length} lahan`, MARGIN, 12);
+      doc.text(toWinAnsiText(`Peta ${cell.label} (${idx + 1}/${split!.cells.length}) — ${cell.parcels.length} lahan`), MARGIN, 12);
 
       const cellBox = { x: MARGIN, y: 16, w: pageWidth - MARGIN * 2, h: pageHeight - 16 - MARGIN, pad: 6 };
       const cellLayout = buildLandParcelMapLayout(cell.parcels, cellBox);
@@ -507,11 +510,12 @@ export function buildLandParcelReportDoc({
   // ── Tabel ──
   doc.addPage();
   autoTable(doc, {
-    head: [columns.map((c) => c.header)],
+    // Sel tabel (nama petani, KT, catatan…) ikut WinAnsi — satu glyph asing merusak seluruh sel (review #419).
+    head: [columns.map((c) => toWinAnsiText(c.header))],
     body: data.map((row) =>
       columns.map((c) => {
         const val = row[c.key];
-        return val !== undefined && val !== null ? String(val) : "—";
+        return val !== undefined && val !== null ? toWinAnsiText(String(val)) : "—";
       }),
     ),
     startY: 14,

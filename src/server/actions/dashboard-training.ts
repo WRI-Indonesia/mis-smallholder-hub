@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { hasTrainingEvidence } from "@/lib/training-evidence";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 import { TRAINING_PACKAGE_ORDER } from "@/lib/training-dashboard-aggregation";
@@ -80,7 +81,7 @@ export async function getTrainingDashboardView(): Promise<TrainingDashboardView>
       id: a.id,
       packageCode: a.package.code as TrainingPackageCode,
       date: a.trainingDate.toISOString().slice(0, 10),
-      hasEvidence: Boolean(a.evidenceKey),
+      hasEvidence: hasTrainingEvidence(a), // kunci asing ≠ bukti (TD-053a)
       hasLocation: Boolean(a.location?.trim()),
       // Hanya peserta yang memang anggota Lembaga ini. Peserta "tamu" dari
       // Lembaga lain tidak boleh menambah pembilang cakupan Lembaga ini karena

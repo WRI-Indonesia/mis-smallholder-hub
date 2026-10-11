@@ -3,6 +3,7 @@ import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getDistrictsForCompleteness, getFarmerGroupsForCompleteness } from "@/server/actions/data-completeness";
 import { DataCompletenessClient } from "./data-completeness-client";
+import { AvailabilityNav } from "../availability/availability-nav";
 
 export default async function DataCompletenessPage() {
   await requirePermission("data-analyst-data-completeness");
@@ -15,16 +16,12 @@ export default async function DataCompletenessPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Ketersediaan Data — Per Lembaga</h1>
-          <HelpHint menuKey="data-analyst-data-completeness" />
-        </div>
-        <p className="text-muted-foreground">
-          Rincian kelengkapan &amp; daftar kerja anomali satu Lembaga Petani (Profil, Petani, Lahan, Pelatihan, Produksi).
-          Ringkasan lintas Lembaga ada di{" "}
+      <div className="space-y-2">
+        <AvailabilityNav active="data-analyst-data-completeness" helpSlot={<HelpHint menuKey="data-analyst-data-completeness" />} />
+        <p className="text-sm text-muted-foreground">
+          Rincian kelengkapan &amp; daftar kerja anomali satu Lembaga Petani (Profil, Petani, Lahan, Pelatihan, Produksi). Ringkasan lintas Lembaga ada di tab{" "}
           <Link href="/admin/data-analyst/data-availability" className="text-primary hover:underline">
-            Ketersediaan Data — Semua Lembaga
+            Semua Lembaga
           </Link>
           .
         </p>

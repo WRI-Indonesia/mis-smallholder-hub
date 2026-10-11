@@ -23,7 +23,7 @@ Untuk upload data geospatial menggunakan Shapefile (`.shp` dalam format ZIP), ik
 - **Parsing**: Gunakan library `shpjs` untuk membaca geometri dan atribut dari Shapefile (parse buffer ZIP langsung, tanpa ekstraksi manual)
 - **Column Mapping**: 
   - Sediakan dropdown mapping untuk setiap kolom dari DBF attributes ke field database target
-  - Auto-match kolom berdasarkan similarity name (fuzzy matching)
+  - Auto-match kolom: header di-lowercase + trim lalu dicocokkan **persis** ke daftar alias per field (`autoMatchColumns`, `src/lib/parcel-bulk-mapping.ts`) — bukan fuzzy; alias baru = tambah ke daftar
   - Wajib mapping: Farmer ID/Name, Parcel ID, dan geometry field
 - **Geometry Validation**:
   - Validasi tipe geometry (Polygon/MultiPolygon untuk land parcel)
@@ -41,3 +41,12 @@ Untuk upload data geospatial menggunakan Shapefile (`.shp` dalam format ZIP), ik
   - Bulk insert dengan transaction-based (all-or-nothing)
   - Auto-increment revision untuk update parcel yang sudah ada
 - **Implementasi Reference**: Lihat `src/server/actions/bulk-upload-parcel.ts` (issue #88)
+
+## Template & pemetaan kolom (#419, #420)
+
+- **Setiap halaman/tab Upload Massal wajib punya tombol "Unduh Template"** (keputusan owner 2026-10-11, #419) — Excel untuk unggahan tabel, ZIP shapefile contoh + `BACA-SAYA.txt` untuk unggahan spasial (Poligon, Pohon). Tombol tidak digate izin dan aktif walau context (Lembaga) belum dipilih.
+- **Satu sumber**: tajuk/atribut template diambil dari daftar field parser (`src/lib/*-upload-fields.ts`, `PARCEL_UPLOAD_FIELDS`, `MARKER_UPLOAD_FIELDS`, `PARCEL_DETAIL_TARGET_FIELDS`); spesifikasi template di `src/lib/bulk-upload-templates.ts`, perakit (exceljs / shp-write + jszip) di `bulk-upload-template-download.ts`. Test penjaga `bulk-upload-templates.test.ts`: **tiap tajuk template terpetakan otomatis ke field-nya** dan ZIP contoh terbaca `shpjs`. Mengganti label/tajuk = tetap cocok alias (tajuk lama dijadikan alias agar berkas lapangan lama tak putus, contoh Produksi `Periode (YYYY-MM)`).
+- **Excel template**: sheet `Data` (dibaca lebih dulu oleh `readSpreadsheetFile`) berisi tajuk persis alias + baris contoh; sheet `Petunjuk` berisi kolom · wajib · format dengan nama kolom **dikutip** (agar tak lolos deteksi tajuk bila `Data` kosong). Wajib/format ditaruh di catatan sel tajuk, bukan di teks tajuk. Kolom ID/NIK/Periode berformat teks (`@`).
+- **ID contoh fiktif `CTH.*`** (repo publik — tak boleh ID/nama asli). Baris contoh yang lupa dihapus **wajib gagal**: Produksi/Lahan/Pohon ditolak "tidak terdaftar"; Petani (ID baru sah) ditolak `isTemplateExampleId` di klien **dan** server.
+- **Pemetaan kolom memakai `GroupedFieldMapping`** (`src/components/shared/grouped-field-mapping.tsx`, #420), bukan grid kartu: tiap field satu baris (label · pilihan kolom · contoh nilai baris pertama), ringkasan *n/m terpetakan*. ≥ 10 field → grup buka/tutup (definisi di `src/lib/upload-mapping-groups.ts`, tiap field tepat satu grup — dijaga test); grup tanpa kolom terdeteksi mulai tertutup "tak ada di berkas", grup yang membawa panel tambahan (Bawaan NKT) selalu mulai terbuka. Mengubah pemetaan **mengosongkan hasil validasi**.
+

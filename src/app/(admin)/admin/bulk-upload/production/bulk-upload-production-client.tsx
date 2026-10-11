@@ -9,13 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -28,6 +21,10 @@ import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } 
 import { readSpreadsheetFile } from "@/lib/excel-sheet-reader";
 import { parseExcelDate } from "@/lib/excel-cell";
 import { bulkCreateProductionRecords } from "@/server/actions/bulk-upload-production";
+import { PRODUCTION_UPLOAD_FIELDS, PRODUCTION_AUTO_MATCH_RULES } from "@/lib/production-upload-fields";
+import { PRODUCTION_TEMPLATE } from "@/lib/bulk-upload-templates";
+import { downloadExcelTemplate } from "@/lib/bulk-upload-template-download";
+import { GroupedFieldMapping } from "@/components/shared/grouped-field-mapping";
 
 interface FarmerMapping {
   id: string;
@@ -67,82 +64,8 @@ interface ProductionValidatedRow {
   notes: string | null;
 }
 
-const TARGET_FIELDS = [
-  {
-    key: "farmerId",
-    label: "ID Petani",
-    required: true,
-    desc: "ID Petani WRI (contoh: FARMER-001)",
-  },
-  { key: "period", label: "Periode", required: true, desc: "Format YYYY-MM (contoh: 2026-06)" },
-  {
-    key: "harvestDate",
-    label: "Tanggal Panen",
-    required: true,
-    desc: "Format tanggal (harus sesuai bulan periode)",
-  },
-  { key: "harvestNumber", label: "Panen Ke-", required: true, desc: "Angka bulat 1 s/d 4" },
-  {
-    key: "yieldKg",
-    label: "Hasil Panen (kg)",
-    required: true,
-    desc: "Angka desimal/bulat lebih dari 0",
-  },
-  {
-    key: "parcelId",
-    label: "ID Lahan",
-    required: false,
-    desc: "ID Lahan opsional (CUID dari sistem)",
-  },
-  { key: "notes", label: "Catatan", required: false, desc: "Catatan tambahan (maks 500 karakter)" },
-];
-
-const AUTO_MATCH_RULES: Record<string, string[]> = {
-  farmerId: [
-    "farmer_id",
-    "farmerid",
-    "petani_id",
-    "id petani",
-    "id_petani",
-    "farmer_code",
-    "kode_petani",
-    "wri_id",
-    "farmer",
-    "kode petani",
-  ],
-  period: ["period", "periode", "bulan", "month", "period_id"],
-  harvestDate: [
-    "harvest_date",
-    "harvestdate",
-    "tanggal_panen",
-    "tgl_panen",
-    "tanggal panen",
-    "tgl panen",
-    "tanggal",
-    "date",
-  ],
-  harvestNumber: [
-    "harvest_number",
-    "harvestnumber",
-    "panen_ke",
-    "panen ke",
-    "no_panen",
-    "panen ke-",
-    "panen ke_",
-  ],
-  yieldKg: ["yield_kg", "yieldkg", "yield", "hasil", "hasil_panen", "hasil panen", "kg", "berat"],
-  parcelId: [
-    "parcel_id",
-    "parcelid",
-    "lahan_id",
-    "id lahan",
-    "id_lahan",
-    "kode_lahan",
-    "kode lahan",
-    "parcel",
-  ],
-  notes: ["notes", "note", "keterangan", "ket", "catatan", "notes_info"],
-};
+const TARGET_FIELDS = PRODUCTION_UPLOAD_FIELDS;
+const AUTO_MATCH_RULES = PRODUCTION_AUTO_MATCH_RULES;
 
 export function BulkUploadProductionClient({ farmers, existingRecords, permissions }: Props) {
   const router = useRouter();
@@ -501,57 +424,8 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
   });
 
   async function handleDownloadTemplate() {
-    const templateWorkbook = new Excel.Workbook();
-    const sheet = templateWorkbook.addWorksheet("Template Produksi");
-
-    sheet.columns = [
-      { header: "ID Petani", key: "farmerId", width: 20 },
-      { header: "Periode (YYYY-MM)", key: "period", width: 22 },
-      { header: "Tanggal Panen (DD/MM/YYYY)", key: "harvestDate", width: 25 },
-      { header: "Panen Ke- (1-4)", key: "harvestNumber", width: 18 },
-      { header: "Hasil Panen (kg)", key: "yieldKg", width: 18 },
-      { header: "ID Lahan (Opsional)", key: "parcelId", width: 22 },
-      { header: "Catatan (Opsional)", key: "notes", width: 30 },
-    ];
-
-    sheet.getRow(1).font = { bold: true };
-    sheet.getRow(1).fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFE0E0E0" },
-    };
-
-    // Add example rows
-    sheet.addRow({
-      farmerId: "FARMER-001",
-      period: "2026-06",
-      harvestDate: "15/06/2026",
-      harvestNumber: 1,
-      yieldKg: 350.5,
-      parcelId: "",
-      notes: "Panen pertama bulan ini",
-    });
-
-    sheet.addRow({
-      farmerId: "FARMER-002",
-      period: "2026-06",
-      harvestDate: "18/06/2026",
-      harvestNumber: 2,
-      yieldKg: 420,
-      parcelId: "cld3abc123xyz...",
-      notes: "Panen ke-2 dari lahan samping",
-    });
-
-    const buffer = await templateWorkbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "template_bulk_upload_produksi.xlsx";
-    link.click();
-    URL.revokeObjectURL(url);
+    // Tajuk = label yang dikenali auto-match (#419; dulu 6/7 kolom harus dipetakan manual).
+    await downloadExcelTemplate(PRODUCTION_TEMPLATE);
   }
 
   return (
@@ -602,37 +476,18 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {TARGET_FIELDS.map((f) => (
-              <div key={f.key} className="space-y-2 border p-3 rounded-lg bg-card/50">
-                <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-sm">
-                    {f.label} {f.required && <span className="text-red-500">*</span>}
-                  </Label>
-                  <Badge variant={f.required ? "default" : "outline"} className="text-[10px]">
-                    {f.required ? "Wajib" : "Opsional"}
-                  </Badge>
-                </div>
-                <Select
-                  value={mapping[f.key] || ""}
-                  onValueChange={(val) => setMapping((prev) => ({ ...prev, [f.key]: val || "" }))}
-                >
-                  <SelectTrigger className="w-full h-9">
-                    <SelectValue placeholder="Pilih kolom..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_empty">-- Kosongkan --</SelectItem>
-                    {headers.map((h) => (
-                      <SelectItem key={h} value={h}>
-                        {h}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-[10px] text-muted-foreground block">{f.desc}</span>
-              </div>
-            ))}
-          </div>
+          {/* #420: daftar ringkas satu kolom (pengganti grid kartu) + contoh nilai baris pertama. */}
+          <GroupedFieldMapping
+            fields={TARGET_FIELDS}
+            headers={headers}
+            mapping={mapping}
+            sample={rawRows[0]}
+            onChange={(key, header) => {
+              setMapping((prev) => ({ ...prev, [key]: header }));
+              // Pemetaan berubah = hasil validasi lama tidak berlaku (review #420; paritas Detail/Patok).
+              setValidatedData([]);
+            }}
+          />
 
           <div className="flex justify-end gap-2 pt-2">
             <Button

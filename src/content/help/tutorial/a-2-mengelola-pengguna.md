@@ -42,3 +42,11 @@ Menu ini hanya dipegang SUPERADMIN — peran lain, termasuk ADMIN, tidak punya i
 **Perubahan peran belum terasa, atau akun yang dinonaktifkan masih terbuka** — peran dan status aktif diperiksa ulang paling lama **1 menit** sekali. Setelah itu menu mengikuti peran baru saat halaman dimuat ulang, dan akun nonaktif otomatis keluar ke halaman login. Pengguna tidak perlu keluar lalu masuk lagi.
 
 **Angka dashboard pengguna berbeda dengan Anda** — normal. Setiap orang hanya melihat cakupannya sendiri.
+
+**Muncul "Tidak dapat mengubah … akun Anda sendiri"** — demi keamanan, tidak seorang pun bisa mengubah peran, status aktif, cakupan data, atau hak akses menu akunnya sendiri (nama, email, dan password tetap bisa). Minta pengelola lain yang melakukannya.
+
+**Muncul "Hanya SUPERADMIN yang dapat …"** — memberi peran SUPERADMIN serta mengubah atau menonaktifkan akun SUPERADMIN hanya bisa dilakukan oleh SUPERADMIN.
+
+**Muncul "Pengelolaan pengguna hanya untuk akun tanpa batasan wilayah"** — akun yang cakupan datanya dibatasi (per distrik atau per Lembaga) tidak bisa mengelola pengguna, karena pengguna baru tanpa cakupan justru melihat semua data. Minta SUPERADMIN atau pengelola tanpa batasan wilayah.
+
+**Tombol ubah status, Akses Data, atau Hak Akses Menu tidak ada di baris akun Anda** — disengaja: cakupan, status, dan hak akses akun sendiri tidak bisa diubah sendiri. Role akun sendiri di form Edit juga tampil terkunci.

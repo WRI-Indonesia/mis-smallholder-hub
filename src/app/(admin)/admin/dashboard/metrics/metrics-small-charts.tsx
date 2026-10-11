@@ -41,6 +41,7 @@ export function RoadmapStepChart({
   dark,
   gridColor,
   surface,
+  height,
 }: {
   releases: ReleaseMetric[];
   today: string;
@@ -48,6 +49,8 @@ export function RoadmapStepChart({
   dark: boolean;
   gridColor: string;
   surface: string;
+  /** Tinggi grafik (px); bawaan kecil, grafik bertab Metrik Rilis memakai lebih besar (#421). */
+  height?: number;
 }) {
   const all: Pt[] = releases.map((r) => ({
     key: r.version,
@@ -97,7 +100,7 @@ export function RoadmapStepChart({
       color={seriesColor("roadmap", dark)}
       surface={surface}
       gridColor={gridColor}
-      height={H}
+      height={height ?? H}
       title="Roadmap % per tanggal rilis"
       ariaLabel={
         resets.length > 0
@@ -164,6 +167,7 @@ export function TestCountChart({
   dark,
   gridColor,
   surface,
+  height,
 }: {
   releases: ReleaseMetric[];
   today: string;
@@ -171,6 +175,8 @@ export function TestCountChart({
   dark: boolean;
   gridColor: string;
   surface: string;
+  /** Tinggi grafik (px); bawaan kecil, grafik bertab Metrik Rilis memakai lebih besar (#421). */
+  height?: number;
 }) {
   const all: Pt[] = releases
     .filter((r) => r.testCount != null)
@@ -186,7 +192,7 @@ export function TestCountChart({
   // Parser sah meloloskan sel test "—" — garis/lonjakan butuh ≥2 titik (#229).
   if (all.length < 2) {
     return (
-      <p className="flex items-center justify-center text-sm text-muted-foreground" style={{ height: H }}>
+      <p className="flex items-center justify-center text-sm text-muted-foreground" style={{ height: height ?? H }}>
         Belum cukup titik test terukur untuk menggambar tren.
       </p>
     );
@@ -214,7 +220,7 @@ export function TestCountChart({
       color={seriesColor("growth", dark)}
       surface={surface}
       gridColor={gridColor}
-      height={H}
+      height={height ?? H}
       title="Jumlah test otomatis per rilis"
       ariaLabel={`Jumlah test otomatis dari ${fmtInt(points[0].v)} menjadi ${fmtInt(points[points.length - 1].v)}; lonjakan terbesar +${fmtInt(jump)} pada ${points[jumpIdx].key}`}
       annotate={({ x, y }) =>

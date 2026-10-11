@@ -16,7 +16,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle2, Loader2, RefreshCw, TreePine } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, Loader2, RefreshCw, TreePine } from "lucide-react";
+import { TREE_POINT_TEMPLATE } from "@/lib/bulk-upload-templates";
+import { downloadShapefileTemplate } from "@/lib/bulk-upload-template-download";
 import {
   parseTreeShapefile,
   matchTreeUploadParcels,
@@ -170,7 +172,19 @@ export function TreeBulkUploadClient({ permissions }: Props) {
       {/* Step 1: pilih berkas */}
       <Card className="p-6">
         <div className="space-y-3">
-          <Label htmlFor="tree-zip">Berkas ZIP Shapefile Titik Pohon</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="tree-zip">Berkas ZIP Shapefile Titik Pohon</Label>
+            {/* Template (#419): ZIP contoh 2 titik fiktif + BACA-SAYA.txt (atribut = yang dibaca groupTreeFeatures). */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadShapefileTemplate(TREE_POINT_TEMPLATE)}
+              className="text-xs h-8 gap-1.5"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Unduh Template (ZIP)
+            </Button>
+          </div>
           <Input
             id="tree-zip"
             type="file"

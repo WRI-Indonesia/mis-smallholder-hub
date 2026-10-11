@@ -10,7 +10,7 @@
 | Order | `10` |
 | Parent | — (menu level 1) |
 | Sub menu | 4 — Upload Data Petani (`bulk-upload-farmers`), Upload Data Produksi (`bulk-upload-production`), Upload Data Lahan (`bulk-upload-parcels`), Pohon Sawit (`bulk-upload-trees`) |
-| Halaman induk | `src/app/(admin)/admin/bulk-upload/page.tsx` — hanya `redirect("/admin/bulk-upload/farmers")`, tidak ada UI |
+| Halaman induk | `src/app/(admin)/admin/bulk-upload/page.tsx` — hanya `redirectToFirstAccessibleChild("bulk-upload")` (bawaan `/admin/bulk-upload/farmers` — sejak TD-051 (#412): ke **anak pertama (urut `order`) yang boleh diakses pengguna**, termasuk override per user; tanpa anak yang boleh → `/admin`), tidak ada UI |
 | Sumber metadata | `prisma/seeds/data/menu.csv` baris `bulk-upload`, `bulk-upload-farmers`, `bulk-upload-production`, `bulk-upload-parcels`, `bulk-upload-trees` |
 
 ## Diagram objek

@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-export default function SettingsIndexPage() {
-  redirect("/admin/settings/users");
+/** Indeks induk `settings`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function SettingsIndexPage() {
+  await redirectToFirstAccessibleChild("settings");
 }

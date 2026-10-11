@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { BAND_THRESHOLDS, scoreBand } from "@/lib/data-availability-aggregation";
-import { BAND_BAR, BAND_TEXT } from "@/lib/score-band-styles";
+import { BAND_BAR, BAND_SHORT, BAND_TEXT } from "@/lib/score-band-styles";
 import { HEAT_FULL, HEAT_GRADIENT_CSS, heatStyle, rgbCss } from "@/lib/score-heat";
 
 /**
@@ -97,9 +97,9 @@ export function HeatCell({
 
 /** Segmen legenda skala: label band di bawah ramp, diposisikan pada rentang skornya (ambang dari `BAND_THRESHOLDS`). */
 const HEAT_SEGMENTS: { from: number; to: number; label: string }[] = [
-  { from: 0, to: BAND_THRESHOLDS.warn, label: "kritis" },
-  { from: BAND_THRESHOLDS.warn, to: BAND_THRESHOLDS.good, label: "perhatian" },
-  { from: BAND_THRESHOLDS.good, to: BAND_THRESHOLDS.full, label: "baik" },
+  { from: 0, to: BAND_THRESHOLDS.warn, label: BAND_SHORT.bad },
+  { from: BAND_THRESHOLDS.warn, to: BAND_THRESHOLDS.good, label: BAND_SHORT.warn },
+  { from: BAND_THRESHOLDS.good, to: BAND_THRESHOLDS.full, label: BAND_SHORT.good },
 ];
 const HEAT_TICKS = [BAND_THRESHOLDS.warn, BAND_THRESHOLDS.good];
 

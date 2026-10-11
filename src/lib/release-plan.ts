@@ -315,6 +315,61 @@ export function releaseVelocity(plan: Pick<ReleasePlan, "releases">, today: stri
   return { rows, average, sample: { releases: shipped.length, weeks } };
 }
 
+/**
+ * Rilis yang sedang dikejar: berjalan, atau — bila tidak ada — rilis pertama yang
+ * sudah lewat target tapi belum ditandai dirilis. Satu definisi untuk strip header
+ * Rencana Pengembangan dan kartu "Rilis berjalan" Metrik Rilis (#421).
+ */
+export function currentRelease(plan: Pick<ReleasePlan, "releases">, today: string): Release | null {
+  return (
+    plan.releases.find((r) => releaseState(r, today) === "active") ??
+    plan.releases.find((r) => releaseState(r, today) === "late") ??
+    null
+  );
+}
+
+/** Ringkasan rilis berjalan untuk kartu Metrik Rilis (#421) — data murni, aman dikirim ke klien. */
+export type CurrentReleaseSummary = {
+  version: string;
+  title: string;
+  start: string;
+  end: string;
+  state: ReleaseState;
+  done: number;
+  total: number;
+  donePoints: number;
+  totalPoints: number;
+  /** Butir 🟡 dikerjakan. */
+  inProgress: number;
+  /** Butir ⚖️ menunggu keputusan owner. */
+  decisions: number;
+  /** Hari ke-n dari rentang (null bila tidak berjalan). */
+  day: number | null;
+  days: number;
+  /** Sisa hari ke target (negatif = lewat target). */
+  daysToTarget: number;
+};
+
+export function summarizeCurrentRelease(plan: Pick<ReleasePlan, "releases">, today: string): CurrentReleaseSummary | null {
+  const r = currentRelease(plan, today);
+  if (!r) return null;
+  const p = releaseProgress(r);
+  const t = releaseTimeline(r, today);
+  return {
+    version: r.version,
+    title: r.title,
+    start: r.start,
+    end: r.end,
+    state: releaseState(r, today),
+    ...p,
+    inProgress: r.items.filter((i) => i.status === "progress").length,
+    decisions: r.items.filter((i) => i.status === "decision").length,
+    day: t.day,
+    days: t.days,
+    daysToTarget: daysBetween(today, r.end),
+  };
+}
+
 export type PendingDecision = { release: string; phase: ReleasePhase; item: PlanItem };
 
 /**

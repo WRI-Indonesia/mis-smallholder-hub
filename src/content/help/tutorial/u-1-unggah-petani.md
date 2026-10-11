@@ -19,12 +19,16 @@ Kolom di Excel Anda **tidak harus bernama persis** seperti di sistem — nanti a
 
 + Urutan kolom juga bebas. Yang perlu dirapikan hanyalah: satu baris judul saja di paling atas, tanpa baris kosong di tengah, dan tanpa sel gabungan.
 
+Belum punya berkas? Klik **Unduh Template Excel** di kanan atas Langkah 2 — tombol ini aktif walau Lembaga belum dipilih.
+
++ Template berisi sheet **Data** (8 judul kolom yang langsung dikenali sistem + 2 baris contoh ber-ID fiktif `CTH.…` — hapus sebelum diisi; bila terlupa, baris itu ditandai **Error** dan tidak ikut tersimpan) dan sheet **Petunjuk** (kolom wajib dan formatnya). Kolom **NIK** sudah berformat teks agar angka nol di depan tidak hilang.
+
 ## Langkah
 
 1. Buka menu **Bulk Upload → Upload Data Petani**.
 2. Pada **Langkah 1**, pilih **Lembaga Petani** tujuan. Selama ini belum dipilih, kotak berkas masih terkunci.
 3. Pada **Langkah 2**, pilih berkas `.xlsx` atau `.csv`. Sistem akan memberi tahu jumlah baris yang terbaca.
-4. Di bagian **Petakan Kolom Data**, cocokkan tiap kolom sistem dengan kolom di berkas Anda. Sebagian sudah tercocokkan otomatis — periksa tetap.
+4. Di bagian **Petakan Kolom Data**, cocokkan tiap kolom sistem dengan kolom di berkas Anda. Sebagian sudah tercocokkan otomatis — periksa tetap. Di samping tiap pilihan tampil contoh nilai dari baris data pertama.
 + Pencocokan otomatis menebak dari nama kolom yang umum, dan bisa salah bila Anda punya dua kolom bernama mirip seperti "Nama" dan "Nama KK". Karena itu selalu tinjau ulang sebelum melanjutkan.
 + **Tanggal Lahir** boleh berupa sel tanggal Excel, atau teks `dd/mm/yyyy` (mis. `12/03/1971` = 12 Maret) atau `yyyy-mm-dd`. Tahun dua digit (`12/03/71`), tahun di luar 1900–2100, tanggal yang tidak ada (`31/02/1971`), tanggal bernama bulan (`12 Maret 1971`), dan tahun saja (`1971`) ditolak sebagai error — ubah dulu ke `dd/mm/yyyy`, atau kosongkan bila tanggal lengkapnya tidak diketahui.
 5. Kolom bertanda **Wajib** harus terisi. Yang tidak dipakai, pilih **-- Kosongkan --**.

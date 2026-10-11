@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [sprint.md](./sprint.md) · [tech-debt.md](./tech-debt.md) · [changelog.md](./changelog.md) · [contributing.md](./contributing.md) · Arsip: [roadmap-mvp.md](./roadmap-mvp.md)
 
+> **Ringkasan:** **Sumber kebenaran status fase** pasca-MVP: aturan tata kelola, definisi status & bobot, linimasa per kuartal, Phase Status (indeks + rincian per fase), visi produk, Parkir. Baca untuk "fase X sudah sampai mana"; mengubah status fase ikut mengubah Roadmap % di `metrics.md`.
+
 ## Roadmap — Sumber Kebenaran
 
 Section ini adalah acuan resmi status delivery **pasca-MVP, Oktober 2026 – Desember 2027**. Jika ada perbedaan antara changelog, issue, dan tabel ini, gunakan tabel **Phase Status** sebagai kebenaran utama.
@@ -65,7 +67,7 @@ Bobot dipakai formula **Roadmap %** ([standards/versioning.md](../standards/vers
 
 Kolom ini adalah **satu-satunya sumber klasifikasi** (dibaca mesin oleh section Detail Roadmap di dashboard Metrik Rilis). Mengubah bobot sebuah fase = mengubah baseline → wajib dicatat di Decision Log.
 
-**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. **v1.4.0 (berjalan, 2026-10-07):** OPS-02 🟠 → ✅ (#232 TC-232-01) → pendukung 1,5/17 → **4,5/35 = 12,9%**; DQ-01 🔲 → 🟠 (#366 di prod) → inti 4/18 → **5,5/35 = 15,7%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md).
+**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. **v1.4.0 (berjalan, 2026-10-07):** OPS-02 🟠 → ✅ (#232 TC-232-01) → pendukung 1,5/17 → **4,5/35 = 12,9%**; DQ-01 🔲 → 🟠 (#366 di prod) → inti 4/18 → **5,5/35 = 15,7%**. **v1.7.0 (2026-10-12):** DA-08 🔲 → 🟠 (#416 · #417) → **7/35 = 20,0%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md).
 
 </details>
 
@@ -94,9 +96,9 @@ Satu baris per kuartal. Rilis K4 2026 mengikuti [sprint.md](./sprint.md). Rilis 
 
 | Kuartal | Tema | Fase | Rilis / tenggat |
 | ------- | ---- | ---- | --------------- |
-| **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 · GIS-01 (langkah awal #290) | **v1.3.0** dirilis 09-30 (jalur rilis, keamanan, performa) · **v1.4.0** 10-01 → 10-08 (kualitas data, Training Benefit & target kontrak) · **v1.5.0** 10-09 → 10-25 (limpahan v1.4.0: #317 Fase 3, #290, kerapian) |
-| | Supply Chain | SC-01 · SC-02 · SC-03 | **v1.7.0** 10-26 → 11-08 (prasyarat: lisensi UML #379; prototipe CSV ikut v1.4.0, diperluas di **v1.6.0** 2026-10-10) |
-| | Penyangga akhir tahun | tuntaskan PLATFORM-08 & DA-09 + concept note GIS-02/MD-12 + limpahan | **v1.8.0** 11-09 → 12-20 |
+| **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 · GIS-01 (langkah awal #290) | **v1.3.0** dirilis 09-30 (jalur rilis, keamanan, performa) · **v1.4.0** 10-01 → 10-08 (kualitas data, Training Benefit & target kontrak) · **v1.5.0** dirilis 10-09 (limpahan v1.4.0: #317 Fase 3, #290, kerapian) · **v1.5.1** hotfix keamanan 10-10 · **v1.6.0** dirilis 10-10 (prototipe Rantai Pasok diperluas) · **v1.7.0** MINOR 10-11 → 10-25 (celah RBAC laten #409/#386/#384 + kerapian TD #412 + Ketersediaan Data › Produksi #416 & Semua Lembaga ringkas #417 + template Upload Massal #419 + tata letak berkelompok #420 + perbaikan QA #418/glyph PDF — owner 2026-10-11: semula PATCH v1.6.1, #416 ikut → MINOR) |
+| | Supply Chain | SC-01 · SC-02 · SC-03 | **v1.8.0** 10-26 → 11-08 (prasyarat: lisensi UML #379; prototipe CSV ikut v1.4.0, diperluas di **v1.6.0** 2026-10-10; semula v1.7.0 — bergeser karena #416 masuk v1.7.0, owner 2026-10-11) |
+| | Penyangga akhir tahun | tuntaskan PLATFORM-08 & DA-09 + concept note GIS-02/MD-12 + limpahan | **v1.9.0** 11-09 → 12-20 |
 | **K1 2027** (Jan–Mar) | Siap musim kemarau 2027 | GIS-01 · DA-05 | Fire Alert tuntas sebelum musim kemarau 2027 (#286) |
 | **K2 2027** (Apr–Jun) | NKT, deforestasi & sertifikasi | MD-08 · GIS-02 · MD-12 · DA-08 · MAP-04 | **Review tengah tahun Juni 2027**; concept note modul S2 selesai |
 | **S2 2027** (Jul–Des) | Visi produk lingkar luar + skala data 2028 | PLATFORM-10 · FORM-01 · MD-11 · MD-07 · MD-10 · MD-13 · MD-14 · MD-15 · MD-16 · GIS-03 · GIS-04 | Dipilih di review Juni; **reset roadmap 2028 Desember 2027** |
@@ -122,7 +124,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | GIS-01      | Fire Alert siap musim kemarau 2027                         | 🟠 Partial     | Next    | inti      |
 | DA-05       | Deteksi anomali data produksi                              | 🔲 Planned     | Next    | pendukung |
 | MD-08       | HCV/NKT: area NKT & patok NKT                              | 🟠 Partial     | Next    | inti      |
-| DA-08       | Ketersediaan data lanjutan                                 | 🔲 Planned     | Next    | pendukung |
+| DA-08       | Ketersediaan data lanjutan                                 | 🟠 Partial     | Now     | pendukung |
 | MAP-04      | Peta BMP: layer Monev BMP                                  | 🔲 Planned     | Next    | pendukung |
 | GIS-02      | GIS Deforestation: deteksi deforestasi lahan & boundary    | 🔲 Planned     | Next    | inti      |
 | MD-12       | Certification: modul sertifikasi RSPO/ISPO                 | 🔲 Planned     | Next    | inti      |
@@ -146,7 +148,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>PLATFORM-08</strong> · 🟠 Partial — Pengerasan keamanan & RBAC pasca-MVP</summary>
 
 - **Evidence:** v1.2.0 (2026-09-29): struktur menu dikunci dari UI (#364), reaktivasi menu (#237), kunci berkas bukti pelatihan & path unggahan S3 divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). v1.3.0 (2026-09-30): role/`isActive` di JWT dibaca ulang dari DB ≤ 1 menit, memo dibuang saat sign-in (#342, `src/lib/auth-role-refresh.ts` + test; TC-342-01 lulus di staging), akun seed fiktif + password dari `SEED_USER_PASSWORD` (#390, `5028ffd` + `seed-data-privacy.test.ts`).
-- **Next step:** #342 ditutup 2026-10-07 (retro di issue). #390 ditutup 2026-10-07 (keputusan owner). #286 butir 2 (key FIRMS di log) risiko diterima tanpa rotasi (Decision Log 2026-09-30). Celah filter vs scope (#386 butir 1, kelas BUG-007) diperbaiki di hotfix v1.5.1 (#408, 2026-10-10). v1.8.0: eskalasi role Settings Users (#386 butir 2), scope distrik tujuan saat buat/ubah Lembaga (#409, audit 2026-10-10), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
+- **Next step:** #342 ditutup 2026-10-07 (retro di issue). #390 ditutup 2026-10-07 (keputusan owner). #286 butir 2 (key FIRMS di log) risiko diterima tanpa rotasi (Decision Log 2026-09-30). Celah filter vs scope (#386 butir 1, kelas BUG-007) diperbaiki di hotfix v1.5.1 (#408, 2026-10-10). **v1.7.0** (PATCH, digeser dari v1.8.0 — owner 2026-10-10): anti-eskalasi pengelolaan pengguna (#386 butir 2 — kode ✅ 2026-10-10 di `mvp`: `src/lib/user-admin-guard.ts`, kelola pengguna hanya scope ALL, Role & Permission hanya SUPERADMIN), scope distrik tujuan saat buat/ubah Lembaga (#409 — kode ✅ 2026-10-10 di `mvp`: `canPlaceGroupInDistrict`), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`). Keduanya ditutup saat rilis v1.6.1 (TC-409-01/02, TC-386-01/02 di `docs/qa/v1.6.1/`).
 - **Selesai bila:** #342, #390, #386, #384 ditutup; tidak ada temuan keamanan P1 terbuka.
 
 </details>
@@ -163,7 +165,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <details>
 <summary><strong>OPS-02</strong> · ✅ Done — DevOps: jalur rilis, guard migrasi & rollback</summary>
 
-- **Evidence:** Dockerfile, 5 workflow (`gitleaks`, `semgrep`, `deploy-dev`, `deploy-staging`, `deploy-main`); alur `mvp → staging → main` aktif sejak v0.32.0; RAM staging 4 GB sehingga build tak lagi OOM (#363, 2026-09-30). Migrasi DB masih manual sebelum merge; `deploy-staging.yml` (#277, terbukti di run staging `36727665992`) dan `deploy-main.yml` (#394, bukti = deploy prod v1.3.0) berhenti di guard `prisma migrate status` sebelum build bila skema tertinggal. Prosedur rollback tertulis di `docs/standards/rollback.md` (#232); jalur migrasi digladi 2026-09-30 di `mis-staging-local`; rollback aplikasi digladi di `staging` 2026-10-07 (TC-232-01: revert v1.3.0 → v1.2.0 → pulih, ±2,5 menit per deploy, `docs/qa/v1.3.0/runs/2026-10-07-staging.md`). Tooling internal pemantau pengembangan juga dicatat di fase ini: **Metrik Rilis** (`dashboard-metrics`, #227/#250; penyesuaian pasca-reset = #392) dan **Rencana Pengembangan** (`data-analyst-sprint`, #378/#389).
+- **Evidence:** Dockerfile, 5 workflow (`gitleaks`, `semgrep`, `deploy-dev`, `deploy-staging`, `deploy-main`); alur `mvp → staging → main` aktif sejak v0.32.0; RAM staging 4 GB sehingga build tak lagi OOM (#363, 2026-09-30). Migrasi DB masih manual sebelum merge; `deploy-staging.yml` (#277, terbukti di run staging `36727665992`) dan `deploy-main.yml` (#394, bukti = deploy prod v1.3.0) berhenti di guard `prisma migrate status` sebelum build bila skema tertinggal. Prosedur rollback tertulis di `docs/standards/rollback.md` (#232); jalur migrasi digladi 2026-09-30 di `mis-staging-local`; rollback aplikasi digladi di `staging` 2026-10-07 (TC-232-01: revert v1.3.0 → v1.2.0 → pulih, ±2,5 menit per deploy, `docs/qa/archive/v1.3.0/runs/2026-10-07-staging.md`). Tooling internal pemantau pengembangan juga dicatat di fase ini: **Metrik Rilis** (`dashboard-metrics`, #227/#250; penyesuaian pasca-reset = #392) dan **Rencana Pengembangan** (`data-analyst-sprint`, #378/#389).
 - **Next step:** — (✅ 2026-10-07, Decision Log). #277/#394/#232 ditutup. Risiko diterima: perilaku `.next` saat build gagal di server belum diuji (`rollback.md` jalur A).
 - **Selesai bila:** #277 (✅ kode), #376 (✅ kode: `npm run migrations:release-gap`), #232 ditutup; satu rollback staging berhasil diuji dan dicatat.
 
@@ -182,7 +184,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>DA-09</strong> · 🟠 Partial — Tumpang tindih lahan: laporan lengkap, guard upload, layer peta</summary>
 
 - **Evidence:** #317 Fase 1: `LandParcel.geom` GENERATED + GiST (v0.35.0). Fase 2 (sebagian): menu Data Analyst › Tumpang Tindih Lahan (`data-analyst-parcel-overlap`), self-join 256 ms / 14.174 lahan, dirilis v1.2.0. **Fase 2 tuntas di `mvp` (2026-10-07):** tab Luar Boundary (130 sepenuhnya + 24 sebagian, ringkasan per Lembaga, peta lahan + boundary, 120 ms) & Selisih Luas (98) — satu definisi dengan check DA-02 (`src/lib/parcel-boundary-area.ts`).
-- **Next step:** Fase 2 dirilis v1.4.0; Fase 3 guard saat upload shapefile (`checkUploadParcelOverlaps`) dirilis v1.5.0. Fase 4 layer tumpang tindih di Peta Lahan → v1.8.0.
+- **Next step:** Fase 2 dirilis v1.4.0; Fase 3 guard saat upload shapefile (`checkUploadParcelOverlaps`) dirilis v1.5.0. Fase 4 layer tumpang tindih di Peta Lahan → v1.9.0.
 - **Selesai bila:** keempat fase #317 selesai dan #317 ditutup.
 
 </details>
@@ -191,7 +193,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>SC-01</strong> · 🔲 Not Started — Supply Chain: master Mill/Offtaker + import survei</summary>
 
 - **Evidence:** Belum ada model. Epic #379 dibuat 2026-09-29; prasyarat lisensi Universal Mill List & ketersediaan berkas survei 2025 per Lembaga masih ⚖️.
-- **Next step:** v1.7.0 (#380): migrasi `Mill`/`BuyerProgram`/`Offtaker`/`SupplyChainSurvey`/`SupplyChainRecord`, Master Data Mill/Offtaker/Rantai Pasok, Bulk Upload Rantai Pasok (cocok Parcel ID, review offtaker, cek silang produksi & luas), seed Mill dari UML sesuai keputusan lisensi.
+- **Next step:** v1.8.0 (#380): migrasi `Mill`/`BuyerProgram`/`Offtaker`/`SupplyChainSurvey`/`SupplyChainRecord`, Master Data Mill/Offtaker/Rantai Pasok, Bulk Upload Rantai Pasok (cocok Parcel ID, review offtaker, cek silang produksi & luas), seed Mill dari UML sesuai keputusan lisensi.
 - **Selesai bila:** survei minimal satu Lembaga terimport di prod dan terbaca di Master Data.
 
 </details>
@@ -200,7 +202,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>SC-02</strong> · 🔲 Not Started — Supply Chain: peta rantai pasok + report</summary>
 
 - **Evidence:** Belum ada versi final. **Prototipe** (2026-10-06, untuk diskusi): Dashboard Rantai Pasok (Sankey) + Peta Rantai Pasok membaca tabel CSV hasil konversi survei 2025 (lokal / S3 privat), **bukan** model DB — status fase tetap Not Started sampai #380 menyediakan model & import. Prototipe diperluas 2026-10-09/10: 4 tab Aliran TBS, Volume per Mill & per Lembaga, Unduh Excel 3 sheet (Jalur · Mill · Lembaga), Peta dengan garis lengkung beranimasi, hover, popup beraksi, panel "tidak tergambar" bernama (`99ccc3e`, `04cea12`).
-- **Next step:** v1.7.0 (#381): garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel.
+- **Next step:** v1.8.0 (#381): garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel.
 - **Selesai bila:** #381 ditutup; Bantuan tutorial peta & report tersedia.
 
 </details>
@@ -209,7 +211,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>SC-03</strong> · 🔲 Not Started — Supply Chain: analisa volume, jarak & risiko Mill</summary>
 
 - **Evidence:** Belum ada versi final. **Prototipe CSV** (2026-10-10): kartu Sorotan + kolom Jarak — jarak garis lurus dari koordinat Lembaga/offtaker/Mill tabel (belum `ST_PointOnSurface` lahan), ketergantungan offtaker **≥ 80%** (koperasi Lembaga sendiri dikecualikan), konsentrasi Mill, kepastian Mill (`src/lib/supply-chain-insights.ts`). Risiko NKT & tumpang tindih per Mill belum.
-- **Next step:** v1.7.0 (#382): jarak dari `ST_PointOnSurface` lahan, risiko NKT & tumpang tindih per Mill (memakai MD-08 & DA-09). Ambang ketergantungan ✅ 80% (owner 2026-10-10).
+- **Next step:** v1.8.0 (#382): jarak dari `ST_PointOnSurface` lahan, risiko NKT & tumpang tindih per Mill (memakai MD-08 & DA-09). Ambang ketergantungan ✅ 80% (owner 2026-10-10).
 - **Selesai bila:** #382 ditutup.
 
 </details>
@@ -244,11 +246,11 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 </details>
 
 <details>
-<summary><strong>DA-08</strong> · 🔲 Planned — Ketersediaan data lanjutan</summary>
+<summary><strong>DA-08</strong> · 🟠 Partial — Ketersediaan data lanjutan</summary>
 
-- **Evidence:** DA-02/DA-03 selesai di arsip MVP (#352). Tiga lanjutan keputusan #352 belum dikerjakan.
-- **Next step:** K2 2027: nilai eksplisit `NONE` sertifikasi agar "belum diisi" ≠ "tidak bersertifikat" (#355), bobot cakupan modul ke Index (#356), peta kesiapan data per Lembaga (#358).
-- **Selesai bila:** #355, #356, #358 ditutup.
+- **Evidence:** DA-02/DA-03 selesai di arsip MVP (#352). Tiga lanjutan keputusan #352 belum dikerjakan. **2026-10-11:** epic #415 — Ketersediaan Data jadi keluarga menu per entitas (parent level 2 + anak Semua Lembaga · Per Lembaga · Produksi), keputusan K1–K9 di issue. **Kode #416 ✅ 2026-10-11 di `mvp`** (menu induk + Produksi, pohon 3 tingkat, Excel 2 sheet, tutorial p-18). **Kode #417 ✅ 2026-10-11** (Semua Lembaga ringkas: tinggi 3.817 → 1.680 px, sub-nav keluarga menu). Staging `bb045d7` + **seed menu staging ✅** 2026-10-11 (TC-416-01..03 & TC-417-01..03 Pass); **v1.7.0 (2026-10-12): 🔲 → 🟠 Partial** — #416 & #417 dirilis (QA staging 0 Fail) + seed menu prod (`seed-menu-only.ts`, 2 dibuat · 2 diperbarui).
+- **Next step:** kalender Pelatihan (B, issue menyusul). K2 2027: nilai eksplisit `NONE` sertifikasi agar "belum diisi" ≠ "tidak bersertifikat" (#355), bobot cakupan modul ke Index (#356), peta kesiapan data per Lembaga (#358).
+- **Selesai bila:** #416, #417, #355, #356, #358 ditutup (epic #415 ditutup saat semua anak yang modulnya sudah ada selesai).
 
 </details>
 
@@ -265,7 +267,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>GIS-02</strong> · 🔲 Planned — GIS Deforestation: deteksi deforestasi lahan & boundary</summary>
 
 - **Evidence:** Belum ada. Fondasi spasial siap: `LandParcel.geom` + GiST, boundary ICS (`FarmerGroupBoundary`), batas administrasi BIG, pola proxy peta ber-guard (`/api/map-*`).
-- **Next step:** concept note di v1.8.0; implementasi K2 2027 sesudah GIS-01: issue induk (sumber data tutupan hutan & lisensinya, tahun acuan *cut-off*, ambang luas), lalu overlay perubahan tutupan hutan vs poligon lahan/boundary, daftar lahan terindikasi, layer Peta Lahan. Hasilnya dipakai SC-03 (risiko per Mill).
+- **Next step:** concept note di v1.9.0; implementasi K2 2027 sesudah GIS-01: issue induk (sumber data tutupan hutan & lisensinya, tahun acuan *cut-off*, ambang luas), lalu overlay perubahan tutupan hutan vs poligon lahan/boundary, daftar lahan terindikasi, layer Peta Lahan. Hasilnya dipakai SC-03 (risiko per Mill).
 - **Selesai bila:** setiap lahan punya status indikasi deforestasi yang bisa difilter di Laporan Lahan dan tampil di peta.
 
 </details>
@@ -274,7 +276,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>MD-12</strong> · 🔲 Planned — Certification: modul sertifikasi RSPO/ISPO</summary>
 
 - **Evidence:** Sebagian data sudah ada: status & tahun RSPO/ISPO/SAP-MAP per Lembaga (#160/#169) + kartu sertifikasi Main Dashboard; legalitas lahan (surat, STDB, UL Parcel Code #296). Belum ada modul sertifikasi (siklus audit, temuan, ICS internal inspection).
-- **Next step:** concept note di v1.8.0; implementasi K2 2027: issue induk (skema yang dilayani, unit sertifikasi Lembaga vs petani, dokumen audit di S3), sebelumnya tuntaskan nilai `NONE` (#355, DA-08).
+- **Next step:** concept note di v1.9.0; implementasi K2 2027: issue induk (skema yang dilayani, unit sertifikasi Lembaga vs petani, dokumen audit di S3), sebelumnya tuntaskan nilai `NONE` (#355, DA-08).
 - **Selesai bila:** status, riwayat audit, dan temuan sertifikasi per Lembaga tercatat di aplikasi dan terbaca di dashboard.
 
 </details>

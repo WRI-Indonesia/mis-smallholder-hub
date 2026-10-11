@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formOptionalFloat, formOptionalInt } from "@/lib/form-number";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,8 @@ interface Props {
   onClose: () => void;
   group: FarmerGroup | null;
   districts: District[];
+  /** Distrik tak bisa diubah (akun ber-scope Lembaga, #409) — tampil teks + nilai tersembunyi. */
+  lockDistrict?: boolean;
 }
 
 // Mapping value → label agar trigger Select menampilkan label, bukan nilai
@@ -68,7 +71,7 @@ function FormSection({ title, children }: { title: string; children: React.React
   );
 }
 
-export function GroupFormModal({ open, onClose, group, districts }: Props) {
+export function GroupFormModal({ open, onClose, group, districts, lockDistrict = false }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const router = useRouter();
@@ -94,35 +97,26 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
         form.get("groupType") && form.get("groupType") !== "NONE"
           ? (form.get("groupType") as "ASOSIASI" | "KOPERASI")
           : null,
-      joinYear: form.get("joinYear") ? parseInt(form.get("joinYear") as string, 10) : null,
-      establishedYear: form.get("establishedYear")
-        ? parseInt(form.get("establishedYear") as string, 10)
-        : null,
-      rspoCertYear: form.get("rspoCertYear")
-        ? parseInt(form.get("rspoCertYear") as string, 10)
-        : null,
+      // Angka opsional lewat helper (TD-008): spasi saja -> null, bukan NaN.
+      joinYear: formOptionalInt(form.get("joinYear")),
+      establishedYear: formOptionalInt(form.get("establishedYear")),
+      rspoCertYear: formOptionalInt(form.get("rspoCertYear")),
       rspoCertStatus:
         form.get("rspoCertStatus") && form.get("rspoCertStatus") !== "NONE"
           ? (form.get("rspoCertStatus") as "CERTIFIED" | "PLANNED")
           : null,
-      ispoCertYear: form.get("ispoCertYear")
-        ? parseInt(form.get("ispoCertYear") as string, 10)
-        : null,
+      ispoCertYear: formOptionalInt(form.get("ispoCertYear")),
       ispoCertStatus:
         form.get("ispoCertStatus") && form.get("ispoCertStatus") !== "NONE"
           ? (form.get("ispoCertStatus") as "CERTIFIED" | "PLANNED")
           : null,
-      sapMapAssuranceYear: form.get("sapMapAssuranceYear")
-        ? parseInt(form.get("sapMapAssuranceYear") as string, 10)
-        : null,
+      sapMapAssuranceYear: formOptionalInt(form.get("sapMapAssuranceYear")),
       sapMapAssuranceStatus:
         form.get("sapMapAssuranceStatus") && form.get("sapMapAssuranceStatus") !== "NONE"
           ? (form.get("sapMapAssuranceStatus") as "CERTIFIED" | "PLANNED")
           : null,
-      locationLat: form.get("locationLat") ? parseFloat(form.get("locationLat") as string) : null,
-      locationLong: form.get("locationLong")
-        ? parseFloat(form.get("locationLong") as string)
-        : null,
+      locationLat: formOptionalFloat(form.get("locationLat")),
+      locationLong: formOptionalFloat(form.get("locationLong")),
     };
 
     const result = isEdit
@@ -216,22 +210,31 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="districtId">Distrik</Label>
-                <Select
-                  name="districtId"
-                  defaultValue={group?.districtId ?? ""}
-                  items={districtItems}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih distrik" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {lockDistrict && group ? (
+                  <>
+                    <input type="hidden" name="districtId" value={group.districtId} />
+                    <p className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm" title="Akun yang dibatasi per Lembaga tidak bisa memindahkan distrik Lembaga">
+                      {districtItems[group.districtId] ?? group.districtId}
+                    </p>
+                  </>
+                ) : (
+                  <Select
+                    name="districtId"
+                    defaultValue={group?.districtId ?? ""}
+                    items={districtItems}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Pilih distrik" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {districts.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 {errors.districtId && (
                   <p className="text-sm text-destructive">{errors.districtId[0]}</p>
                 )}

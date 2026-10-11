@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Users,
-  User,
   Map,
   Ruler,
   BookOpen,
@@ -28,15 +27,6 @@ const formatAreaHa = (n: number) => `${formatArea(n)} ha`;
 // Kartu yang bisa diklik untuk popup rincian (#206) — 5 kartu baris teratas.
 type DetailKey = "lembaga" | "kelompokTani" | "rspo" | "ispo" | "sapMap";
 
-interface CardConfig {
-  title: string;
-  value: string;
-  sub?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  iconClass: string;
-  detailKey?: DetailKey;
-}
-
 interface Props {
   stats: DashboardStats;
   /**
@@ -52,83 +42,106 @@ interface Props {
 export function DashboardSummaryCards({ stats, kts, generatedAtLabel }: Props) {
   const [openDetail, setOpenDetail] = useState<DetailKey | null>(null);
 
-  // Card sertifikasi (#169): angka besar = Lembaga tersertifikasi, sub = jumlah plan.
-  // Year-independent — tidak ikut filter Tahun. Snapshot pra-#169 → 0 sampai regenerate.
-  const certCard = (title: string, detailKey: DetailKey, counts?: { certified: number; planned: number }): CardConfig => ({
-    title,
-    value: `${formatNumber(counts?.certified ?? 0)} lembaga`,
-    sub: `Tersertifikasi · ${formatNumber(counts?.planned ?? 0)} plan`,
-    icon: BadgeCheck,
-    iconClass: "text-emerald-600",
-    detailKey,
-  });
+  const clickable = kts != null;
+  const open = (key: DetailKey) => (clickable ? () => setOpenDetail(key) : undefined);
+  const pctOf = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : null);
 
-  const cards: CardConfig[] = [
-    { title: "Total Lembaga Petani", value: formatNumber(stats.totalKelompokTani), icon: Users, iconClass: "text-slate-600", detailKey: "lembaga" },
-    { title: "Total Kelompok Tani", value: formatNumber(stats.totalKelompokTaniLahan ?? 0), icon: Network, iconClass: "text-teal-600", detailKey: "kelompokTani" },
-    // Sertifikasi & assurance (#169) — posisi setelah Total Kelompok Tani (permintaan owner)
-    certCard("Sertifikasi RSPO", "rspo", stats.certStats?.rspo),
-    certCard("Sertifikasi ISPO", "ispo", stats.certStats?.ispo),
-    certCard("Assurance SAP/MAP", "sapMap", stats.certStats?.sapMap),
-    { title: "Total Petani", value: formatNumber(stats.totalPetani), icon: Users, iconClass: "text-blue-600" },
-    { title: "Petani Laki-laki", value: formatNumber(stats.totalPetaniLaki ?? 0), icon: User, iconClass: "text-sky-600" },
-    { title: "Petani Perempuan", value: formatNumber(stats.totalPetaniPerempuan ?? 0), icon: User, iconClass: "text-pink-600" },
-    { title: "Total Persil Lahan", value: formatNumber(stats.totalPersilLahan), icon: Map, iconClass: "text-green-600" },
-    { title: "Total Luas Lahan", value: formatAreaHa(stats.totalLuasLahan), icon: Ruler, iconClass: "text-green-600" },
-    { title: "Paket 1 - BMP/NKT/RSPO", value: `${formatNumber(stats.trainingCounts.PAKET_1_BMP_PC_RSPO_NKT)} petani`, icon: BookOpen, iconClass: "text-orange-600" },
-    { title: "Paket 2 - MK", value: `${formatNumber(stats.trainingCounts.PAKET_2_MK)} petani`, icon: BookOpen, iconClass: "text-purple-600" },
-    { title: "Paket 2 - HSE", value: `${formatNumber(stats.trainingCounts.PAKET_2_K3)} petani`, icon: BookOpen, iconClass: "text-red-600" },
-    { title: "Paket 3 & 4 - GEDSI/BUSDEV", value: `${formatNumber(stats.trainingCounts.PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV)} petani`, icon: BookOpen, iconClass: "text-indigo-600" },
+  const totalPetani = stats.totalPetani;
+  const male = stats.totalPetaniLaki ?? 0;
+  const female = stats.totalPetaniPerempuan ?? 0;
+  const malePct = pctOf(male, male + female);
+
+  // Sertifikasi & assurance (#169): angka = Lembaga tersertifikasi, sub = jumlah plan.
+  // Year-independent — tidak ikut filter Tahun. Snapshot pra-#169 → 0 sampai regenerate.
+  const certRows: { label: string; key: DetailKey; counts?: { certified: number; planned: number } }[] = [
+    { label: "RSPO", key: "rspo", counts: stats.certStats?.rspo },
+    { label: "ISPO", key: "ispo", counts: stats.certStats?.ispo },
+    { label: "Assurance SAP/MAP", key: "sapMap", counts: stats.certStats?.sapMap },
   ];
 
+  const trainingRows = [
+    { label: "Paket 1 · BMP/NKT/RSPO", value: stats.trainingCounts.PAKET_1_BMP_PC_RSPO_NKT },
+    { label: "Paket 2 · MK", value: stats.trainingCounts.PAKET_2_MK },
+    { label: "Paket 2 · HSE", value: stats.trainingCounts.PAKET_2_K3 },
+    { label: "Paket 3 & 4 · GEDSI/BUSDEV", value: stats.trainingCounts.PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV },
+  ];
+
+  // #420: 14 kartu → 5 kartu tematik (Kelembagaan · Sertifikasi · Petani · Lahan · Pelatihan).
+  // Satu warna aksen (owner 2026-10-11: "terlalu warna warni") — bar = primary, ikon netral.
   return (
     <>
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-        {cards.map((card) => {
-          const Icon = card.icon;
-          const clickable = kts != null && card.detailKey != null;
-          return (
-            <Card
-              key={card.title}
-              role={clickable ? "button" : undefined}
-              tabIndex={clickable ? 0 : undefined}
-              onClick={clickable ? () => setOpenDetail(card.detailKey!) : undefined}
-              onKeyDown={
-                clickable
-                  ? (e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setOpenDetail(card.detailKey!);
-                      }
-                    }
-                  : undefined
-              }
-              className={cn(
-                "shadow-sm border border-border/60",
-                clickable &&
-                  "group cursor-pointer transition-all hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              )}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {card.title}
-                </CardTitle>
-                <span className="flex items-center gap-1 shrink-0">
-                  {clickable && (
-                    <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                  )}
-                  <Icon className={`h-4 w-4 shrink-0 ${card.iconClass}`} />
-                </span>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold tabular-nums">{card.value}</div>
-                {card.sub && (
-                  <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+        <ThemeCard title="Kelembagaan" icon={Network} iconClass="text-muted-foreground">
+          <StatRow label="Lembaga Petani" value={formatNumber(stats.totalKelompokTani)} onClick={open("lembaga")} big />
+          <StatRow label="Kelompok Tani" value={formatNumber(stats.totalKelompokTaniLahan ?? 0)} onClick={open("kelompokTani")} big />
+        </ThemeCard>
+
+        <ThemeCard title="Sertifikasi & assurance" icon={BadgeCheck} iconClass="text-muted-foreground">
+          {certRows.map((c) => (
+            <StatRow
+              key={c.key}
+              label={c.label}
+              value={`${formatNumber(c.counts?.certified ?? 0)} lembaga`}
+              sub={`${formatNumber(c.counts?.planned ?? 0)} plan`}
+              onClick={open(c.key)}
+            />
+          ))}
+        </ThemeCard>
+
+        <ThemeCard title="Petani" icon={Users} iconClass="text-muted-foreground">
+          <p className="text-3xl font-bold tabular-nums">{formatNumber(totalPetani)}</p>
+          <div
+            className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-muted"
+            role="img"
+            aria-label={`Komposisi petani: laki-laki ${formatNumber(male)}, perempuan ${formatNumber(female)}`}
+          >
+            <div className="bg-primary" style={{ width: `${malePct ?? 0}%` }} />
+            <div className="bg-primary/35" style={{ width: `${malePct == null ? 0 : 100 - malePct}%` }} />
+          </div>
+          <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Laki-laki <strong className="tabular-nums text-foreground">{formatNumber(male)}</strong>
+              {malePct != null && <span className="tabular-nums">({malePct}%)</span>}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-primary/35" />
+              Perempuan <strong className="tabular-nums text-foreground">{formatNumber(female)}</strong>
+              {malePct != null && <span className="tabular-nums">({100 - malePct}%)</span>}
+            </span>
+          </div>
+        </ThemeCard>
+
+        <ThemeCard title="Lahan" icon={Map} iconClass="text-muted-foreground">
+          <StatRow label="Persil lahan" value={formatNumber(stats.totalPersilLahan)} big />
+          <StatRow label="Total luas" value={formatAreaHa(stats.totalLuasLahan)} big icon={Ruler} />
+        </ThemeCard>
+
+        <ThemeCard
+          title="Pelatihan"
+          subtitle="Petani yang pernah mengikuti paket · % dari total petani"
+          icon={BookOpen}
+          iconClass="text-muted-foreground"
+          className="md:col-span-2"
+        >
+          <ul className="space-y-2.5">
+            {trainingRows.map((t) => {
+              const pct = pctOf(t.value, totalPetani);
+              return (
+                <li key={t.label} className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm">
+                  <span className="truncate text-muted-foreground" title={t.label}>{t.label}</span>
+                  <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
+                    <span className="block h-full rounded-full bg-primary" style={{ width: `${Math.min(pct ?? 0, 100)}%` }} />
+                  </span>
+                  <span className="whitespace-nowrap tabular-nums">
+                    <strong>{formatNumber(t.value)}</strong>
+                    <span className="text-xs text-muted-foreground"> petani{pct != null && ` · ${pct}%`}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </ThemeCard>
       </div>
 
       {kts != null && (
@@ -413,5 +426,84 @@ function EmptyState({ message }: { message: string }) {
       <SearchX className="h-8 w-8 text-muted-foreground/40" />
       <p className="text-sm text-muted-foreground">{message}</p>
     </div>
+  );
+}
+
+/** Kartu tematik Dashboard Main (#420). */
+function ThemeCard({
+  title,
+  subtitle,
+  icon: Icon,
+  iconClass,
+  className,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconClass: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className={cn("shadow-sm border border-border/60", className)}>
+      <CardHeader className="flex flex-row items-start justify-between pb-2">
+        <div>
+          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</CardTitle>
+          {subtitle && <p className="mt-0.5 text-[11px] text-muted-foreground">{subtitle}</p>}
+        </div>
+        <Icon className={cn("h-4 w-4 shrink-0", iconClass)} />
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Satu angka di kartu tematik. Dengan `onClick` (Lembaga/KT/sertifikasi, #206)
+ * baris jadi tombol yang membuka dialog rincian — afordansi panah saat hover.
+ */
+function StatRow({
+  label,
+  value,
+  sub,
+  onClick,
+  big,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  onClick?: () => void;
+  big?: boolean;
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
+  const body = (
+    <>
+      <span className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+        {Icon && <Icon className="h-3.5 w-3.5 shrink-0" />}
+        <span className="truncate">{label}</span>
+      </span>
+      <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+        <span className={cn("font-bold tabular-nums", big ? "text-2xl" : "text-base")}>{value}</span>
+        {sub && <span className="text-xs text-muted-foreground tabular-nums">· {sub}</span>}
+        {onClick && (
+          <ArrowUpRight className="h-3.5 w-3.5 self-center text-muted-foreground opacity-40 transition-opacity group-hover/stat:opacity-100" />
+        )}
+      </span>
+    </>
+  );
+  const cls = "flex w-full items-center justify-between gap-3 py-1.5";
+  return onClick ? (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(cls, "group/stat -mx-2 rounded-md px-2 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")}
+      style={{ width: "calc(100% + 1rem)" }}
+    >
+      {body}
+    </button>
+  ) : (
+    <div className={cls}>{body}</div>
   );
 }

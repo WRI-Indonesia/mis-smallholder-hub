@@ -22,3 +22,5 @@ DONOR melihat data individu petani (nama/NIK). Perubahan struktur menu oleh akun
 
 ## Rujukan
 [../standards/rbac.md](../standards/rbac.md) · [../product/role-flows.md](../product/role-flows.md) · `scripts/compare-role-permissions.ts`
+
+> **Pembaruan 2026-10-11 (#416 K1):** kedua menu dipindah ke bawah induk level 2 **Ketersediaan Data** (`data-analyst-availability`) dengan judul **Semua Lembaga** / **Per Lembaga**; key, route, izin tetap. Prinsip "prod = acuan" tidak berubah — perubahan masuk CSV dulu lalu di-seed ke prod lewat `seed-menu-only.ts` (yang memperbarui induk/judul baris yang ada).

@@ -11,7 +11,7 @@
 
 - **Dashboard**: ✅ Main Dashboard + BMP (semua snapshot, semua data) · ✅ **Dashboard Pelatihan** (live query, semua Lembaga) · ✅ **Dashboard Monev BMP** (live query, #344) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
 - **Master Data**: ✅ Full CRUD, all regions/groups/farmers
-- **Settings**: ✅ User/Role/Menu/Region management
+- **Settings**: ✅ User/Role/Menu/Region management — satu-satunya peran yang boleh memberi role SUPERADMIN, mengubah akun SUPERADMIN, dan mengubah matriks Role & Permission; akun sendiri tetap tak bisa diubah role/status/penugasannya (#386, [access-context.md](./access-context.md#scope-pada-aksi-tulis))
 - **Report**: ✅ All reports, all data
 - **Bulk Upload**: ✅ All modules
 - **Tools**: ✅ Dashboard Snapshot (generate/view/delete), Export, S3/PDF, GIS
@@ -23,7 +23,7 @@
 - **Settings**: ❌ No access (tidak ada baris seed `settings-*` untuk ADMIN)
 - **Report**: ✅ Semua report (data ter-scope)
 - **Bulk Upload**: ✅ Petani, Lahan, Pohon Sawit & Produksi (CREATE/EDIT/VIEW/EXPORT/PRINT, scope masing-masing)
-- **Data Analyst**: ✅ Ketersediaan Data — Per Lembaga & Semua Lembaga (CREATE/EDIT/VIEW/EXPORT/PRINT) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md) · ✅ **Komparasi Data Acuan** CREATE/EDIT/VIEW/EXPORT/PRINT · ✅ Peta Data & Skema, Rencana Pengembangan, Metrik Rilis (VIEW) · ✅ **Rencana Pengembangan** (VIEW, #378) · ❌ Ringkasan Petani (hanya SUPERADMIN)
+- **Data Analyst**: ✅ Ketersediaan Data — Semua Lembaga & Per Lembaga (CREATE/EDIT/VIEW/EXPORT/PRINT) · Produksi (VIEW/EXPORT/PRINT, #416) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md) · ✅ **Komparasi Data Acuan** CREATE/EDIT/VIEW/EXPORT/PRINT · ✅ Peta Data & Skema, Rencana Pengembangan, Metrik Rilis (VIEW) · ✅ **Rencana Pengembangan** (VIEW, #378) · ❌ Ringkasan Petani (hanya SUPERADMIN)
 - **Map**: ✅ Peta Lahan + Peta BMP (CREATE/EDIT/VIEW/EXPORT/PRINT, tanpa DELETE)
 - **Bantuan**: ✅ VIEW/EXPORT/PRINT
 - **Tools**: ✅ Dashboard Snapshot + Snapshot BMP (generate/view, **tanpa delete** — tidak ada baris DELETE; scope distrik)
@@ -35,7 +35,7 @@
 - **Settings**: ❌ No access
 - **Report**: ✅ Semua report (data ter-scope Lembaga)
 - **Bulk Upload**: ❌ No access (tidak ada baris seed `bulk-upload*` untuk OPERATOR)
-- **Data Analyst**: ✅ Ketersediaan Data — Per Lembaga & Semua Lembaga (VIEW/EXPORT/PRINT) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md) · ✅ **Komparasi Data Acuan** VIEW/EXPORT/PRINT · ❌ Ringkasan Petani (hanya SUPERADMIN)
+- **Data Analyst**: ✅ Ketersediaan Data — Semua Lembaga, Per Lembaga & Produksi (VIEW/EXPORT/PRINT) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md) · ✅ **Komparasi Data Acuan** VIEW/EXPORT/PRINT · ❌ Ringkasan Petani (hanya SUPERADMIN)
 - **Map**: ✅ Peta Lahan + Peta BMP (VIEW/EXPORT/PRINT)
 - **Bantuan**: ✅ VIEW/EXPORT/PRINT
 - **Tools**: ❌ No access (tidak diberi akses Dashboard Snapshot)
@@ -47,7 +47,7 @@
 - **Settings**: ❌ No access
 - **Report**: ✅ View all reports (all data)
 - **Bulk Upload**: ❌ No access
-- **Data Analyst**: ✅ Ketersediaan Data — Per Lembaga & Semua Lembaga (VIEW/EXPORT/PRINT) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md) · ✅ **Komparasi Data Acuan** VIEW/EXPORT/PRINT · ✅ Peta Data & Skema, Rencana Pengembangan, Metrik Rilis (VIEW) · ✅ **Rencana Pengembangan** (VIEW, #378) · ❌ Ringkasan Petani (hanya SUPERADMIN)
+- **Data Analyst**: ✅ Ketersediaan Data — Semua Lembaga, Per Lembaga & Produksi (VIEW/EXPORT/PRINT) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md) · ✅ **Komparasi Data Acuan** VIEW/EXPORT/PRINT · ✅ Peta Data & Skema, Rencana Pengembangan, Metrik Rilis (VIEW) · ✅ **Rencana Pengembangan** (VIEW, #378) · ❌ Ringkasan Petani (hanya SUPERADMIN)
 - **Map**: ✅ Peta Lahan + Peta BMP (VIEW/EXPORT/PRINT)
 - **Bantuan**: ✅ VIEW/EXPORT/PRINT
 - **Tools**: ❌ No access (tidak ada baris seed `tools`/`dashboard-snapshot*` untuk MANAGEMENT)

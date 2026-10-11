@@ -83,9 +83,9 @@ export type AdminBoundaryLine = {
 
 /**
  * Dua halaman memakai batas administrasi, jadi cukup salah satu izin VIEW —
- * pola yang sama dengan proxy `/api/map-hotspot`, dicek berurutan agar
- * pemegang `dashboard-risk-fire` (pemanggil terbanyak) tak membayar query
- * kedua.
+ * pola yang sama dengan proxy `/api/map-hotspot` dan `requireFilterView`
+ * di `map.ts` (#384). Cek kedua tidak menambah query: izin di-`cache()` per
+ * request di `rbac.ts` (TD-060).
  */
 async function requireBoundaryRead(): Promise<void> {
   if (

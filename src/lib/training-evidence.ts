@@ -27,6 +27,17 @@ export function buildTrainingEvidenceKey(activityId: string, fileName: string, t
 }
 
 /**
+ * Satu predikat "pelatihan punya bukti" (TD-053a, #412) untuk agregator
+ * (Ketersediaan Data, profil Lembaga, Dashboard Pelatihan) DAN tautan detail:
+ * kunci harus ada dan milik pelatihan ini. Sebelumnya agregator memakai
+ * `!!evidenceKey` sehingga kunci asing/lama terhitung "ada bukti" padahal
+ * detail tidak membuka tautannya.
+ */
+export function hasTrainingEvidence<T extends { id: string; evidenceKey: string | null | undefined }>(activity: T): activity is T & { evidenceKey: string } {
+  return !!activity.evidenceKey && isTrainingEvidenceKeyFor(activity.evidenceKey, activity.id);
+}
+
+/**
  * Kunci ini milik aktivitas `activityId`: format sekarang (`buildTrainingEvidenceKey`)
  * atau format lama #45 `training/evidence/<yyyy>/<mm>/<activityId>/<berkas>`
  * (skrip `pdf-manager.js`). Audit mis-prod 2026-09-29: 0 kunci berkas asli.

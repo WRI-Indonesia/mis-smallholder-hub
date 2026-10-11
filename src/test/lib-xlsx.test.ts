@@ -68,19 +68,23 @@ describe("exportToExcel", () => {
     expect(ws.getColumn(1).width).toBe(7);
   });
 
-  it("KARAKTERISASI — auto-fit lebar kolom tak pernah jalan (ExcelJS memberi lebar bawaan 9)", async () => {
-    // BUG (dilaporkan, belum diperbaiki): ExcelJS 4.x mengisi `column.width = 9`
-    // saat definisi kolom tanpa width, jadi cabang `if (!column.width)` di
-    // xlsx.ts tidak pernah terpenuhi — nilai panjang tetap selebar bawaan dan
-    // lebar tidak ditulis ke berkas. Saat diperbaiki, ubah harapan di bawah ke
-    // lebar hasil auto-fit (mis. 22 untuk nilai 19 karakter, maks 50).
+  it("auto-fit lebar kolom tanpa width: isi terpanjang + 3, dijepit 10-50 (TD-049)", async () => {
+    // Dulu cabang auto-fit tak pernah aktif: ExcelJS mengisi lebar bawaan 9
+    // untuk kolom tanpa width sehingga `if (!column.width)` selalu salah.
+    // Kini deteksinya dari definisi kolom kita (`col.width == null`).
     await exportToExcel({
       filename: "x",
-      columns: [{ header: "C", key: "c" }],
-      data: [{ c: "1234567890123456789" }],
+      columns: [
+        { header: "C", key: "c" },
+        { header: "Pendek", key: "p" },
+        { header: "L", key: "l" },
+      ],
+      data: [{ c: "1234567890123456789", p: "x", l: "a".repeat(120) }],
     });
     const ws = (await readBack()).getWorksheet("Data")!;
-    expect(ws.getColumn(1).width).toBeUndefined();
+    expect(ws.getColumn(1).width).toBe(22);
+    expect(ws.getColumn(2).width).toBe(10);
+    expect(ws.getColumn(3).width).toBe(50);
   });
 
   it("kolom wrap → wrapText + rata atas (#331); kolom lain tanpa alignment", async () => {

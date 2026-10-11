@@ -92,7 +92,7 @@ describe("getTrainingDashboardView — kontrak payload", () => {
         _count: { farmers: 2 },
         activities: [
           {
-            id: "a1", trainingDate: new Date("2025-03-10T00:00:00Z"), location: "  ", evidenceKey: "k/1.jpg",
+            id: "a1", trainingDate: new Date("2025-03-10T00:00:00Z"), location: "  ", evidenceKey: "training/a1/1-notulen.pdf", // kunci milik a1 — kunci asing ≠ bukti (TD-053a)
             package: { code: "PAKET_2_MK" },
             participants: [
               { farmerId: "f1", preTestScore: 40, postTestScore: 70, farmer: { gender: "F", farmerGroupId: "g1" } },

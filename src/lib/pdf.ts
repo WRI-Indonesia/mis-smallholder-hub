@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { toWinAnsiText } from "@/lib/pdf-winansi";
 
 export interface PDFExportField {
   header: string;
@@ -55,7 +56,9 @@ export function buildPDF({
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 41, 59); // Slate-800
-  doc.text(title, 14, 20);
+  // Font bawaan (WinAnsi): semua teks dipetakan di titik render — satu glyph asing
+  // merusak seluruh string (temuan #2 QA v1.7.0; review pra-rilis: eksportir bersama).
+  doc.text(toWinAnsiText(title), 14, 20);
 
   let currentY = 26;
 
@@ -64,7 +67,7 @@ export function buildPDF({
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 116, 139); // Slate-500
-    doc.text(subtitle, 14, currentY);
+    doc.text(toWinAnsiText(subtitle), 14, currentY);
     currentY += 8;
   }
 
@@ -90,7 +93,7 @@ export function buildPDF({
       
       // Label (Bold)
       doc.setFont("helvetica", "bold");
-      const labelText = `${m.label}:`;
+      const labelText = toWinAnsiText(`${m.label}:`);
       
       // Measure width while bold font is active
       const labelWidth = doc.getTextWidth(labelText);
@@ -98,7 +101,7 @@ export function buildPDF({
       
       // Value (Normal)
       doc.setFont("helvetica", "normal");
-      const valueText = m.value;
+      const valueText = toWinAnsiText(m.value);
       doc.text(valueText, x + labelWidth + 2, y);
     });
     
@@ -107,10 +110,10 @@ export function buildPDF({
   }
 
   // Table columns
-  const tableHeaders = columns.map((col) => col.header);
+  const tableHeaders = columns.map((col) => toWinAnsiText(col.header));
   const tableRows = data.map((row) => columns.map((col) => {
     const val = row[col.key];
-    return val !== undefined && val !== null ? String(val) : "—";
+    return val !== undefined && val !== null ? toWinAnsiText(String(val)) : "—";
   }));
 
   // AutoTable

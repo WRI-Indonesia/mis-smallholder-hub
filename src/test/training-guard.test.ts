@@ -24,7 +24,7 @@ vi.mock("@/lib/s3", () => ({ getPresignedUrl: vi.fn(async (k: string) => `https:
 const db = vi.hoisted(() => {
   const model = () => ({
     findFirst: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(),
-    create: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(),
+    create: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), count: vi.fn(),
   });
   return {
     trainingActivity: model(), trainingParticipant: model(), trainingPackage: model(),
@@ -55,6 +55,7 @@ beforeEach(() => {
   db.farmer.findMany.mockResolvedValue([{ id: "f-1" }]);
   db.trainingPackage.findMany.mockResolvedValue([]);
   db.trainingParticipant.findFirst.mockResolvedValue({ isActive: true });
+  db.trainingParticipant.count.mockResolvedValue(0);
   db.trainingParticipant.findMany.mockResolvedValue([]);
   db.trainingParticipant.create.mockImplementation(async (a: unknown) => a);
   db.trainingParticipant.update.mockImplementation(async (a: unknown) => a);
@@ -246,6 +247,28 @@ describe("tulis — Zod, audit, soft delete", () => {
     const res = await actions.createTrainingActivity(activityInput());
     expect(res).toEqual({ success: true, id: "ta-new" });
     expect(db.trainingActivity.create.mock.calls[0][0].data).toMatchObject({ farmerGroupId: "kt-1", createdBy: "user-1" });
+  });
+
+  it("#387 butir 6 updateTrainingActivity: pindah Lembaga saat masih ada peserta aktif → ditolak (fieldError farmerGroupId), tidak disimpan", async () => {
+    db.trainingParticipant.count.mockResolvedValue(3);
+    const res = await actions.updateTrainingActivity({ id: "ta-1", ...activityInput({ farmerGroupId: "kt-2" }) });
+    expect(res).toMatchObject({ success: false, error: { farmerGroupId: [expect.stringMatching(/3 peserta/)] } });
+    expect(db.trainingParticipant.count.mock.calls[0][0].where).toEqual({ activityId: "ta-1", isActive: true });
+    expect(db.trainingActivity.update).not.toHaveBeenCalled();
+  });
+
+  it("#387 butir 6 updateTrainingActivity: pindah Lembaga tanpa peserta → boleh; Lembaga tetap → peserta tidak dihitung", async () => {
+    await actions.updateTrainingActivity({ id: "ta-1", ...activityInput({ farmerGroupId: "kt-2" }) });
+    expect(db.trainingParticipant.count).toHaveBeenCalledOnce();
+    expect(db.trainingActivity.update).toHaveBeenCalledOnce();
+
+    vi.clearAllMocks();
+    db.trainingActivity.findFirst.mockResolvedValue({ id: "ta-1", farmerGroupId: "kt-1", isActive: true, evidenceKey: null });
+    db.farmerGroup.findFirst.mockResolvedValue({ id: "kt-1" });
+    db.trainingActivity.update.mockResolvedValue({ id: "ta-1" });
+    await actions.updateTrainingActivity({ id: "ta-1", ...activityInput() });
+    expect(db.trainingParticipant.count).not.toHaveBeenCalled();
+    expect(db.trainingActivity.update).toHaveBeenCalledOnce();
   });
 
   it("updateTrainingActivity sukses → modifiedBy dari sesi, id tidak ikut data", async () => {

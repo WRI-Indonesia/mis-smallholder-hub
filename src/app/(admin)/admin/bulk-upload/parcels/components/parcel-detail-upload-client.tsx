@@ -26,6 +26,8 @@ import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
 import { readSpreadsheetFile } from "@/lib/excel-sheet-reader";
 import { exportToExcel } from "@/lib/xlsx";
+import { GroupedFieldMapping } from "@/components/shared/grouped-field-mapping";
+import { PARCEL_DETAIL_MAPPING_GROUPS } from "@/lib/upload-mapping-groups";
 import {
   PARCEL_DETAIL_TARGET_FIELDS,
   LAND_DOCUMENT_TYPE_LABELS,
@@ -310,6 +312,56 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     });
   }
 
+  // Bawaan NKT per berkas (#328): daftar "petak terdampak NKT" dari asesmen biasanya hanya
+  // memuat ID + luas tanpa kolom status/kategori — nilainya ditetapkan sekali untuk seluruh berkas.
+  // Dirender di dalam grup NKT pemetaan (#420).
+  const nktDefaultsBlock = (
+    <div className="space-y-2">
+      <p className="text-sm font-medium">Bawaan NKT untuk berkas ini <span className="text-xs font-normal text-muted-foreground">(opsional — untuk daftar lahan terdampak NKT yang tak punya kolom status/kategori)</span></p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Status untuk semua baris</Label>
+          <Select value={nktDefaults.status ?? "_none"} onValueChange={(v) => setNktDefaults((d) => ({ ...d, status: v && v !== "_none" ? (v as NktStatusCode) : null }))}>
+            <SelectTrigger className="h-9 w-full">
+              <SelectValue>{(value: string) => (value === "_none" ? "— tidak menetapkan —" : LAND_NKT_STATUS_LABELS[value as NktStatusCode] ?? value)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">— tidak menetapkan —</SelectItem>
+              {LAND_NKT_STATUS_OPTIONS.map((st) => (
+                <SelectItem key={st} value={st}>{LAND_NKT_STATUS_LABELS[st]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Kategori bawaan</Label>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1.5">
+            {NKT_CATEGORIES.map((c) => (
+              <label key={c} className="flex items-center gap-1 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 accent-primary"
+                  checked={nktDefaults.categories.includes(c)}
+                  onChange={(e) => setNktDefaults((d) => ({ ...d, categories: e.target.checked ? [...d.categories, c] : d.categories.filter((x) => x !== c) }))}
+                />
+                {nktCategoryShort(c)}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Tanggal asesmen bawaan</Label>
+          <Input type="date" className="h-9" value={nktDefaults.assessedAt ?? ""} onChange={(e) => setNktDefaults((d) => ({ ...d, assessedAt: e.target.value || null }))} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Asesor / sumber bawaan</Label>
+          <Input className="h-9" placeholder="mis. Laporan NKT HJP 2025" value={nktDefaults.assessor ?? ""} onChange={(e) => setNktDefaults((d) => ({ ...d, assessor: e.target.value || null }))} />
+        </div>
+      </div>
+      <p className="text-[11px] text-muted-foreground">Sel di berkas menang atas bawaan. Status/kategori bawaan hanya dipakai bila kolomnya kosong atau tidak dipetakan.</p>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <Card className="p-6">
@@ -354,87 +406,20 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
               Kolom berkas sumber (<code>MIS_&lt;KAB&gt;_data-lahan.xlsx</code>) dikenali otomatis; periksa lalu validasi.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {PARCEL_DETAIL_TARGET_FIELDS.map((f) => (
-              <div key={f.key} className="space-y-2 border p-3 rounded-lg bg-card/50">
-                <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-sm">
-                    {f.label} {f.required && <span className="text-red-500">*</span>}
-                  </Label>
-                  <Badge variant={f.required ? "default" : "outline"} className="text-[10px]">
-                    {f.required ? "Wajib" : "Opsional"}
-                  </Badge>
-                </div>
-                <Select
-                  value={mapping[f.key] || ""}
-                  onValueChange={(val) => {
-                    setMapping((prev) => ({ ...prev, [f.key]: val === "_empty" ? "" : val }));
-                    // Pemetaan berubah = hasil validasi lama tidak berlaku lagi.
-                    setValidated([]);
-                  }}
-                >
-                  <SelectTrigger className="w-full h-9">
-                    <SelectValue placeholder="Pilih kolom..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_empty">-- Kosongkan --</SelectItem>
-                    {headers.map((h) => (
-                      <SelectItem key={h} value={h}>
-                        {h}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-[10px] text-muted-foreground block">{f.desc}</span>
-              </div>
-            ))}
-          </div>
-          {/* Bawaan NKT per berkas (#328): daftar "petak terdampak NKT" dari asesmen biasanya hanya
-              memuat ID + luas tanpa kolom status/kategori — nilainya ditetapkan sekali untuk seluruh berkas. */}
-          <div className="rounded-md border border-dashed p-3 space-y-2">
-            <p className="text-sm font-medium">Bawaan NKT untuk berkas ini <span className="text-xs font-normal text-muted-foreground">(opsional — untuk daftar lahan terdampak NKT yang tak punya kolom status/kategori)</span></p>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Status untuk semua baris</Label>
-                <Select value={nktDefaults.status ?? "_none"} onValueChange={(v) => setNktDefaults((d) => ({ ...d, status: v && v !== "_none" ? (v as NktStatusCode) : null }))}>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue>{(value: string) => (value === "_none" ? "— tidak menetapkan —" : LAND_NKT_STATUS_LABELS[value as NktStatusCode] ?? value)}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">— tidak menetapkan —</SelectItem>
-                    {LAND_NKT_STATUS_OPTIONS.map((st) => (
-                      <SelectItem key={st} value={st}>{LAND_NKT_STATUS_LABELS[st]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Kategori bawaan</Label>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1.5">
-                  {NKT_CATEGORIES.map((c) => (
-                    <label key={c} className="flex items-center gap-1 text-xs cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="h-3.5 w-3.5 accent-primary"
-                        checked={nktDefaults.categories.includes(c)}
-                        onChange={(e) => setNktDefaults((d) => ({ ...d, categories: e.target.checked ? [...d.categories, c] : d.categories.filter((x) => x !== c) }))}
-                      />
-                      {nktCategoryShort(c)}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Tanggal asesmen bawaan</Label>
-                <Input type="date" className="h-9" value={nktDefaults.assessedAt ?? ""} onChange={(e) => setNktDefaults((d) => ({ ...d, assessedAt: e.target.value || null }))} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Asesor / sumber bawaan</Label>
-                <Input className="h-9" placeholder="mis. Laporan NKT HJP 2025" value={nktDefaults.assessor ?? ""} onChange={(e) => setNktDefaults((d) => ({ ...d, assessor: e.target.value || null }))} />
-              </div>
-            </div>
-            <p className="text-[11px] text-muted-foreground">Sel di berkas menang atas bawaan. Status/kategori bawaan hanya dipakai bila kolomnya kosong atau tidak dipetakan.</p>
-          </div>
+          {/* #420: grup berkategori (pengganti 20 kartu); Bawaan NKT di dalam grup NKT. */}
+          <GroupedFieldMapping
+            fields={PARCEL_DETAIL_TARGET_FIELDS}
+            groups={PARCEL_DETAIL_MAPPING_GROUPS}
+            headers={headers}
+            mapping={mapping}
+            sample={rawRows[0]}
+            onChange={(key, header) => {
+              setMapping((prev) => ({ ...prev, [key]: header }));
+              // Pemetaan berubah = hasil validasi lama tidak berlaku lagi.
+              setValidated([]);
+            }}
+            groupExtra={{ nkt: nktDefaultsBlock }}
+          />
           <div className="flex justify-end pt-2">
             <Button onClick={handleValidate} disabled={rawRows.length === 0 || parcels === null} className="h-10">
               Validasi Detail Lahan

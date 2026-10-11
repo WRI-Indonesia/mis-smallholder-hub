@@ -66,17 +66,20 @@ Peran: OPERATOR · Langkah: daftar, filter · Harapan: terbuka.
 ### SM-20 · Data Analyst › Ringkasan Petani [P1] (1 mnt)
 Peran: SUPERADMIN · Langkah: filter, Excel · Harapan: terbuka.
 
-### SM-21 · Data Analyst › Data — All Lembaga [P1] (2 mnt)
+### SM-21 · Data Analyst › Ketersediaan Data › Semua Lembaga [P1] (2 mnt)
 Peran: SUPERADMIN, lalu OPERATOR · Langkah: hero, kartu domain, tab Radar/Heatmap/Cakupan modul, klik 1 grafik → modal · Harapan: terisi; OPERATOR hanya Lembaga dalam scope.
 
-### SM-22 · Data Analyst › Data — Per Lembaga [P1] (2 mnt)
+### SM-22 · Data Analyst › Ketersediaan Data › Per Lembaga [P1] (2 mnt)
 Peran: SUPERADMIN, lalu OPERATOR · Langkah: pilih Lembaga (analisa otomatis), klik label sumbu radar → seksi, buka 1 baris checklist · Harapan: Index + radar + prioritas + checklist terisi.
+
+### SM-22b · Data Analyst › Ketersediaan Data › Produksi [P1] (2 mnt)
+Peran: SUPERADMIN, lalu OPERATOR · Langkah: ganti tahun, buka ▸ satu Lembaga → ▸ satu petani, klik 1 sel kg, Excel dengan filter Lembaga · Harapan: kalender terisi, baris anak dimuat, tautan ke Master Data Produksi terfilter, Excel 2 sheet; OPERATOR hanya Lembaga dalam scope.
 
 ### SM-23 · Data Analyst › Komparasi Data Acuan · Metrik Rilis · Peta Data & Skema [P2] (2 mnt)
 Peran: SUPERADMIN · Langkah: buka ketiganya · Harapan: angka terisi; Peta Data memuat tabel baru rilis ini.
 
 ### SM-24 · Bulk Upload › Petani · Produksi · Lahan (tiap tab) · Pohon [P0] (3 mnt)
-Peran: ADMIN · Langkah: tiap tab terbuka, unduh template (Produksi, Lahan, Pohon) · Harapan: template terunduh; Upload **Petani** tanpa template (pencocokan kolom dinamis, by design).
+Peran: ADMIN · Langkah: tiap tab terbuka, unduh template di **ketujuh** tombol (Petani, Produksi, Lahan › Poligon ZIP · Detail · NKT · Patok, Pohon ZIP) · Harapan: template terunduh; tajuk/atribut template langsung terpetakan otomatis saat diunggah ulang (#419).
 
 ### SM-25 · Tools › Dashboard Snapshot · Snapshot BMP [P2] (1 mnt)
 Peran: SUPERADMIN · Langkah: daftar terbuka (tanpa generate) · Harapan: terbuka.

@@ -1,4 +1,4 @@
-# 03 · QC data & DB — v1.3.0
+# 03 · QC data & DB — v1.7.0
 
 > Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
 
@@ -17,3 +17,8 @@ Berkas ini hanya menjelaskan **maksud** tiap cek dan harapannya; bila cek beruba
 | B1 | Angka bisnis | lahan aktif tidak berubah karena migrasi | = run sebelum | ✓ (bandingkan dua run) |
 | C1 | Izin | menu & izin baru rilis ini ter-seed (cek per menu di `data-qc.ts`) | = `menu.csv` / `role-permissions.csv` | ✓ |
 | — | Izin | seluruh izin seed ↔ DB | `npm run rbac:compare` 0 selisih (atau selisih yang disengaja tercatat) | manual (skrip terpisah) |
+| I1 | Menu (#416) | induk `data-analyst-availability` + 3 anak (Semua Lembaga · Per Lembaga · Produksi) | 1 induk · 3/3 anak | ✓ |
+| I2 | Izin (#416) | izin induk & Produksi: 4 peran × VIEW/EXPORT/PRINT, tanpa DONOR | 12 + 12 · DONOR 0 | ✓ |
+| I3 | Izin (#416) | override per user pada menu yang pindah induk | informatif (tetap berlaku — key tak berubah) | ✓ |
+| F3 | Menu (#352 → #416) | label & order 2 menu skor = `menu.csv` | Semua Lembaga:1 · Per Lembaga:2 | ✓ |
+

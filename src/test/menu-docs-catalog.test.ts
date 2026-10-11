@@ -29,14 +29,16 @@ describe("menu.csv ↔ docs/product/pages", () => {
     expect(missing).toEqual([]);
   });
 
-  it("label & order Ketersediaan Data sesuai keputusan owner (#352 P4 order; #364 label = prod) dan tertulis di katalog", () => {
+  it("keluarga Ketersediaan Data (#416 K1): induk level 2 + anak Semua Lembaga · Per Lembaga · Produksi, tertulis di katalog", () => {
     const byKey = Object.fromEntries(menuRows.map((r) => [r.key, r]));
-    expect(byKey["data-analyst-data-availability"]).toMatchObject({ title: "Data — All Lembaga", order: 2 });
-    expect(byKey["data-analyst-data-completeness"]).toMatchObject({ title: "Data — Per Lembaga", order: 3 });
-    // Sel tabel ber-pembatas: "Data — Per Lembaga" polos juga cocok dengan label lama
-    // "Ketersediaan Data — Per Lembaga" (review #364).
-    expect(catalog).toContain("| 2 | Data — All Lembaga |");
-    expect(catalog).toContain("| 3 | Data — Per Lembaga |");
+    expect(byKey["data-analyst-availability"]).toMatchObject({ title: "Ketersediaan Data", parentKey: "data-analyst", order: 2 });
+    // Key & URL dua menu lama tetap (#352 P4 / #364); hanya induk + judul yang berubah (owner 2026-10-11).
+    expect(byKey["data-analyst-data-availability"]).toMatchObject({ title: "Semua Lembaga", parentKey: "data-analyst-availability", order: 1 });
+    expect(byKey["data-analyst-data-completeness"]).toMatchObject({ title: "Per Lembaga", parentKey: "data-analyst-availability", order: 2 });
+    expect(byKey["data-analyst-availability-production"]).toMatchObject({ title: "Produksi", parentKey: "data-analyst-availability", order: 3 });
+    expect(catalog).toContain("| 2.1 | Semua Lembaga |");
+    expect(catalog).toContain("| 2.2 | Per Lembaga |");
+    expect(catalog).toContain("| 2.3 | Produksi |");
   });
 
   it("order unik per induk (dua menu sejajar tidak berebut posisi)", () => {
@@ -52,12 +54,12 @@ describe("menu.csv ↔ docs/product/pages", () => {
 });
 
 describe("readMenuSeed (seeder menu)", () => {
-  it("membaca 48 baris CSV dengan key unik; P4 terbaca; seed memperbarui kolom struktural baris yang ada", () => {
+  it("membaca semua baris CSV dengan key unik; induk Ketersediaan Data terbaca; seed memperbarui kolom struktural baris yang ada", () => {
     const rows = readMenuSeed();
     expect(rows.length).toBe(menuRows.length);
     expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
     const avail = rows.find((r) => r.key === "data-analyst-data-availability")!;
-    expect(avail).toMatchObject({ title: "Data — All Lembaga", order: 2, parentKey: "data-analyst", isActive: true, isVisible: true });
+    expect(avail).toMatchObject({ title: "Semua Lembaga", order: 1, parentKey: "data-analyst-availability", isActive: true, isVisible: true });
     // Kontrak sumber kebenaran: seedMenu mem-upsert kolom struktural (bukan `update: {}`).
     const src = readFileSync("prisma/seeds/seed-menu.ts", "utf8");
     expect(src).toMatch(/update:\s*\{\s*parentKey: row\.parentKey, title: row\.title, url: row\.url, icon: row\.icon, order: row\.order\s*\}/);

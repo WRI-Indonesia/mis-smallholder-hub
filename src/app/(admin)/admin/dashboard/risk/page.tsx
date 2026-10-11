@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-export default function RiskIndexPage() {
-  redirect("/admin/dashboard/risk/fire");
+/** Indeks induk `dashboard-risk`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function DashboardRiskIndexPage() {
+  await redirectToFirstAccessibleChild("dashboard-risk");
 }

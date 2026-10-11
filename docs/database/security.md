@@ -31,7 +31,7 @@
 
 ### Pola Akses Data (RBAC)
 
-Ringkas (`getAccessContext()`, `src/lib/access-context.ts`): SUPERADMIN atau **tanpa assignment** → `ALL`; **hanya** `UserFarmerGroup` → `BY_FARMER_GROUP` (id Lembaga); ada `UserProvince`/`UserDistrict` → `BY_DISTRICT` (gabungan district; assignment Lembaga **diabaikan**); sesi kosong / user tak ditemukan → `BY_DISTRICT` kosong (tolak semua). Terjemahkan ke `where` lewat helper `src/lib/access-scope.ts`, jangan ternary manual. Rincian, contoh, dan pengecualian scope yang tercatat: [product/access-context.md](../product/access-context.md).
+Ringkas (`getAccessContext()`, `src/lib/access-context.ts`): SUPERADMIN atau **tanpa assignment** → `ALL`; **hanya** `UserFarmerGroup` → `BY_FARMER_GROUP` (id Lembaga); ada `UserProvince`/`UserDistrict` → `BY_DISTRICT` (gabungan district; assignment Lembaga **diabaikan**); sesi kosong / user tak ditemukan → `BY_DISTRICT` kosong (tolak semua). Terjemahkan ke `where` lewat helper `src/lib/access-scope.ts`, jangan ternary manual. Target yang dipilih klien pada aksi tulis (Lembaga tujuan petani, distrik tujuan Lembaga) ikut diverifikasi ke scope (#409), dan pengelolaan pengguna/matriks izin dijaga aturan anti-eskalasi (#386: hanya pemanggil `ALL`, SUPERADMIN hanya oleh SUPERADMIN, akun sendiri terkunci — `src/lib/user-admin-guard.ts`, [standards/rbac.md](../standards/rbac.md#anti-eskalasi-pengelolaan-pengguna-386-butir-2)). Rincian, contoh, dan pengecualian scope yang tercatat: [product/access-context.md](../product/access-context.md).
 
 ### Perlindungan Data Sensitif
 

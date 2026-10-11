@@ -402,3 +402,13 @@ export const MODULE_DOMAIN_LABELS: Record<CompletenessDomainKey, string> = {
   pelatihan: "Pelatihan",
   produksi: "Produksi",
 };
+
+/**
+ * Label check untuk LAYAR (#417 D): registri menulis "persil" (kunci, Excel
+ * Per Lembaga, dan berkas lama tetap memakainya); di layar dibaca "lahan",
+ * sama dengan menu lain. Satu helper untuk Semua Lembaga & Per Lembaga.
+ */
+export function uiCheckLabel(label: string): string {
+  return label.replace(/\bPersil(?=\b|-)/g, "Lahan").replace(/\bpersil(?=\b|-)/g, "lahan");
+}
+

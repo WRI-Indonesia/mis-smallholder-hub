@@ -5,7 +5,7 @@
 | Atribut | Nilai |
 |---|---|
 | Menu key | `platform-developer` |
-| URL | `/admin/platform-developer` (redirect ke Metrik Rilis) |
+| URL | `/admin/platform-developer` (redirect ke anak pertama yang boleh diakses, TD-051; bawaan Metrik Rilis) |
 | Icon | `Code2` |
 | Sub menu | 3 — Metrik Rilis (`dashboard-metrics`), Peta Data & Skema (`data-analyst-data-map`), Rencana Pengembangan (`data-analyst-sprint`) — urut sesuai kolom `order` di `menu.csv` (1–3) |
 | Akses bawaan | Induk: VIEW SUPERADMIN. Ketiga anak: VIEW SUPERADMIN · ADMIN · MANAGEMENT (`role-permissions.csv`) |
@@ -36,4 +36,4 @@ Menu: Platform Developer (/admin/platform-developer → /admin/dashboard/metrics
 
 ## Catatan route induk
 
-`src/app/(admin)/admin/platform-developer/page.tsx` hanya me-redirect ke `/admin/dashboard/metrics` (halaman pertama grup). Bantuan: konsep `3-4-platform-developer.md`.
+`src/app/(admin)/admin/platform-developer/page.tsx` me-redirect ke anak pertama yang boleh diakses (`redirectToFirstAccessibleChild`, TD-051; bawaan `/admin/dashboard/metrics`, halaman pertama grup). Bantuan: konsep `3-4-platform-developer.md`.

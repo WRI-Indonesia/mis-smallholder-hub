@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-export default function DashboardIndexPage() {
-  redirect("/admin/dashboard/main");
+/** Indeks induk `dashboard`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function DashboardIndexPage() {
+  await redirectToFirstAccessibleChild("dashboard");
 }

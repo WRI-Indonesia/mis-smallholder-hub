@@ -2,6 +2,8 @@
 
 [← Menu Report](README.md) · [← Katalog halaman](../README.md)
 
+> **Ringkasan:** Katalog Laporan Lahan: filter dan tempat filter dikerjakan, KPI, peta cetak (latar, grid, label), kolom tabel (cakupan, surat, STDB, NKT, patok, selisih luas), opsi ekspor, Laporan NKT per Lembaga (PDF), patok. Baca sebelum mengubah kolom atau ekspor laporan lahan.
+
 ## Diagram objek
 
 ```text

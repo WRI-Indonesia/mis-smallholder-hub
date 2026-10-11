@@ -29,6 +29,7 @@ export function RvsCurveChart({
   dark,
   gridColor,
   surface,
+  height,
 }: {
   releases: ReleaseMetric[];
   today: string;
@@ -36,6 +37,8 @@ export function RvsCurveChart({
   dark: boolean;
   gridColor: string;
   surface: string;
+  /** Tinggi grafik (px); bawaan kecil, grafik bertab Metrik Rilis memakai lebih besar (#421). */
+  height?: number;
 }) {
   const all: (SeriesPoint & { r: ReleaseMetric })[] = releases.map((r) => ({
     key: r.version,
@@ -66,6 +69,7 @@ export function RvsCurveChart({
       color={seriesColor("growth", dark)}
       surface={surface}
       gridColor={gridColor}
+      height={height}
       title="Kurva RVS kumulatif per tanggal rilis"
       ariaLabel={`Kurva RVS kumulatif dari ${fmtInt(points[0].v)} (${fmtDate(points[0].date)}) menjadi ${fmtInt(points[points.length - 1].v)} (${fmtDate(points[points.length - 1].date)}); garis putus-putus = angka estimasi`}
       annotate={({ x, y, h }) =>

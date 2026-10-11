@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [erd.md](./erd.md) · [models.md](./models.md) · [constraints.md](./constraints.md) · [migrations.md](./migrations.md) · [security.md](./security.md) · [performance.md](./performance.md) · [dashboard-snapshots.md](./dashboard-snapshots.md)
 
+> **Ringkasan:** Strategi indeks: indeks unik & sekunder per tabel, catatan pemeliharaan, pengukuran `ProductionRecord`, dan target performa query. Baca sebelum menambah indeks atau saat query lambat.
+
 <details>
 <summary><strong>Index Strategy</strong> — Strategi indexing untuk performa query</summary>
 

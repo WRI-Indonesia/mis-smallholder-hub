@@ -1,6 +1,6 @@
 import { ChevronRight, Clock, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { daysBetween, pendingDecisions, releaseProgress, releaseState, releaseTimeline, type ReleasePlan } from "@/lib/release-plan";
+import { daysBetween, pendingDecisions, releaseProgress, releaseState, releaseTimeline, type ReleasePlan, currentRelease } from "@/lib/release-plan";
 import { ProgressBar, fmtDate } from "./sprint-shared";
 
 /** Lebih lama dari ini = dokumen rencana dianggap basi (dua minggu tanpa pembaruan). */
@@ -38,7 +38,7 @@ export function SprintHeaderStrip({
   // Rilis terlambat LAIN tetap disebut di bawahnya: begitu rilis berikutnya mulai, sisa kerja
   // yang lewat target tak boleh hilang dari ringkasan.
   const lateReleases = plan.releases.filter((r) => releaseState(r, today) === "late");
-  const current = plan.releases.find((r) => releaseState(r, today) === "active") ?? lateReleases[0] ?? null;
+  const current = currentRelease(plan, today);
   const otherLate = lateReleases.filter((r) => r !== current);
   const progress = current ? releaseProgress(current) : null;
   const timeline = current ? releaseTimeline(current, today) : null;

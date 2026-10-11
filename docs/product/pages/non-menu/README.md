@@ -44,7 +44,7 @@ Halaman non-menu
 | File | `src/app/(admin)/layout.tsx` |
 | Tipe | Server Component; `SidebarProvider` + header sticky + `<main>` |
 | Guard | Middleware NextAuth (matcher `/admin/:path*`); guard per-halaman via `requirePermission(menuKey)` |
-| Server action / data | `getMenuItems()` (`src/server/actions/menu.ts`) + `auth()` di `AppSidebar`; filter akses `getAccessibleMenuKeys()` (`src/lib/rbac.ts`) & `filterMenuTreeByAccess()` (`src/lib/menu-utils.ts`) |
+| Server action / data | `getMenuItems()` (`src/server/actions/menu.ts`; wajib sesi `auth()` — tanpa sesi `{ success:false }`, #387 butir 1) + `auth()` di `AppSidebar`; filter akses `getAccessibleMenuKeys()` (`src/lib/rbac.ts`) & `filterMenuTreeByAccess()` (`src/lib/menu-utils.ts`) |
 | Metadata | Template judul `%s \| Admin - Smallholder HUB`, default `Admin - Smallholder HUB` |
 
 **Objek halaman**

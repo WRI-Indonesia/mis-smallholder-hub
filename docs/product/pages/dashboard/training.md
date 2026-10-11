@@ -2,6 +2,8 @@
 
 [← Menu Dashboard](README.md) · [← Katalog halaman](../README.md)
 
+> **Ringkasan:** Katalog Dashboard Pelatihan: kartu KPI, capaian paket per distrik, Training Benefit vs kontrak, matriks cakupan + drill-down, tren, efektivitas, kelulusan, dan kualitas data — satu seksi per komponen. Baca sebelum mengubah angka atau panel dashboard ini.
+
 Sub menu `dashboard-training`, satu halaman: `/admin/dashboard/training`.
 
 ## Diagram objek

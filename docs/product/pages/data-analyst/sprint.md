@@ -105,7 +105,7 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
 | `src/lib/release-plan-data.ts` | Import `sprint.md` + parse sekali (jangan diimport dari test) |
 | `src/app/(admin)/admin/data-analyst/sprint/` | `page.tsx` (guard, tanggal WIB) · `sprint-view-client.tsx` (tabs, pemilih rilis, tab Rilis) · `sprint-header-strip.tsx` (strip ringkasan) · `sprint-analysis.tsx` (tab Analisa) · `sprint-issues.tsx` (tab Semua Issue + backlog) · `sprint-shared.tsx` (warna kategori, `fmtDate`, `Inline`, bilah progres, `SearchBox` + `matchesQuery`, `CategoryLabel`) · `loading.tsx`. Nama berkas mengikuti URL `/sprint`, bukan unit rencana |
 | `src/lib/chart-palette.ts` · `src/lib/repo-links.ts` | Palet kategorikal & tautan repo bersama — dipakai juga Metrik Rilis |
-| `scripts/seed/seed-menu-key.mjs <key>` · `scripts/seed/seed-menu-only.ts` | `seed-menu-key` hanya MENAMBAH menu/izin yang belum ada — tidak mengganti label. Label baru "Rencana Pengembangan" ke staging/prod lewat `seed-menu-only.ts` (dry-run menampilkan diff judul; izin yang dihapus admin ikut dipulihkan → cek `rbac:compare`) |
+| `scripts/seed/seed-menu-key.ts <key>` · `scripts/seed/seed-menu-only.ts` | `seed-menu-key` hanya MENAMBAH menu/izin yang belum ada — tidak mengganti label. Label baru "Rencana Pengembangan" ke staging/prod lewat `seed-menu-only.ts` (dry-run menampilkan diff judul; izin yang dihapus admin ikut dipulihkan → cek `rbac:compare`) |
 | `src/test/release-plan.test.ts` | File nyata (rilis urut, ≤ 1 `#nnn` per kolom Issue, kesegaran tanggal) + fixture + format rusak + fase/linimasa/keadaan rilis + velocity per minggu + keputusan/carry-over + kanban + Semua Issue (TD-xxx, urutan) + helper tampilan |
 
 ## Batas yang disadari

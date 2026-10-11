@@ -4,9 +4,11 @@ icon: Upload
 intro: Untuk data dalam jumlah banyak, gunakan Bulk Upload alih-alih input satu per satu.
 ---
 
-**Petani & Produksi (Excel)** — Unggah file Excel apa adanya, tidak perlu template khusus. Setelah diunggah, cocokkan (mapping) kolom file Anda dengan kolom sistem, periksa pratinjau, lalu simpan.
+**Template** — Setiap jenis unggahan punya tombol **Unduh Template**: Excel (Petani, Produksi, Detail Lahan, NKT, Patok) atau ZIP shapefile contoh beserta **BACA-SAYA.txt** (Poligon Lahan, Pohon). Judul kolom/atribut template langsung dikenali sistem. Baris contoh memakai ID fiktif `CTH.…` dan selalu ditolak bila lupa dihapus.
 
-**Lahan (Shapefile ZIP)** — Tab **Poligon (Shapefile ZIP)** di Upload Data Lahan: unggah satu file ZIP berisi Shapefile (.shp, .dbf, .shx, .prj). Sistem membaca poligon lahan beserta atributnya; Anda dapat memetakan atribut Kelompok Tani dan Blok saat proses mapping.
+**Petani & Produksi (Excel)** — Pakai template, atau unggah file Excel Anda sendiri apa adanya. Setelah diunggah, cocokkan (mapping) kolom file Anda dengan kolom sistem — sebagian sudah tercocokkan otomatis, dan di sampingnya tampil contoh nilai dari baris pertama — periksa pratinjau, lalu simpan.
+
+**Lahan (Shapefile ZIP)** — Tab **Poligon (Shapefile ZIP)** di Upload Data Lahan: unggah satu file ZIP berisi Shapefile (.shp, .dbf, .shx, .prj). Sistem membaca poligon lahan beserta atributnya; Anda dapat memetakan atribut Kelompok Tani, Blok, dan sepadan saat proses mapping. Kolom pemetaan dikelompokkan (Identitas, Atribut lahan, Kelompok & Blok, Sepadan); grup yang atributnya tidak ada di berkas tertutup otomatis.
 
 **Detail Lahan (Excel)** — Tab kedua di halaman yang sama, **Detail Lahan (Excel)**: surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, UL Parcel Code, sepadan, dan NKT untuk lahan yang **sudah terdaftar**, dikunci ID Lahan + ID Petani. Detail menempel pada identitas lahan sehingga tetap ikut saat poligonnya direvisi. Unggah ulang memperbarui, bukan menggandakan.
 

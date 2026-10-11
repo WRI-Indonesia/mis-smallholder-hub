@@ -8,6 +8,81 @@ export interface ExportColumn {
   wrap?: boolean;
 }
 
+export interface ExportSheet {
+  name: string;
+  columns: ExportColumn[];
+  data: Record<string, unknown>[];
+}
+
+/** Lebar kolom auto-fit (karakter): panjang isi terpanjang + 3, dijepit 10–50. */
+export const AUTO_FIT_MIN = 10;
+export const AUTO_FIT_MAX = 50;
+
+/**
+ * Satu penulis sheet untuk semua ekspor (TD-044, #412): header tebal berlatar
+ * abu, baris data, wrap per kolom, auto-fit. Dipakai `exportToExcel`,
+ * `exportMultiSheetToExcel`, dan Laporan Lahan (`report-land-parcel-xlsx.ts`)
+ * — sebelumnya tiga salinan yang saling tertinggal (`wrap` hanya di multi-sheet).
+ *
+ * Auto-fit memakai DEFINISI KOLOM KITA (`col.width == null`), bukan
+ * `column.width` ExcelJS yang selalu terisi lebar bawaan 9 — cabang auto-fit
+ * dulu tak pernah aktif (TD-049).
+ */
+export function fillWorksheet(worksheet: ExcelJS.Worksheet, columns: ExportColumn[], data: Record<string, unknown>[]) {
+  worksheet.columns = columns.map((col) => ({ header: col.header, key: col.key, width: col.width }));
+
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: "FF000000" } };
+  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2F2F2" } };
+  headerRow.border = { bottom: { style: "medium", color: { argb: "FFD3D3D3" } } };
+
+  worksheet.addRows(data);
+
+  columns.forEach((col, i) => {
+    const column = worksheet.getColumn(i + 1);
+    // Kolom multi-baris: wrapText agar "\n" di nilai tampil sebagai baris, bukan satu baris panjang.
+    if (col.wrap) column.alignment = { wrapText: true, vertical: "top" };
+    if (col.width != null) return;
+    // Auto-fit dari `data` (satu lintasan, tanpa menelusuri ulang sel worksheet — review #412);
+    // kolom wrap selalu selebar maksimum (panjang teks multi-baris tak bermakna).
+    if (col.wrap) {
+      column.width = AUTO_FIT_MAX;
+      return;
+    }
+    let maxLen = col.header ? col.header.length : AUTO_FIT_MIN;
+    for (const row of data) {
+      const v = row[col.key];
+      const len = v == null || v === "" ? 0 : String(v).length;
+      if (len > maxLen) {
+        maxLen = len;
+        if (maxLen + 3 >= AUTO_FIT_MAX) break;
+      }
+    }
+    column.width = Math.min(Math.max(maxLen + 3, AUTO_FIT_MIN), AUTO_FIT_MAX);
+  });
+}
+
+/** Unduh workbook sebagai berkas .xlsx di browser. */
+export async function downloadWorkbook(workbook: ExcelJS.Workbook, filename: string) {
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename}.xlsx`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function exportMultiSheetToExcel({ filename, sheets }: { filename: string; sheets: ExportSheet[] }) {
+  const workbook = new ExcelJS.Workbook();
+  for (const sheet of sheets) fillWorksheet(workbook.addWorksheet(sheet.name), sheet.columns, sheet.data);
+  await downloadWorkbook(workbook, filename);
+}
+
+/** Satu sheet = `exportMultiSheetToExcel` dengan satu entri (TD-044). */
 export async function exportToExcel({
   filename,
   sheetName = "Data",
@@ -19,129 +94,5 @@ export async function exportToExcel({
   columns: ExportColumn[];
   data: Record<string, unknown>[];
 }) {
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet(sheetName);
-
-  worksheet.columns = columns.map((col) => ({
-    header: col.header,
-    key: col.key,
-    width: col.width,
-  }));
-
-  // Style header row
-  const headerRow = worksheet.getRow(1);
-  headerRow.font = { bold: true, color: { argb: "FF000000" } };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFF2F2F2" }, // Light gray
-  };
-  headerRow.border = {
-    bottom: { style: "medium", color: { argb: "FFD3D3D3" } },
-  };
-
-  // Add data
-  worksheet.addRows(data);
-
-  // Kolom multi-baris: wrapText agar "\n" di nilai tampil sebagai baris, bukan satu baris panjang.
-  columns.forEach((col, i) => {
-    if (!col.wrap) return;
-    worksheet.getColumn(i + 1).alignment = { wrapText: true, vertical: "top" };
-  });
-
-  // Auto-fit columns if width not specified
-  worksheet.columns.forEach((column) => {
-    if (!column.width) {
-      let maxLen = column.header ? column.header.length : 10;
-      column.eachCell?.({ includeEmpty: true }, (cell) => {
-        const valStr = cell.value ? String(cell.value) : "";
-        if (valStr.length > maxLen) {
-          maxLen = valStr.length;
-        }
-      });
-      column.width = Math.min(Math.max(maxLen + 3, 10), 50);
-    }
-  });
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${filename}.xlsx`;
-  a.click();
-  window.URL.revokeObjectURL(url);
-}
-
-export interface ExportSheet {
-  name: string;
-  columns: ExportColumn[];
-  data: Record<string, unknown>[];
-}
-
-export async function exportMultiSheetToExcel({
-  filename,
-  sheets,
-}: {
-  filename: string;
-  sheets: ExportSheet[];
-}) {
-  const workbook = new ExcelJS.Workbook();
-
-  sheets.forEach((sheet) => {
-    const worksheet = workbook.addWorksheet(sheet.name);
-
-    worksheet.columns = sheet.columns.map((col) => ({
-      header: col.header,
-      key: col.key,
-      width: col.width,
-    }));
-
-    // Style header row
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true, color: { argb: "FF000000" } };
-    headerRow.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFF2F2F2" }, // Light gray
-    };
-    headerRow.border = {
-      bottom: { style: "medium", color: { argb: "FFD3D3D3" } },
-    };
-
-    // Add data
-    worksheet.addRows(sheet.data);
-
-    sheet.columns.forEach((col, i) => {
-      if (!col.wrap) return;
-      worksheet.getColumn(i + 1).alignment = { wrapText: true, vertical: "top" };
-    });
-
-    // Auto-fit columns if width not specified
-    worksheet.columns.forEach((column) => {
-      if (!column.width) {
-        let maxLen = column.header ? column.header.length : 10;
-        column.eachCell?.({ includeEmpty: true }, (cell) => {
-          const valStr = cell.value ? String(cell.value) : "";
-          if (valStr.length > maxLen) {
-            maxLen = valStr.length;
-          }
-        });
-        column.width = Math.min(Math.max(maxLen + 3, 10), 50);
-      }
-    });
-  });
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${filename}.xlsx`;
-  a.click();
-  window.URL.revokeObjectURL(url);
+  await exportMultiSheetToExcel({ filename, sheets: [{ name: sheetName, columns, data }] });
 }

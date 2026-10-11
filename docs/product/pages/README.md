@@ -27,7 +27,7 @@ docs/product/pages/               folder & berkas = segmen route (/admin/<menu>/
 │   ├── production/               list · new · detail · edit
 │   └── bmp-monev/                list · detail · lembaga
 ├── data-analyst/                 Menu: Data Analyst
-│   ├── farmer-summary.md · data-availability.md · data-completeness.md
+│   ├── farmer-summary.md · data-availability.md · data-completeness.md · availability-production.md
 │   ├── benchmark-comparison.md · metrics.md · data-map.md
 │   └── parcel-overlap.md · sprint.md
 ├── tools/                        Menu: Tools
@@ -53,7 +53,7 @@ Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, 
 | 1 | Report | `report` | `/admin/report` | 7 | [report/](./report/README.md) |
 | 2 | Map | `map` | `/admin/map` | 3 | [map/](./map/README.md) |
 | 3 | Master Data | `master-data` | `/admin/master-data` | 7 | [master-data/](./master-data/README.md) |
-| 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 5 | [data-analyst/](./data-analyst/README.md) |
+| 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 4 | [data-analyst/](./data-analyst/README.md) |
 | 5 | Platform Developer | `platform-developer` | `/admin/platform-developer` | 3 | [platform-developer/](./platform-developer/README.md) |
 | 6 | Tools | `tools` | `/admin/tools` | 2 | [tools/](./tools/README.md) |
 | 9 | Bantuan | `help` | `/admin/help` | — (tree bab/topik) | [help/](./help/README.md) |
@@ -78,13 +78,13 @@ Beberapa menu induk hanya berfungsi sebagai grup navigasi di sidebar:
 |---|---|
 | `/admin` | Redirect ke dashboard |
 | `/admin/dashboard` | Redirect |
-| `/admin/master-data` | Redirect ke `/admin/master-data/farmers` |
-| `/admin/bulk-upload` | Redirect ke `/admin/bulk-upload/farmers` |
-| `/admin/report` | Redirect ke `/admin/report/farmer` (tanpa guard permission) |
-| `/admin/tools` | Redirect ke halaman snapshot |
-| `/admin/map` | Redirect ke `/admin/map/parcel` |
+| `/admin/master-data` | Redirect ke anak pertama yang boleh diakses (`redirectToFirstAccessibleChild`, TD-051 #412; bawaan SUPERADMIN: `/admin/master-data/groups`) |
+| `/admin/bulk-upload` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan `/admin/bulk-upload/farmers`) |
+| `/admin/report` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan `/admin/report/farmer`) |
+| `/admin/tools` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan snapshot) |
+| `/admin/map` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan `/admin/map/parcel`) |
 | `/admin/settings` | Tidak ada `page.tsx` — grup navigasi saja |
-| `/admin/data-analyst` | Tidak ada `page.tsx` — hanya `layout.tsx` (metadata) |
+| `/admin/data-analyst` | Redirect ke anak pertama yang boleh diakses (TD-051; SUPERADMIN → Ringkasan Petani, peran lain → induk Ketersediaan Data → Semua Lembaga); `/admin/data-analyst/availability`, `/admin/settings`, `/admin/dashboard`, `/admin/dashboard/risk`, `/admin/platform-developer` memakai helper yang sama |
 
 ## Kerangka umum halaman admin
 

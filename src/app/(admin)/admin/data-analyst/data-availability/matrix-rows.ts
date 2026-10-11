@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { AVAILABILITY_DOMAIN_LABELS, bandDistribution, domainScoreOf } from "@/lib/data-availability-aggregation";
+import { useMemo } from "react";
+import { AVAILABILITY_DOMAIN_LABELS, domainScoreOf } from "@/lib/data-availability-aggregation";
 import type { AvailabilityDomainKey, AvailabilityGroupEntry } from "@/types/dashboard";
 
 /**
@@ -52,28 +52,55 @@ export const limitRows = <T,>(sorted: T[], showAll: boolean, searching: boolean)
 /** Toggle Ringkas hanya relevan tanpa pencarian dan bila ada yang bisa disembunyikan. */
 export const canLimitRows = (total: number, searching: boolean) => !searching && total > LOWEST_N;
 
+/** Kunci urut tampilan Cakupan modul (#417 B): "name" atau kunci modul MODULE_CATALOG. URL: `?urut=modul:<key>`. */
+export type ModuleSortKey = "name" | string;
+export const MODULE_SORT_PREFIX = "modul:";
+
+/** Urut baris Cakupan modul — modul "belum dimulai" selalu di bawah apa pun arahnya (bukan disamakan dengan 0 %). */
+export function sortModuleRows(rows: AvailabilityGroupEntry[], sortKey: ModuleSortKey, asc: boolean): AvailabilityGroupEntry[] {
+  if (sortKey === "name") return [...rows].sort((a, b) => (asc ? 1 : -1) * a.name.localeCompare(b.name));
+  const pct = (e: AvailabilityGroupEntry) => e.moduleCoverage.find((x) => x.key === sortKey)?.pct ?? null;
+  return [...rows].sort((a, b) => {
+    const va = pct(a);
+    const vb = pct(b);
+    if (va == null && vb == null) return a.name.localeCompare(b.name);
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return (asc ? 1 : -1) * (va - vb) || a.name.localeCompare(b.name);
+  });
+}
+
 /**
- * State bersama heatmap & radar (review #352 putaran 4: sebelumnya disalin):
- * kotak cari, toggle Ringkas/semua, hasil urut+saring, jumlah tersembunyi,
- * jumlah Lembaga kritis untuk ringkasan header.
+ * Hasil baris bersama ketiga tampilan (#417 B): cari & Ringkas kini milik
+ * pemanggil (satu toolbar untuk radar · heatmap · modul), hook ini hanya
+ * menyaring, mengurutkan, dan memotong. Bawaan Ringkas 10 (K2) diatur pemanggil.
  */
-export function useMatrixRows(rows: AvailabilityGroupEntry[], sortKey: MatrixSortKey, sortAsc: boolean) {
-  const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(true);
+export function useMatrixRows(
+  rows: AvailabilityGroupEntry[],
+  sort: (rows: AvailabilityGroupEntry[]) => AvailabilityGroupEntry[],
+  query: string,
+  showAll: boolean,
+) {
   const searching = isSearching(query);
-  const sorted = useMemo(() => sortMatrixRows(filterMatrixRows(rows, query), sortKey, sortAsc), [rows, query, sortKey, sortAsc]);
+  const sorted = useMemo(() => sort(filterMatrixRows(rows, query)), [rows, query, sort]);
   const limited = limitRows(sorted, showAll, searching);
-  const critical = useMemo(() => bandDistribution(rows).bad, [rows]);
   return {
-    query,
-    setQuery,
     searching,
-    showAll,
-    setShowAll,
     sorted,
     limited,
     hiddenCount: sorted.length - limited.length,
-    critical,
     canLimit: canLimitRows(sorted.length, searching),
   };
 }
+
+/** Satu objek baris untuk ketiga tampilan (review #417: tujuh prop yang sama disalin tiga kali). */
+export interface MatrixRowsView {
+  sorted: AvailabilityGroupEntry[];
+  limited: AvailabilityGroupEntry[];
+  canLimit: boolean;
+  hiddenCount: number;
+  query: string;
+  showAll: boolean;
+  onToggleShowAll: () => void;
+}
+

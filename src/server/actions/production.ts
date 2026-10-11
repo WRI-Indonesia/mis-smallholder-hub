@@ -406,6 +406,11 @@ export async function getFarmerParcels(farmerId: string) {
   });
 }
 
+/**
+ * Nama pembuat/pengubah untuk kartu audit Detail Produksi. Id datang dari record
+ * yang sudah lolos scope pemanggil; nama user bukan data ber-scope, jadi cukup
+ * izin VIEW menu ini (#387 butir 2 — diterima apa adanya, 2026-10-11).
+ */
 export async function getAuditUserNames(createdBy: string | null, modifiedBy: string | null) {
   if (!(await hasPermission("master-data-production", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");

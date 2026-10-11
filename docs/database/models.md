@@ -2,6 +2,8 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [erd.md](./erd.md) · [indexes.md](./indexes.md) · [constraints.md](./constraints.md) · [migrations.md](./migrations.md) · [security.md](./security.md) · [performance.md](./performance.md) · [dashboard-snapshots.md](./dashboard-snapshots.md)
 
+> **Ringkasan:** Kolom umum & pengecualian soft delete, enum (blok GENERATED), konvensi nama tabel, alur RBAC, lalu rincian model: Petani & hierarki kelembagaan, Pelatihan, Tree, Monev BMP, identitas & satelit lahan, `geom` PostGIS, boundary. Baca untuk arti field/relasi; kebenaran di `prisma/schema/*.prisma`.
+
 ## Kolom Umum (semua tabel)
 
 > Pengecualian: `LandMarkerCounter` (penghitung murni, tanpa audit & `isActive`); `UserProvince`/`UserDistrict`/`UserFarmerGroup` tanpa `isActive`; `createdBy` pada `MainDashboardSnapshot`/`BmpDashboardSnapshot` wajib (FK ke User), bukan nullable.
@@ -252,7 +254,7 @@ Farmer (1) ─→ (N) TrainingParticipant
 
 ## LandParcelIdentity & satelit lahan (#296, Decision Log 2026-08-27)
 
-`LandParcel` berevisi dengan **id baru per baris** (bulk upload: baris lama `is_active=false`, baris baru `revision+1`), sehingga tabel yang menunjuk `LandParcel.id` harus di-repoint tiap revisi (pola `Tree`/produksi). **`tbl_land_parcel_identity`** (`parcelUid`) adalah jangkar tetap: satu baris per `(farmerId, parcelId)` — unik, dibuat/di-upsert saat revisi 0 (`createLandParcel`, bulk upload) dan tidak berganti. `LandParcel.parcelUid` NOT NULL (backfill di migrasi). Tabel ini **sengaja hanya identitas** — geometri/atribut fisik tetap di `LandParcel`; `LandParcel` bukan tabel bridging (keputusan owner: `farmerId`+`parcelId` adalah identitas & basis scope RBAC).
+`LandParcel` berevisi dengan **id baru per baris** (bulk upload: baris lama `is_active=false`, baris baru `revision+1`), sehingga tabel yang menunjuk `LandParcel.id` harus di-repoint tiap revisi (pola `Tree`/produksi). **Ubah lewat form (`updateLandParcel`) = koreksi di tempat** (keputusan owner 2026-10-11, #387 butir 5): baris yang sama diperbarui dan `revision` naik sebagai penghitung — id & tautan produksi/pohon/patok tetap; baris baru hanya untuk upload ulang (survei baru). `getLandParcelProduction` sengaja tanpa `isActive` agar revisi lama tetap terbaca sebagai riwayat (#387 butir 7, bahan #203). **`tbl_land_parcel_identity`** (`parcelUid`) adalah jangkar tetap: satu baris per `(farmerId, parcelId)` — unik, dibuat/di-upsert saat revisi 0 (`createLandParcel`, bulk upload) dan tidak berganti. `LandParcel.parcelUid` NOT NULL (backfill di migrasi). Tabel ini **sengaja hanya identitas** — geometri/atribut fisik tetap di `LandParcel`; `LandParcel` bukan tabel bridging (keputusan owner: `farmerId`+`parcelId` adalah identitas & basis scope RBAC).
 
 Satelit menempel ke `parcelUid`, bukan ke baris revisi — tak perlu repoint:
 

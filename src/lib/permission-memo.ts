@@ -12,6 +12,8 @@
  * lalu entri tertua bila masih penuh — memo tak boleh tumbuh tanpa batas di
  * proses Node yang hidup lama.
  */
+import { createTtlMemo } from "@/lib/ttl-memo";
+
 export const PERMISSION_MEMO_TTL_MS = 60 * 1000;
 export const PERMISSION_MEMO_MAX_ENTRIES = 1000;
 
@@ -22,19 +24,7 @@ export function createPermissionMemo(
   maxEntries = PERMISSION_MEMO_MAX_ENTRIES,
   now = Date.now,
 ): PermissionMemo {
-  const memo = new Map<string, { value: boolean; expiresAt: number }>();
-  return async (key, check) => {
-    const t = now();
-    const hit = memo.get(key);
-    if (hit && hit.expiresAt > t) return hit.value;
-    const value = await check();
-    if (memo.size >= maxEntries) {
-      for (const [k, v] of memo) if (v.expiresAt <= t) memo.delete(k);
-      // Map mempertahankan urutan sisip → kunci pertama = entri tertua.
-      while (memo.size >= maxEntries) memo.delete(memo.keys().next().value as string);
-    }
-    memo.delete(key); // sisip ulang di ujung agar urutan "tertua" tetap benar
-    memo.set(key, { value, expiresAt: t + ttlMs });
-    return value;
-  };
+  // Aturan TTL/batas/galat ada di primitif bersama (TD-054).
+  const memo = createTtlMemo<string, boolean>({ ttlMs, maxEntries, now });
+  return (key, check) => memo.get(key, check);
 }
