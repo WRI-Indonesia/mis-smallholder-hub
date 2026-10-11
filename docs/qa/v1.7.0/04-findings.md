@@ -6,7 +6,7 @@ Severity: **blocker** (rilis ditahan) · **major** (fitur salah, ada jalan lain)
 
 | # | Kasus | Halaman · langkah | Yang terjadi vs harapan | Severity | Env | Issue | Keputusan | Bukti |
 |---|---|---|---|---|---|---|---|---|
-| 1 | SM-07 · SM-26 | Report › Lahan: klik filter **Jenis Surat** ("Semua jenis") · Settings › Role & Permission: klik ikon **Preset izin baris** | Halaman jatuh ke "Terjadi Kesalahan" (konsol: `Base UI error #31` — `Menu.GroupLabel` dirender di luar `Menu.Group`). Harapan: menu terbuka. Bug lama (berkas & versi Base UI tak berubah di rilis ini; kemungkinan juga di prod v1.6.0) | major | staging | #418 | fix rilis ini — `DropdownMenuLabel` dibungkus `DropdownMenuGroup` di 2 tempat + test penjaga statis `dropdown-label-in-group.test.ts`; Preset terverifikasi lokal | konsol staging 2026-10-11 21:09 |
+| 1 | SM-07 · SM-26 | Report › Lahan: klik filter **Jenis Surat** ("Semua jenis") · Settings › Role & Permission: klik ikon **Preset izin baris** | Halaman jatuh ke "Terjadi Kesalahan" (konsol: `Base UI error #31` — `Menu.GroupLabel` dirender di luar `Menu.Group`). Harapan: menu terbuka. Bug lama (berkas & versi Base UI tak berubah di rilis ini; kemungkinan juga di prod v1.6.0) | major | staging | #418 | fix rilis ini — `DropdownMenuLabel` dibungkus `DropdownMenuGroup` di 2 tempat + test penjaga statis `dropdown-label-in-group.test.ts`; Preset terverifikasi lokal; **uji ulang staging `040e975` Pass** (SM-07 & SM-26) | konsol staging 2026-10-11 21:09 |
 
 ## Membuka issue dari temuan
 
