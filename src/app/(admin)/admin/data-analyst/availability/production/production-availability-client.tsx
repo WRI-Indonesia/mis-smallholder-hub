@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Download, Loader2, Search } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, Download, Loader2, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,14 @@ export function ProductionAvailabilityClient({
   const byDistrict = get("tingkat") !== "lembaga";
   const setByDistrict = (v: boolean) => setMany({ tingkat: v ? null : "lembaga" });
   const [query, setQuery] = useState("");
+  const [treeCommand, setTreeCommand] = useState<{ kind: "collapse" | "expandDistricts"; seq: number } | null>(null);
+  const sendTree = (kind: "collapse" | "expandDistricts") => setTreeCommand((c) => ({ kind, seq: (c?.seq ?? 0) + 1 }));
+  // Reset = kembali ke tampilan bawaan: tahun berjalan, semua filter "Semua", urut cakupan menaik, Per Distrik nyala, tanpa pencarian.
+  const hasActiveFilter = year !== currentYear || !!districtId || !!category || !!groupId || sortKey !== "coverage" || !sortAsc || !byDistrict || query.trim() !== "";
+  const resetFilters = () => {
+    setMany({ tahun: null, distrik: null, kategori: null, lembaga: null, urut: null, arah: null, tingkat: null });
+    setQuery("");
+  };
 
   const keepGroup = (nextDistrictId: string | null, nextCategory: BmpFarmerGroupCategory | null): Record<string, string | null> => {
     const g = groupId ? allGroups.find((x) => x.id === groupId) : undefined;
@@ -143,11 +151,12 @@ export function ProductionAvailabilityClient({
       const monthCols = periods.map((p, i) => ({ header: `${MONTH_SHORT_ID[i]} ${year}`, key: p, width: 9 }));
       const sheet1 = {
         name: `Lembaga ${year}`,
+        // Urutan kolom: Distrik → Kategori → Lembaga → Kode (owner 2026-10-11, setelah melihat berkas) — cocok untuk filter/pivot per wilayah.
         columns: [
-          { header: "Lembaga Petani", key: "name", width: 32 },
-          { header: "Kode", key: "code", width: 10 },
           { header: "Distrik", key: "district", width: 16 },
           { header: "Kategori", key: "category", width: 11 },
+          { header: "Lembaga Petani", key: "name", width: 32 },
+          { header: "Kode", key: "code", width: 10 },
           { header: "Petani", key: "farmers", width: 8 },
           { header: "Lahan aktif", key: "parcels", width: 10 },
           { header: "Lahan non-PSR", key: "nonPsr", width: 12 },
@@ -284,6 +293,12 @@ export function ProductionAvailabilityClient({
           <FilterCombobox options={districtOptions} value={districtId} onSelect={setDistrictId} allLabel="Semua Distrik" searchPlaceholder="Cari distrik..." emptyLabel="Distrik tidak ditemukan." widthClass="w-[180px]" />
           <FilterCombobox options={groupOptions} value={groupId} onSelect={setGroupId} allLabel="Semua Lembaga" searchPlaceholder="Cari lembaga petani..." emptyLabel="Lembaga Petani tidak ditemukan." widthClass="w-[220px]" />
 
+          {hasActiveFilter && (
+            <Button variant="ghost" className="h-9" onClick={resetFilters} title="Kembali ke tampilan bawaan: tahun berjalan, semua filter, urut cakupan, Per Distrik, tanpa pencarian">
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset
+            </Button>
+          )}
           {canExport && (
             <Button variant="outline" className="h-9" onClick={handleExport} disabled={rows.length === 0 || exporting} title={groupId ? "Excel: Lembaga × bulan + lahan × bulan Lembaga terpilih" : "Excel: Lembaga × bulan (pilih satu Lembaga untuk ikut rincian lahan)"}>
               {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
@@ -329,10 +344,20 @@ export function ProductionAvailabilityClient({
               <Button variant={byDistrict ? "secondary" : "ghost"} size="sm" className="h-8 text-xs" onClick={() => setByDistrict(!byDistrict)} aria-pressed={byDistrict} title="Tingkat Distrik di atas Lembaga (baris agregat per kabupaten)">
                 Per Distrik
               </Button>
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => sendTree("collapse")} title="Lipat semua tingkat (Distrik, Lembaga, petani)">
+                <ChevronsDownUp className="mr-1 h-3.5 w-3.5" />
+                Tutup semua
+              </Button>
+              {byDistrict && (
+                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => sendTree("expandDistricts")} title="Buka semua Distrik (Lembaga tetap tertutup)">
+                  <ChevronsUpDown className="mr-1 h-3.5 w-3.5" />
+                  Buka Distrik
+                </Button>
+              )}
             </div>
           </div>
 
-          <ProductionCalendarTable groups={rows} districts={districts} summaries={summaries} year={year} referencePeriod={view.referencePeriod} sortKey={sortKey} onSort={onSort} emptyMessage={emptyMessage} />
+          <ProductionCalendarTable groups={rows} districts={districts} summaries={summaries} treeCommand={treeCommand} year={year} referencePeriod={view.referencePeriod} sortKey={sortKey} onSort={onSort} emptyMessage={emptyMessage} />
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
             <HeatLegend label="% lahan non-PSR melapor">
@@ -357,7 +382,7 @@ export function ProductionAvailabilityClient({
 
       <p className="text-xs text-muted-foreground">
         Dihitung saat halaman dibuka, bukan snapshot. Lahan PSR (peremajaan) dikecualikan dari persen karena produksi 0 memang wajar; record tanpa ID Lahan dihitung
-        terpisah (kolom TP). Kolom <span className="font-medium">Bulan</span> memakai aturan &quot;bulan ber-data&quot; yang sama dengan penyetahunan produktivitas di Peta BMP dan Detail
+        terpisah (kolom TP). Kolom <span className="font-medium">Bulan</span>{" "}memakai aturan &quot;bulan ber-data&quot; yang sama dengan penyetahunan produktivitas di Peta BMP dan Detail
         Lembaga, jadi angkanya identik.
       </p>
     </div>

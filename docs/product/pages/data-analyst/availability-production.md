@@ -16,10 +16,11 @@ Halaman: Ketersediaan Data — Produksi (/admin/data-analyst/availability/produc
 │   ├── Kategori (Select) — ?kategori=
 │   ├── Distrik (FilterCombobox) — ?distrik=
 │   ├── Lembaga (FilterCombobox, cascade) — ?lembaga=
+│   ├── Reset (tampil bila ada filter/urutan/pencarian/tingkat non-bawaan) — hapus semua kunci URL + kosongkan Cari
 │   └── Excel (gate EXPORT) — 2 sheet (K6)
 └── Card kalender (ProductionCalendarTable)
     ├── Ringkasan: n Lembaga · tahun · n tanpa record tahun ini · n basi
-    ├── Cari (client) · Urut (Select: cakupan | nama | bulan ber-data | periode terakhir) — ?urut= ?arah=
+    ├── Cari (client) · Urut (Select: cakupan | nama | bulan ber-data | periode terakhir) — ?urut= ?arah= · Per Distrik · Tutup semua (lipat Distrik+Lembaga+petani) · Buka Distrik (bawaan; "Buka semua" sengaja tidak ada: 30-an permintaan sekaligus) — `treeCommand {kind, seq}` ke tabel
     ├── Tabel pohon (table-fixed, border-spacing 2px, min-w 1280)
     │   ├── Kolom: Lembaga · Lahan (non-PSR) · Jan…Des · Bulan (x/12) · Rentang · Jeda · Est. · TP
     │   ├── Baris Distrik (bawaan nyala, tombol "Per Distrik" / ?tingkat=lembaga mematikan; bawaan terbuka) — agregat `groupRowsByDistrict`/`mergeCells`: Σ lahan melapor ÷ Σ lahan non-PSR Lembaga-Lembaganya
@@ -66,7 +67,7 @@ Tiga kueri paralel saat halaman dibuka: daftar Lembaga (Prisma) + penyebut per L
 
 ## Ekspor Excel (K6)
 
-`exportMultiSheetToExcel` (client, `exceljs` dinamis). **Sheet 1** `Lembaga <tahun>`: identitas, petani, lahan aktif, lahan non-PSR, 12 kolom % (atau "n rec" / kosong), bulan ber-data, periode pertama/terakhir, jeda, record, Estimasi, 0 kg, tanpa persil — mengikuti filter & urutan layar. **Sheet 2** `Lahan <abrv>`: lahan × bulan (kg) + pemilik untuk Lembaga yang difilter (`getProductionAvailabilityGroupParcels`); tanpa filter Lembaga → satu baris petunjuk. Nama berkas `ketersediaan-produksi-<tahun>[-<abrv>]-<yyyymmdd>.xlsx`.
+`exportMultiSheetToExcel` (client, `exceljs` dinamis). **Sheet 1** `Lembaga <tahun>`: Distrik · Kategori · Lembaga · Kode (urutan owner 2026-10-11), petani, lahan aktif, lahan non-PSR, 12 kolom % (atau "n rec" / kosong), bulan ber-data, periode pertama/terakhir, jeda, record, Estimasi, 0 kg, tanpa persil — mengikuti filter & urutan layar. **Sheet 2** `Lahan <abrv>`: lahan × bulan (kg) + pemilik untuk Lembaga yang difilter (`getProductionAvailabilityGroupParcels`); tanpa filter Lembaga → satu baris petunjuk. Nama berkas `ketersediaan-produksi-<tahun>[-<abrv>]-<yyyymmdd>.xlsx`.
 
 ## Tindak lanjut (epic #415)
 

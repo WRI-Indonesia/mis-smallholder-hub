@@ -159,6 +159,7 @@ export function ProductionCalendarTable({
   groups,
   districts,
   summaries,
+  treeCommand,
   year,
   referencePeriod,
   sortKey,
@@ -170,6 +171,8 @@ export function ProductionCalendarTable({
   districts: ProductionAvailabilityDistrictRow[] | null;
   /** Ringkasan rentang per id baris (Lembaga & Distrik), dihitung sekali di induk. */
   summaries: Map<string, ProductionRangeSummary>;
+  /** Perintah pohon dari toolbar induk (owner 2026-10-11): `seq` naik tiap klik agar perintah yang sama bisa diulang. */
+  treeCommand: { kind: "collapse" | "expandDistricts"; seq: number } | null;
   year: number;
   referencePeriod: string;
   sortKey: ProductionSortKey;
@@ -183,6 +186,20 @@ export function ProductionCalendarTable({
   // Distrik bawaan TERBUKA (himpunan yang ditutup, bukan yang dibuka — Distrik yang
   // baru muncul karena filter berubah ikut terbuka tanpa klik).
   const [collapsedDistricts, setCollapsedDistricts] = useState<Set<string>>(new Set());
+  // Tutup semua = semua tingkat dilipat (Distrik, Lembaga, petani); Buka Distrik =
+  // kembali ke bawaan (Distrik terbuka, Lembaga tertutup). "Buka semua" sengaja
+  // tidak ada: membuka 30-an Lembaga sekaligus = 30-an permintaan + ribuan baris.
+  useEffect(() => {
+    if (!treeCommand) return;
+    if (treeCommand.kind === "collapse") {
+      setCollapsedDistricts(new Set((districts ?? []).map((d) => d.id)));
+      setExpandedGroups(new Set());
+      setExpandedFarmers(new Set());
+    } else {
+      setCollapsedDistricts(new Set());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [treeCommand?.seq]);
   const toggleDistrict = (id: string) => {
     const next = new Set(collapsedDistricts);
     if (next.has(id)) next.delete(id);
