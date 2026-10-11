@@ -100,6 +100,7 @@ export function GroupedFieldMapping({
 }: Props) {
   const byKey = new Map(fields.map((f) => [f.key, f]));
   const mappedCount = fields.filter((f) => mapping[f.key]).length;
+  const headerSig = headers.join("\u0000");
   const sampleOf = (fieldKey: string) => {
     const h = mapping[fieldKey];
     return h && sample ? formatSampleValue(sample[h]) : "";
@@ -139,7 +140,9 @@ export function GroupedFieldMapping({
       {summary}
       {groups.map((g) => (
         <MappingGroupSection
-          key={g.key}
+          // Kunci ikut tajuk berkas: berkas baru → status buka/tutup dihitung ulang
+          // dari pemetaan otomatisnya (bukan sisa berkas sebelumnya).
+          key={`${g.key}:${headerSig}`}
           group={g}
           fields={g.fields.map((k) => byKey.get(k)).filter((f): f is MappingFieldDef => f != null)}
           mapping={mapping}
