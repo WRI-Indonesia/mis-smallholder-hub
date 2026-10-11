@@ -37,7 +37,7 @@ Menu: Dashboard (/admin/dashboard)
 | Sub menu | 6 — Main Dashboard (`dashboard-main`), Dashboard Pelatihan (`dashboard-training`, order 2), BMP Dashboard (Produksi) (`dashboard-bmp`, order 3), Monev BMP (`dashboard-bmp-monev`, order 4 — #344), Risk Management (`dashboard-risk`, order 5, grup level-3 berisi `dashboard-risk-fire`), Dashboard Rantai Pasok (`dashboard-supply-chain`, order 6 — prototipe #379) |
 | Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT (untuk `dashboard` dan sub menunya); DONOR hanya sub menu, tanpa baris induk `dashboard` — induk tetap tampil sebagai wadah. Grup `dashboard-risk` hanya punya baris seed untuk DONOR (VIEW, PRINT); role lain hanya punya baris `dashboard-risk-fire` (VIEW, PRINT) (`prisma/seeds/data/role-permissions.csv`) |
 
-Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
+Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama yang boleh diakses pengguna (TD-051 #412).
 
 ## Daftar sub menu
 
@@ -80,7 +80,7 @@ Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Redirect | Navigasi | `redirect("/admin/dashboard/main")` |
+| Redirect | Navigasi | `redirectToFirstAccessibleChild("dashboard")` (bawaan `/admin/dashboard/main`, TD-051) |
 
 Loading skeleton segmen: `src/app/(admin)/admin/dashboard/loading.tsx` (judul, blok filter, 8 kartu, peta + panel).
 

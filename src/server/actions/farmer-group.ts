@@ -17,6 +17,7 @@ import {
   getAccessibleDistrictIds,
 } from "@/lib/access-context";
 import { canPlaceGroupInDistrict } from "@/lib/access-scope";
+import { hasTrainingEvidence } from "@/lib/training-evidence";
 import { buildFarmerGroupDetail } from "@/lib/farmer-group-detail";
 import { computeCompleteness } from "@/lib/data-completeness";
 import type { CompletenessGroupInput } from "@/types/data-completeness";
@@ -272,7 +273,7 @@ export async function getFarmerGroupDetail(id: string) {
     locationLong: group.locationLong,
     district: { id: group.district.id, name: group.district.name },
     trainingPackages,
-    activities: activities.map((a) => ({ packageCode: a.package.code, hasEvidence: !!a.evidenceKey })), // "" dari import ≠ ada bukti (#385)
+    activities: activities.map((a) => ({ packageCode: a.package.code, hasEvidence: hasTrainingEvidence(a) })), // "" dari import ≠ ada bukti (#385); kunci asing ≠ bukti (TD-053a)
     farmers: farmers.map((f) => ({
       id: f.id,
       farmerId: f.farmerId,

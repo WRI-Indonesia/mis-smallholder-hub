@@ -24,13 +24,17 @@ describe("cleanGroupInput", () => {
     ["KT-1", "KT-1"],
     ["Tidak  Ada", null], // spasi ganda (review #374)
     ["Tidak\u00a0Ada", null], // NBSP
+    ["n/a", null], // token kosong berkas Excel - satu daftar dengan import (TD-046)
+    ["NULL", null],
+    ["Belum ada", null],
+    ["Nama", "Nama"], // bukan token walau mengandung "na"
     ["KT  Maju", "KT Maju"], // spasi ganda dirapatkan, sama dengan pengelompokan
   ])("%j → %j", (input, expected) => {
     expect(cleanGroupInput(input)).toBe(expected);
   });
 
   it("sejalan dengan parcelGroupValue (pengelompokan Excel/peta #371/#372)", () => {
-    for (const v of ["Tidak Ada", "Tidak  Ada", "Tidak\u00a0 Ada", "-", "KT Maju", "  "]) expect(cleanGroupInput(v) === null).toBe(parcelGroupValue(v) === null);
+    for (const v of ["Tidak Ada", "Tidak  Ada", "Tidak\u00a0 Ada", "-", "KT Maju", "  ", "n/a", "none"]) expect(cleanGroupInput(v) === null).toBe(parcelGroupValue(v) === null);
   });
 });
 

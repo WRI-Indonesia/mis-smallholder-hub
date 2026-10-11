@@ -310,6 +310,8 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
               <button
                 key={role}
                 onClick={() => toggleRoleColumn(role)}
+                aria-pressed={active}
+                aria-label={`${active ? "Sembunyikan" : "Tampilkan"} kolom role ${role}`}
                 className={`px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${
                   active
                     ? "bg-primary text-primary-foreground border-primary"
@@ -370,6 +372,7 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                         disabled={saving}
                         className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 disabled:opacity-40"
                         title={`${meta.label} · klik untuk toggle seluruh kolom ${role}`}
+                        aria-label={`Toggle seluruh kolom ${meta.label} untuk ${role}`}
                       >
                         <Icon className="h-3.5 w-3.5" />
                       </button>
@@ -399,6 +402,8 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                           disabled={!!term}
                           className="p-0.5 rounded hover:bg-muted disabled:opacity-40"
                           title={isCollapsed(item.key) ? "Buka" : "Tutup"}
+                          aria-expanded={!isCollapsed(item.key)}
+                          aria-label={`${isCollapsed(item.key) ? "Buka" : "Tutup"} sub-menu ${item.title}`}
                         >
                           {isCollapsed(item.key) && !term ? (
                             <ChevronRight className="h-3.5 w-3.5" />
@@ -417,6 +422,7 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                           disabled={saving}
                           className="ml-1 p-0.5 rounded text-muted-foreground/60 hover:text-foreground hover:bg-muted disabled:opacity-40"
                           title="Preset izin baris ini"
+                          aria-label={`Preset izin untuk ${item.title}`}
                         >
                           <ListChecks className="h-3.5 w-3.5" />
                         </DropdownMenuTrigger>
@@ -455,6 +461,9 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                           <button
                             onClick={() => handleCellToggle(role, item.key, perm)}
                             disabled={saving}
+                            // TD-026: nama aksesibel + status (pembaca layar tak bisa membedakan kotak isi/kosong).
+                            aria-pressed={on}
+                            aria-label={`${role} · ${item.title} · ${perm}: ${on ? "aktif" : "nonaktif"}`}
                             className="w-5 h-5 rounded-sm inline-flex items-center justify-center hover:bg-muted transition-colors disabled:cursor-not-allowed"
                           >
                             {on ? (

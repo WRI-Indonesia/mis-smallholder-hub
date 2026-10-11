@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-export default function BulkUploadPage() {
-  redirect("/admin/bulk-upload/farmers");
+/** Indeks induk `bulk-upload`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function BulkUploadIndexPage() {
+  await redirectToFirstAccessibleChild("bulk-upload");
 }

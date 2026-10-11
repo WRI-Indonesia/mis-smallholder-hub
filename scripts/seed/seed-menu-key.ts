@@ -1,51 +1,50 @@
-// Seed parsial SATU menu dari CSV seed (#378, pengganti pola skrip per menu):
-// baris `<key>` di prisma/seeds/data/menu.csv + semua izinnya di
-// prisma/seeds/data/role-permissions.csv. Hanya MENAMBAH yang belum ada — tidak
-// menimpa label/urutan/aktif menu yang sudah ada (itu wewenang seed-menu-only /
-// Menu Management) dan tidak memulihkan izin yang sengaja dihapus admin.
-// Dry-run bawaan; --apply untuk menulis. Jangan pakai full `prisma db seed`.
-//   npx dotenv -e .env.<env> -- node scripts/seed/seed-menu-key.mjs <menu-key> [--apply]
+/**
+ * Seed parsial SATU menu dari CSV seed (#378, pengganti pola skrip per menu):
+ * baris `<key>` di prisma/seeds/data/menu.csv + semua izinnya di
+ * prisma/seeds/data/role-permissions.csv. Hanya MENAMBAH yang belum ada — tidak
+ * menimpa label/urutan/aktif menu yang sudah ada (itu wewenang seed-menu-only /
+ * Menu Management) dan tidak memulihkan izin yang sengaja dihapus admin.
+ * Dry-run bawaan; --apply untuk menulis. Jangan pakai full `prisma db seed`.
+ *
+ * TD-053b (#412): dulu `.mjs` dengan salinan validasi kedalaman menu yang lebih
+ * lemah; kini TypeScript (tsx) memakai `readMenuSeed` + `validateMenuSeedRows`
+ * yang sama dengan seeder penuh — satu aturan struktur menu.
+ *
+ *   npx dotenv -e .env.<env> -- npx tsx scripts/seed/seed-menu-key.ts <menu-key> [--apply]
+ */
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { parse } from "csv-parse/sync";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Role } from "@prisma/client";
+import { readMenuSeed, validateMenuSeedRows } from "../../prisma/seeds/seed-menu";
 
 const APPLY = process.argv.includes("--apply");
 const KEY = process.argv.slice(2).find((a) => !a.startsWith("--"));
 if (!KEY) {
-  console.error("Pemakaian: node scripts/seed/seed-menu-key.mjs <menu-key> [--apply]");
+  console.error("Pemakaian: npx tsx scripts/seed/seed-menu-key.ts <menu-key> [--apply]");
   process.exit(1);
 }
 
-const csv = (f) => parse(readFileSync(`prisma/seeds/data/${f}`, "utf8"), { columns: true, skip_empty_lines: true });
-const menuRows = csv("menu.csv");
+const menuRows = readMenuSeed();
+// Validasi struktur seluruh CSV (induk ada, tanpa siklus, kedalaman ≤ 3) — aturan yang sama dengan seeder penuh.
+validateMenuSeedRows(menuRows);
 const row = menuRows.find((r) => r.key === KEY);
 if (!row) throw new Error(`Menu "${KEY}" tidak ada di menu.csv`);
-// Kedalaman ≤ 3 dari rantai induk di CSV — padanan `validateMenuSeedRows`
-// (prisma/seeds/seed-menu.ts) untuk jalur seed satu menu (#364).
-{
-  let depth = 1;
-  const seen = new Set([row.key]);
-  for (let p = row.parent_key; p; p = menuRows.find((r) => r.key === p)?.parent_key) {
-    if (seen.has(p)) throw new Error(`menu.csv: siklus induk pada "${KEY}"`);
-    if (!menuRows.some((r) => r.key === p)) throw new Error(`menu.csv: induk "${p}" tidak ada di CSV`);
-    seen.add(p);
-    if (++depth > 3) throw new Error(`menu.csv: "${KEY}" melebihi 3 level menu`);
-  }
-}
 const MENU = {
   key: row.key,
-  parentKey: row.parent_key || null,
+  parentKey: row.parentKey,
   title: row.title,
   url: row.url,
-  icon: row.icon || null,
-  order: Number(row.order),
-  isActive: row.is_active === "TRUE",
-  isVisible: row.is_visible === "TRUE",
+  icon: row.icon,
+  order: row.order,
+  isActive: row.isActive,
+  isVisible: row.isVisible,
 };
-const PERMS = csv("role-permissions.csv").filter((r) => r.menu_key === KEY);
+const PERMS = (parse(readFileSync("prisma/seeds/data/role-permissions.csv", "utf8"), { columns: true, skip_empty_lines: true }) as { role: string; menu_key: string; permission: string }[]).filter(
+  (r) => r.menu_key === KEY,
+);
 if (PERMS.length === 0) throw new Error(`Tidak ada izin untuk "${KEY}" di role-permissions.csv`);
 
 const url = process.env.DATABASE_URL ?? "";
@@ -62,7 +61,7 @@ try {
   console.log(
     existingMenu
       ? `Menu ${MENU.key}: SUDAH ADA — tidak disentuh`
-      : `Menu ${MENU.key}: BELUM ADA — akan dibuat ("${MENU.title}", parent ${MENU.parentKey}, order ${MENU.order}, ikon ${MENU.icon})`
+      : `Menu ${MENU.key}: BELUM ADA — akan dibuat ("${MENU.title}", parent ${MENU.parentKey}, order ${MENU.order}, ikon ${MENU.icon})`,
   );
   const have = new Set((await prisma.rolePermission.findMany({ where: { menuKey: MENU.key } })).map((p) => `${p.role}:${p.permission}`));
   const missing = PERMS.filter((p) => !have.has(`${p.role}:${p.permission}`));
@@ -72,7 +71,7 @@ try {
       await prisma.menuItem.create({ data: MENU });
       console.log(`\n✓ Menu ${MENU.key} dibuat`);
     }
-    for (const m of missing) await prisma.rolePermission.create({ data: { role: m.role, menuKey: MENU.key, permission: m.permission } });
+    for (const m of missing) await prisma.rolePermission.create({ data: { role: m.role as Role, menuKey: MENU.key, permission: m.permission } });
     if (missing.length) console.log(`✓ ${missing.length} permission dibuat`);
   } else {
     console.log("\nDRY-RUN — tidak ada yang ditulis. Jalankan ulang dengan --apply.");

@@ -258,8 +258,11 @@ export const LAND_PARCEL_EXPORT_COLUMNS: readonly LandParcelExportColumn[] = [
 export function landParcelExportColumns(
   show: (col: LandParcelOptionalCol) => boolean,
   opts: { excel?: boolean } = {},
-): { header: string; key: string }[] {
-  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => (!c.col || show(c.col)) && (!c.excelOnly || opts.excel)).map(({ header, key }) => ({ header, key }));
+): { header: string; key: string; width?: number; wrap?: boolean }[] {
+  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => (!c.col || show(c.col)) && (!c.excelOnly || opts.excel)).map(({ header, key }) =>
+    // Koordinat (#370): satu perilaku dengan Peta Lahan — lebar 80, wrap (TD-044).
+    key === "koordinat" ? { header, key, width: 80, wrap: true } : { header, key },
+  );
 }
 
 /**

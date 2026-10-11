@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { ALL_PERMISSIONS } from "@/lib/permission-levels";
+import { firstAccessibleChild } from "@/lib/menu-first-child";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { Role } from "@prisma/client";
@@ -161,3 +162,22 @@ export const isSuperAdmin = cache(async (): Promise<boolean> => {
 });
 
 
+
+
+/**
+ * Halaman indeks menu induk (`/admin/report`, `/admin/map`, …): redirect ke anak
+ * pertama (urut `order`) yang boleh dibuka pengguna ini — termasuk override per
+ * user — bukan anak tetap (TD-051, #412). Tanpa anak yang boleh → `/admin`.
+ */
+export async function redirectToFirstAccessibleChild(parentKey: string): Promise<never> {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  const children = await prisma.menuItem.findMany({
+    where: { parentKey, isActive: true, isVisible: true },
+    orderBy: { order: "asc" },
+    select: { key: true, url: true },
+  });
+  const accessible = await getAccessibleMenuKeys(session.user.role, session.user.id);
+  const target = firstAccessibleChild(children, accessible);
+  redirect(target?.url ?? "/admin");
+}

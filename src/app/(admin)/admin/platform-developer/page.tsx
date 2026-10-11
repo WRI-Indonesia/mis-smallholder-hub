@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-/** Induk menu Platform Developer (tooling internal tim pengembang) — halaman pertama: Metrik Rilis. */
-export default function PlatformDeveloperIndexPage() {
-  redirect("/admin/dashboard/metrics");
+/** Indeks induk `platform-developer`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function PlatformDeveloperIndexPage() {
+  await redirectToFirstAccessibleChild("platform-developer");
 }

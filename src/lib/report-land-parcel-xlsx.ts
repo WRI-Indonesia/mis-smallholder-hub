@@ -1,8 +1,12 @@
 import ExcelJS from "exceljs";
+import { fillWorksheet } from "@/lib/xlsx";
 
 export interface LpExcelColumn {
   header: string;
   key: string;
+  width?: number;
+  /** Sel multi-baris (Koordinat #370) — satu perilaku dengan Peta Lahan (TD-044). */
+  wrap?: boolean;
 }
 
 export interface LpExcelImage {
@@ -62,25 +66,9 @@ export function safeSheetName(label: string, used: Set<string>): string {
   return name;
 }
 
-function fillSheet(
-  ws: ExcelJS.Worksheet,
-  columns: LpExcelColumn[],
-  data: Record<string, string | number>[],
-) {
-  ws.columns = columns.map((c) => ({ header: c.header, key: c.key }));
-  const headerRow = ws.getRow(1);
-  headerRow.font = { bold: true, color: { argb: "FF000000" } };
-  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2F2F2" } };
-  headerRow.border = { bottom: { style: "medium", color: { argb: "FFD3D3D3" } } };
-  ws.addRows(data);
-  ws.columns.forEach((column) => {
-    let maxLen = column.header ? String(column.header).length : 10;
-    column.eachCell?.({ includeEmpty: true }, (cell) => {
-      const valStr = cell.value ? String(cell.value) : "";
-      if (valStr.length > maxLen) maxLen = valStr.length;
-    });
-    column.width = Math.min(Math.max(maxLen + 3, 10), 50);
-  });
+/** Penulis sheet bersama (`fillWorksheet`, TD-044): gaya header, wrap, auto-fit sama dengan ekspor lain. */
+function fillSheet(ws: ExcelJS.Worksheet, columns: LpExcelColumn[], data: Record<string, string | number>[]) {
+  fillWorksheet(ws, columns, data);
 }
 
 function addSheetImage(

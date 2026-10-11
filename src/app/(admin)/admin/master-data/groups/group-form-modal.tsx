@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formOptionalFloat, formOptionalInt } from "@/lib/form-number";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,35 +97,26 @@ export function GroupFormModal({ open, onClose, group, districts, lockDistrict =
         form.get("groupType") && form.get("groupType") !== "NONE"
           ? (form.get("groupType") as "ASOSIASI" | "KOPERASI")
           : null,
-      joinYear: form.get("joinYear") ? parseInt(form.get("joinYear") as string, 10) : null,
-      establishedYear: form.get("establishedYear")
-        ? parseInt(form.get("establishedYear") as string, 10)
-        : null,
-      rspoCertYear: form.get("rspoCertYear")
-        ? parseInt(form.get("rspoCertYear") as string, 10)
-        : null,
+      // Angka opsional lewat helper (TD-008): spasi saja -> null, bukan NaN.
+      joinYear: formOptionalInt(form.get("joinYear")),
+      establishedYear: formOptionalInt(form.get("establishedYear")),
+      rspoCertYear: formOptionalInt(form.get("rspoCertYear")),
       rspoCertStatus:
         form.get("rspoCertStatus") && form.get("rspoCertStatus") !== "NONE"
           ? (form.get("rspoCertStatus") as "CERTIFIED" | "PLANNED")
           : null,
-      ispoCertYear: form.get("ispoCertYear")
-        ? parseInt(form.get("ispoCertYear") as string, 10)
-        : null,
+      ispoCertYear: formOptionalInt(form.get("ispoCertYear")),
       ispoCertStatus:
         form.get("ispoCertStatus") && form.get("ispoCertStatus") !== "NONE"
           ? (form.get("ispoCertStatus") as "CERTIFIED" | "PLANNED")
           : null,
-      sapMapAssuranceYear: form.get("sapMapAssuranceYear")
-        ? parseInt(form.get("sapMapAssuranceYear") as string, 10)
-        : null,
+      sapMapAssuranceYear: formOptionalInt(form.get("sapMapAssuranceYear")),
       sapMapAssuranceStatus:
         form.get("sapMapAssuranceStatus") && form.get("sapMapAssuranceStatus") !== "NONE"
           ? (form.get("sapMapAssuranceStatus") as "CERTIFIED" | "PLANNED")
           : null,
-      locationLat: form.get("locationLat") ? parseFloat(form.get("locationLat") as string) : null,
-      locationLong: form.get("locationLong")
-        ? parseFloat(form.get("locationLong") as string)
-        : null,
+      locationLat: formOptionalFloat(form.get("locationLat")),
+      locationLong: formOptionalFloat(form.get("locationLong")),
     };
 
     const result = isEdit

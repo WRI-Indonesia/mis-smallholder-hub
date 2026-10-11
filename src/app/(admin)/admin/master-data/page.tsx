@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-export default function MasterDataIndexPage() {
-  redirect("/admin/master-data/farmers");
+/** Indeks induk `master-data`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function MasterDataIndexPage() {
+  await redirectToFirstAccessibleChild("master-data");
 }

@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-/** Induk grup Ketersediaan Data (#416) — pintu masuknya tetap Semua Lembaga (pola Risk Management). */
-export default function AvailabilityIndexPage() {
-  redirect("/admin/data-analyst/data-availability");
+/** Indeks induk `data-analyst-availability`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function DataAnalystAvailabilityIndexPage() {
+  await redirectToFirstAccessibleChild("data-analyst-availability");
 }

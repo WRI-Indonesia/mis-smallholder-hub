@@ -27,7 +27,7 @@ Siapkan: paket pelatihan, tanggal, lokasi, daftar hadir, dan notulen PDF (maksim
 + Tanggal menentukan sesi ini masuk tahun mana di dashboard, jadi isi tanggal pelaksanaan sebenarnya — bukan tanggal Anda menginput. Lokasi yang kosong akan muncul sebagai temuan di panel Kualitas Data.
 4. Isi **Catatan** bila perlu. Untuk sesi yang berlangsung beberapa hari, pilih tanggal **hari pertama** lalu tulis rentangnya di sini (misalnya `Sesi 3 hari: 11-13 November 2023`).
 + Catatan juga dipakai sebagai pembeda dua kegiatan Paket 1 pada lembaga dan tanggal yang sama: `Modul BMP` vs `Modul PNC & NKT`. Kolom tanggal sengaja tetap satu hari agar perhitungan tahun dan cakupan di dashboard tidak berubah-ubah.
-5. Unggah **Evidence (Notulen PDF, maks 10MB)** bila sudah ada — boleh menyusul lewat Edit.
+5. Unggah **Evidence (Notulen PDF, maks 10MB)** bila sudah ada — boleh menyusul lewat Edit. Kolom ini hanya tampil bila akun Anda punya izin **EDIT** Pelatihan (menempelkan bukti = mengubah pelatihan); tanpa izin itu, formulir menampilkan catatan dan bukti diunggah oleh akun ber-izin EDIT lewat Edit.
 + Berkas disimpan di penyimpanan privat dan hanya bisa dibuka lewat tautan bertanda tangan yang dibuat saat Anda mengkliknya. Sesi tanpa bukti akan terhitung di panel Kualitas Data sebagai pekerjaan yang belum tuntas — berguna saat menyiapkan audit.
 6. Klik **Buat**.
 

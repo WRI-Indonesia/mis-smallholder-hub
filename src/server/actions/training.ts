@@ -8,7 +8,7 @@ import { trainingParticipantScoreSchema, addParticipantsSchema } from "@/validat
 import type { TrainingParticipantScoreInput } from "@/validations/training-participant.schema";
 import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 import { getPresignedUrl } from "@/lib/s3";
-import { isTrainingEvidenceKeyFor } from "@/lib/training-evidence";
+import { hasTrainingEvidence, isTrainingEvidenceKeyFor } from "@/lib/training-evidence";
 
 import {
   getAccessContext,
@@ -118,7 +118,7 @@ export async function getTrainingActivityById(id: string) {
   let evidenceUrl: string | null = null;
   // #385: presigned URL hanya untuk kunci milik pelatihan ini — baris yang
   // menyimpan kunci objek lain (sebelum validasi tulis ada) tidak membuka tautan.
-  if (activity.evidenceKey && isTrainingEvidenceKeyFor(activity.evidenceKey, activity.id)) {
+  if (hasTrainingEvidence(activity)) {
     try {
       evidenceUrl = await getPresignedUrl(activity.evidenceKey);
     } catch (err) {

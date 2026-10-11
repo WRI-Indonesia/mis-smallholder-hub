@@ -78,13 +78,13 @@ Beberapa menu induk hanya berfungsi sebagai grup navigasi di sidebar:
 |---|---|
 | `/admin` | Redirect ke dashboard |
 | `/admin/dashboard` | Redirect |
-| `/admin/master-data` | Redirect ke `/admin/master-data/farmers` |
-| `/admin/bulk-upload` | Redirect ke `/admin/bulk-upload/farmers` |
-| `/admin/report` | Redirect ke `/admin/report/farmer` (tanpa guard permission) |
-| `/admin/tools` | Redirect ke halaman snapshot |
-| `/admin/map` | Redirect ke `/admin/map/parcel` |
+| `/admin/master-data` | Redirect ke anak pertama yang boleh diakses (`redirectToFirstAccessibleChild`, TD-051 #412; bawaan SUPERADMIN: `/admin/master-data/groups`) |
+| `/admin/bulk-upload` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan `/admin/bulk-upload/farmers`) |
+| `/admin/report` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan `/admin/report/farmer`) |
+| `/admin/tools` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan snapshot) |
+| `/admin/map` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan `/admin/map/parcel`) |
 | `/admin/settings` | Tidak ada `page.tsx` — grup navigasi saja |
-| `/admin/data-analyst` | Redirect ke `/admin/data-analyst/data-availability`; `/admin/data-analyst/availability` (induk Ketersediaan Data) idem |
+| `/admin/data-analyst` | Redirect ke anak pertama yang boleh diakses (TD-051; SUPERADMIN → Ringkasan Petani, peran lain → induk Ketersediaan Data → Semua Lembaga); `/admin/data-analyst/availability`, `/admin/settings`, `/admin/dashboard`, `/admin/dashboard/risk`, `/admin/platform-developer` memakai helper yang sama |
 
 ## Kerangka umum halaman admin
 

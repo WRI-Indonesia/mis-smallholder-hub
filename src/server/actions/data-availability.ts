@@ -7,6 +7,7 @@ import { getAccessContext } from "@/lib/access-context";
 import { farmerGroupAccessFilter, rawFarmerGroupScope } from "@/lib/access-scope";
 import { buildAvailabilityEntry } from "@/lib/data-availability-aggregation";
 import { currentPeriod } from "@/lib/data-completeness";
+import { hasTrainingEvidence } from "@/lib/training-evidence";
 import {
   farmerModuleFlags,
   groupModuleFlags,
@@ -84,7 +85,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
         district: { select: { id: true, name: true } },
         activities: {
           where: { isActive: true },
-          select: { evidenceKey: true, package: { select: { code: true } } },
+          select: { id: true, evidenceKey: true, package: { select: { code: true } } },
         },
         farmers: {
           where: { isActive: true },
@@ -168,7 +169,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
       trainingPackages,
       activities: g.activities.map((a) => ({
         packageCode: a.package.code,
-        hasEvidence: !!a.evidenceKey, // "" dari import ≠ ada bukti (#385)
+        hasEvidence: hasTrainingEvidence(a), // "" dari import ≠ ada bukti (#385); kunci asing ≠ bukti (TD-053a)
       })),
       farmers: g.farmers.map((f) => ({
         id: f.id,

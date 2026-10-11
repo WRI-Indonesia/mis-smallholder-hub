@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirectToFirstAccessibleChild } from "@/lib/rbac";
 
-export default function ReportPage() {
-  redirect("/admin/report/farmer");
+/** Indeks induk `report`: ke anak pertama yang boleh diakses pengguna ini (TD-051). */
+export default async function ReportIndexPage() {
+  await redirectToFirstAccessibleChild("report");
 }

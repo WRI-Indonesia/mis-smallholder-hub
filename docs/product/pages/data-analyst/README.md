@@ -15,7 +15,7 @@
 Menu: Data Analyst (/admin/data-analyst)
 ├── Sub Menu: Ringkasan Petani (data-analyst-farmer-summary)
 │   └── Page: Ringkasan Petani (/admin/data-analyst/farmer-summary)
-├── Sub Menu: Ketersediaan Data (data-analyst-availability) — induk level 2, /admin/data-analyst/availability redirect ke Semua Lembaga
+├── Sub Menu: Ketersediaan Data (data-analyst-availability) — induk level 2, /admin/data-analyst/availability redirect ke anak pertama yang boleh diakses (TD-051; bawaan Semua Lembaga
 │   ├── Sub Menu: Semua Lembaga (data-analyst-data-availability)
 │   │   └── Page: Ketersediaan Data — Semua Lembaga (/admin/data-analyst/data-availability)
 │   ├── Sub Menu: Per Lembaga (data-analyst-data-completeness)
