@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Download } from "lucide-react";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -19,6 +18,7 @@ import {
   AVAILABILITY_DOMAIN_LABELS,
   availabilityTotals,
   bandDistribution,
+  shortDomainLabel,
   filterAvailabilityGroups,
   moduleCoverageTotals,
 } from "@/lib/data-availability-aggregation";
@@ -29,15 +29,26 @@ import { AvailabilityDomainCards } from "./availability-domain-cards";
 import { AvailabilityMatrix } from "./availability-matrix";
 import { AvailabilityModuleMatrix } from "./availability-module-matrix";
 import { AvailabilityRadarGrid } from "./availability-radar-grid";
-import { sortKeyLabel, type MatrixSortKey } from "./matrix-rows";
+import { MODULE_SORT_PREFIX, sortKeyLabel, sortMatrixRows, sortModuleRows, useMatrixRows, type MatrixSortKey, type ModuleSortKey } from "./matrix-rows";
+import { MatrixToolbar, rowsSummary, type MatrixSortOption, type MatrixView } from "./matrix-toolbar";
 import { CATEGORY_LABELS } from "./domain-meta";
 import { AvailabilityDomainLaggards } from "./availability-domain-laggards";
 import { AvailabilityAnomalyPanel } from "./availability-anomaly-panel";
 import type { AvailabilityDomainKey, AvailabilityScoreBand, BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
 import { formatGeneratedAt, formatPct } from "@/lib/format";
 
-/** Tampilan matriks: radar = bawaan (owner, #352 putaran 4), heatmap & modul lewat `?tampilan=`. */
-type MatrixView = "radar" | "heatmap" | "modul";
+/** Pilihan Urut radar & heatmap (kunci sama dengan judul kolom heatmap & chip kartu domain). */
+const DOMAIN_SORT_OPTIONS: MatrixSortOption[] = [
+  { value: "health", label: "Skor Total" },
+  { value: "name", label: "Nama" },
+  { value: "totalFarmers", label: "Jumlah petani" },
+  ...AVAILABILITY_DOMAIN_KEYS.map((key) => ({ value: key, label: shortDomainLabel(key) })),
+];
+/** Pilihan Urut Cakupan modul — `modul:<key>` (#417 B: urutan modul kini di URL). */
+const MODULE_SORT_OPTIONS: MatrixSortOption[] = [
+  { value: "name", label: "Nama" },
+  ...MODULE_CATALOG.map((m) => ({ value: `${MODULE_SORT_PREFIX}${m.key}`, label: m.short })),
+];
 const BANDS: AvailabilityScoreBand[] = ["full", "good", "warn", "bad"];
 
 export function DataAvailabilityClient({
@@ -92,6 +103,11 @@ export function DataAvailabilityClient({
       ? sortParam
       : "health";
   const sortAsc = get("arah") !== "turun";
+  // Urutan Cakupan modul (#417 B): `?urut=modul:<key>`; selainnya Nama (bawaan lama tampilan modul).
+  const moduleSortKey: ModuleSortKey =
+    sortParam?.startsWith(MODULE_SORT_PREFIX) && MODULE_CATALOG.some((m) => `${MODULE_SORT_PREFIX}${m.key}` === sortParam)
+      ? sortParam.slice(MODULE_SORT_PREFIX.length)
+      : "name";
 
   // Lembaga terpilih yang tidak lagi masuk irisan Distrik/Kategori baru
   // di-reset (pola DistrictGroupFilter) — bukan diam-diam menampilkan irisan
@@ -108,8 +124,21 @@ export function DataAvailabilityClient({
   const setCategory = (v: BmpFarmerGroupCategory | null) => setMany({ kategori: v, band: null, ...keepGroup(districtId, v) });
   const setGroupId = (v: string | null) => setMany({ lembaga: v, band: null });
   const setBand = (v: AvailabilityScoreBand | null) => setMany({ band: v });
-  const setMatrixView = (v: MatrixView) => setMany({ tampilan: v === "radar" ? null : v });
+  // Ganti tampilan: urutan yang tak berlaku di tampilan tujuan dilepas (mis. urut
+  // Produksi → Cakupan modul), supaya chip "Urut" tak menunjuk urutan yang tak dipakai.
+  const setMatrixView = (v: MatrixView) => {
+    const moduleSort = !!sortParam?.startsWith(MODULE_SORT_PREFIX);
+    const keepSort = sortParam === "name" || (v === "modul" ? moduleSort : !moduleSort);
+    setMany({ tampilan: v === "radar" ? null : v, ...(keepSort ? {} : { urut: null, arah: null }) });
+  };
   const setSort = (key: MatrixSortKey, asc: boolean) => setMany({ urut: key === "health" ? null : key, arah: asc ? null : "turun" });
+  const setModuleSort = (key: ModuleSortKey, asc: boolean) =>
+    setMany({ urut: key === "name" ? (asc ? null : "name") : `${MODULE_SORT_PREFIX}${key}`, arah: asc ? null : "turun" });
+
+  // Cari & Ringkas milik halaman (#417 B): satu toolbar untuk ketiga tampilan;
+  // bawaan Ringkas 10 terendah (K2) — pencarian tetap menampilkan semua hasil.
+  const [query, setQuery] = useState("");
+  const [showAll, setShowAll] = useState(false);
 
   const [matrixEl, setMatrixEl] = useState<HTMLDivElement | null>(null);
 
@@ -154,14 +183,32 @@ export function DataAvailabilityClient({
     ...(districtId ? [{ id: "distrik", label: "Distrik", value: districtOptions.find((d) => d.id === districtId)?.name ?? "—", onRemove: () => setDistrictId(null) }] : []),
     ...(groupId ? [{ id: "lembaga", label: "Lembaga", value: allGroups.find((g) => g.id === groupId)?.name ?? "—", onRemove: () => setGroupId(null) }] : []),
     ...(band ? [{ id: "band", label: "Tingkat skor", value: BAND_SHORT[band], onRemove: () => setBand(null) }] : []),
-    ...(sortKey !== "health" || !sortAsc
-      ? [{ id: "urut", label: "Urut", value: `${sortKeyLabel(sortKey)} ${sortAsc ? "↑" : "↓"}`, onRemove: () => setSort("health", true) }]
-      : []),
+    ...(matrixView === "modul"
+      ? moduleSortKey !== "name" || !sortAsc
+        ? [
+            {
+              id: "urut",
+              label: "Urut",
+              value: `${moduleSortKey === "name" ? "nama" : (MODULE_CATALOG.find((m) => m.key === moduleSortKey)?.short ?? moduleSortKey)} ${sortAsc ? "↑" : "↓"}`,
+              onRemove: () => setModuleSort("name", true),
+            },
+          ]
+        : []
+      : sortKey !== "health" || !sortAsc
+        ? [{ id: "urut", label: "Urut", value: `${sortKeyLabel(sortKey)} ${sortAsc ? "↑" : "↓"}`, onRemove: () => setSort("health", true) }]
+        : []),
   ];
   const resetFilters = () => setMany({ kategori: null, distrik: null, lembaga: null, band: null, urut: null, arah: null });
 
   const totals = useMemo(() => availabilityTotals(scope), [scope]);
   const moduleTotals = useMemo(() => moduleCoverageTotals(groups), [groups]);
+
+  const domainSort = useCallback((rows: typeof groups) => sortMatrixRows(rows, sortKey, sortAsc), [sortKey, sortAsc]);
+  const moduleSort = useCallback((rows: typeof groups) => sortModuleRows(rows, moduleSortKey, sortAsc), [moduleSortKey, sortAsc]);
+  const domainRows = useMatrixRows(groups, domainSort, query, showAll);
+  const moduleRows = useMatrixRows(groups, moduleSort, query, showAll);
+  const activeRows = matrixView === "modul" ? moduleRows : domainRows;
+  const criticalCount = useMemo(() => bandDistribution(groups).bad, [groups]);
 
   // Kartu domain → radar/heatmap diurut menaik pada domain itu (tampilan modul
   // punya urutan sendiri, jadi dipindah dulu ke bawaan = radar); klik lagi =
@@ -225,25 +272,10 @@ export function DataAvailabilityClient({
     });
   };
 
-  const matrixTabs = (
-    <Tabs value={matrixView} onValueChange={(v) => setMatrixView(v as MatrixView)}>
-      <TabsList className="h-8">
-        <TabsTrigger value="radar" className="text-xs">
-          Radar
-        </TabsTrigger>
-        <TabsTrigger value="heatmap" className="text-xs">
-          Heatmap
-        </TabsTrigger>
-        <TabsTrigger value="modul" className="text-xs">
-          Cakupan modul
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
-  );
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1 space-y-2">
           {navSlot}
           <p className="text-sm text-muted-foreground">
@@ -321,13 +353,38 @@ export function DataAvailabilityClient({
         onSelect={selectDomain}
       />
 
-      <div ref={setMatrixEl} className="scroll-mt-4">
+      {/* Matriks: satu kartu, satu toolbar lengket (#417 B). Bukan <Card> — overflow
+          kartu memutus `position: sticky` toolbar. */}
+      <div ref={setMatrixEl} className="scroll-mt-4 rounded-xl border border-border/60 bg-card shadow-sm">
+        <MatrixToolbar
+          view={matrixView}
+          onViewChange={setMatrixView}
+          status={rowsSummary(groups.length, criticalCount, activeRows.limited.length)}
+          sortOptions={matrixView === "modul" ? MODULE_SORT_OPTIONS : DOMAIN_SORT_OPTIONS}
+          sortValue={matrixView === "modul" ? (moduleSortKey === "name" ? "name" : `${MODULE_SORT_PREFIX}${moduleSortKey}`) : sortKey}
+          sortAsc={sortAsc}
+          onSortChange={(v) =>
+            matrixView === "modul" ? setModuleSort(v.startsWith(MODULE_SORT_PREFIX) ? v.slice(MODULE_SORT_PREFIX.length) : "name", true) : setSort(v as MatrixSortKey, true)
+          }
+          onDirectionToggle={() => (matrixView === "modul" ? setModuleSort(moduleSortKey, !sortAsc) : setSort(sortKey, !sortAsc))}
+          query={query}
+          onQueryChange={setQuery}
+        />
         {matrixView === "radar" ? (
-          <AvailabilityRadarGrid rows={groups} sortKey={sortKey} sortAsc={sortAsc} onSortChange={setSort} headerControl={matrixTabs} />
+          <AvailabilityRadarGrid {...domainRows} query={query} showAll={showAll} onToggleShowAll={() => setShowAll((v) => !v)} />
         ) : matrixView === "heatmap" ? (
-          <AvailabilityMatrix rows={groups} sortKey={sortKey} sortAsc={sortAsc} onSortChange={setSort} headerControl={matrixTabs} />
+          <AvailabilityMatrix {...domainRows} query={query} showAll={showAll} onToggleShowAll={() => setShowAll((v) => !v)} sortKey={sortKey} sortAsc={sortAsc} onSortChange={setSort} />
         ) : (
-          <AvailabilityModuleMatrix rows={groups} totals={moduleTotals} headerControl={matrixTabs} />
+          <AvailabilityModuleMatrix
+            {...moduleRows}
+            totals={moduleTotals}
+            query={query}
+            showAll={showAll}
+            onToggleShowAll={() => setShowAll((v) => !v)}
+            sortKey={moduleSortKey}
+            sortAsc={sortAsc}
+            onSortChange={setModuleSort}
+          />
         )}
       </div>
 

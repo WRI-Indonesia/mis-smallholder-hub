@@ -122,8 +122,9 @@ function RadarLayers({
 }
 
 /** Bingkai SVG radar — label kiri/kanan ("Produksi 100") butuh ±50 px di luar jari-jari. */
-const CHART_FRAME: RadarFrame = { cx: 118, cy: 92, r: 56 };
-const CHART_VIEW = { w: 236, h: 172 };
+// #417 B (T6): label 9 → 11 px — viewBox dilebarkan agar "Pelatihan 85,2" tak terpotong.
+const CHART_FRAME: RadarFrame = { cx: 136, cy: 94, r: 56 };
+const CHART_VIEW = { w: 272, h: 180 };
 const CHART_LABEL_OFFSET = 13;
 
 /**
@@ -167,7 +168,7 @@ export function RadarChart({
         total={total}
         scores={scores}
         showValues={showValues}
-        labelClass={large ? "text-[7px]" : "text-[9px]"}
+        labelClass={large ? "text-[7px]" : "text-[11px]"}
         dotRadius={large ? 2.5 : 3}
         onAxisClick={onAxisClick}
       />

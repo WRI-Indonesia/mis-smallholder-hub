@@ -263,7 +263,7 @@ export function ProductionAvailabilityClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1 space-y-2">
           {navSlot}
           <p className="text-sm text-muted-foreground">

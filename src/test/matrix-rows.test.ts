@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canLimitRows, filterMatrixRows, isSearching, limitRows, LOWEST_N, sortKeyLabel, sortMatrixRows } from "@/app/(admin)/admin/data-analyst/data-availability/matrix-rows";
-import { emptyRowsMessage } from "@/app/(admin)/admin/data-analyst/data-availability/matrix-toolbar";
+import { canLimitRows, filterMatrixRows, isSearching, limitRows, LOWEST_N, sortKeyLabel, sortMatrixRows, sortModuleRows } from "@/app/(admin)/admin/data-analyst/data-availability/matrix-rows";
+import { emptyRowsMessage, rowsSummary } from "@/app/(admin)/admin/data-analyst/data-availability/matrix-toolbar";
 import { BAND_LABEL, bandLabel } from "@/lib/score-band-styles";
 import { BAND_THRESHOLDS, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
@@ -107,7 +107,32 @@ describe("Ringkas vs pencarian (spasi saja = bukan pencarian)", () => {
   });
 
   it("emptyRowsMessage: spasi saja → pesan filter, bukan pesan pencarian", () => {
-    expect(emptyRowsMessage("  ")).toBe("Tidak ada Lembaga Petani pada filter ini.");
+    expect(emptyRowsMessage("  ")).toBe("Tidak ada Lembaga Petani pada pilihan filter ini."); // istilah #417 D: "irisan/filter" → "pilihan filter"
     expect(emptyRowsMessage(" zzz ")).toBe('Tidak ada Lembaga yang cocok dengan "zzz".');
   });
 });
+
+describe("#417 B — urut Cakupan modul & status toolbar", () => {
+  const withModule = (id: string, name: string, pct: number | null) =>
+    entry({ id, name, moduleCoverage: [{ key: "surat", covered: pct == null ? 0 : 1, total: pct == null ? 0 : 1, pct }] } as Partial<AvailabilityGroupEntry>);
+  const a = withModule("a", "Alpha", 80);
+  const b = withModule("b", "Beta", 20);
+  const n = withModule("n", "Nihil", null);
+
+  it("modul menaik = cakupan terendah dulu; 'belum dimulai' selalu di bawah apa pun arahnya", () => {
+    expect(sortModuleRows([n, a, b], "surat", true).map((e) => e.id)).toEqual(["b", "a", "n"]);
+    expect(sortModuleRows([n, a, b], "surat", false).map((e) => e.id)).toEqual(["a", "b", "n"]);
+  });
+
+  it("modul 'name' = urut nama, arah dibalik", () => {
+    expect(sortModuleRows([b, n, a], "name", true).map((e) => e.name)).toEqual(["Alpha", "Beta", "Nihil"]);
+    expect(sortModuleRows([b, n, a], "name", false).map((e) => e.name)).toEqual(["Nihil", "Beta", "Alpha"]);
+  });
+
+  it("status satu baris: jumlah · kritis · yang tampil (saat Ringkas)", () => {
+    expect(rowsSummary(32, 2, 10)).toBe("32 Lembaga · 2 kritis (<50) · 10 tampil");
+    expect(rowsSummary(32, 0, 32)).toBe("32 Lembaga");
+    expect(rowsSummary(5, 1)).toBe("5 Lembaga · 1 kritis (<50)");
+  });
+});
+
