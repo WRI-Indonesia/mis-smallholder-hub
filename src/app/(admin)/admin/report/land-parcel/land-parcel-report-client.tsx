@@ -900,9 +900,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                     {documentTypes.size === 0 ? "Semua jenis" : `${documentTypes.size} jenis dipilih`}
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="max-h-80 overflow-y-auto">
-                    <DropdownMenuLabel>Punya minimal satu jenis ini</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+                    {/* Label wajib di dalam Group — Base UI melempar galat #31 bila GroupLabel di luar Group (QA staging v1.7.0). */}
                     <DropdownMenuGroup>
+                      <DropdownMenuLabel>Punya minimal satu jenis ini</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
                       {LAND_DOCUMENT_TYPES.map((t) => (
                         <DropdownMenuCheckboxItem
                           key={t}

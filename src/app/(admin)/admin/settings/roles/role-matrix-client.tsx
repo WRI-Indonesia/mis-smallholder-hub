@@ -19,6 +19,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -427,20 +428,23 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                           <ListChecks className="h-3.5 w-3.5" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                          <DropdownMenuLabel className="text-xs">
-                            Preset — role yang tampil
-                          </DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          {ROW_PRESETS.map((preset) => (
-                            <DropdownMenuItem
-                              key={preset.label}
-                              onClick={() =>
-                                handleRowPreset(item.key, item.title, hasChildren, preset)
-                              }
-                            >
-                              {preset.label}
-                            </DropdownMenuItem>
-                          ))}
+                          {/* Label wajib di dalam Group — Base UI melempar galat #31 bila GroupLabel di luar Group (QA staging v1.7.0). */}
+                          <DropdownMenuGroup>
+                            <DropdownMenuLabel className="text-xs">
+                              Preset — role yang tampil
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {ROW_PRESETS.map((preset) => (
+                              <DropdownMenuItem
+                                key={preset.label}
+                                onClick={() =>
+                                  handleRowPreset(item.key, item.title, hasChildren, preset)
+                                }
+                              >
+                                {preset.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuGroup>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
