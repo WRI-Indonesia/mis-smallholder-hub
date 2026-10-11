@@ -14,6 +14,7 @@ import {
   type LpGridCell,
   type LpLabelRect,
 } from "@/lib/report-land-parcel";
+import { toWinAnsiText } from "@/lib/pdf-winansi";
 
 const EMERALD: [number, number, number] = [16, 185, 129];
 const AREA_FILL: [number, number, number] = [209, 240, 224];
@@ -364,11 +365,11 @@ export function buildLandParcelReportDoc({
     const x = MARGIN + (idx % 2) * 90;
     const y = currentY + Math.floor(idx / 2) * 6;
     doc.setFont("helvetica", "bold");
-    const labelText = `${m.label}:`;
+    const labelText = toWinAnsiText(`${m.label}:`);
     const labelWidth = doc.getTextWidth(labelText);
     doc.text(labelText, x, y);
     doc.setFont("helvetica", "normal");
-    doc.text(m.value, x + labelWidth + 2, y);
+    doc.text(toWinAnsiText(m.value), x + labelWidth + 2, y);
   });
   currentY += Math.ceil(metadata.length / 2) * 6 + 4;
 
@@ -379,12 +380,13 @@ export function buildLandParcelReportDoc({
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...SLATE_700);
-    doc.text(section.title, MARGIN, currentY);
+    doc.text(toWinAnsiText(section.title), MARGIN, currentY);
     currentY += 5;
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...SLATE_500);
     for (const line of section.lines) {
-      const wrapped = doc.splitTextToSize(line, sectionWidth) as string[];
+      // Font bawaan (WinAnsi) tak punya "≥" dkk. — teks layar tetap, dipetakan di sini (temuan #2 QA v1.7.0).
+      const wrapped = doc.splitTextToSize(toWinAnsiText(line), sectionWidth) as string[];
       doc.text(wrapped, MARGIN, currentY);
       currentY += wrapped.length * 4.2;
     }
