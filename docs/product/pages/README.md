@@ -27,7 +27,7 @@ docs/product/pages/               folder & berkas = segmen route (/admin/<menu>/
 │   ├── production/               list · new · detail · edit
 │   └── bmp-monev/                list · detail · lembaga
 ├── data-analyst/                 Menu: Data Analyst
-│   ├── farmer-summary.md · data-availability.md · data-completeness.md
+│   ├── farmer-summary.md · data-availability.md · data-completeness.md · availability-production.md
 │   ├── benchmark-comparison.md · metrics.md · data-map.md
 │   └── parcel-overlap.md · sprint.md
 ├── tools/                        Menu: Tools

@@ -599,7 +599,11 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
             headers={headers}
             mapping={mapping}
             sample={features[0]?.properties}
-            onChange={(key, header) => setMapping((prev) => ({ ...prev, [key]: header }))}
+            onChange={(key, header) => {
+              setMapping((prev) => ({ ...prev, [key]: header }));
+              // Pemetaan berubah = hasil validasi lama tidak berlaku (review #420).
+              setValidatedData([]);
+            }}
           />
 
           <div className="flex justify-end gap-2 pt-2">

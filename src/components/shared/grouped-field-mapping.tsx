@@ -5,7 +5,8 @@
  * pengganti grid kartu (Detail Lahan dulu 20 kartu). Dengan `groups`: grup
  * buka/tutup ber-header "n/m terpetakan"; grup tanpa kolom terpetakan dan tanpa
  * field wajib mulai TERTUTUP ("tak ada di berkas") tetapi tetap bisa dibuka
- * untuk memetakan manual. Tanpa `groups`: satu daftar ringkas (Petani/Produksi).
+ * untuk memetakan manual; grup ber-`groupExtra` selalu mulai terbuka. Tanpa
+ * `groups`: satu daftar ringkas (Petani/Produksi).
  * Tiap field satu baris: label · pilihan kolom · contoh nilai baris pertama.
  */
 import { useState, type ReactNode } from "react";
@@ -33,8 +34,6 @@ interface Props {
   sample?: Record<string, unknown>;
   /** Isi tambahan di ujung grup tertentu (mis. Bawaan NKT di grup `nkt`). */
   groupExtra?: Partial<Record<string, ReactNode>>;
-  /** Grup yang dianggap "terisi" walau kolomnya belum terpetakan (mis. Bawaan NKT diisi). */
-  forceOpenGroups?: readonly string[];
   emptyLabel?: string;
 }
 
@@ -95,7 +94,6 @@ export function GroupedFieldMapping({
   onChange,
   sample,
   groupExtra,
-  forceOpenGroups = [],
   emptyLabel = "-- Kosongkan --",
 }: Props) {
   const byKey = new Map(fields.map((f) => [f.key, f]));
@@ -139,11 +137,13 @@ export function GroupedFieldMapping({
       {summary}
       {groups.map((g) => (
         <MappingGroupSection
+          // Berkas baru selalu me-remount komponen (pemanggil merender pemetaan hanya
+          // bila `headers.length > 0` dan mengosongkan headers sebelum membaca), jadi
+          // status buka/tutup dihitung ulang tanpa kunci tambahan (review #420).
           key={g.key}
           group={g}
           fields={g.fields.map((k) => byKey.get(k)).filter((f): f is MappingFieldDef => f != null)}
           mapping={mapping}
-          forceOpen={forceOpenGroups.includes(g.key)}
           extra={groupExtra?.[g.key]}
           renderRow={row}
         />
@@ -156,22 +156,21 @@ function MappingGroupSection({
   group,
   fields,
   mapping,
-  forceOpen,
   extra,
   renderRow,
 }: {
   group: MappingGroup;
   fields: MappingFieldDef[];
   mapping: Record<string, string>;
-  forceOpen: boolean;
   extra?: ReactNode;
   renderRow: (f: MappingFieldDef) => ReactNode;
 }) {
   const mapped = fields.filter((f) => mapping[f.key]).length;
   const hasRequired = fields.some((f) => f.required);
   const requiredDone = fields.every((f) => !f.required || mapping[f.key]);
-  // Bawaan: terbuka bila ada kolom terpetakan / field wajib / dipaksa; sisanya tertutup.
-  const [open, setOpen] = useState(mapped > 0 || hasRequired || forceOpen);
+  // Bawaan: terbuka bila ada kolom terpetakan / field wajib / isi tambahan (mis. Bawaan NKT —
+  // justru dipakai saat berkas TAK punya kolom NKT, review #420); sisanya tertutup.
+  const [open, setOpen] = useState(mapped > 0 || hasRequired || extra != null);
   const complete = mapped === fields.length;
 
   return (
@@ -185,7 +184,7 @@ function MappingGroupSection({
           </Badge>
         )}
         <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
-          {mapped === 0 && !hasRequired ? "tak ada di berkas · " : null}
+          {mapped === 0 && !hasRequired ? (extra != null ? "kolom tak ada di berkas · bawaan di bawah · " : "tak ada di berkas · ") : null}
           {mapped}/{fields.length}
           {complete && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-label="semua terpetakan" />}
         </span>

@@ -72,3 +72,9 @@ Data pribadi petani **wajib disensor di semua tampilan layar** via helper `src/l
 ### Filter Lembaga Petani Ber-pencarian
 
 - **Wajib menggunakan Combobox**: Untuk mempermudah pencarian dan penyaringan data di semua halaman list master data (terutama data Petani) atau alur lainnya, semua komponen filter/dropdown **Lembaga Petani** wajib menggunakan komponen **searchable Combobox** (kombinasi Popover & Command Shadcn UI) dengan kemampuan pencarian teks, dan tidak diperbolehkan menggunakan dropdown Select box standar.
+
+## PDF (jsPDF) — glyph & verifikasi
+
+- Font bawaan jsPDF (Helvetica/Times/Courier) ber-encoding **WinAnsi**. Satu karakter di luar WinAnsi (`≥ ≤ → ✓ ✗ ≈`, emoji, aksara non-Latin) membuat jsPDF menulis **seluruh string** sebagai UTF-16 → tercetak sampah (`Selisih Luas "e 0,50 Ha`, temuan #2 QA v1.7.0). Teks layar boleh tetap memakai simbol; petakan di **titik render PDF** dengan `toWinAnsiText` (`src/lib/pdf-winansi.ts`: `≥`→`>=`, `→`→`->`, sisanya `?`). Diterapkan di Laporan Lahan (metadata, filter/ringkasan, tabel, label peta, catatan kaki); generator lain menyusul (TD-061). PDF ber-font tertanam (Acumin: Fire Alert, Profil Petani) tidak terkena.
+- Lint/test tidak menangkap glyph rusak: test penjaga meng-**inflate content stream** PDF asli dan memastikan tak ada string ber-byte NUL (`src/test/pdf-winansi.test.ts`); sebelum smoke, render PDF baru ke PNG (`pdftoppm`).
+

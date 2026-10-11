@@ -11,6 +11,8 @@ import {
   PARCEL_POLYGON_TEMPLATE,
   TREE_POINT_TEMPLATE,
   shapefileTemplateReadme,
+  isTemplateExampleId,
+  EXAMPLE_FARMER_ID,
   type ExcelTemplateSpec,
 } from "@/lib/bulk-upload-templates";
 import { buildExcelTemplate, buildShapefileTemplateZip } from "@/lib/bulk-upload-template-download";
@@ -44,6 +46,13 @@ describe("template Excel — tajuk terpetakan otomatis", () => {
     expect(Object.keys(mapped).sort()).toEqual(PRODUCTION_UPLOAD_FIELDS.map((f) => f.key).sort());
   });
 
+  it("ID contoh dikenali sebagai baris template (Petani ditolak klien & server)", () => {
+    expect(isTemplateExampleId(EXAMPLE_FARMER_ID)).toBe(true);
+    expect(isTemplateExampleId(" cth.0002 ")).toBe(true);
+    expect(isTemplateExampleId("HJP.14.01.10.2011.0001")).toBe(false);
+    expect(isTemplateExampleId(null)).toBe(false);
+  });
+
   it("baris contoh memakai ID fiktif CTH.* (repo publik)", () => {
     for (const spec of [FARMER_TEMPLATE, PRODUCTION_TEMPLATE]) {
       for (const ex of spec.examples) expect(String(ex.farmerId)).toMatch(/^CTH\./);
@@ -61,6 +70,10 @@ describe("template Excel — berkas yang dirakit", () => {
     const header = (data.getRow(1).values as unknown[]).slice(1);
     expect(header).toEqual(spec.columns.map((c) => c.header));
     expect(data.rowCount).toBe(1 + spec.examples.length);
+    // Sheet Petunjuk tak boleh lolos deteksi tajuk (dibaca bila sheet Data kosong) — nama dikutip.
+    const guideCol = (back.getWorksheet("Petunjuk")!.getColumn(1).values as unknown[]).filter((v): v is string => typeof v === "string");
+    for (const c of spec.columns) expect(guideCol).toContain(`"${c.header}"`);
+    expect(guideCol).not.toContain(spec.columns[0].header);
   });
 });
 

@@ -163,6 +163,7 @@ Langkah:
 Harapan:
 - Semua kolom wajib sudah terpetakan otomatis (tanpa pilih manual); validasi menolak baris contoh karena ID fiktif **tidak terdaftar**, bukan karena kolom/atribut tidak dikenali.
 - Pohon: pratinjau "Lahan tidak ditemukan" untuk `CTH.0001.A…`; Poligon: peta pratinjau menampilkan persegi contoh di Riau.
+- Petani (review #419): baris contoh `CTH.*` berstatus **Error** "ID contoh dari template (CTH.…) — hapus baris contoh sebelum mengunggah" — tidak bisa tersimpan (klien & server).
 Baseline dev: `bulk-upload-templates.test.ts` (11: tajuk = alias parser, tajuk lama Produksi, workbook Data+Petunjuk, ZIP dibaca shpjs).
 
 ## #420 — Tata letak berkelompok (pemetaan kolom, Dashboard Main, form Lahan)

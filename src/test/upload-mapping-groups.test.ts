@@ -74,6 +74,21 @@ describe("GroupedFieldMapping — render", () => {
     expect(html).toContain("Wajib dipetakan");
   });
 
+  it("grup ber-isi tambahan (Bawaan NKT) terbuka walau kolomnya tak ada di berkas (review #420)", () => {
+    const html = renderToStaticMarkup(
+      createElement(GroupedFieldMapping, {
+        fields: PARCEL_DETAIL_TARGET_FIELDS,
+        groups: PARCEL_DETAIL_MAPPING_GROUPS,
+        headers: ["ID Lahan", "ID Petani"],
+        mapping: { parcelId: "ID Lahan", farmerId: "ID Petani" },
+        onChange: () => {},
+        groupExtra: { nkt: createElement("p", null, "PANEL-BAWAAN-NKT") },
+      }),
+    );
+    expect(html).toContain("PANEL-BAWAAN-NKT");
+    expect(html).toContain("bawaan di bawah");
+  });
+
   it("tanpa groups → satu daftar ringkas (Petani/Produksi)", () => {
     const html = render({ parcelId: "ID Lahan" });
     expect(html).not.toContain("tak ada di berkas");

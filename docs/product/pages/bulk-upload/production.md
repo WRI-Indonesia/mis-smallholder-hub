@@ -14,7 +14,7 @@ Halaman: Upload Data Produksi (/admin/bulk-upload/production)
 │   │   └── template_upload_produksi.xlsx — sheet "Data" + "Petunjuk" (#419)
 │   └── Info berkas: "Tipe File: XLSX/CSV (N baris terdeteksi)"
 ├── Langkah 2 — Petakan Atribut Kolom
-│   ├── Grid Select per target field (7 field, wajib/opsional)
+│   ├── Daftar ringkas pemetaan (7 field; label · pilihan kolom · contoh nilai baris pertama; ringkasan n/m terpetakan — #420)
 │   └── Tombol "Validasi Data Produksi"
 ├── Langkah 3 — Hasil Validasi & Tinjauan
 │   ├── Ringkasan: "N Baris Valid" / "N Baris Error"
@@ -57,8 +57,8 @@ Halaman: Upload Data Produksi (/admin/bulk-upload/production)
 | "1. Pilih File Data Produksi" | Card + Input `type="file"` | Keterangan *"Unggah file Excel (.xlsx) atau CSV yang berisi data transaksi panen / produksi petani."* |
 | "Unduh Template Excel" | Tombol (kanan atas kartu 1) | `downloadExcelTemplate(PRODUCTION_TEMPLATE)` (#419): sheet `Data` bertajuk `ID Petani`, `Periode`, `Tanggal Panen`, `Panen Ke-`, `Hasil Panen (kg)`, `ID Lahan`, `Catatan` — label `PRODUCTION_UPLOAD_FIELDS`, **terpetakan otomatis** (dulu tajuk bersufiks format tak dikenali alias → 6/7 kolom dipetakan manual; tajuk lama itu kini jadi alias) — + 2 baris contoh `CTH.*`; sheet `Petunjuk` (wajib + format). Kolom ID/Periode berformat teks |
 | Info berkas | Teks | *"Tipe File: **XLSX/CSV** (N baris terdeteksi)"* |
-| "2. Petakan Atribut Kolom" | Card + grid Select | Subjudul *"Cocokkan kolom dari berkas yang diunggah dengan data target sistem produksi."* |
-| Target field | 7 field | `ID Petani`* (contoh FARMER-001), `Periode`* (YYYY-MM), `Tanggal Panen`* (harus sesuai bulan periode; teks `DD/MM/YYYY` atau `YYYY-MM-DD` via `parseExcelDate`, #400), `Panen Ke-`* (1 s/d 4), `Hasil Panen (kg)`* (> 0), `ID Lahan` (opsional, CUID sistem), `Catatan` (maks 500 karakter) |
+| "2. Petakan Atribut Kolom" | Card + `GroupedFieldMapping` (`src/components/shared/grouped-field-mapping.tsx`, #420) tanpa grup (daftar ringkas; ubah pemetaan mengosongkan hasil validasi) | Subjudul *"Cocokkan kolom dari berkas yang diunggah dengan data target sistem produksi."* |
+| Target field | 7 field | `ID Petani`* (ID terdaftar, contoh `CTH.14.01.10.2012.0001`), `Periode`* (YYYY-MM), `Tanggal Panen`* (harus sesuai bulan periode; teks `DD/MM/YYYY` atau `YYYY-MM-DD` via `parseExcelDate`, #400), `Panen Ke-`* (1 s/d 4), `Hasil Panen (kg)`* (> 0), `ID Lahan` (opsional — ID Lahan terdaftar, contoh `CTH.0001.A.14.01.10.2012`; server juga menerima id internal: `OR [{ id }, { parcelId }]`), `Catatan` (maks 500 karakter) |
 | "Validasi Data Produksi" | Tombol | Loading *"Memproses..."*; sukses toast *"Validasi selesai"* |
 | "3. Hasil Validasi & Tinjauan" | Card | Subjudul *"Tinjau kembali hasil pemetaan dan kecocokan data sebelum menyimpan ke database."* |
 | Ringkasan hasil | Badge/pill | *"N Baris Valid"* / *"N Baris Error"* |

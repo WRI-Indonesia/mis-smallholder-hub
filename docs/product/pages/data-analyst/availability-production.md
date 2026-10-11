@@ -10,7 +10,7 @@ Kalender cakupan produksi: **bulan apa saja** yang sudah punya record produksi, 
 
 ```text
 Halaman: Ketersediaan Data — Produksi (/admin/data-analyst/availability/production)
-├── Header: judul + deskripsi (tanggal generate) + HelpHint
+├── Header: sub-nav `AvailabilityNav` (#417; `navSlot`) — h1 "Ketersediaan Data" + tab Semua Lembaga · Per Lembaga · **Produksi** + HelpHint; deskripsi (tanggal generate)
 ├── Toolbar (state di URL — useUrlFilters)
 │   ├── Tahun (Select) — ?tahun= (bawaan tahun berjalan; pilihan = tahun ber-record + tahun berjalan)
 │   ├── Kategori (Select) — ?kategori=

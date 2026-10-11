@@ -7,6 +7,7 @@ import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context"
 import { farmerSchema, type FarmerInput } from "@/validations/farmer.schema";
 import { formatFieldErrors } from "@/lib/validation-message";
 import type { ActionResult } from "@/types/action-result";
+import { TEMPLATE_EXAMPLE_ERROR, isTemplateExampleId } from "@/lib/bulk-upload-templates";
 
 /**
  * Daftar Lembaga tujuan untuk combobox Step 1 — dibatasi scope pengguna
@@ -87,6 +88,11 @@ export async function bulkCreateFarmers(
       };
     }
     validatedRecords.push(parsed.data);
+  }
+  // Baris contoh template Petani (#419, review): ID fiktif CTH.* sah secara format,
+  // jadi ditolak eksplisit — paritas validasi klien, tahan terhadap bypass UI.
+  if (validatedRecords.some((r) => isTemplateExampleId(r.farmerId))) {
+    return { success: false, error: TEMPLATE_EXAMPLE_ERROR };
   }
 
   // Validasi semua lembaga tani target berada dalam scope data-access user.

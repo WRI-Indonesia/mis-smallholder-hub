@@ -20,6 +20,7 @@ describe("toWinAnsiText", () => {
 
   it("karakter lain di luar WinAnsi jadi '?' — bukan merusak seluruh baris", () => {
     expect(toWinAnsiText("Lahan 🌴 1")).toBe("Lahan ? 1");
+    expect(toWinAnsiText("a\tb\r\nc")).toBe("a\tb\r\nc");
     expect([..."Lahan 🌴 1"].filter((c) => !isWinAnsiChar(c))).toEqual(["🌴"]);
   });
 });
@@ -54,5 +55,19 @@ describe("PDF Laporan Lahan — teks metadata & sections tanpa UTF-16", () => {
     expect(runs.some((r) => r.includes("\u0000"))).toBe(false);
     expect(runs).toContain("Selisih Luas >= 0,50 Ha: 32 \\(luas di surat vs luas poligon\\)");
     expect(runs).toContain("Siak >= 1");
+  });
+
+  it("sel tabel, label peta, dan catatan kaki juga dipetakan (review #419)", () => {
+    const doc = buildLandParcelReportDoc({
+      metadata: [],
+      columns: [{ header: "Catatan ≥", key: "note" }],
+      data: [{ note: "luas ≥ 2 ha → cek" }],
+      mapParcels: [{ no: 1, geometry: { type: "Polygon", coordinates: [[[101, 0.5], [101.01, 0.5], [101.01, 0.51], [101, 0.51], [101, 0.5]]] }, labelLines: ["1", "KT ≥ A"] }],
+    });
+    const runs = pdfTextRuns(doc.output());
+    expect(runs.some((r) => r.includes("\u0000"))).toBe(false);
+    expect(runs).toContain("luas >= 2 ha -> cek");
+    expect(runs).toContain("Catatan >=");
+    expect(runs).toContain("KT >= A");
   });
 });

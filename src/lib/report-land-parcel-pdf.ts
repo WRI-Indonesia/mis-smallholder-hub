@@ -411,7 +411,8 @@ export function buildLandParcelReportDoc({
     h: pageHeight - currentY - MARGIN - noteH,
     pad: 6,
   };
-  const linesByNo = new Map(mapParcels.map((p) => [p.no, p.labelLines]));
+  // Label peta dibersihkan SEBELUM diukur (fitLabelToBox/getTextWidth) — WinAnsi (review #419).
+  const linesByNo = new Map(mapParcels.map((p) => [p.no, p.labelLines.map(toWinAnsiText)]));
   const fullLayout = buildLandParcelMapLayout(mapParcels, mapBox);
   const split =
     grid.rows * grid.cols > 1 ? splitParcelsIntoGrid(mapParcels, grid.rows, grid.cols) : null;
@@ -481,7 +482,7 @@ export function buildLandParcelReportDoc({
   if (fullLayout.skippedNos.length > 0) {
     noteParts.push(`${fullLayout.skippedNos.length} lahan tanpa geometri tidak tergambar (No ${fullLayout.skippedNos.join(", ")}).`);
   }
-  doc.text(noteParts.join(" "), MARGIN, pageHeight - MARGIN + 3, { maxWidth: pageWidth - MARGIN * 2 });
+  doc.text(toWinAnsiText(noteParts.join(" ")), MARGIN, pageHeight - MARGIN + 3, { maxWidth: pageWidth - MARGIN * 2 });
 
   // ── Halaman per sel grid (atlas) ──
   if (useGrid) {
@@ -490,7 +491,7 @@ export function buildLandParcelReportDoc({
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...SLATE_800);
-      doc.text(`Peta ${cell.label} (${idx + 1}/${split!.cells.length}) — ${cell.parcels.length} lahan`, MARGIN, 12);
+      doc.text(toWinAnsiText(`Peta ${cell.label} (${idx + 1}/${split!.cells.length}) — ${cell.parcels.length} lahan`), MARGIN, 12);
 
       const cellBox = { x: MARGIN, y: 16, w: pageWidth - MARGIN * 2, h: pageHeight - 16 - MARGIN, pad: 6 };
       const cellLayout = buildLandParcelMapLayout(cell.parcels, cellBox);
@@ -509,11 +510,12 @@ export function buildLandParcelReportDoc({
   // ── Tabel ──
   doc.addPage();
   autoTable(doc, {
-    head: [columns.map((c) => c.header)],
+    // Sel tabel (nama petani, KT, catatan…) ikut WinAnsi — satu glyph asing merusak seluruh sel (review #419).
+    head: [columns.map((c) => toWinAnsiText(c.header))],
     body: data.map((row) =>
       columns.map((c) => {
         const val = row[c.key];
-        return val !== undefined && val !== null ? String(val) : "—";
+        return val !== undefined && val !== null ? toWinAnsiText(String(val)) : "—";
       }),
     ),
     startY: 14,
