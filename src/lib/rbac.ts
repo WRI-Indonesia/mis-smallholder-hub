@@ -172,12 +172,17 @@ export const isSuperAdmin = cache(async (): Promise<boolean> => {
 export async function redirectToFirstAccessibleChild(parentKey: string): Promise<never> {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  // Hanya `isActive`: visibilitas urusan sidebar, bukan hak akses — anak yang
+  // disembunyikan tetapi boleh dibuka tetap sah jadi tujuan (review #412).
   const children = await prisma.menuItem.findMany({
-    where: { parentKey, isActive: true, isVisible: true },
+    where: { parentKey, isActive: true },
     orderBy: { order: "asc" },
     select: { key: true, url: true },
   });
   const accessible = await getAccessibleMenuKeys(session.user.role, session.user.id);
   const target = firstAccessibleChild(children, accessible);
-  redirect(target?.url ?? "/admin");
+  // Fallback TIDAK boleh `/admin`: `/admin` → `/admin/dashboard` → helper ini lagi
+  // = putaran tanpa henti bila tak satu pun anak Dashboard boleh dibuka (review #412).
+  // Bantuan bila boleh, kalau tidak halaman profil (hanya butuh sesi).
+  redirect(target?.url ?? (accessible.includes("help") ? "/admin/help" : "/admin/profile"));
 }

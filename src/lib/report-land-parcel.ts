@@ -1,6 +1,6 @@
 import type { Position } from "geojson";
 import type { ParcelNodes } from "@/lib/parcel-node-coords";
-import { EMPTY_GROUP_PLACEHOLDER } from "@/lib/group-placeholder";
+import { isEmptyGroupToken } from "@/lib/group-placeholder";
 import type {
   LandParcelLegalFilters,
   LandParcelReportResult,
@@ -329,7 +329,7 @@ const sheetCollator = new Intl.Collator("id-ID", { numeric: true, sensitivity: "
  */
 export function parcelGroupValue(v: string | null | undefined): string | null {
   const t = v?.trim().replace(/\s+/g, " ");
-  return t && !EMPTY_GROUP_PLACEHOLDER.test(t) ? t : null;
+  return t && !isEmptyGroupToken(t) ? t : null;
 }
 
 /** Urutan natural nama grup ("2 F" < "11 F"); null ("Tanpa …") di akhir. */

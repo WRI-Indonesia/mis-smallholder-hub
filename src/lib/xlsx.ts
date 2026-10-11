@@ -43,11 +43,21 @@ export function fillWorksheet(worksheet: ExcelJS.Worksheet, columns: ExportColum
     // Kolom multi-baris: wrapText agar "\n" di nilai tampil sebagai baris, bukan satu baris panjang.
     if (col.wrap) column.alignment = { wrapText: true, vertical: "top" };
     if (col.width != null) return;
+    // Auto-fit dari `data` (satu lintasan, tanpa menelusuri ulang sel worksheet — review #412);
+    // kolom wrap selalu selebar maksimum (panjang teks multi-baris tak bermakna).
+    if (col.wrap) {
+      column.width = AUTO_FIT_MAX;
+      return;
+    }
     let maxLen = col.header ? col.header.length : AUTO_FIT_MIN;
-    column.eachCell({ includeEmpty: true }, (cell) => {
-      const valStr = cell.value ? String(cell.value) : "";
-      if (valStr.length > maxLen) maxLen = valStr.length;
-    });
+    for (const row of data) {
+      const v = row[col.key];
+      const len = v == null || v === "" ? 0 : String(v).length;
+      if (len > maxLen) {
+        maxLen = len;
+        if (maxLen + 3 >= AUTO_FIT_MAX) break;
+      }
+    }
     column.width = Math.min(Math.max(maxLen + 3, AUTO_FIT_MIN), AUTO_FIT_MAX);
   });
 }

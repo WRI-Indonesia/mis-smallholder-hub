@@ -17,8 +17,8 @@ import { readFileSync } from "node:fs";
 import { parse } from "csv-parse/sync";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, type Role } from "@prisma/client";
-import { readMenuSeed, validateMenuSeedRows } from "../../prisma/seeds/seed-menu";
+import { PrismaClient, type PermissionLevel, type Role } from "@prisma/client";
+import { readMenuSeed } from "../../prisma/seeds/seed-menu";
 
 const APPLY = process.argv.includes("--apply");
 const KEY = process.argv.slice(2).find((a) => !a.startsWith("--"));
@@ -27,9 +27,9 @@ if (!KEY) {
   process.exit(1);
 }
 
+// `readMenuSeed` sudah menjalankan `validateMenuSeedRows` (induk ada, tanpa siklus,
+// kedalaman ≤ 3) — aturan yang sama dengan seeder penuh, tanpa salinan di sini.
 const menuRows = readMenuSeed();
-// Validasi struktur seluruh CSV (induk ada, tanpa siklus, kedalaman ≤ 3) — aturan yang sama dengan seeder penuh.
-validateMenuSeedRows(menuRows);
 const row = menuRows.find((r) => r.key === KEY);
 if (!row) throw new Error(`Menu "${KEY}" tidak ada di menu.csv`);
 const MENU = {
@@ -42,7 +42,7 @@ const MENU = {
   isActive: row.isActive,
   isVisible: row.isVisible,
 };
-const PERMS = (parse(readFileSync("prisma/seeds/data/role-permissions.csv", "utf8"), { columns: true, skip_empty_lines: true }) as { role: string; menu_key: string; permission: string }[]).filter(
+const PERMS = (parse(readFileSync("prisma/seeds/data/role-permissions.csv", "utf8"), { columns: true, skip_empty_lines: true }) as { role: Role; menu_key: string; permission: PermissionLevel }[]).filter(
   (r) => r.menu_key === KEY,
 );
 if (PERMS.length === 0) throw new Error(`Tidak ada izin untuk "${KEY}" di role-permissions.csv`);
@@ -71,7 +71,7 @@ try {
       await prisma.menuItem.create({ data: MENU });
       console.log(`\n✓ Menu ${MENU.key} dibuat`);
     }
-    for (const m of missing) await prisma.rolePermission.create({ data: { role: m.role as Role, menuKey: MENU.key, permission: m.permission } });
+    for (const m of missing) await prisma.rolePermission.create({ data: { role: m.role, menuKey: MENU.key, permission: m.permission } });
     if (missing.length) console.log(`✓ ${missing.length} permission dibuat`);
   } else {
     console.log("\nDRY-RUN — tidak ada yang ditulis. Jalankan ulang dengan --apply.");

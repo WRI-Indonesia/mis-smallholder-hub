@@ -8,8 +8,16 @@
  * `cleanCell` (import Detail Lahan) tetap punya daftar lebih luas untuk kolom
  * STDB/surat ("belum dapat", "proses") — itu semantik "sedang diurus", bukan KT/Blok.
  */
-export const EMPTY_GROUP_TOKENS = ["tidak ada", "belum ada", "n/a", "na", "null", "nil", "none"] as const;
-export const EMPTY_GROUP_PLACEHOLDER = new RegExp("^(" + EMPTY_GROUP_TOKENS.map((t) => t.replace("/", "\\/")).join("|") + "|-+)$", "i");
+export const EMPTY_GROUP_TOKENS = new Set([
+  "tidak ada", "belum ada", "belum", "belum dapat", "dalam proses", "sedang diurus", "proses", "belum terbit", "tidak terbit",
+  "n/a", "na", "null", "nil", "none", "0",
+]);
+
+/** Token kosong KT/Blok: salah satu daftar di atas (tak peka huruf besar) atau hanya tanda "-". Pencocokan Set, bukan RegExp (review #412: metakarakter). */
+export function isEmptyGroupToken(value: string): boolean {
+  const t = value.trim().replace(/\s+/g, " ");
+  return t === "" || /^-+$/.test(t) || EMPTY_GROUP_TOKENS.has(t.toLowerCase());
+}
 
 /**
  * Nilai KT/Blok untuk DISIMPAN: trim + spasi ganda (termasuk NBSP) dirapatkan —
@@ -18,5 +26,5 @@ export const EMPTY_GROUP_PLACEHOLDER = new RegExp("^(" + EMPTY_GROUP_TOKENS.map(
  */
 export function cleanGroupInput(value: string): string | null {
   const t = value.trim().replace(/\s+/g, " ");
-  return t && !EMPTY_GROUP_PLACEHOLDER.test(t) ? t : null;
+  return isEmptyGroupToken(t) ? null : t;
 }

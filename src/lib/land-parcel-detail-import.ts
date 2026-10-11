@@ -67,8 +67,9 @@ export const LAND_DOCUMENT_TYPE_LABELS: Record<LandDocumentTypeCode, string> = {
  * memang tak diisi. Untuk kolom STDB keduanya kini dibedakan; untuk kolom lain
  * (jenis/nomor surat, luas) tidak ada tahapan, jadi keduanya tetap = kosong.
  */
-const PENDING_TOKENS = new Set(["n/a", "na", "belum dapat", "belum ada", "belum", "tidak ada", "dalam proses", "sedang diurus", "proses", "belum terbit", "tidak terbit"]);
-const BLANK_TOKENS = new Set(["", "-", "0", "null", "nil", "none"]);
+// Diekspor untuk penjaga drift: setiap token yang dikosongkan import juga dikosongkan `cleanGroupInput` KT/Blok (TD-046, test group-placeholder).
+export const PENDING_TOKENS = new Set(["n/a", "na", "belum dapat", "belum ada", "belum", "tidak ada", "dalam proses", "sedang diurus", "proses", "belum terbit", "tidak terbit"]);
+export const BLANK_TOKENS = new Set(["", "-", "0", "null", "nil", "none"]);
 const EMPTY_TOKENS = new Set([...BLANK_TOKENS, ...PENDING_TOKENS]);
 
 export function cleanCell(value: unknown): string {

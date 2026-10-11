@@ -1,13 +1,8 @@
 import ExcelJS from "exceljs";
-import { fillWorksheet } from "@/lib/xlsx";
+import { fillWorksheet, type ExportColumn } from "@/lib/xlsx";
 
-export interface LpExcelColumn {
-  header: string;
-  key: string;
-  width?: number;
-  /** Sel multi-baris (Koordinat #370) — satu perilaku dengan Peta Lahan (TD-044). */
-  wrap?: boolean;
-}
+/** Satu bentuk kolom dengan ekspor lain (TD-044; review #412: bukan deklarasi ulang). */
+export type LpExcelColumn = ExportColumn;
 
 export interface LpExcelImage {
   /** PNG murni (tanpa prefix data URL). */
@@ -66,11 +61,6 @@ export function safeSheetName(label: string, used: Set<string>): string {
   return name;
 }
 
-/** Penulis sheet bersama (`fillWorksheet`, TD-044): gaya header, wrap, auto-fit sama dengan ekspor lain. */
-function fillSheet(ws: ExcelJS.Worksheet, columns: LpExcelColumn[], data: Record<string, string | number>[]) {
-  fillWorksheet(ws, columns, data);
-}
-
 function addSheetImage(
   wb: ExcelJS.Workbook,
   ws: ExcelJS.Worksheet,
@@ -105,12 +95,12 @@ export function buildLandParcelWorkbook({
   if (infoSheet.length > 0) addInfoSheet(wb, infoSheet);
 
   const full = wb.addWorksheet("Lahan");
-  fillSheet(full, columns, fullData);
+  fillWorksheet(full, columns, fullData);
   if (overviewImage) addSheetImage(wb, full, overviewImage, columns.length + 1);
 
   for (const cell of cellSheets) {
     const ws = wb.addWorksheet(`Peta ${cell.label}`);
-    fillSheet(ws, columns, cell.data);
+    fillWorksheet(ws, columns, cell.data);
     if (cell.image) addSheetImage(wb, ws, cell.image, columns.length + 1);
   }
 
@@ -120,7 +110,7 @@ export function buildLandParcelWorkbook({
   used.add("ringkasan");
   for (const g of groupSheets) {
     const ws = wb.addWorksheet(safeSheetName(g.label, used));
-    fillSheet(ws, columns, g.data);
+    fillWorksheet(ws, columns, g.data);
     if (g.image) addSheetImage(wb, ws, g.image, columns.length + 1);
   }
 
@@ -130,7 +120,7 @@ export function buildLandParcelWorkbook({
 /** Sheet "Ringkasan": filter aktif & angka legalitas, satu baris per butir. */
 function addInfoSheet(wb: ExcelJS.Workbook, rows: LpExcelInfoRow[]) {
   const ws = wb.addWorksheet("Ringkasan");
-  fillSheet(
+  fillWorksheet(
     ws,
     [
       { header: "Bagian", key: "section" },
