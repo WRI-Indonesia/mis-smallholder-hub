@@ -188,7 +188,7 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
     setStatusFilter(FILTER_DEFAULTS.status);
   }
 
-  const q = search.toLowerCase();
+  const q = search.trim().toLowerCase();
 
   function matchesSearch(item: { code: string; name: string }) {
     return !q || item.code.toLowerCase().includes(q) || item.name.toLowerCase().includes(q);

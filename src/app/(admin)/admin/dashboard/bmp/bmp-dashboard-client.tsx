@@ -175,8 +175,20 @@ export function BmpDashboardClient({ initialView, helpSlot, canExport = false }:
   // Excel produktivitas per umur tanaman (#426): selalu SEMUA Lembaga snapshot (sudah
   // dibatasi scope viewer di server) — filter UI sengaja diabaikan (owner 2026-10-12).
   const [exporting, setExporting] = useState(false);
+  // Snapshot tanpa data umur (dibuat sebelum #191, atau berbatas umur lama #428) →
+  // semua kolom umur kosong padahal Keterangan menyebutnya "belum ada luas terdata".
+  const snapshotHasAgeData = useMemo(
+    () => allGroups.some((g) => Object.keys(g.byYearAge ?? {}).length > 0),
+    [allGroups]
+  );
   const handleExport = async () => {
     if (!view) return;
+    if (!snapshotHasAgeData) {
+      toast.error(
+        "Snapshot ini belum memuat data umur tanaman, atau masih memakai batas umur lama — generate ulang snapshot BMP melalui menu Tools"
+      );
+      return;
+    }
     setExporting(true);
     try {
       const [{ buildBmpAgeProductivityWorkbook }, { downloadWorkbook }] = await Promise.all([

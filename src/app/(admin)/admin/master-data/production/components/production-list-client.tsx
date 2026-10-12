@@ -86,7 +86,9 @@ export function ProductionListClient({
         group: farmerGroupFilter,
         period: periodFilter,
         hasParcel: hasParcelFilter,
-        status: statusFilter,
+        // Status hanya berlaku (dan tampil) untuk SUPERADMIN — `?status=` di URL
+        // user lain diabaikan matchStatus, jadi jangan memunculkan Reset.
+        status: isSuperAdmin ? statusFilter : PRODUCTION_FILTER_DEFAULTS.status,
         search,
       },
       PRODUCTION_FILTER_DEFAULTS,
@@ -100,9 +102,11 @@ export function ProductionListClient({
     setHasParcelFilter(d.hasParcel);
     setStatusFilter(d.status);
     setSearch(d.search);
-    // Buang query tautan agar muat ulang halaman tak menerapkannya lagi; data
-    // sudah penuh, jadi cukup History API (tanpa ambil ulang RSC).
-    if (window.location.search) window.history.replaceState(null, "", pathname);
+    // Buang query tautan lewat router (bukan History API): `key` client = query,
+    // jadi router.refresh() berikutnya (mis. ubah status) pada URL hasil
+    // replaceState me-mount ulang client dan membuang filter yang dipilih setelah
+    // Reset. Remount di sini aman — state-nya memang sudah bawaan.
+    if (window.location.search) router.replace(pathname, { scroll: false });
   }
 
   const filtered = initialRecords.filter((r) => {

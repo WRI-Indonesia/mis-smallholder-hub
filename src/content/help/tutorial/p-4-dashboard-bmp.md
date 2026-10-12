@@ -43,4 +43,4 @@ Angkanya dibaca dari **snapshot**, sama seperti Main Dashboard.
 
 **Produktivitas terasa terlalu tinggi** — periksa berapa banyak produksi yang tercatat tanpa ID Lahan, lalu lihat kalender **Ketersediaan Data › Produksi** untuk melihat bulan mana saja yang sudah terisi per lahan.
 
-**Analisa umur tanaman kosong / kartu Luasan tanpa persen** — snapshot dibuat sebelum fitur ini ada, sehingga belum memuat tahun tanam dan total luas. Analisa umur juga dikosongkan bila snapshot dibuat sebelum batas umur diubah (TBM kini < 3 tahun). Buat ulang snapshot lewat **Tools → Dashboard Snapshot BMP**.
+**Analisa umur tanaman kosong / Excel menolak diunduh / kartu Luasan tanpa persen** — snapshot dibuat sebelum fitur ini ada, sehingga belum memuat tahun tanam dan total luas. Analisa umur juga dikosongkan bila snapshot dibuat sebelum batas umur diubah (TBM kini < 3 tahun). Buat ulang snapshot lewat **Tools → Dashboard Snapshot BMP**.

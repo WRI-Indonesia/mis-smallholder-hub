@@ -627,7 +627,7 @@ export function normalizeBmpSnapshotData(raw: unknown): BmpSnapshotData {
   // batas baru, jadi data umur seluruh snapshot dikosongkan (UI meminta generate
   // ulang). Tanpa kunci lama, bucket 9–15/16–25/>25 tetap benar dan dipertahankan.
   const legacyAge = groups.some((g) =>
-    Object.values(g.byYearAge ?? {}).some((b) => Object.keys(b).some((k) => LEGACY_AGE_KEYS.has(k)))
+    Object.values(g.byYearAge ?? {}).some((b) => Object.keys(b ?? {}).some((k) => LEGACY_AGE_KEYS.has(k)))
   );
   return {
     // Snapshot lama (sebelum #425) masih memuat subset "Data Full 1 Tahun" — dibuang

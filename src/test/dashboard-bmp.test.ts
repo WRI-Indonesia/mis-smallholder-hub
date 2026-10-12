@@ -357,6 +357,10 @@ describe("normalizeBmpSnapshotData — batas umur lama (#428)", () => {
     }
   });
 
+  it("bucket tahun bernilai null (payload rusak) tidak melempar", () => {
+    expect(() => normalizeBmpSnapshotData({ groups: [{ id: "g1", name: "A", byYearAge: { "2025": null } }] })).not.toThrow();
+  });
+
   it("tanpa kunci lama → bucket 9–15/16–25/>25 tetap (batasnya tak berubah)", () => {
     const d = normalizeBmpSnapshotData(withAge({ "2024": { gt25: { produksiTon: 1, luasMelaporHa: 1 } } }));
     expect(d.groups[0].byYearAge).toEqual({ "2024": { gt25: { produksiTon: 1, luasMelaporHa: 1 } } });

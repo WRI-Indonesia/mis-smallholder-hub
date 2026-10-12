@@ -296,9 +296,11 @@ export function DataTable<T>({
   // ─── Search filter ──────────────────────────────────────────────────────
 
   const filteredData = useMemo(() => {
-    if (!search) return data;
+    // Trim seperti `hasActiveFilters` (#427): Cari berisi spasi saja = tanpa pencarian.
+    const query = search.trim();
+    if (!query) return data;
 
-    const lower = search.toLowerCase();
+    const lower = query.toLowerCase();
 
     // Custom search function takes priority
     if (searchFn) {
