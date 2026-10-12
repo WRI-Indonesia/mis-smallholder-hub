@@ -49,9 +49,8 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [qa/README.md](./qa/README.md) | Proses QA/QC manual: kapan (setelah deploy staging, sebelum PR `staging → main`), siapa, aturan bukti (gitignored — repo publik) |
 | [qa/_template/](./qa/_template/) | Master per rilis: scope (akun & persiapan data) · smoke `SM-nn` · kasus uji `TC-<issue>-nn` ber-tag P0/P1/P2 · QC data · temuan · sign-off · template lembar run |
 | [qa/regression.md](./qa/regression.md) | Kasus `[regresi]` yang ikut setiap rilis (lahir dari temuan review/bug) |
-| [qa/v1.4.0/](./qa/v1.4.0/) · [v1.5.0](./qa/v1.5.0/) · [v1.6.0](./qa/v1.6.0/) | Paket QA tiga rilis terakhir yang sudah terbit (00–05 + `runs/`; v1.5.1 hotfix tanpa paket); lebih lama di [qa/archive/](./qa/archive/) |
-| [qa/archive/](./qa/archive/) | Paket QA rilis lebih lama (v0.35.0 — rilis pertama proses ini — s.d. v1.3.0) |
-| [qa/v1.7.0/](./qa/v1.7.0/) | Rilis berjalan — MINOR v1.7.0 (semula PATCH v1.6.1; 2026-10-11 → 10-25; kasus uji TC-409/386/384/387/416; seed menu wajib #416) |
+| [qa/v1.5.0/](./qa/v1.5.0/) · [v1.6.0](./qa/v1.6.0/) · [v1.7.0](./qa/v1.7.0/) | Paket QA tiga rilis terakhir yang sudah terbit (00–05 + `runs/`; v1.5.1 hotfix tanpa paket); lebih lama di [qa/archive/](./qa/archive/) |
+| [qa/archive/](./qa/archive/) | Paket QA rilis lebih lama (v0.35.0 — rilis pertama proses ini — s.d. v1.4.0) |
 | `scripts/qa/` | `data-qc.ts` (cek DB read-only → tabel markdown) · `new-run.mjs` (lembar run dari spesifikasi) · `summary.mjs` (rekap Pass/Fail per run) |
 
 ## 🧭 Keputusan (`decisions/`) — catatan keputusan besar

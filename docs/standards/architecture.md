@@ -17,7 +17,7 @@
 ```
 src/
 ├── app/
-│   ├── (admin)/admin/        # dashboard, master-data, data-analyst, map, report, bulk-upload, settings, tools, profile, help
+│   ├── (admin)/admin/        # dashboard, master-data, data-analyst, map, report, bulk-upload, settings, tools, profile, help, platform-developer
 │   ├── (public)/             # Home, community, knowledge-management
 │   ├── api/                  # NextAuth + proxy tile peta (map-overlay, map-hotspot, map-basemap)
 │   ├── login/                # Halaman login
@@ -29,14 +29,14 @@ src/
 │   ├── auth/                 # Login form
 │   ├── layout/               # Admin & public layout
 │   └── session-provider.tsx, theme-provider.tsx
-├── content/                  # Materi Bantuan (help/, 65 file .md — dibundel via loader asset/source di next.config.ts)
+├── content/                  # Materi Bantuan (help/, jumlah berkas: tabel Ringkasan Teknis di bawah — dibundel via loader asset/source di next.config.ts)
 ├── hooks/                    # Custom hooks (use-mobile, use-url-filters, use-vector-basemap)
 ├── lib/                      # Prisma, rbac, access-context, utils, helper murni (firms, map-data, dsb)
 ├── server/actions/           # Server Actions
 ├── test/                     # Unit test Vitest (jumlah: tabel Ringkasan Teknis di bawah)
 ├── validations/              # Zod schemas
 ├── types/                    # Custom types
-└── middleware.ts             # NextAuth guard /admin/* & /login
+└── middleware.ts             # NextAuth guard /admin/* (/login me-redirect sendiri, #342)
 ```
 
 ### Teknologi
