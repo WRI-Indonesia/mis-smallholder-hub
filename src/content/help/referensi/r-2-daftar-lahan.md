@@ -45,7 +45,7 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **PSR** — penanda lahan sedang diremajakan. Tanpa penanda ini, lahan PSR akan terbaca sebagai lahan bermasalah pada analisa ketersediaan data, padahal nol hasil memang wajar selama peremajaan.
 
-**Tahun Tanam** — dasar memperkirakan umur tanaman. Sawit di bawah 4 tahun belum berbuah optimal; di atas 25 tahun hasilnya menurun.
+**Tahun Tanam** — dasar memperkirakan umur tanaman. Sawit di bawah 3 tahun belum berbuah optimal; di atas 25 tahun hasilnya menurun.
 
 **Kelompok Tani** — kelompok di bawah Lembaga Petani. Untuk sementara disimpan **per lahan**, belum sebagai tabel tersendiri. Tulis namanya persis sama untuk semua lahan di kelompok yang sama — beda satu spasi akan terhitung sebagai dua kelompok berbeda.
 

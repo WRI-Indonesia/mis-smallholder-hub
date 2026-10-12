@@ -76,7 +76,7 @@ describe("buildBmpAgeExcelMatrix (#426)", () => {
   it("bucket umur dan Tanpa thn tanam terisi; tanpa luas terdata = null (kosong), bukan 0", () => {
     const alpha = rowOf("Alpha").cells["2024"];
     expect(alpha["9-15"]).toEqual({ produktivitasTonHa: 6, luasMelaporHa: 2 });
-    expect(alpha.lt4).toEqual({ produktivitasTonHa: null, luasMelaporHa: null });
+    expect(alpha.lt3).toEqual({ produktivitasTonHa: null, luasMelaporHa: null });
     expect(rowOf("Alpha").cells["2025"].all).toEqual({ produktivitasTonHa: null, luasMelaporHa: null });
 
     const gamma = rowOf("Gamma").cells["2025"];
@@ -116,7 +116,7 @@ describe("buildBmpAgeProductivityWorkbook (#426)", () => {
     expect(ws.getCell(4, 2).value).toBe("Alpha");
     expect(ws.getCell(4, col(1, "all")).value).toBe(6);
     expect(ws.getCell(4, col(1, "9-15")).value).toBe(6);
-    expect(ws.getCell(4, col(1, "lt4")).value).toBeNull();
+    expect(ws.getCell(4, col(1, "lt3")).value).toBeNull();
     expect(ws.getCell(6, col(2, "unknown")).value).toBe(6); // Gamma 2025
     expect(ws.getRow(7).getCell(2).value).toBeNull(); // pemisah
     expect(ws.getCell(8, 2).value).toBe("Subtotal Distrik");

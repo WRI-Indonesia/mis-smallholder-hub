@@ -38,13 +38,14 @@ export interface BmpRawParcel {
 /**
  * Bucket umur tanaman (#191) — umur pada TAHUN PRODUKSI (tahun produksi −
  * tahun tanam), bukan umur hari ini, agar analisa historis tetap benar.
- * Batas mengikuti kurva hasil sawit (fase PPKS/Ditjenbun): TBM 0–3, TM muda
- * 4–8 (menanjak), TM prima 9–15 (puncak), TM tua 16–25 (menurun), renta >25
- * (kandidat peremajaan/PSR).
+ * Batas mengikuti kurva hasil sawit: TBM 0–2, TM muda 3–8 (menanjak), TM prima
+ * 9–15 (puncak), TM tua 16–25 (menurun), renta >25 (kandidat peremajaan/PSR).
+ * TBM < 3 / TM muda 3–8 = keputusan owner 2026-10-12 (#428; dulu < 4 / 4–8),
+ * selaras dengan filter Exclude "tanaman < 3 thn" matriks produksi.
  */
 const BMP_AGE_BUCKETS = [
-  { key: "lt4", label: "< 4 thn (TBM)" },
-  { key: "4-8", label: "4–8 thn (TM muda)" },
+  { key: "lt3", label: "< 3 thn (TBM)" },
+  { key: "3-8", label: "3–8 thn (TM muda)" },
   { key: "9-15", label: "9–15 thn (TM prima)" },
   { key: "16-25", label: "16–25 thn (TM tua)" },
   { key: "gt25", label: "> 25 thn (renta)" },
@@ -57,8 +58,8 @@ export function bmpAgeBucketKey(plantingYear: number | null, productionYear: num
   if (plantingYear == null) return "unknown";
   const age = productionYear - plantingYear;
   if (age < 0) return "unknown";
-  if (age < 4) return "lt4";
-  if (age <= 8) return "4-8";
+  if (age < 3) return "lt3";
+  if (age <= 8) return "3-8";
   if (age <= 15) return "9-15";
   if (age <= 25) return "16-25";
   return "gt25";
@@ -615,10 +616,19 @@ export function bmpChartSeries(
 
 type LegacyBmpGroupEntry = BmpGroupEntry & { monthlyFull?: unknown; byYearFull?: unknown; byYearAgeFull?: unknown };
 
+/** Kunci bucket umur sebelum #428 (TBM < 4, TM muda 4–8). */
+const LEGACY_AGE_KEYS = new Set(["lt4", "4-8"]);
+
 /** Baca JSON `data` snapshot BMP secara toleran (payload rusak → kosong). */
 export function normalizeBmpSnapshotData(raw: unknown): BmpSnapshotData {
   const obj = (raw ?? {}) as Record<string, unknown>;
   const groups = Array.isArray(obj.groups) ? (obj.groups as LegacyBmpGroupEntry[]) : [];
+  // Snapshot sebelum #428 menyimpan umur 3 di TBM — angkanya tak bisa dipetakan ke
+  // batas baru, jadi data umur seluruh snapshot dikosongkan (UI meminta generate
+  // ulang). Tanpa kunci lama, bucket 9–15/16–25/>25 tetap benar dan dipertahankan.
+  const legacyAge = groups.some((g) =>
+    Object.values(g.byYearAge ?? {}).some((b) => Object.keys(b).some((k) => LEGACY_AGE_KEYS.has(k)))
+  );
   return {
     // Snapshot lama (sebelum #425) masih memuat subset "Data Full 1 Tahun" — dibuang
     // supaya tidak ikut terkirim ke client.
@@ -627,7 +637,7 @@ export function normalizeBmpSnapshotData(raw: unknown): BmpSnapshotData {
       ...g,
       monthly: g.monthly ?? {},
       byYear: g.byYear ?? {},
-      byYearAge: g.byYearAge ?? {},
+      byYearAge: legacyAge ? {} : (g.byYearAge ?? {}),
       availability: g.availability ?? emptyAvailability(),
       totals: { ...emptyTotals(), ...(g.totals ?? {}) },
     })),

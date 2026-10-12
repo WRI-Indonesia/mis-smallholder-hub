@@ -342,6 +342,28 @@ describe("normalizeBmpSnapshotData", () => {
   });
 });
 
+describe("normalizeBmpSnapshotData — batas umur lama (#428)", () => {
+  const withAge = (byYearAge: Record<string, Record<string, { produksiTon: number; luasMelaporHa: number }>>) => ({
+    groups: [
+      { id: "g1", name: "Alpha", byYearAge },
+      { id: "g2", name: "Beta", byYearAge: { "2025": { "9-15": { produksiTon: 1, luasMelaporHa: 2 } } } },
+    ],
+  });
+
+  it("kunci lt4/4-8 di salah satu Lembaga → data umur seluruh snapshot dikosongkan (minta generate ulang)", () => {
+    for (const legacyKey of ["lt4", "4-8"]) {
+      const d = normalizeBmpSnapshotData(withAge({ "2024": { [legacyKey]: { produksiTon: 1, luasMelaporHa: 1 } } }));
+      expect(d.groups.map((g) => g.byYearAge)).toEqual([{}, {}]);
+    }
+  });
+
+  it("tanpa kunci lama → bucket 9–15/16–25/>25 tetap (batasnya tak berubah)", () => {
+    const d = normalizeBmpSnapshotData(withAge({ "2024": { gt25: { produksiTon: 1, luasMelaporHa: 1 } } }));
+    expect(d.groups[0].byYearAge).toEqual({ "2024": { gt25: { produksiTon: 1, luasMelaporHa: 1 } } });
+    expect(d.groups[1].byYearAge["2025"]["9-15"]).toEqual({ produksiTon: 1, luasMelaporHa: 2 });
+  });
+});
+
 describe("bmpYearOptions & bmpDefaultYear (#191)", () => {
   it("default = tahun berjalan bila ber-data; fallback tahun terbaru; tanpa tahun → average", () => {
     expect(bmpDefaultYear([2026, 2025], 2026)).toBe(2026);
@@ -361,9 +383,13 @@ describe("bmpYearOptions & bmpDefaultYear (#191)", () => {
 
 describe("bucket umur tanaman (#191)", () => {
   it("bmpAgeBucketKey: umur dihitung pada tahun produksi, fase kurva hasil sawit", () => {
-    expect(bmpAgeBucketKey(2022, 2025)).toBe("lt4"); // umur 3 — TBM
-    expect(bmpAgeBucketKey(2021, 2025)).toBe("4-8"); // umur 4 — TM muda
-    expect(bmpAgeBucketKey(2015, 2025)).toBe("9-15"); // umur 10 — TM prima
+    expect(bmpAgeBucketKey(2023, 2025)).toBe("lt3"); // umur 2 — TBM
+    expect(bmpAgeBucketKey(2022, 2025)).toBe("3-8"); // umur 3 — TM muda (#428; dulu TBM)
+    expect(bmpAgeBucketKey(2017, 2025)).toBe("3-8"); // umur 8 — TM muda
+    expect(bmpAgeBucketKey(2016, 2025)).toBe("9-15"); // umur 9 — TM prima
+    expect(bmpAgeBucketKey(2010, 2025)).toBe("9-15"); // umur 15 — TM prima
+    expect(bmpAgeBucketKey(2009, 2025)).toBe("16-25"); // umur 16 — TM tua
+    expect(bmpAgeBucketKey(1999, 2025)).toBe("gt25"); // umur 26 — renta
     expect(bmpAgeBucketKey(2000, 2025)).toBe("16-25"); // umur 25 — TM tua
     expect(bmpAgeBucketKey(1995, 2025)).toBe("gt25"); // umur 30 — renta/PSR
     expect(bmpAgeBucketKey(null, 2025)).toBe("unknown");
@@ -373,12 +399,12 @@ describe("bucket umur tanaman (#191)", () => {
   it("byYearAge terisi per tahun × bucket — hanya record ber-lahan", () => {
     const d = buildBmpSnapshotData(groups, farmers, parcels, [
       { farmerId: "f1", parcelId: "p1", period: "2025-01", kg: 1500 }, // p1 (2015) → 9-15
-      { farmerId: "f1", parcelId: "p2", period: "2025-02", kg: 500 }, // p2 (2022) → lt4
+      { farmerId: "f1", parcelId: "p2", period: "2025-02", kg: 500 }, // p2 (2022) → umur 3 → 3-8
       { farmerId: "f1", parcelId: null, period: "2025-03", kg: 999 }, // tanpa lahan → di luar analisa umur
     ]);
     const g1 = d.groups.find((g) => g.id === "g1")!;
     expect(g1.byYearAge["2025"]["9-15"]).toEqual({ produksiTon: 1.5, luasMelaporHa: 2 });
-    expect(g1.byYearAge["2025"]["lt4"]).toEqual({ produksiTon: 0.5, luasMelaporHa: 1.5 });
+    expect(g1.byYearAge["2025"]["3-8"]).toEqual({ produksiTon: 0.5, luasMelaporHa: 1.5 });
     expect(g1.byYearAge["2025"]["unknown"]).toBeUndefined();
   });
 
@@ -395,7 +421,7 @@ describe("bucket umur tanaman (#191)", () => {
     });
     expect(series.find((s) => s.key === "16-25")!.produktivitasTonHa).toBe(12); // p4 tanam 2000, umur 25
     // Bucket program tanpa data tetap tampil (0); "unknown" hanya bila ber-data.
-    expect(series.find((s) => s.key === "4-8")!.produksiTon).toBe(0);
+    expect(series.find((s) => s.key === "3-8")!.produksiTon).toBe(0);
     expect(series.find((s) => s.key === "unknown")).toBeUndefined();
   });
 });

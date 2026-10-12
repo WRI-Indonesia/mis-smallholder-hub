@@ -15,8 +15,8 @@ import type { BmpFarmerGroupCategory, BmpGroupEntry } from "@/types/dashboard";
 /** Kolom per periode; urutan = urutan kolom Excel. Label mengikuti format owner. */
 export const BMP_AGE_EXCEL_COLUMNS = [
   { key: "all", label: "Semua umur" },
-  { key: "lt4", label: "<4 th (TBM)" },
-  { key: "4-8", label: "4-8 th (TM Muda)" },
+  { key: "lt3", label: "<3 th (TBM)" },
+  { key: "3-8", label: "3-8 th (TM Muda)" },
   { key: "9-15", label: "9-15 th (TM Prima)" },
   { key: "16-25", label: "16-25 th (TM Tua)" },
   { key: "gt25", label: ">25 th (Renta)" },
