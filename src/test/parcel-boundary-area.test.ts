@@ -7,7 +7,6 @@ import {
   buildOutsideBoundaryRows,
   findingFilterOptions,
   findingsByGroup,
-  isAreaMismatch,
   outsideKind,
   parseOutsideKind,
   parseTopologyTab,
@@ -75,15 +74,15 @@ describe("Selisih Luas — satu definisi dengan DA-02", () => {
 
   it("rasio terhadap yang lebih besar; tepat 20% bukan temuan (ketat >)", () => {
     expect(areaMismatchRatio(1, 0.8)).toBeCloseTo(0.2);
-    expect(isAreaMismatch(1, 0.8)).toBe(false);
-    expect(isAreaMismatch(1, 0.79)).toBe(true);
-    expect(isAreaMismatch(0.79, 1)).toBe(true);
+    const raw = (id: string, recordedHa: number, polygonHa: number): AreaMismatchRaw => ({ ...ident(id), recordedHa, polygonM2: polygonHa * 10_000 });
+    const ids = buildAreaMismatchRows([raw("pas", 1, 0.8), raw("kecil", 1, 0.79), raw("besar", 0.79, 1)]).map((r) => r.id);
+    expect(ids.sort()).toEqual(["besar", "kecil"]);
   });
 
   it("luas kosong / ≤ 0 tidak dinilai", () => {
     expect(areaMismatchRatio(null, 1)).toBeNull();
     expect(areaMismatchRatio(0, 1)).toBeNull();
-    expect(isAreaMismatch(1, null)).toBe(false);
+    expect(areaMismatchRatio(1, null)).toBeNull();
   });
 
   it("buildAreaMismatchRows: arah, persen, urut selisih terbesar", () => {
