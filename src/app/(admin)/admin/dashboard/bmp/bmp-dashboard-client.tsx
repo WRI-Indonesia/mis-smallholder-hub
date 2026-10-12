@@ -44,12 +44,17 @@ export function BmpDashboardClient({ initialView, helpSlot, canExport = false }:
   // Tampilan bawaan saat halaman dibuka — inisialisasi state + tombol Reset (#427).
   // Default tahun berjalan (#191, revisi dari default "Rataan"); fallback tahun
   // terbaru ber-data bila tahun ini belum ada di snapshot — jangan menunjuk tahun kosong.
-  const [defaultFilters] = useState(() => ({
-    category: null as BmpFarmerGroupCategory | null,
-    districtId: null as string | null,
-    groupId: null as string | null,
-    year: bmpDefaultYear(bmpYearOptions(initialView?.data.groups ?? []), new Date().getFullYear()),
-  }));
+  // Diturunkan dari data terkini (bukan dibekukan saat mount): setelah refresh
+  // snapshot, tahun bawaan Reset ikut tahun ber-data terbaru (review #427).
+  const defaultFilters = useMemo(
+    () => ({
+      category: null as BmpFarmerGroupCategory | null,
+      districtId: null as string | null,
+      groupId: null as string | null,
+      year: bmpDefaultYear(bmpYearOptions(initialView?.data.groups ?? []), new Date().getFullYear()),
+    }),
+    [initialView],
+  );
   const [districtId, setDistrictId] = useState<string | null>(defaultFilters.districtId);
   const [groupId, setGroupId] = useState<string | null>(defaultFilters.groupId);
   const [category, setCategory] = useState<BmpFarmerGroupCategory | null>(defaultFilters.category);

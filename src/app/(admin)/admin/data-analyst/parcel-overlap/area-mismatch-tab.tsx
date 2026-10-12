@@ -5,7 +5,7 @@ import type { DataTableColumn } from "@/components/shared/data-table";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import { useUrlFilters } from "@/hooks/use-url-filters";
-import { hasActiveFilters } from "@/lib/filter-reset";
+import { clearedUrlKeys, hasActiveFilters } from "@/lib/filter-reset";
 import { formatArea, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { exportFileBase } from "@/lib/parcel-export-data";
@@ -48,9 +48,8 @@ export function AreaMismatchTab({ rows, canExport }: { rows: AreaMismatchRow[]; 
   const [search, setSearch] = useState(FILTER_DEFAULTS.cari);
   const filtersActive = hasActiveFilters({ arah: direction, distrik: districtId, lembaga: groupId, cari: search }, FILTER_DEFAULTS);
   const resetFilters = () => {
-    const { cari, ...url } = FILTER_DEFAULTS;
-    setMany(Object.fromEntries(Object.keys(url).map((k) => [k, null])));
-    setSearch(cari);
+    setMany(clearedUrlKeys(FILTER_DEFAULTS, ["cari"]));
+    setSearch(FILTER_DEFAULTS.cari);
   };
 
   const scoped = useMemo(

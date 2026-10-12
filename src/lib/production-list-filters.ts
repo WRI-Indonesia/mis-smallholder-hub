@@ -2,9 +2,10 @@ import type { StatusFilterValue } from "@/components/shared/status-filter-select
 
 /**
  * Filter daftar Master Data › Produksi (#427). Halaman bisa dibuka dengan query
- * (tautan sel Kalender Ketersediaan Produksi: `?farmerGroupId=…&period=…[&search=…]`)
- * yang sudah menyaring data di server — nilai awal filter client diturunkan dari
- * query yang sama agar saringan itu terlihat (dan bisa di-Reset), bukan diam-diam.
+ * (tautan sel Kalender Ketersediaan Produksi: `?farmerGroupId=…&period=…[&search=…]`).
+ * Query itu HANYA menjadi nilai awal filter client — data tetap dimuat penuh
+ * seperti halaman tanpa query — sehingga saringan terlihat, bisa diubah ke arah
+ * mana pun, dan di-Reset tanpa memuat ulang.
  */
 export type ProductionListFilters = {
   district: string;
@@ -15,7 +16,7 @@ export type ProductionListFilters = {
   search: string;
 };
 
-/** Query URL yang dibaca page.tsx untuk menyaring data di server. */
+/** Query URL yang dibaca page.tsx sebagai nilai awal filter. */
 export interface ProductionListSearchParams {
   search?: string;
   farmerGroupId?: string;
@@ -36,28 +37,24 @@ export const PRODUCTION_FILTER_DEFAULTS: ProductionListFilters = {
 
 const HAS_PARCEL_VALUES = new Set(["all", "true", "false"]);
 const STATUS_VALUES = new Set<string>(["all", "active", "inactive"]);
-
-/** `true` bila URL membawa saringan server (Reset harus membersihkan query). */
-export function hasProductionQuery(params: ProductionListSearchParams): boolean {
-  return Boolean(params.search || params.farmerGroupId || params.period || params.hasParcel || params.status);
-}
+const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 /**
- * Nilai awal filter client dari query. Distrik diturunkan dari Lembaga (bila
- * Lembaga ada di opsi akun ini); nilai tak dikenal untuk Lahan/Status jatuh ke
- * bawaan. Periode & Cari diteruskan apa adanya karena server memakainya mentah.
+ * Nilai awal filter client dari query. Nilai yang tak bisa DITAMPILKAN kontrolnya
+ * jatuh ke bawaan agar tak ada saringan tersembunyi: Lembaga di luar opsi akun
+ * ini (scope/nonaktif), Periode bukan `YYYY-MM` (input bulan tak bisa
+ * menampilkannya), Lahan/Status tak dikenal. Distrik diturunkan dari Lembaga.
  */
 export function productionFiltersFromSearchParams(
   params: ProductionListSearchParams,
   farmerGroups: readonly { id: string; districtId: string }[],
 ): ProductionListFilters {
   const d = PRODUCTION_FILTER_DEFAULTS;
-  const group = params.farmerGroupId || d.group;
-  const district = farmerGroups.find((g) => g.id === group)?.districtId ?? d.district;
+  const match = params.farmerGroupId ? farmerGroups.find((g) => g.id === params.farmerGroupId) : undefined;
   return {
-    district,
-    group,
-    period: params.period ?? d.period,
+    district: match?.districtId ?? d.district,
+    group: match?.id ?? d.group,
+    period: params.period && PERIOD_RE.test(params.period) ? params.period : d.period,
     hasParcel: params.hasParcel && HAS_PARCEL_VALUES.has(params.hasParcel) ? params.hasParcel : d.hasParcel,
     status: params.status && STATUS_VALUES.has(params.status) ? (params.status as StatusFilterValue) : d.status,
     search: params.search ?? d.search,

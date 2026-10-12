@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hasActiveFilters } from "@/lib/filter-reset";
+import { clearedUrlKeys, hasActiveFilters } from "@/lib/filter-reset";
 
 describe("hasActiveFilters (#427)", () => {
   const defaults = { district: null, group: null, status: "active", year: 2026, q: "", jenis: [] as string[] };
@@ -33,5 +33,16 @@ describe("hasActiveFilters (#427)", () => {
 
   it("kunci di luar bawaan diabaikan (mis. tab tampilan)", () => {
     expect(hasActiveFilters({ ...defaults, tab: "detail" }, defaults)).toBe(false);
+  });
+});
+
+describe("clearedUrlKeys (#427)", () => {
+  it("semua kunci bawaan jadi null (dihapus dari URL), kecuali kunci state lokal", () => {
+    expect(clearedUrlKeys({ distrik: null, urut: "coverage", tahun: 2026, cari: "" }, ["cari"])).toEqual({
+      distrik: null,
+      urut: null,
+      tahun: null,
+    });
+    expect(clearedUrlKeys({ a: "x" })).toEqual({ a: null });
   });
 });

@@ -628,7 +628,7 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <PanelSection id="filter" icon={<FilterIcon className="h-3.5 w-3.5" />} title="Filter" aside={f.hasFilter && <span className="h-2 w-2 rounded-full bg-primary" aria-label="Filter aktif" />}>
+            <PanelSection id="filter" icon={<FilterIcon className="h-3.5 w-3.5" />} title="Filter" aside={f.hasEntityFilter && <span className="h-2 w-2 rounded-full bg-primary" aria-label="Filter aktif" />}>
               <SupplyChainFilterBar f={f} years={view.years} vertical />
             </PanelSection>
 
@@ -683,7 +683,7 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
           className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-md border bg-card/95 px-3 py-2 text-sm font-medium shadow-lg"
         >
           <PanelLeftOpen className="h-4 w-4" /> Rantai Pasok
-          {f.hasFilter && <span className="h-2 w-2 rounded-full bg-primary" aria-label="Filter aktif" />}
+          {f.hasEntityFilter && <span className="h-2 w-2 rounded-full bg-primary" aria-label="Filter aktif" />}
         </button>
       )}
       {!panelOpen && focusLabel && (

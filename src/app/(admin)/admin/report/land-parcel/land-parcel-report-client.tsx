@@ -255,7 +255,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   const resetFilters = () => {
     setCoverage(FILTER_DEFAULTS.coverage);
     setDocumentStatus(FILTER_DEFAULTS.documentStatus);
-    setDocumentTypes(new Set(FILTER_DEFAULTS.documentTypes));
+    // Set baru hanya bila berubah: identitas baru memicu ulang kueri laporan (review #427).
+    setDocumentTypes((prev) => (prev.size === 0 ? prev : new Set(FILTER_DEFAULTS.documentTypes)));
     setStdbStatus(FILTER_DEFAULTS.stdbStatus);
     setAreaDiff(FILTER_DEFAULTS.areaDiff);
     setNktStatus(FILTER_DEFAULTS.nktStatus);

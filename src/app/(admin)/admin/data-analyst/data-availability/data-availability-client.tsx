@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
-import { hasActiveFilters } from "@/lib/filter-reset";
+import { clearedUrlKeys, hasActiveFilters } from "@/lib/filter-reset";
 import {
   AVAILABILITY_DOMAIN_KEYS,
   AVAILABILITY_DOMAIN_LABELS,
@@ -215,23 +215,24 @@ export function DataAvailabilityClient({
   ];
   // Pencarian ikut menyempitkan matriks → tampil sebagai chip dan ikut Reset (review #417).
   if (query.trim()) filterChips.push({ id: "cari", label: "Cari", value: query.trim(), onRemove: () => setQuery("") });
-  const isModuleSort = matrixView === "modul";
+  // Urut/arah dibaca MENTAH dari URL (setSort/setModuleSort menulis null untuk
+  // bawaan): urutan tampilan lain yang tertinggal di URL (mis. urut domain saat
+  // tampilan modul, review #427) tetap memunculkan Reset.
   const filtersActive = hasActiveFilters(
     {
       kategori: category,
       distrik: districtId,
       lembaga: groupId,
       band,
-      urut: isModuleSort ? (moduleSortKey === "name" ? null : moduleSortKey) : sortKey === "health" ? null : sortKey,
-      arah: (isModuleSort ? moduleSortAsc : sortAsc) ? null : "turun",
+      urut: get("urut"),
+      arah: get("arah"),
       cari: query,
     },
     FILTER_DEFAULTS,
   );
   const resetFilters = () => {
-    const { cari, ...url } = FILTER_DEFAULTS;
-    setMany(Object.fromEntries(Object.keys(url).map((k) => [k, null])));
-    setQuery(cari);
+    setMany(clearedUrlKeys(FILTER_DEFAULTS, ["cari"]));
+    setQuery(FILTER_DEFAULTS.cari);
   };
 
   const totals = useMemo(() => availabilityTotals(scope), [scope]);

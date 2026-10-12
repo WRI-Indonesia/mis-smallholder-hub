@@ -60,8 +60,6 @@ interface Props {
   isSuperAdmin: boolean;
   /** Nilai awal filter dari query URL (#427); tanpa query = bawaan. */
   initialFilters?: ProductionListFilters;
-  /** URL membawa saringan server — Reset harus membersihkan query (#427). */
-  hasServerQuery?: boolean;
 }
 
 export function ProductionListClient({
@@ -71,7 +69,6 @@ export function ProductionListClient({
   permissions,
   isSuperAdmin,
   initialFilters = PRODUCTION_FILTER_DEFAULTS,
-  hasServerQuery = false,
 }: Props) {
   const [districtFilter, setDistrictFilter] = useState(initialFilters.district);
   const [farmerGroupFilter, setFarmerGroupFilter] = useState(initialFilters.group);
@@ -82,11 +79,8 @@ export function ProductionListClient({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Reset (#427) = halaman TANPA query. Selama query masih ada, data dari server
-  // sudah tersaring → tombol tetap tampil walau filter client sama dengan bawaan.
-  const filtersActive =
-    hasServerQuery ||
-    hasActiveFilters(
+  // Reset (#427) = halaman TANPA query (data selalu dimuat penuh).
+  const filtersActive = hasActiveFilters(
       {
         district: districtFilter,
         group: farmerGroupFilter,
@@ -106,8 +100,9 @@ export function ProductionListClient({
     setHasParcelFilter(d.hasParcel);
     setStatusFilter(d.status);
     setSearch(d.search);
-    // Lepas saringan server: muat ulang halaman tanpa query → data penuh.
-    if (hasServerQuery) router.replace(pathname, { scroll: false });
+    // Buang query tautan agar muat ulang halaman tak menerapkannya lagi; data
+    // sudah penuh, jadi cukup History API (tanpa ambil ulang RSC).
+    if (window.location.search) window.history.replaceState(null, "", pathname);
   }
 
   const filtered = initialRecords.filter((r) => {

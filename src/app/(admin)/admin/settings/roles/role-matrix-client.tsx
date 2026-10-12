@@ -333,7 +333,7 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
             );
           })}
           {/* Reset (#427) menggantikan tombol "Semua": menampilkan semua role + mengosongkan Cari. */}
-          <ResetFiltersButton active={filtersActive} onReset={resetFilters} className="h-6 px-2 text-xs" />
+          <ResetFiltersButton active={filtersActive} onReset={resetFilters} size="sm" />
         </div>
       </div>
 

@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
-import { hasActiveFilters } from "@/lib/filter-reset";
+import { clearedUrlKeys, hasActiveFilters } from "@/lib/filter-reset";
 import { HeatLegend } from "@/components/shared/score-visuals";
 import { PRODUCTION_STALE_MONTHS } from "@/lib/data-completeness-registry";
 import { formatGeneratedAt, formatNumber, MONTH_SHORT_ID } from "@/lib/format";
@@ -91,9 +91,8 @@ export function ProductionAvailabilityClient({
     filterDefaults,
   );
   const resetFilters = () => {
-    const { cari, ...url } = filterDefaults;
-    setMany(Object.fromEntries(Object.keys(url).map((k) => [k, null])));
-    setQuery(cari);
+    setMany(clearedUrlKeys(filterDefaults, ["cari"]));
+    setQuery(filterDefaults.cari);
   };
 
   const keepGroup = (nextDistrictId: string | null, nextCategory: BmpFarmerGroupCategory | null): Record<string, string | null> => {

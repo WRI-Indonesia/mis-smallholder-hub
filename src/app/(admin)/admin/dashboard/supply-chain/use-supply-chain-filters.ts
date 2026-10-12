@@ -80,8 +80,11 @@ export function useSupplyChainFilters(view: SupplyChainView) {
   const query = new URLSearchParams(Object.entries(values).filter((e): e is [string, string] => e[1] != null)).toString();
   // Termasuk Tahun ≠ terbaru (#427) — Reset tampil & mengembalikannya.
   const hasFilter = hasActiveFilters(values, SC_FILTER_DEFAULTS);
+  // Penanda "Filter aktif" di panel Peta: hanya filter entitas — Tahun adalah
+  // periode tampilan, bukan saringan (makna penanda sebelum #427).
+  const hasEntityFilter = hasActiveFilters({ ...values, tahun: null }, SC_FILTER_DEFAULTS);
 
-  return { district, category, year, filter, baseRecords, records, options, districtOptions, offtakers, millsById, update, reset, hasFilter, query };
+  return { district, category, year, filter, baseRecords, records, options, districtOptions, offtakers, millsById, update, reset, hasFilter, hasEntityFilter, query };
 }
 
 export type SupplyChainFilterState = ReturnType<typeof useSupplyChainFilters>;

@@ -22,3 +22,12 @@ function normalize(v: FilterValue): string | number | boolean | null {
 export function hasActiveFilters(current: FilterValues, defaults: FilterValues): boolean {
   return Object.keys(defaults).some((k) => normalize(current[k]) !== normalize(defaults[k]));
 }
+
+/**
+ * Patch `useUrlFilters().setMany` untuk Reset halaman ber-URL: setiap kunci di
+ * `defaults` dihapus dari query (bawaan = kunci tak ada), kecuali `localKeys`
+ * yang disimpan di state lokal (mis. kotak Cari) dan di-reset terpisah.
+ */
+export function clearedUrlKeys(defaults: FilterValues, localKeys: readonly string[] = []): Record<string, null> {
+  return Object.fromEntries(Object.keys(defaults).filter((k) => !localKeys.includes(k)).map((k) => [k, null]));
+}
