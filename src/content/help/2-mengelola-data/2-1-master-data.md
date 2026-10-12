@@ -16,6 +16,6 @@ intro: Menu Master Data adalah tempat input harian: Lembaga Petani, Petani, Laha
 
 **Menonaktifkan, bukan menghapus** — Data tidak pernah dihapus permanen. Tombol hapus akan menonaktifkan data (status Nonaktif) sehingga riwayat tetap utuh; gunakan filter Status untuk melihat data nonaktif dan mengaktifkannya kembali. Tombol hapus dan filter Status secara bawaan hanya ada untuk SUPERADMIN — peran lain hanya melihat data aktif, jadi minta SUPERADMIN bila ada data yang perlu dinonaktifkan.
 
-**Revisi data lahan** — Saat data lahan diubah, sistem menyimpan versi lama dan membuat versi baru (nomor Revisi bertambah). Ini menjaga jejak perubahan batas atau luas kebun.
+**Revisi data lahan** — Ada dua jalur. **Edit lewat form** adalah koreksi di tempat: nilai lama tertimpa dan nomor Revisi naik sebagai penghitung berapa kali lahan itu dikoreksi; nilai lamanya tidak bisa dilihat lagi. **Unggah ulang shapefile** dianggap survei baru: baris lama dinonaktifkan, baris baru dibuat dengan Revisi +1, dan data produksi, pohon, serta patoknya ikut pindah ke baris baru.
 
 **Data pribadi disensor** — Di layar, NIK ditampilkan sebagian dan tanggal-bulan lahir disembunyikan (tahun tetap tampil). Hasil export Excel/PDF tetap lengkap untuk kebutuhan kerja data, jadi jaga kerahasiaan filenya.

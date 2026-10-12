@@ -38,7 +38,7 @@ Siapkan **ID Lahan** dan luasnya. ID Lahan harus unik untuk petani tersebut, dan
 + Status kepemilikan kerap diminta saat audit sertifikasi RSPO/ISPO untuk memastikan hak garap petani jelas.
 7. Klik **Buat**.
 
-> [!penting] Kolom **Revisi** terisi otomatis dan bertambah setiap kali data lahan diperbarui. Itu jejak riwayat, bukan kolom yang perlu Anda isi.
+> [!penting] Kolom **Revisi** terisi otomatis dan bertambah setiap kali data lahan diperbarui. Itu penghitung perubahan, bukan kolom yang perlu Anda isi — nilai lama hasil edit form tidak disimpan.
 
 ## Memastikan berhasil
 
