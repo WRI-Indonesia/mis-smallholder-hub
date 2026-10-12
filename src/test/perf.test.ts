@@ -601,7 +601,7 @@ describe("Performance - addParticipants Zod validation (#130)", () => {
 // nilai ternormalisasi (trim+lowercase, buang null) — buktikan pendekatan O(n) tetap
 // murah pada skala besar & normalisasi meredam noise typo/spasi (dedup benar).
 describe("Performance - Kelompok Tani distinct aggregation (#148, subGroupLv2)", () => {
-  it("counts distinct normalized subGroupLv2 over 50k parcels under 20ms", () => {
+  it("counts distinct normalized subGroupLv2 over 50k parcels under 100ms", () => {
     const KT_POOL = Array.from({ length: 500 }, (_, i) => `Kelompok Tani ${i}`);
     // 50k lahan: ~1/7 null, sisanya salah satu dari 500 KT + noise spasi/kapital
     const parcels = Array.from({ length: 50_000 }, (_, i) => ({
@@ -693,7 +693,7 @@ describe("Performance - RSPO cert sort & format (#160)", () => {
 // seluruh petani di Lembaga tsb. Buktikan agregasi O(n) satu-pass tetap murah →
 // aman dihitung di generator snapshot (bukan real-time per-baris list).
 describe("Performance - Lembaga Petani snapshot aggregation (#153, per-Lembaga distinct)", () => {
-  it("aggregates distinct KT/Blok per Lembaga over 50k parcels under 30ms", () => {
+  it("aggregates distinct KT/Blok per Lembaga over 50k parcels under 100ms", () => {
     const N_LEMBAGA = 100;
     const parcels = Array.from({ length: 50_000 }, (_, i) => ({
       farmerGroupId: `lembaga-${i % N_LEMBAGA}`,

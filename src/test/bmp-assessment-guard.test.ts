@@ -14,28 +14,34 @@ const isSuperAdmin = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission, isSuperAdmin }));
 
 const getAccessContext = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/access-context", () => ({
+// Helper scope ASLI dari `access-scope` (murni) — BY_DISTRICT ikut teruji, bukan salinan.
+vi.mock("@/lib/access-context", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/access-scope")>("@/lib/access-scope")),
   getAccessContext,
-  farmerAccessFilter: (access: { mode: string; ids: string[] }) =>
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } : {},
-  farmerGroupAccessFilter: (access: { mode: string; ids: string[] }) =>
-    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } : {},
-  farmerRelationAccessFilter: (access: { mode: string; ids: string[] }) =>
-    access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } : {},
 }));
 vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "user-1" } }) }));
 
 const db = vi.hoisted(() => ({
   farmer: { findFirst: vi.fn(), findMany: vi.fn() },
   farmerGroup: { findFirst: vi.fn() },
+  landParcel: { findMany: vi.fn() },
   landParcelIdentity: { findFirst: vi.fn() },
   bmpAssessment: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), createMany: vi.fn() },
   $transaction: vi.fn(),
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
-const { createBmpAssessment, updateBmpAssessment, toggleBmpAssessmentActive, importBmpAssessments, getBmpAssessments } =
-  await import("@/server/actions/bmp-assessment");
+const {
+  createBmpAssessment,
+  updateBmpAssessment,
+  toggleBmpAssessmentActive,
+  importBmpAssessments,
+  getBmpAssessments,
+  getFarmerBmpAssessments,
+  getFarmerParcelOptions,
+  getFarmersForBmpSelect,
+  getBmpImportRefs,
+} = await import("@/server/actions/bmp-assessment");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -47,6 +53,8 @@ beforeEach(() => {
   db.landParcelIdentity.findFirst.mockResolvedValue({ id: "uid-1" });
   db.bmpAssessment.findFirst.mockResolvedValue(null);
   db.bmpAssessment.findMany.mockResolvedValue([]);
+  db.farmer.findMany.mockResolvedValue([]);
+  db.landParcel.findMany.mockResolvedValue([]);
   db.bmpAssessment.create.mockResolvedValue({ id: "a-1" });
   db.bmpAssessment.update.mockResolvedValue({ id: "a-1" });
   db.bmpAssessment.createMany.mockResolvedValue({ count: 1 });
@@ -239,5 +247,109 @@ describe("import — resolusi ulang di server, upsert per petani-tahun", () => {
     const res = await importBmpAssessments({ farmerGroupId: "g-1", rows: [rows[0]] });
     expect(res.success).toBe(false);
     expect((res as { error: string }).error).toMatch(/tidak ada baris yang tersimpan/);
+  });
+});
+
+describe("action baca pendukung (tab Detail Petani, form, import) — izin VIEW + scope", () => {
+  const MENU = "master-data-bmp-monev";
+  const BY_GROUP = { mode: "BY_FARMER_GROUP", ids: ["g-1"] };
+  const BY_DISTRICT = { mode: "BY_DISTRICT", ids: ["d-1"] };
+  const reads: [string, () => Promise<unknown>][] = [
+    ["getFarmerBmpAssessments", () => getFarmerBmpAssessments("f-1")],
+    ["getFarmerParcelOptions", () => getFarmerParcelOptions("f-1")],
+    ["getFarmersForBmpSelect", () => getFarmersForBmpSelect("g-1")],
+    ["getBmpImportRefs", () => getBmpImportRefs("g-1")],
+  ];
+
+  it.each(reads)("%s: VIEW ditolak → throw tanpa scope/DB; izin dicek persis (menu, VIEW)", async (_, call) => {
+    hasPermission.mockResolvedValue(false);
+    await expect(call()).rejects.toThrow(/izin/);
+    expect(hasPermission).toHaveBeenCalledExactlyOnceWith(MENU, "VIEW");
+    expect(getAccessContext).not.toHaveBeenCalled();
+    for (const fn of [db.bmpAssessment.findMany, db.farmer.findFirst, db.farmer.findMany, db.farmerGroup.findFirst, db.landParcel.findMany]) {
+      expect(fn).not.toHaveBeenCalled();
+    }
+  });
+
+  it("getFarmerBmpAssessments: where = petani + aktif + scope relasi farmer (kedua mode); baris dipetakan ke item daftar", async () => {
+    db.bmpAssessment.findMany.mockResolvedValue([
+      {
+        id: "a-1", farmerId: "f-1", surveyYear: 2026, surveyDate: null, score: 1.8, parcelUid: "uid-1", assessor: "X", notes: null, isActive: true,
+        farmer: { farmerId: "P.01", name: "Budi", farmerGroupId: "g-1", farmerGroup: { name: "Lembaga A", districtId: "d-1", district: { name: "Siak" } } },
+        parcel: { parcelId: "L.01" },
+      },
+    ]);
+    getAccessContext.mockResolvedValue(BY_GROUP);
+    const rows = await getFarmerBmpAssessments("f-1");
+    expect(rows[0]).toMatchObject({ id: "a-1", farmerCode: "P.01", farmerGroupName: "Lembaga A", districtName: "Siak", parcelId: "L.01" });
+    expect(db.bmpAssessment.findMany.mock.calls[0][0].where).toEqual({ farmerId: "f-1", isActive: true, farmer: { farmerGroupId: { in: ["g-1"] } } });
+
+    getAccessContext.mockResolvedValue(BY_DISTRICT);
+    await getFarmerBmpAssessments("f-1");
+    expect(db.bmpAssessment.findMany.mock.calls[1][0].where).toEqual({
+      farmerId: "f-1",
+      isActive: true,
+      farmer: { farmerGroup: { districtId: { in: ["d-1"] } } },
+    });
+  });
+
+  it("getFarmerParcelOptions: petani di luar scope → [] tanpa kueri lahan; where by-id memuat id + scope", async () => {
+    db.farmer.findFirst.mockResolvedValue(null);
+    getAccessContext.mockResolvedValue(BY_GROUP);
+    await expect(getFarmerParcelOptions("f-9")).resolves.toEqual([]);
+    expect(db.farmer.findFirst.mock.calls[0][0].where).toEqual({ id: "f-9", isActive: true, farmerGroupId: { in: ["g-1"] } });
+
+    getAccessContext.mockResolvedValue(BY_DISTRICT);
+    await expect(getFarmerParcelOptions("f-9")).resolves.toEqual([]);
+    expect(db.farmer.findFirst.mock.calls[1][0].where).toEqual({ id: "f-9", isActive: true, farmerGroup: { districtId: { in: ["d-1"] } } });
+    expect(db.landParcel.findMany).not.toHaveBeenCalled();
+  });
+
+  it("getFarmerParcelOptions: petani dalam scope → lahan aktif petani itu (parcelUid, bukan id revisi)", async () => {
+    db.landParcel.findMany.mockResolvedValue([{ parcelUid: "uid-1", parcelId: "L.01", blok: null }]);
+    await expect(getFarmerParcelOptions("f-1")).resolves.toEqual([{ parcelUid: "uid-1", parcelId: "L.01", blok: null }]);
+    expect(db.landParcel.findMany.mock.calls[0][0]).toMatchObject({
+      where: { farmerId: "f-1", isActive: true },
+      select: { parcelUid: true, parcelId: true, blok: true },
+    });
+  });
+
+  it.each([
+    ["getFarmersForBmpSelect", (id: string) => getFarmersForBmpSelect(id)],
+    ["getBmpImportRefs", (id: string) => getBmpImportRefs(id)],
+  ])("%s: Lembaga di luar scope → throw tanpa kueri petani; scope lewat AND (id literal tak tertimpa)", async (_, call) => {
+    db.farmerGroup.findFirst.mockResolvedValue(null);
+    getAccessContext.mockResolvedValue(BY_GROUP);
+    await expect(call("g-9")).rejects.toThrow(/tidak dalam akses/);
+    expect(db.farmerGroup.findFirst.mock.calls[0][0].where).toEqual({ id: "g-9", isActive: true, AND: { id: { in: ["g-1"] } } });
+
+    getAccessContext.mockResolvedValue(BY_DISTRICT);
+    await expect(call("g-9")).rejects.toThrow(/tidak dalam akses/);
+    expect(db.farmerGroup.findFirst.mock.calls[1][0].where).toEqual({ id: "g-9", isActive: true, AND: { districtId: { in: ["d-1"] } } });
+    expect(db.farmer.findMany).not.toHaveBeenCalled();
+  });
+
+  it("getFarmersForBmpSelect: Lembaga dalam scope → petani aktif Lembaga itu", async () => {
+    db.farmer.findMany.mockResolvedValue([{ id: "f-1", name: "Budi", farmerId: "P.01" }]);
+    await expect(getFarmersForBmpSelect("g-1")).resolves.toEqual([{ id: "f-1", name: "Budi", farmerId: "P.01" }]);
+    expect(db.farmer.findMany.mock.calls[0][0].where).toEqual({ farmerGroupId: "g-1", isActive: true });
+  });
+
+  it("getBmpImportRefs: lahan & tahun aktif per petani; tahun dinilai unik dan terurut", async () => {
+    db.farmer.findMany.mockResolvedValue([
+      {
+        id: "f-1", farmerId: "P.01", name: "Budi",
+        landParcels: [{ parcelId: "L.01", parcelUid: "uid-1" }],
+        bmpAssessments: [{ surveyYear: 2026 }, { surveyYear: 2025 }, { surveyYear: 2026 }],
+      },
+    ]);
+    const refs = await getBmpImportRefs("g-1");
+    expect(refs).toEqual([
+      { farmerCode: "P.01", farmerDbId: "f-1", farmerName: "Budi", parcels: [{ parcelId: "L.01", parcelUid: "uid-1" }], assessedYears: [2025, 2026] },
+    ]);
+    const arg = db.farmer.findMany.mock.calls[0][0];
+    expect(arg.where).toEqual({ farmerGroupId: "g-1", isActive: true });
+    expect(arg.select.landParcels.where).toEqual({ isActive: true });
+    expect(arg.select.bmpAssessments.where).toEqual({ isActive: true });
   });
 });

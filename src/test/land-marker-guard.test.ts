@@ -55,6 +55,8 @@ const db = vi.hoisted(() => {
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
 const actions = await import("@/server/actions/land-marker");
+const { s3 } = await import("@/lib/s3");
+const s3Send = vi.mocked(s3.send);
 
 const PARCEL = {
   id: "lp-1", parcelUid: "uid-1", parcelId: "HJP.0001.A", revision: 1,
@@ -264,5 +266,116 @@ describe("unlinkLandMarker — patok tanpa tautan aktif ikut nonaktif, yang masi
     db.landParcelMarker.count.mockResolvedValue(2);
     await actions.unlinkLandMarker("lp-1", "m-1");
     expect(db.landMarker.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("uploadLandMarkerPhoto — validasi berkas & kepemilikan sebelum S3 (audit 2026-10-12)", () => {
+  const form = (o: { file?: File | null; landParcelId?: string; markerId?: string } = {}) => {
+    const fd = new FormData();
+    const file = o.file === undefined ? new File([new Uint8Array([0xff, 0xd8, 0xff])], "Foto Patok 1.JPG", { type: "image/jpeg" }) : o.file;
+    if (file) fd.set("file", file);
+    fd.set("landParcelId", o.landParcelId ?? "lp-1");
+    fd.set("markerId", o.markerId ?? "m-1");
+    return fd;
+  };
+  const expectNothingWritten = () => {
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(db.landMarker.update).not.toHaveBeenCalled();
+  };
+
+  it("berkas kosong (field file tidak ada) → ditolak tanpa kueri", async () => {
+    expect(await actions.uploadLandMarkerPhoto(form({ file: null }))).toEqual({ success: false, error: "Berkas atau patok tidak ditemukan" });
+    expect(db.landParcel.findFirst).not.toHaveBeenCalled();
+    expectNothingWritten();
+  });
+
+  it("tipe text/plain → 'Hanya JPG, PNG, atau WebP' sebelum lahan dibaca & sebelum s3.send", async () => {
+    const txt = new File(["halo"], "catatan.txt", { type: "text/plain" });
+    expect(await actions.uploadLandMarkerPhoto(form({ file: txt }))).toEqual({ success: false, error: "Hanya JPG, PNG, atau WebP" });
+    expect(db.landParcel.findFirst).not.toHaveBeenCalled();
+    expectNothingWritten();
+  });
+
+  it("ukuran > 5 MB → ditolak sebelum s3.send", async () => {
+    const big = new File([new Uint8Array(5 * 1024 * 1024 + 1)], "besar.jpg", { type: "image/jpeg" });
+    expect(await actions.uploadLandMarkerPhoto(form({ file: big }))).toEqual({ success: false, error: "Ukuran foto maksimal 5 MB" });
+    expect(db.landParcel.findFirst).not.toHaveBeenCalled();
+    expectNothingWritten();
+  });
+
+  it("lahan di luar scope → 'di luar akses' tanpa cek tautan; where lahan memuat id + scope", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-lain"] });
+    db.landParcel.findFirst.mockResolvedValue(null);
+    const res = await actions.uploadLandMarkerPhoto(form());
+    expect(res).toMatchObject({ success: false, error: expect.stringMatching(/di luar akses/) });
+    expect(db.landParcel.findFirst.mock.calls[0][0].where).toEqual({ id: "lp-1", isActive: true, farmer: { farmerGroupId: { in: ["kt-lain"] } } });
+    expect(db.landParcelMarker.findFirst).not.toHaveBeenCalled();
+    expectNothingWritten();
+  });
+
+  it("markerId milik lahan lain (tak tertaut aktif ke lahan ini) → 'tidak ditemukan pada lahan ini', update tak dipanggil", async () => {
+    db.landParcelMarker.findFirst.mockResolvedValue(null);
+    const res = await actions.uploadLandMarkerPhoto(form({ markerId: "m-lain" }));
+    expect(res).toEqual({ success: false, error: "Patok tidak ditemukan pada lahan ini" });
+    expect(db.landParcelMarker.findFirst.mock.calls[0][0].where).toEqual({ parcelUid: "uid-1", markerId: "m-lain", isActive: true });
+    expectNothingWritten();
+  });
+
+  it("valid → kunci land-marker/<markerId>/<ts>-<nama-tersanitasi>, photoKey disimpan + modifiedBy", async () => {
+    db.landParcelMarker.findFirst.mockResolvedValue({ id: "link-1" });
+    s3Send.mockResolvedValue({} as never);
+    const res = await actions.uploadLandMarkerPhoto(form());
+    expect(res.success).toBe(true);
+    expect(s3Send).toHaveBeenCalledOnce();
+    const { where, data } = db.landMarker.update.mock.calls[0][0];
+    expect(where).toEqual({ id: "m-1" });
+    expect(data.photoKey).toMatch(/^land-marker\/m-1\/\d+-foto-patok-1\.jpg$/);
+    expect(data).toMatchObject({ photoName: "Foto Patok 1.JPG", modifiedBy: "user-1" });
+  });
+});
+
+describe("updateLandMarker & createMarkersFromPolygon — Zod, scope, poligon (audit 2026-10-12)", () => {
+  const UPDATE = { landParcelId: "lp-1", markerId: "m-1", longitude: POINT.lon, latitude: POINT.lat, condition: "PRESENT" };
+
+  it("updateLandMarker: Zod gagal (bujur di luar rentang, kondisi asing) → fieldErrors tanpa kueri", async () => {
+    const res = await actions.updateLandMarker({ ...UPDATE, longitude: 999, condition: "HILANG" });
+    expect(res.success).toBe(false);
+    expect(res.success === false && res.error).toMatchObject({ longitude: expect.any(Array), condition: expect.any(Array) });
+    expect(db.landParcel.findFirst).not.toHaveBeenCalled();
+    expect(db.landMarker.update).not.toHaveBeenCalled();
+  });
+
+  it("updateLandMarker: lahan di luar scope → 'di luar akses', tautan tak dicek, update tak dipanggil", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-lain"] });
+    db.landParcel.findFirst.mockResolvedValue(null);
+    const res = await actions.updateLandMarker(UPDATE);
+    expect(res).toMatchObject({ success: false, error: expect.stringMatching(/di luar akses/) });
+    expect(db.landParcel.findFirst.mock.calls[0][0].where).toEqual({ id: "lp-1", isActive: true, farmer: { farmerGroupId: { in: ["kt-lain"] } } });
+    expect(db.landParcelMarker.findFirst).not.toHaveBeenCalled();
+    expect(db.landMarker.update).not.toHaveBeenCalled();
+  });
+
+  it("createMarkersFromPolygon: Zod gagal (tanpa vertex dicentang) → pesan dari skema, tanpa kueri", async () => {
+    expect(await actions.createMarkersFromPolygon({ landParcelId: "lp-1", keepSequenceNos: [] })).toEqual({ success: false, error: "Pilih minimal satu vertex" });
+    expect(db.landParcel.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("createMarkersFromPolygon: lahan di luar scope → 'di luar akses', vertex tak dihitung, tanpa transaksi", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-lain"] });
+    db.landParcel.findFirst.mockResolvedValue(null);
+    const res = await actions.createMarkersFromPolygon({ landParcelId: "lp-1", keepSequenceNos: [1] });
+    expect(res).toMatchObject({ success: false, error: expect.stringMatching(/di luar akses/) });
+    expect(db.landParcel.findFirst.mock.calls[0][0].where).toMatchObject({ id: "lp-1", farmer: { farmerGroupId: { in: ["kt-lain"] } } });
+    expect(q.fetchSimplifiedVertices).not.toHaveBeenCalled();
+    expect(db.$transaction).not.toHaveBeenCalled();
+    expect(db.landMarker.create).not.toHaveBeenCalled();
+  });
+
+  it("createMarkersFromPolygon: lahan tanpa poligon → 'belum punya poligon', tanpa transaksi", async () => {
+    db.landParcel.findFirst.mockResolvedValue({ ...PARCEL, geometry: null });
+    expect(await actions.createMarkersFromPolygon({ landParcelId: "lp-1", keepSequenceNos: [1] })).toEqual({ success: false, error: "Lahan belum punya poligon" });
+    expect(q.fetchSimplifiedVertices).not.toHaveBeenCalled();
+    expect(db.$transaction).not.toHaveBeenCalled();
+    expect(db.landMarker.create).not.toHaveBeenCalled();
   });
 });

@@ -24,7 +24,7 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
-const { getTrainingDashboardView, getUntrainedFarmers } = await import("@/server/actions/dashboard-training");
+const { getTrainingDashboardView, getUntrainedFarmers, getTrainingBenefitFarmers } = await import("@/server/actions/dashboard-training");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -152,5 +152,59 @@ describe("getUntrainedFarmers — validasi input & scope Lembaga", () => {
       ]);
     const rows = await getUntrainedFarmers("g1", "ANY", 2025);
     expect(rows.map((r) => [r.id, r.lastTrainedOtherYear])).toEqual([["f2", 2024], ["f3", null]]);
+  });
+});
+
+describe("getTrainingBenefitFarmers — ekspor Training Benefit (EXPORT + Zod + scope)", () => {
+  it("tanpa EXPORT → {success:false} tanpa scope/DB; izin dicek persis (dashboard-training, EXPORT)", async () => {
+    hasPermission.mockResolvedValue(false);
+    expect(await getTrainingBenefitFarmers(["g1"])).toMatchObject({ success: false, error: expect.stringMatching(/izin/) });
+    expect(hasPermission).toHaveBeenCalledExactlyOnceWith("dashboard-training", "EXPORT");
+    expect(getAccessContext).not.toHaveBeenCalled();
+    expect(db.farmer.findMany).not.toHaveBeenCalled();
+  });
+
+  it("VIEW saja tidak cukup — daftar per petani wajib EXPORT", async () => {
+    hasPermission.mockImplementation(async (_menu: string, level: string) => level === "VIEW");
+    expect((await getTrainingBenefitFarmers(["g1"])).success).toBe(false);
+    expect(db.farmer.findMany).not.toHaveBeenCalled();
+  });
+
+  it("Zod gagal (bukan array / id kosong / > 500 Lembaga) → {success:false} dengan pesan, tanpa DB", async () => {
+    expect(await getTrainingBenefitFarmers("g1" as never)).toEqual({ success: false, error: "Daftar Lembaga tidak valid" });
+    expect((await getTrainingBenefitFarmers([""])).success).toBe(false);
+    const tooMany = Array.from({ length: 501 }, (_, i) => `g${i}`);
+    expect(await getTrainingBenefitFarmers(tooMany)).toEqual({ success: false, error: "Terlalu banyak Lembaga dalam satu ekspor" });
+    expect(getAccessContext).not.toHaveBeenCalled();
+    expect(db.farmer.findMany).not.toHaveBeenCalled();
+  });
+
+  it("daftar kosong → sukses [] tanpa kueri", async () => {
+    expect(await getTrainingBenefitFarmers([])).toEqual({ success: true, data: [] });
+    expect(db.farmer.findMany).not.toHaveBeenCalled();
+  });
+
+  it("where: petani aktif Lembaga terpilih (duplikat dibuang) + scope Lembaga lewat AND, per mode", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["g1"] });
+    await getTrainingBenefitFarmers(["g1", "g2", "g1"]);
+    expect(db.farmer.findMany.mock.calls[0][0].where).toEqual({
+      isActive: true,
+      farmerGroupId: { in: ["g1", "g2"] },
+      farmerGroup: { isActive: true, AND: { id: { in: ["g1"] } } },
+    });
+
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["d1"] });
+    await getTrainingBenefitFarmers(["g1"]);
+    expect(db.farmer.findMany.mock.calls[1][0].where).toEqual({
+      isActive: true,
+      farmerGroupId: { in: ["g1"] },
+      farmerGroup: { isActive: true, AND: { districtId: { in: ["d1"] } } },
+    });
+  });
+
+  it("payload hanya ID petani, JK, Lembaga — nama & NIK tidak ikut", async () => {
+    db.farmer.findMany.mockResolvedValue([{ id: "f1", farmerId: "X.1", gender: "F", farmerGroupId: "g1" }]);
+    expect(await getTrainingBenefitFarmers(["g1"])).toEqual({ success: true, data: [{ id: "f1", farmerId: "X.1", gender: "F", farmerGroupId: "g1" }] });
+    expect(db.farmer.findMany.mock.calls[0][0].select).toEqual({ id: true, farmerId: true, gender: true, farmerGroupId: true });
   });
 });
