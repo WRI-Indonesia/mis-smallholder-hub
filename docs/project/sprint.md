@@ -136,7 +136,7 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 6 | **#382** Analisa volume, jarak & risiko Mill | Fitur | M | Jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker, risiko NKT & tumpang tindih per Mill. Prototipe CSV 2026-10-10: Sorotan (konsentrasi · ketergantungan · kepastian · jarak titik Lembaga) + kolom Jarak | 🔲 Todo | ✅ Diputuskan 2026-10-10: ambang 80%, koperasi Lembaga sendiri dikecualikan |
 | 7 | **#366** Detail Lahan Siak — sisa APKASDU | Data | S | Dari v1.5.0. 1.360 baris APKASDU ditahan sampai ada berkas ber-ID lahan baru; skrip idempoten yang sama (dry-run → dump prod → `--write`) | 🔲 Todo | ✅ Diputuskan 2026-10-07: APKASDU ditahan |
 | 8 | **#422** Perluas blok GENERATED docs | Kerapian | M | Blok turunan kode via `build:docs` + dijaga `docs-generated.test.ts`: menu → tutorial Bantuan, struktur skema, indeks per model (S+S+M), lalu izin bawaan role × menu (M); satu commit per blok, selisih dengan teks manual = temuan drift | 🔲 Todo | Blok izin bawaan role: tampil berlabel "bawaan seed, bukan isi DB prod" (#263) atau dilewati — putuskan sebelum blok itu |
-| 9 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
+| 9 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod). Di commit bump: naikkan **PLATFORM-08 & PLATFORM-09 ke ✅** di `roadmap.md` (keputusan owner 2026-10-12, audit `/audit`) bersama baris `metrics.md` (Roadmap % 20,0% → 25,7% + fase lain yang berubah) dan sesuaikan assertion `phases[0]` di `src/test/roadmap.test.ts` | 🔲 Todo | Go rilis |
 
 #### Rilis v1.9.0 · 2026-11-09 → 2026-12-20 — Penyangga akhir tahun: tuntaskan fase K4 2026 & siapkan 2027
 
