@@ -13,7 +13,7 @@ export const DATA_LINEAGE: DataLineage = [
       "farmerGroup": "R"
     },
     "modules": [
-      "src/server/actions/bulk-upload.ts"
+      "src/server/actions/bulk-upload-farmer.ts"
     ],
     "dynamicAccess": null
   },

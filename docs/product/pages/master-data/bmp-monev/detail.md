@@ -23,7 +23,7 @@ Halaman: Detail Penilaian (/admin/master-data/bmp-monev/[id])
 
 | Atribut | Nilai |
 |---|---|
-| File | `bmp-monev/[id]/page.tsx` + `bmp-assessment-detail-client.tsx` + `bmp-activity-raport.tsx` + `bmp-indicator-edit-modal.tsx` |
+| File | `bmp-monev/[id]/page.tsx` + `bmp-assessment-detail-client.tsx` + `bmp-activity-report-card.tsx` + `bmp-indicator-edit-modal.tsx` |
 | Tipe | Server Component + client component |
 | Guard | `requirePermission("master-data-bmp-monev")`; `notFound()` bila penilaian di luar scope/nonaktif |
 | Server action / data | `getBmpAssessmentDetailView(id)` (`@/server/actions/bmp-assessment-detail`) — rincian individu + penilaian Lembaga tahun sama + `recomputed` (hanya bila ada rincian individu) + daftar kode di luar 0–3; `getUserPermissionsForMenu` |

@@ -135,7 +135,7 @@ Semantik uniqueness ID Petani = **per Lembaga** (TD-024): constraint `@@unique([
 Penjaga tambahan:
 
 - **Penjaga race** (fix `2a83b2d`): tombol Validasi disabled selama daftar ID existing dimuat (state `loadingExistingIds`), dan respons yang datang terlambat dari lembaga yang sudah tidak dipilih diabaikan (penjaga urutan permintaan `existingIdsRequest`) — mencegah validasi memakai daftar ID lembaga lain.
-- **Penerjemahan error P2002**: bila insert tetap bentrok di constraint unik, `bulkCreateFarmers` (`src/server/actions/bulk-upload.ts`) menerjemahkan error Prisma `P2002` menjadi pesan Bahasa Indonesia yang bisa ditindaklanjuti ("Ada ID Petani yang sudah terdaftar di lembaga ini…"), bukan pesan internal Prisma.
+- **Penerjemahan error P2002**: bila insert tetap bentrok di constraint unik, `bulkCreateFarmers` (`src/server/actions/bulk-upload-farmer.ts`) menerjemahkan error Prisma `P2002` menjadi pesan Bahasa Indonesia yang bisa ditindaklanjuti ("Ada ID Petani yang sudah terdaftar di lembaga ini…"), bukan pesan internal Prisma.
 
 </details>
 

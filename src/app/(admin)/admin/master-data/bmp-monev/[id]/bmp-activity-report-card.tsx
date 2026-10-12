@@ -13,7 +13,7 @@ import { BMP_RADAR_SERIES_COLORS, BmpActivityRadarSvg } from "@/components/share
  * kegiatan, bobot, kontribusi, dan indikator kosong. Skor kegiatan = Σ bobot
  * indikator × skor (kriteria alternatif dihitung sekali), maks 3,00.
  */
-export function BmpActivityRaport({ activities, total, indicators }: { activities: BmpActivityScore[]; total: number; indicators: BmpIndicatorRef[] }) {
+export function BmpActivityReportCard({ activities, total, indicators }: { activities: BmpActivityScore[]; total: number; indicators: BmpIndicatorRef[] }) {
   const rows = activities.map((a) => ({ code: a.activityCode, name: a.activityName, value: a.indicatorScore, max: bmpActivityMaxScore(indicators, a.activityCode) }));
   const missing = activities.reduce((s, a) => s + a.missingWeighted, 0);
   return (

@@ -4,7 +4,7 @@
 import {
   buildKelompokTaniDetailReport,
   type KtDetailRawParcel,
-} from "@/lib/report-kelompok-tani-detail";
+} from "@/lib/report-farmer-subgroup-detail";
 import {
   buildExcludeVariant,
   buildProductionStats,

@@ -25,7 +25,7 @@ function parseBirthDate(dateStr: string): Date | null {
 }
 
 export async function seedFarmers(prisma: PrismaClient) {
-  const csv = readFileSync(join(__dirname, "data/farmer.csv"), "utf-8");
+  const csv = readFileSync(join(__dirname, "data/farmers.csv"), "utf-8");
   const records = parse(csv, { columns: true, skip_empty_lines: true });
 
   let count = 0;

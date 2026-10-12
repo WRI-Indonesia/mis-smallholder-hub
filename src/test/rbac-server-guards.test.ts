@@ -37,7 +37,7 @@ const db = vi.hoisted(() => {
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
 const { toggleFarmerActive, createFarmer } = await import("@/server/actions/farmer");
-const { bulkCreateFarmers } = await import("@/server/actions/bulk-upload");
+const { bulkCreateFarmers } = await import("@/server/actions/bulk-upload-farmer");
 const { setRolePermissions } = await import("@/server/actions/role-permission");
 
 beforeEach(() => {

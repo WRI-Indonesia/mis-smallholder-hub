@@ -25,10 +25,10 @@ import {
   PRODUCTION_REPORT_MAX_MONTHS,
   type ProductionMatrixRecord,
 } from "@/lib/report-production";
-import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok-tani";
+import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-farmer-subgroup";
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 import { landParcelLegalWhere, parseLandParcelReportFilters } from "@/lib/report-land-parcel-where";
-import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
+import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-farmer-subgroup-detail";
 import { PARCEL_NKT_MARKER_SELECT, parcelNktPatok } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 import type { NktReportData } from "@/lib/nkt-report";

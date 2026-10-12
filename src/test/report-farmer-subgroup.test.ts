@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok-tani";
+import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-farmer-subgroup";
 
 const P = (o: Partial<KtRawParcel> & { farmerId: string; farmerGroupId: string }): KtRawParcel => ({
   lembagaTani: "Lembaga A",
