@@ -15,8 +15,7 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 │   ├── Kategori Lembaga (select)
 │   ├── Distrik (combobox)
 │   ├── Lembaga Petani (combobox)
-│   ├── Tahun (select, default tahun berjalan; "Rataan" di paling bawah)
-│   └── Kelengkapan data (select)
+│   └── Tahun (select, default tahun berjalan; "Rataan" di paling bawah)
 ├── Kartu KPI (4)
 │   ├── Produktivitas
 │   ├── Total Produksi
@@ -63,7 +62,6 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani..."; opsi "Semua Lembaga Petani"; empty: "Lembaga petani tidak ditemukan." |
 | Filter Tahun | Select | Default **tahun berjalan** (fallback tahun terbaru ber-data; #191); daftar tahun (desc) lalu "Rataan" di paling bawah |
-| Filter Kelengkapan data | Select | "Semua Data" (`all`) / "Data Full 1 Tahun" (`full` — hanya lahan dengan 12 bulan penuh) |
 | Kartu KPI (4 kartu) | Kartu KPI | Lihat rincian di bawah |
 | Chart tren | Chart kombinasi (bar + line, SVG kustom) | Lihat rincian di bawah |
 | Chart ranking | Bar horizontal Top-10 | Lihat rincian di bawah |
@@ -84,7 +82,7 @@ Card "Lahan dengan Data Produksi" (jumlah persil ber-data / total persil) **diha
 
 Urutan sub-teks seragam antar card: **%, total, tahun** (tanpa kata "aktif" — membingungkan); token persen & total beraksen emerald (light) / foreground (dark), konteks tahun tetap muted.
 
-Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}", ditambah " · lahan full 1 tahun" bila mode `full`.
+Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}". (Filter kelengkapan "Semua Data / Data Full 1 Tahun" dihapus di #425 — dashboard selalu memakai semua record.)
 
 ## Chart tren (`BmpTrendChart`)
 

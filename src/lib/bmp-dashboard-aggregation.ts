@@ -4,7 +4,6 @@ import type {
   BmpAgeBucketStat,
   BmpAvailabilityCounts,
   BmpChartPoint,
-  BmpDataMode,
   BmpFarmerGroupCategory,
   BmpGroupEntry,
   BmpGroupTotals,
@@ -129,7 +128,6 @@ export function buildBmpSnapshotData(
   }
   interface Acc {
     all: SeriesAcc;
-    full: SeriesAcc; // subset LAHAN dgn data lengkap di semua bulan referensi tahun ybs
     periodsByParcel: Map<string, Set<string>>; // parcel id → periods with data
     reportingFarmers: Set<string>;
     totalTon: number;
@@ -144,7 +142,6 @@ export function buildBmpSnapshotData(
   });
   const emptyAcc = (): Acc => ({
     all: emptySeries(),
-    full: emptySeries(),
     periodsByParcel: new Map(),
     reportingFarmers: new Set(),
     totalTon: 0,
@@ -171,24 +168,6 @@ export function buildBmpSnapshotData(
       acc.totalLuasHa += p.area ?? 0;
     }
   }
-
-  // Pass 1 — bulan-lapor tiap LAHAN per tahun. Lahan "full" tahun Y ⟺ punya
-  // record di SEMUA 12 bulan Jan–Des tahun itu (keputusan owner — tahun berjalan
-  // belum bisa full sampai Desember terisi). Record tanpa lahan tidak pernah full.
-  const parcelMonths = new Map<string, Map<string, Set<string>>>();
-  for (const r of production) {
-    if (!groupByFarmer.has(r.farmerId) || !VALID_PERIOD.test(r.period)) continue;
-    if (!r.parcelId || !parcelById.has(r.parcelId)) continue;
-    const yearKey = r.period.slice(0, 4);
-    const month = r.period.slice(5, 7);
-    let perYear = parcelMonths.get(r.parcelId);
-    if (!perYear) parcelMonths.set(r.parcelId, (perYear = new Map()));
-    let months = perYear.get(yearKey);
-    if (!months) perYear.set(yearKey, (months = new Set()));
-    months.add(month);
-  }
-  const isFullParcel = (parcelId: string, yearKey: string): boolean =>
-    (parcelMonths.get(parcelId)?.get(yearKey)?.size ?? 0) === 12;
 
   const addToSeries = (s: SeriesAcc, r: BmpRawProduction, yearKey: string, parcelOk: boolean) => {
     let bucket = s.monthly.get(r.period);
@@ -223,7 +202,7 @@ export function buildBmpSnapshotData(
     }
   };
 
-  // Pass 2 — akumulasi "all" + subset "full" per group.
+  // Akumulasi per group.
   for (const r of production) {
     const groupId = groupByFarmer.get(r.farmerId);
     if (!groupId || !VALID_PERIOD.test(r.period)) continue;
@@ -235,9 +214,6 @@ export function buildBmpSnapshotData(
     acc.totalTon += r.kg / 1000;
     acc.reportingFarmers.add(r.farmerId);
     addToSeries(acc.all, r, yearKey, parcelOk);
-    if (parcelOk && r.parcelId && isFullParcel(r.parcelId, yearKey)) {
-      addToSeries(acc.full, r, yearKey, true);
-    }
 
     if (parcelOk && r.parcelId) {
       let periods = acc.periodsByParcel.get(r.parcelId);
@@ -287,11 +263,6 @@ export function buildBmpSnapshotData(
   const entries: BmpGroupEntry[] = groups.map((g) => {
     const acc = accByGroup.get(g.id) ?? emptyAcc();
     const { monthly, byYear, byYearAge } = serializeSeries(acc.all);
-    const {
-      monthly: monthlyFull,
-      byYear: byYearFull,
-      byYearAge: byYearAgeFull,
-    } = serializeSeries(acc.full);
 
     const availability = emptyAvailability();
     let luasMelaporHa = 0;
@@ -313,10 +284,7 @@ export function buildBmpSnapshotData(
       districtName: g.districtName,
       monthly,
       byYear,
-      monthlyFull,
-      byYearFull,
       byYearAge,
-      byYearAgeFull,
       availability,
       totals: {
         produksiTon: round2(acc.totalTon),
@@ -354,21 +322,14 @@ export function filterBmpGroups(data: BmpSnapshotData, filter: BmpSliceFilter): 
   });
 }
 
-/** Sumber seri per mode kelengkapan: "all" = semua record; "full" = subset lahan lengkap. */
-function seriesOf(g: BmpGroupEntry, dataMode: BmpDataMode) {
-  return dataMode === "full"
-    ? { monthly: g.monthlyFull, byYear: g.byYearFull }
-    : { monthly: g.monthly, byYear: g.byYear };
-}
-
 /**
  * Faktor penyetahunan produktivitas (keputusan owner 2026-10-08, aturan di
  * `productivity-annualize.ts` — sama dengan Peta BMP & detail Lembaga/Petani): bulan
- * dihitung PER LEMBAGA dari seri bulanan snapshot mode yang sama; 1 bila tahun itu
+ * dihitung PER LEMBAGA dari seri bulanan snapshot; 1 bila tahun itu
  * tanpa data bulanan.
  */
-export function bmpAnnualizeFactor(g: BmpGroupEntry, yearKey: string, dataMode: BmpDataMode = "all"): number {
-  return annualizeFactor(monthsPerYear(g, dataMode).get(yearKey));
+export function bmpAnnualizeFactor(g: BmpGroupEntry, yearKey: string): number {
+  return annualizeFactor(monthsPerYear(g).get(yearKey));
 }
 
 /**
@@ -378,45 +339,25 @@ export function bmpAnnualizeFactor(g: BmpGroupEntry, yearKey: string, dataMode: 
  * `produksiTon` sudah dibulatkan 2 desimal, sehingga bulan < 5 kg terbaca 0 padahal
  * tonasenya tetap ikut pembilang.
  */
-const monthsCache = new WeakMap<BmpGroupEntry, Partial<Record<BmpDataMode, Map<string, number>>>>();
-function monthsPerYear(g: BmpGroupEntry, dataMode: BmpDataMode): Map<string, number> {
-  let byMode = monthsCache.get(g);
-  if (!byMode) monthsCache.set(g, (byMode = {}));
-  let counts = byMode[dataMode];
+const monthsCache = new WeakMap<BmpGroupEntry, Map<string, number>>();
+function monthsPerYear(g: BmpGroupEntry): Map<string, number> {
+  let counts = monthsCache.get(g);
   if (!counts) {
     counts = new Map();
-    for (const [period, m] of Object.entries(seriesOf(g, dataMode).monthly ?? {})) {
+    for (const [period, m] of Object.entries(g.monthly ?? {})) {
       if (!isDataMonth(m.produksiTon, m.lahanMelapor)) continue;
       const year = period.slice(0, 4);
       counts.set(year, (counts.get(year) ?? 0) + 1);
     }
-    byMode[dataMode] = counts;
+    monthsCache.set(g, counts);
   }
   return counts;
 }
 
 /** Stats sebuah group untuk tahun terpilih (`year = null` → agregat semua tahun). */
-export function bmpStatsForYear(
-  g: BmpGroupEntry,
-  year: number | null,
-  dataMode: BmpDataMode = "all"
-): BmpGroupTotals {
-  if (year == null && dataMode === "all") return g.totals;
-  const { byYear } = seriesOf(g, dataMode);
-  const zero: BmpYearStats = { produksiTon: 0, luasMelaporHa: 0, lahanBerData: 0, petaniMelapor: 0 };
-  // year null (kumulatif) pada mode full: Σ nilai tahunan (distinct per-tahun).
-  const years = year == null ? Object.keys(byYear) : [String(year)];
-  const y = years.reduce(
-    (sum, key) => {
-      const v = byYear[key] ?? zero;
-      sum.produksiTon += v.produksiTon;
-      sum.luasMelaporHa += v.luasMelaporHa;
-      sum.lahanBerData += v.lahanBerData;
-      sum.petaniMelapor += v.petaniMelapor;
-      return sum;
-    },
-    { ...zero }
-  );
+export function bmpStatsForYear(g: BmpGroupEntry, year: number | null): BmpGroupTotals {
+  if (year == null) return g.totals;
+  const y = g.byYear[String(year)] ?? { produksiTon: 0, luasMelaporHa: 0, lahanBerData: 0, petaniMelapor: 0 };
   return {
     ...y,
     // Master data (denominator) year-independent — pola kelompokTaniCount Main Dashboard.
@@ -436,8 +377,7 @@ export function bmpStatsForYear(
  */
 export function sumBmpGroups(
   groups: BmpGroupEntry[],
-  year: number | "average" | null = null,
-  dataMode: BmpDataMode = "all"
+  year: number | "average" | null = null
 ): BmpSlicedStats {
   const totals = emptyTotals();
   const availability = emptyAvailability();
@@ -455,8 +395,7 @@ export function sumBmpGroups(
   const yearsWithData = new Set<string>();
 
   for (const g of groups) {
-    const series = seriesOf(g, dataMode);
-    const t = bmpStatsForYear(g, numericYear, dataMode);
+    const t = bmpStatsForYear(g, numericYear);
     totals.produksiTon += t.produksiTon;
     totals.luasMelaporHa += t.luasMelaporHa;
     totals.lahanBerData += t.lahanBerData;
@@ -469,17 +408,17 @@ export function sumBmpGroups(
     availability.kurang += g.availability.kurang;
     availability.tidakAda += g.availability.tidakAda;
 
-    for (const [yearKey, y] of Object.entries(series.byYear)) {
+    for (const [yearKey, y] of Object.entries(g.byYear)) {
       if (numericYear != null && Number(yearKey) !== numericYear) continue;
       yearsWithData.add(yearKey);
       produksiTahunan += y.produksiTon;
-      produksiSetahun += y.produksiTon * bmpAnnualizeFactor(g, yearKey, dataMode);
+      produksiSetahun += y.produksiTon * bmpAnnualizeFactor(g, yearKey);
       luasTahunan += y.luasMelaporHa;
       lahanTahunan += y.lahanBerData;
       petaniTahunan += y.petaniMelapor;
     }
 
-    for (const [period, m] of Object.entries(series.monthly)) {
+    for (const [period, m] of Object.entries(g.monthly)) {
       const bucket = (monthly[period] ??= { produksiTon: 0, lahanMelapor: 0, luasMelaporHa: 0 });
       bucket.produksiTon += m.produksiTon;
       bucket.lahanMelapor += m.lahanMelapor;
@@ -541,15 +480,13 @@ export interface BmpAgeSeriesEntry {
  */
 export function bmpAgeSeries(
   groups: BmpGroupEntry[],
-  year: number | "average" | null,
-  dataMode: BmpDataMode = "all"
+  year: number | "average" | null
 ): BmpAgeSeriesEntry[] {
   const acc = new Map<string, { ton: number; tonSetahun: number; luas: number; years: Set<string> }>();
   for (const g of groups) {
-    const byYearAge = dataMode === "full" ? g.byYearAgeFull : g.byYearAge;
-    for (const [yearKey, buckets] of Object.entries(byYearAge ?? {})) {
+    for (const [yearKey, buckets] of Object.entries(g.byYearAge ?? {})) {
       if (typeof year === "number" && Number(yearKey) !== year) continue;
-      const factor = bmpAnnualizeFactor(g, yearKey, dataMode);
+      const factor = bmpAnnualizeFactor(g, yearKey);
       for (const [ageKey, b] of Object.entries(buckets)) {
         let bucket = acc.get(ageKey);
         if (!bucket) acc.set(ageKey, (bucket = { ton: 0, tonSetahun: 0, luas: 0, years: new Set() }));
@@ -583,24 +520,22 @@ export interface BmpGroupRankingEntry {
 }
 
 /**
- * Ranking Lembaga berdasarkan produktivitas (Ton/Ha/tahun, disetahunkan) pada tahun/mode terpilih
+ * Ranking Lembaga berdasarkan produktivitas (Ton/Ha/tahun, disetahunkan) pada tahun terpilih
  * (#191) — hanya lembaga dengan luas terdata > 0, urut tertinggi dulu.
  */
 export function bmpGroupRanking(
   groups: BmpGroupEntry[],
   year: number | "average" | null,
-  dataMode: BmpDataMode = "all",
   limit = 10
 ): BmpGroupRankingEntry[] {
   const numericYear = typeof year === "number" ? year : null;
   return groups
     .map((g) => {
-      const { byYear } = seriesOf(g, dataMode);
       let ton = 0;
       let luas = 0;
-      for (const [yearKey, y] of Object.entries(byYear)) {
+      for (const [yearKey, y] of Object.entries(g.byYear)) {
         if (numericYear != null && Number(yearKey) !== numericYear) continue;
-        ton += y.produksiTon * bmpAnnualizeFactor(g, yearKey, dataMode);
+        ton += y.produksiTon * bmpAnnualizeFactor(g, yearKey);
         luas += y.luasMelaporHa;
       }
       return {
@@ -678,19 +613,21 @@ export function bmpChartSeries(
   });
 }
 
+type LegacyBmpGroupEntry = BmpGroupEntry & { monthlyFull?: unknown; byYearFull?: unknown; byYearAgeFull?: unknown };
+
 /** Baca JSON `data` snapshot BMP secara toleran (payload rusak → kosong). */
 export function normalizeBmpSnapshotData(raw: unknown): BmpSnapshotData {
   const obj = (raw ?? {}) as Record<string, unknown>;
-  const groups = Array.isArray(obj.groups) ? (obj.groups as BmpGroupEntry[]) : [];
+  const groups = Array.isArray(obj.groups) ? (obj.groups as LegacyBmpGroupEntry[]) : [];
   return {
-    groups: groups.map((g) => ({
+    // Snapshot lama (sebelum #425) masih memuat subset "Data Full 1 Tahun" — dibuang
+    // supaya tidak ikut terkirim ke client.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    groups: groups.map(({ monthlyFull, byYearFull, byYearAgeFull, ...g }) => ({
       ...g,
       monthly: g.monthly ?? {},
       byYear: g.byYear ?? {},
-      monthlyFull: g.monthlyFull ?? {},
-      byYearFull: g.byYearFull ?? {},
       byYearAge: g.byYearAge ?? {},
-      byYearAgeFull: g.byYearAgeFull ?? {},
       availability: g.availability ?? emptyAvailability(),
       totals: { ...emptyTotals(), ...(g.totals ?? {}) },
     })),

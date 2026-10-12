@@ -21,7 +21,7 @@ import { BmpScoreCards } from "./bmp-score-cards";
 import { BmpTrendChart } from "./bmp-trend-chart";
 import { BmpCategoryPanel, type BmpComparisonRow } from "./bmp-category-panel";
 import { BmpRankingChart } from "./bmp-ranking-chart";
-import type { BmpDataMode, BmpFarmerGroupCategory, BmpSnapshotView } from "@/types/dashboard";
+import type { BmpFarmerGroupCategory, BmpSnapshotView } from "@/types/dashboard";
 import { formatArea, formatGeneratedAt } from "@/lib/format";
 
 interface Props {
@@ -44,8 +44,6 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
   const [year, setYear] = useState<number | "average">(() =>
     bmpDefaultYear(bmpYearOptions(initialView?.data.groups ?? []), new Date().getFullYear())
   );
-  // "full" = hanya lahan dengan data 12 bulan penuh Jan–Des pada tahun ybs (anti bias data bolong).
-  const [dataMode, setDataMode] = useState<BmpDataMode>("all");
 
   const [districtOpen, setDistrictOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -74,15 +72,14 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
     [allGroups, districtId, category]
   );
 
-  // Client-side slicing dari satu snapshot org-wide (termasuk filter Tahun + kelengkapan data).
+  // Client-side slicing dari satu snapshot org-wide (termasuk filter Tahun).
   const sliced = useMemo(
     () =>
       sumBmpGroups(
         filterBmpGroups({ groups: allGroups }, { districtId, groupId, category }),
-        year,
-        dataMode
+        year
       ),
-    [allGroups, districtId, groupId, category, year, dataMode]
+    [allGroups, districtId, groupId, category, year]
   );
 
   // Card besar Ex-Plasma vs Swadaya (#191): mengikuti semua filter KECUALI
@@ -105,7 +102,7 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
       .map(([id, name]) => {
         // Tanpa luas terdata = belum ada data → null ("—"), bukan bar kosong; luas di tooltip.
         const cell = (gs: typeof exGroups) => {
-          const s = sumBmpGroups(gs.filter((g) => g.districtId === id), year, dataMode);
+          const s = sumBmpGroups(gs.filter((g) => g.districtId === id), year);
           return s.totals.luasMelaporHa > 0
             ? { value: s.produktivitasTonHa, title: `Luas terdata ${formatArea(s.totals.luasMelaporHa)} Ha` }
             : { value: null, title: undefined };
@@ -116,8 +113,8 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
       });
 
     // Produktivitas per umur tanaman (Ton/Ha/tahun, disetahunkan).
-    const exAge = bmpAgeSeries(exGroups, year, dataMode);
-    const swAge = bmpAgeSeries(swGroups, year, dataMode);
+    const exAge = bmpAgeSeries(exGroups, year);
+    const swAge = bmpAgeSeries(swGroups, year);
     const ageKeys = [...new Set([...exAge, ...swAge].map((a) => a.key))];
     // Bucket tanpa luas terdata = belum ada data → null ("—"); luas di tooltip sel.
     const ageCell = (series: typeof exAge, key: string) => {
@@ -142,23 +139,22 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
     );
 
     return {
-      exPlasma: sumBmpGroups(exGroups, year, dataMode),
-      swadaya: sumBmpGroups(swGroups, year, dataMode),
+      exPlasma: sumBmpGroups(exGroups, year),
+      swadaya: sumBmpGroups(swGroups, year),
       districtRows,
       ageRows,
       hasAgeData,
     };
-  }, [allGroups, districtId, groupId, year, dataMode]);
+  }, [allGroups, districtId, groupId, year]);
 
   // Top-10 produktivitas per Lembaga — mengikuti SEMUA filter (termasuk kategori).
   const ranking = useMemo(
     () =>
       bmpGroupRanking(
         filterBmpGroups({ groups: allGroups }, { districtId, groupId, category }),
-        year,
-        dataMode
+        year
       ),
-    [allGroups, districtId, groupId, category, year, dataMode]
+    [allGroups, districtId, groupId, category, year]
   );
 
   const selectedDistrict = districtOptions.find((d) => d.id === districtId);
@@ -306,22 +302,6 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
                 <SelectItem value="average">Rataan</SelectItem>
               </SelectContent>
             </Select>
-
-            {/* Kelengkapan data (revisi owner): All vs hanya lahan full 1 tahun per periodenya */}
-            <Select
-              value={dataMode}
-              onValueChange={(v) => setDataMode(v === "full" ? "full" : "all")}
-            >
-              <SelectTrigger className="w-[170px] h-9">
-                <SelectValue>
-                  {(value) => (value === "full" ? "Data Full 1 Tahun" : "Semua Data")}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Data</SelectItem>
-                <SelectItem value="full">Data Full 1 Tahun</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         )}
       </div>
@@ -331,9 +311,7 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
           <BmpScoreCards
             totals={sliced.totals}
             produktivitas={sliced.produktivitasTonHa}
-            yearLabel={`${year === "average" ? "rata-rata per tahun" : `tahun ${year}`}${
-              dataMode === "full" ? " · lahan full 1 tahun" : ""
-            }`}
+            yearLabel={year === "average" ? "rata-rata per tahun" : `tahun ${year}`}
           />
 
           {/* 2 grafik 50/50 (#191) — urutan: grafik dulu, analisa kategori di bawah */}

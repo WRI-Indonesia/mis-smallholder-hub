@@ -20,16 +20,14 @@ Angkanya dibaca dari **snapshot**, sama seperti Main Dashboard.
 ## Langkah
 
 1. Buka menu **Dashboard → BMP Dashboard (Produksi)**.
-2. Atur lima filter di header: **Kategori**, **Distrik**, **Lembaga**, **Tahun**, dan filter kelengkapan data (pilihan **Semua Data** / **Data Full 1 Tahun**).
-+ Kelimanya memfilter kartu **dan** grafik sekaligus, diiris dari satu snapshot — jadi terasa seketika tanpa memuat ulang halaman.
+2. Atur empat filter di header: **Kategori**, **Distrik**, **Lembaga**, dan **Tahun**.
++ Keempatnya memfilter kartu **dan** grafik sekaligus, diiris dari satu snapshot — jadi terasa seketika tanpa memuat ulang halaman.
 3. Perhatikan filter **Tahun**. Bawaannya **tahun berjalan** (atau tahun terbaru yang punya data bila tahun ini belum ada datanya).
 + Opsi **Rataan** ada di paling bawah daftar: rata-rata per tahun, bukan penjumlahan seluruh tahun — angka kumulatif lintas tahun mudah disalahbaca sebagai capaian satu musim. Angka kumulatif tersedia di detail snapshot lewat menu Tools.
 4. Baca kartu **Produktivitas** (Ton/Ha/tahun) dan kartu **Luasan**.
 + Produktivitas = produksi tahun terpilih **disetahunkan**, dibagi **luas lahan yang terdata** pada tahun itu — bukan dibagi seluruh luas lahan. Disetahunkan artinya tahun yang datanya belum 12 bulan diproyeksikan: produksi × 12 ÷ jumlah bulan yang ada datanya, dihitung **per Lembaga** (mis. data Jan–Jul dikali 12/7). Dengan begitu tahun berjalan bisa dibandingkan dengan tahun lalu yang sudah lengkap. Kartu **Total Produksi** tetap angka yang benar-benar tercatat, tidak diproyeksikan. Aturan yang sama berlaku di grafik Top 10, card Ex-Plasma vs Swadaya, layer Produktivitas **Peta BMP**, dan tab Produksi detail Lembaga/Petani. Kartu Luasan menunjukkan berapa Ha yang terdata dibanding total luas lahan aktif (persennya ikut ditampilkan).
-5. Pada filter kelengkapan data (bawaan **Semua Data**), pilih **Data Full 1 Tahun** bila ingin angka yang lebih jujur.
-+ Mode ini hanya menghitung lahan yang punya data **12 bulan penuh Jan–Des** pada tahun tersebut. Tanpa itu, lahan yang hanya terdata dua bulan ikut menurunkan rata-rata seolah produksinya memang rendah. Tahun berjalan tidak akan pernah "full" sampai Desember terisi.
-6. Baca dua grafik di bawah kartu: **Tren Produksi & Cakupan Data** (bulanan) dan **Produktivitas per Lembaga — Top 10** (warna bar mengikuti kategori Ex-Plasma/Swadaya).
-7. Periksa card **Ex-Plasma vs Swadaya** di paling bawah: ringkasan produksi/produktivitas/luas terdata per kategori, plus analisa **produktivitas per distrik** dan **produktivitas per umur tanaman** (keduanya Ton/Ha/tahun, disetahunkan).
+5. Baca dua grafik di bawah kartu: **Tren Produksi & Cakupan Data** (bulanan) dan **Produktivitas per Lembaga — Top 10** (warna bar mengikuti kategori Ex-Plasma/Swadaya).
+6. Periksa card **Ex-Plasma vs Swadaya** di paling bawah: ringkasan produksi/produktivitas/luas terdata per kategori, plus analisa **produktivitas per distrik** dan **produktivitas per umur tanaman** (keduanya Ton/Ha/tahun, disetahunkan).
 + Kedua analisa berbentuk tabel: baris = distrik atau kelompok umur, kolom **Ex-Plasma** dan **Swadaya**, tiap sel berisi angka dan bar kecil dengan skala yang sama sehingga panjang bar bisa dibandingkan antarkolom. Tanda **—** berarti **belum ada data** (bukan nol): belum ada lahan terdata di distrik atau kelompok umur itu yang melapor produksi. Arahkan kursor ke sel untuk melihat luas terdatanya — luas kecil berarti angkanya mewakili sedikit lahan.
 + Umur tanaman dihitung pada tahun produksinya (tahun produksi − tahun tanam), jadi analisa historis tetap akurat. Lahan tanpa tahun tanam dikelompokkan sendiri di baris **Tanpa thn tanam** — bila sebuah kategori hanya terisi di baris itu, artinya tahun tanam lahannya belum diisi di Master Data, bukan produktivitasnya nol. Card ini mengikuti semua filter kecuali filter Kategori — ia memang selalu membandingkan keduanya.
 
@@ -41,6 +39,6 @@ Angkanya dibaca dari **snapshot**, sama seperti Main Dashboard.
 
 **Angka 0 padahal data produksi ada** — snapshot-nya dibuat sebelum data itu masuk. Buat ulang.
 
-**Produktivitas terasa terlalu tinggi** — periksa berapa banyak produksi yang tercatat tanpa ID Lahan, dan bandingkan dengan mode **Data Full 1 Tahun**.
+**Produktivitas terasa terlalu tinggi** — periksa berapa banyak produksi yang tercatat tanpa ID Lahan, lalu lihat kalender **Ketersediaan Data › Produksi** untuk melihat bulan mana saja yang sudah terisi per lahan.
 
 **Analisa umur tanaman kosong / kartu Luasan tanpa persen** — snapshot dibuat sebelum fitur ini ada, sehingga belum memuat tahun tanam dan total luas. Buat ulang snapshot lewat **Tools → Dashboard Snapshot BMP**.
