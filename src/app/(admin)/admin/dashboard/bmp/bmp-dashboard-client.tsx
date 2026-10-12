@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronsUpDown, Camera } from "lucide-react";
+import { Check, ChevronsUpDown, Camera, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,6 +29,8 @@ interface Props {
   initialView: BmpSnapshotView | null;
   /** Tautan bantuan kontekstual (HelpHint) — dirender server agar markdown Bantuan tidak ikut bundle client. */
   helpSlot?: React.ReactNode;
+  /** Izin EXPORT menu `dashboard-bmp` — tombol Excel produktivitas per umur tanaman (#426). */
+  canExport?: boolean;
 }
 
 const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
@@ -35,7 +38,7 @@ const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
   SWADAYA: "Swadaya",
 };
 
-export function BmpDashboardClient({ initialView, helpSlot }: Props) {
+export function BmpDashboardClient({ initialView, helpSlot, canExport = false }: Props) {
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [category, setCategory] = useState<BmpFarmerGroupCategory | null>(null);
@@ -156,6 +159,29 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
       ),
     [allGroups, districtId, groupId, category, year]
   );
+
+  // Excel produktivitas per umur tanaman (#426): selalu SEMUA Lembaga snapshot (sudah
+  // dibatasi scope viewer di server) — filter UI sengaja diabaikan (owner 2026-10-12).
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    if (!view) return;
+    setExporting(true);
+    try {
+      const [{ buildBmpAgeProductivityWorkbook }, { downloadWorkbook }] = await Promise.all([
+        import("@/lib/bmp-age-productivity-xlsx"),
+        import("@/lib/xlsx"),
+      ]);
+      const wb = buildBmpAgeProductivityWorkbook(allGroups, {
+        snapshotLabel: formatGeneratedAt(view.snapshotDate),
+        createdByName: view.createdByName,
+      });
+      await downloadWorkbook(wb, `produktivitas-umur-tanaman-bmp-${view.snapshotDate.slice(0, 10)}`);
+    } catch {
+      toast.error("Gagal membuat berkas Excel");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const selectedDistrict = districtOptions.find((d) => d.id === districtId);
   const selectedGroup = allGroups.find((g) => g.id === groupId);
@@ -302,6 +328,19 @@ export function BmpDashboardClient({ initialView, helpSlot }: Props) {
                 <SelectItem value="average">Rataan</SelectItem>
               </SelectContent>
             </Select>
+
+            {canExport && (
+              <Button
+                variant="outline"
+                className="h-9"
+                onClick={handleExport}
+                disabled={exporting || allGroups.length === 0}
+                title="Excel: produktivitas per umur tanaman, Rataan + tiap tahun, semua Lembaga (filter tidak berlaku)"
+              >
+                {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                Excel
+              </Button>
+            )}
           </div>
         )}
       </div>

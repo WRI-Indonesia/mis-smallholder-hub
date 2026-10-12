@@ -15,7 +15,8 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 │   ├── Kategori Lembaga (select)
 │   ├── Distrik (combobox)
 │   ├── Lembaga Petani (combobox)
-│   └── Tahun (select, default tahun berjalan; "Rataan" di paling bawah)
+│   ├── Tahun (select, default tahun berjalan; "Rataan" di paling bawah)
+│   └── Tombol Excel (izin EXPORT, #426)
 ├── Kartu KPI (4)
 │   ├── Produktivitas
 │   ├── Total Produksi
@@ -62,6 +63,7 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani..."; opsi "Semua Lembaga Petani"; empty: "Lembaga petani tidak ditemukan." |
 | Filter Tahun | Select | Default **tahun berjalan** (fallback tahun terbaru ber-data; #191); daftar tahun (desc) lalu "Rataan" di paling bawah |
+| Tombol `Excel` | Tombol outline (`Download`/`Loader2`) | Hanya bila `dashboard-bmp:EXPORT` (#426). Unduh `produktivitas-umur-tanaman-bmp-<YYYY-MM-DD snapshot>.xlsx` dari snapshot yang sudah dimuat (scope viewer), **mengabaikan filter UI** (owner 2026-10-12). Sheet `Produktivitas` & `Luas terdata`: header 3 baris ber-merge — Distrik · Lembaga · Kategori Lembaga, lalu per periode (Rataan, tiap tahun naik) 7 kolom: Semua umur (`sumBmpGroups`), 5 bucket umur + Tanpa thn tanam (`bmpAgeSeries`); baris Lembaga urut Distrik → nama (AutoFilter), satu baris kosong, lalu Subtotal Distrik / Subtotal Kategori / Total tertimbang (Σ produksi disetahunkan ÷ Σ luas). Sel tanpa luas = kosong. Sheet `Keterangan` = definisi. Builder `src/lib/bmp-age-productivity-xlsx.ts` |
 | Kartu KPI (4 kartu) | Kartu KPI | Lihat rincian di bawah |
 | Chart tren | Chart kombinasi (bar + line, SVG kustom) | Lihat rincian di bawah |
 | Chart ranking | Bar horizontal Top-10 | Lihat rincian di bawah |
