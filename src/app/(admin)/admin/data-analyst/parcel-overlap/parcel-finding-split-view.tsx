@@ -51,6 +51,9 @@ interface Props<T extends ParcelFindingBase> {
   /** Atribut fitur SHP/GeoJSON per lahan (poligon lahan utuh). */
   spatialProperties: (r: T) => Record<string, string | number | null>;
   shpLayer: string;
+  /** Kotak Cari terkendali oleh tab (#427) — dikosongkan tombol Reset filter. */
+  search: string;
+  onSearchChange: (value: string) => void;
 }
 
 /**
@@ -71,6 +74,8 @@ export function ParcelFindingSplitView<T extends ParcelFindingBase>({
   excel,
   spatialProperties,
   shpLayer,
+  search,
+  onSearchChange,
 }: Props<T>) {
   const [visibleRows, setVisibleRows] = useState<T[]>(rows);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -197,6 +202,8 @@ export function ParcelFindingSplitView<T extends ParcelFindingBase>({
             return r.parcelId.toLowerCase().includes(s) || r.farmerName.toLowerCase().includes(s) || r.farmerCode.toLowerCase().includes(s);
           }}
           searchPlaceholder="Cari ID lahan / petani..."
+          search={search}
+          onSearchChange={onSearchChange}
           emptyMessage={emptyMessage}
           defaultPageSize={25}
           onRowClick={selectRow}

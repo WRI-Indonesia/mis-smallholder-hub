@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { DataTableColumn } from "@/components/shared/data-table";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import { useUrlFilters } from "@/hooks/use-url-filters";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import { formatArea, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { exportFileBase } from "@/lib/parcel-export-data";
@@ -25,6 +27,12 @@ const pctText = (n: number) => `${n.toLocaleString("id-ID", { maximumFractionDig
 const THRESHOLD_PCT = PARCEL_AREA_MISMATCH_RATIO * 100;
 
 /**
+ * Tampilan bawaan tab (#427) — pembanding tombol Reset sekaligus isi reset. Kunci
+ * selain `cari` = kunci URL; bawaan = kunci tidak ada di URL, jadi reset menghapusnya.
+ */
+const FILTER_DEFAULTS = { arah: null, distrik: null, lembaga: null, cari: "" };
+
+/**
  * Tab Selisih Luas (#317 Fase 2): luas kolom (`LandParcel.area`, dari atribut
  * shapefile) beda > ambang DA-02 dari luas poligonnya — check yang sama dengan
  * "Luas kolom ≠ luas poligon" di Ketersediaan Data, di sini lengkap dengan peta.
@@ -37,6 +45,13 @@ export function AreaMismatchTab({ rows, canExport }: { rows: AreaMismatchRow[]; 
   const groupId = options.groups.some((g) => g.id === groupParam) ? groupParam : null;
   const districtParam = get("distrik");
   const districtId = options.districts.some((d) => d.id === districtParam) ? districtParam : null;
+  const [search, setSearch] = useState(FILTER_DEFAULTS.cari);
+  const filtersActive = hasActiveFilters({ arah: direction, distrik: districtId, lembaga: groupId, cari: search }, FILTER_DEFAULTS);
+  const resetFilters = () => {
+    const { cari, ...url } = FILTER_DEFAULTS;
+    setMany(Object.fromEntries(Object.keys(url).map((k) => [k, null])));
+    setSearch(cari);
+  };
 
   const scoped = useMemo(
     () => rows.filter((r) => (!groupId || r.groupId === groupId) && (!districtId || r.districtId === districtId)),
@@ -145,12 +160,15 @@ export function AreaMismatchTab({ rows, canExport }: { rows: AreaMismatchRow[]; 
             widthClass="w-[220px]"
           />
         </div>
+        <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
       </div>
 
       <ParcelFindingSplitView
         rows={filtered}
         columns={columns}
         emptyMessage="Tidak ada lahan dengan selisih luas pada filter ini."
+        search={search}
+        onSearchChange={setSearch}
         withBoundary={false}
         canExport={canExport}
         fileBase={fileBase}

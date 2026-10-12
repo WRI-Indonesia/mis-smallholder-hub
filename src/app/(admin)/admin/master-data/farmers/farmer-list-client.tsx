@@ -24,6 +24,8 @@ import {
 import { maskNik, maskBirthDate } from "@/lib/mask";
 import { formatNumber } from "@/lib/format";
 import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
 
 interface Farmer {
   id: string;
@@ -53,6 +55,14 @@ interface Farmer {
   parcelCount: number;
 }
 
+/** Tampilan bawaan halaman — dipakai inisialisasi state & tombol Reset (#427). */
+const FILTER_DEFAULTS = {
+  district: "all",
+  group: "all",
+  status: "active" as StatusFilterValue,
+  search: "",
+};
+
 interface Props {
   initialFarmers: Farmer[];
   farmerGroups: GroupFilterOption[];
@@ -68,14 +78,27 @@ export function FarmerListClient({
   permissions,
   isSuperAdmin,
 }: Props) {
-  const [districtFilter, setDistrictFilter] = useState("all");
-  const [groupFilter, setGroupFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
+  const [districtFilter, setDistrictFilter] = useState(FILTER_DEFAULTS.district);
+  const [groupFilter, setGroupFilter] = useState(FILTER_DEFAULTS.group);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>(FILTER_DEFAULTS.status);
+  const [search, setSearch] = useState(FILTER_DEFAULTS.search);
   const [showForm, setShowForm] = useState(false);
   const [editFarmer, setEditFarmer] = useState<Farmer | null>(null);
   const router = useRouter();
   // Profil Petani (PDF) per baris (#343): hanya baris yang diproses yang berputar.
   const profilePrint = useFarmerProfilePrint();
+
+  const filtersActive = hasActiveFilters(
+    { district: districtFilter, group: groupFilter, status: statusFilter, search },
+    FILTER_DEFAULTS,
+  );
+  function resetFilters() {
+    // Distrik & Lembaga saling bergantung → di-reset bersama.
+    setDistrictFilter(FILTER_DEFAULTS.district);
+    setGroupFilter(FILTER_DEFAULTS.group);
+    setStatusFilter(FILTER_DEFAULTS.status);
+    setSearch(FILTER_DEFAULTS.search);
+  }
 
   const filtered = initialFarmers.filter((f) => {
     const matchGroup = groupFilter === "all" || f.farmerGroupId === groupFilter;
@@ -224,6 +247,8 @@ export function FarmerListClient({
       {isSuperAdmin && (
         <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
+
+      <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
     </div>
   );
 
@@ -321,6 +346,8 @@ export function FarmerListClient({
           rowKey={(f) => f.id}
           searchPlaceholder="Cari nama, ID petani, atau NIK..."
           searchKeys={["name", "farmerId", "nik"]}
+          search={search}
+          onSearchChange={setSearch}
           toolbarLeft={toolbarLeft}
           toolbarRight={toolbarRight}
           exportFilename="data-farmers"

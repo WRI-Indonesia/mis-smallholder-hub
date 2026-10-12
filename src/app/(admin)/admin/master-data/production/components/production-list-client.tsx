@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -28,6 +28,9 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
+import { PRODUCTION_FILTER_DEFAULTS, type ProductionListFilters } from "@/lib/production-list-filters";
 
 interface ProductionRecord {
   id: string;
@@ -55,6 +58,10 @@ interface Props {
   districts: DistrictFilterOption[];
   permissions: string[];
   isSuperAdmin: boolean;
+  /** Nilai awal filter dari query URL (#427); tanpa query = bawaan. */
+  initialFilters?: ProductionListFilters;
+  /** URL membawa saringan server — Reset harus membersihkan query (#427). */
+  hasServerQuery?: boolean;
 }
 
 export function ProductionListClient({
@@ -63,13 +70,45 @@ export function ProductionListClient({
   districts,
   permissions,
   isSuperAdmin,
+  initialFilters = PRODUCTION_FILTER_DEFAULTS,
+  hasServerQuery = false,
 }: Props) {
-  const [districtFilter, setDistrictFilter] = useState("all");
-  const [farmerGroupFilter, setFarmerGroupFilter] = useState("all");
-  const [periodFilter, setPeriodFilter] = useState("");
-  const [hasParcelFilter, setHasParcelFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
+  const [districtFilter, setDistrictFilter] = useState(initialFilters.district);
+  const [farmerGroupFilter, setFarmerGroupFilter] = useState(initialFilters.group);
+  const [periodFilter, setPeriodFilter] = useState(initialFilters.period);
+  const [hasParcelFilter, setHasParcelFilter] = useState(initialFilters.hasParcel);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>(initialFilters.status);
+  const [search, setSearch] = useState(initialFilters.search);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Reset (#427) = halaman TANPA query. Selama query masih ada, data dari server
+  // sudah tersaring → tombol tetap tampil walau filter client sama dengan bawaan.
+  const filtersActive =
+    hasServerQuery ||
+    hasActiveFilters(
+      {
+        district: districtFilter,
+        group: farmerGroupFilter,
+        period: periodFilter,
+        hasParcel: hasParcelFilter,
+        status: statusFilter,
+        search,
+      },
+      PRODUCTION_FILTER_DEFAULTS,
+    );
+  function resetFilters() {
+    const d = PRODUCTION_FILTER_DEFAULTS;
+    // Distrik & Lembaga saling bergantung → di-reset bersama.
+    setDistrictFilter(d.district);
+    setFarmerGroupFilter(d.group);
+    setPeriodFilter(d.period);
+    setHasParcelFilter(d.hasParcel);
+    setStatusFilter(d.status);
+    setSearch(d.search);
+    // Lepas saringan server: muat ulang halaman tanpa query → data penuh.
+    if (hasServerQuery) router.replace(pathname, { scroll: false });
+  }
 
   const filtered = initialRecords.filter((r) => {
     const matchGroup = farmerGroupFilter === "all" || r.farmer.farmerGroupId === farmerGroupFilter;
@@ -234,6 +273,8 @@ export function ProductionListClient({
       {isSuperAdmin && (
         <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
+
+      <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
     </div>
   );
 
@@ -255,6 +296,8 @@ export function ProductionListClient({
         data={filtered}
         rowKey={(r) => r.id}
         searchPlaceholder="Cari nama petani atau ID petani..."
+        search={search}
+        onSearchChange={setSearch}
         searchFn={(row, query) => {
           return (
             row.farmer.name.toLowerCase().includes(query) ||

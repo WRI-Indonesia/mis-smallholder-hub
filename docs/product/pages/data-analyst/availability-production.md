@@ -16,7 +16,7 @@ Halaman: Ketersediaan Data — Produksi (/admin/data-analyst/availability/produc
 │   ├── Kategori (Select) — ?kategori=
 │   ├── Distrik (FilterCombobox) — ?distrik=
 │   ├── Lembaga (FilterCombobox, cascade) — ?lembaga=
-│   ├── Reset (tampil bila ada filter/urutan/pencarian/tingkat non-bawaan) — hapus semua kunci URL + kosongkan Cari
+│   ├── ↺ Reset (`ResetFiltersButton`, #427; tampil bila ada filter/urutan/pencarian/tingkat non-bawaan) — hapus semua kunci URL + kosongkan Cari
 │   └── Excel (gate EXPORT) — 2 sheet (K6)
 └── Card kalender (ProductionCalendarTable)
     ├── Strip KPI (4 kartu): Tahun (n Distrik · n Lembaga) · Cakupan tahun (rata-rata 12 bulan, tertimbang lahan non-PSR; warna band) · Tanpa record tahun · Basi

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { ChevronsDownUp, ChevronsUpDown, Download, Loader2, RotateCcw, Search } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, Download, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import { HeatLegend } from "@/components/shared/score-visuals";
 import { PRODUCTION_STALE_MONTHS } from "@/lib/data-completeness-registry";
 import { formatGeneratedAt, formatNumber, MONTH_SHORT_ID } from "@/lib/format";
@@ -77,14 +79,21 @@ export function ProductionAvailabilityClient({
   // Tingkat Distrik di atas Lembaga (usulan owner 2026-10-11) — bawaan nyala; `?tingkat=lembaga` mematikannya.
   const byDistrict = get("tingkat") !== "lembaga";
   const setByDistrict = (v: boolean) => setMany({ tingkat: v ? null : "lembaga" });
-  const [query, setQuery] = useState("");
+  // Tampilan bawaan (#427) — pembanding & isi tombol Reset: tahun berjalan, semua filter "Semua",
+  // urut cakupan menaik, Per Distrik nyala, tanpa pencarian. Kunci selain `cari` = kunci URL;
+  // bawaan = tidak ada di URL, jadi reset menghapusnya. Tahun bergantung data → dibentuk di sini.
+  const filterDefaults = { tahun: currentYear, distrik: null, kategori: null, lembaga: null, urut: "coverage", arah: true, tingkat: true, cari: "" };
+  const [query, setQuery] = useState(filterDefaults.cari);
   const [treeCommand, setTreeCommand] = useState<{ kind: "collapse" | "expandDistricts"; seq: number } | null>(null);
   const sendTree = (kind: "collapse" | "expandDistricts") => setTreeCommand((c) => ({ kind, seq: (c?.seq ?? 0) + 1 }));
-  // Reset = kembali ke tampilan bawaan: tahun berjalan, semua filter "Semua", urut cakupan menaik, Per Distrik nyala, tanpa pencarian.
-  const hasActiveFilter = year !== currentYear || !!districtId || !!category || !!groupId || sortKey !== "coverage" || !sortAsc || !byDistrict || query.trim() !== "";
+  const filtersActive = hasActiveFilters(
+    { tahun: year, distrik: districtId, kategori: category, lembaga: groupId, urut: sortKey, arah: sortAsc, tingkat: byDistrict, cari: query },
+    filterDefaults,
+  );
   const resetFilters = () => {
-    setMany({ tahun: null, distrik: null, kategori: null, lembaga: null, urut: null, arah: null, tingkat: null });
-    setQuery("");
+    const { cari, ...url } = filterDefaults;
+    setMany(Object.fromEntries(Object.keys(url).map((k) => [k, null])));
+    setQuery(cari);
   };
 
   const keepGroup = (nextDistrictId: string | null, nextCategory: BmpFarmerGroupCategory | null): Record<string, string | null> => {
@@ -304,12 +313,11 @@ export function ProductionAvailabilityClient({
           <FilterCombobox options={districtOptions} value={districtId} onSelect={setDistrictId} allLabel="Semua Distrik" searchPlaceholder="Cari distrik..." emptyLabel="Distrik tidak ditemukan." widthClass="w-[180px]" />
           <FilterCombobox options={groupOptions} value={groupId} onSelect={setGroupId} allLabel="Semua Lembaga" searchPlaceholder="Cari lembaga petani..." emptyLabel="Lembaga Petani tidak ditemukan." widthClass="w-[220px]" />
 
-          {hasActiveFilter && (
-            <Button variant="ghost" className="h-9" onClick={resetFilters} title="Kembali ke tampilan bawaan: tahun berjalan, semua filter, urut cakupan, Per Distrik, tanpa pencarian">
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reset
-            </Button>
-          )}
+          <ResetFiltersButton
+            active={filtersActive}
+            onReset={resetFilters}
+            title="Kembali ke tampilan bawaan: tahun berjalan, semua filter, urut cakupan, Per Distrik, tanpa pencarian"
+          />
           {canExport && (
             <Button variant="outline" className="h-9" onClick={handleExport} disabled={rows.length === 0 || exporting} title={groupId ? "Excel: Lembaga × bulan + lahan × bulan Lembaga terpilih" : "Excel: Lembaga × bulan (pilih satu Lembaga untuk ikut rincian lahan)"}>
               {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}

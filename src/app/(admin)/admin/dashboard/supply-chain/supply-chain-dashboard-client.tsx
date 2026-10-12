@@ -184,7 +184,7 @@ export function SupplyChainDashboardClient({ view, helpSlot, canExport = false }
       </div>
 
       <div className="space-y-2">
-        <SupplyChainFilterBar f={f} years={view.years} showReset={false} />
+        <SupplyChainFilterBar f={f} years={view.years} />
         <SupplyChainFilterChips f={f} view={view} className="px-1" />
       </div>
 

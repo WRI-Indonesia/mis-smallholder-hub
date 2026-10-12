@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import { useUrlFilters } from "@/hooks/use-url-filters";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import { formatArea, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { exportFileBase } from "@/lib/parcel-export-data";
@@ -54,6 +56,13 @@ const OverlapPreviewMap = dynamic(() => import("./overlap-preview-map").then((m)
   ssr: false,
   loading: () => <div className="h-[420px] w-full animate-pulse rounded-md border bg-muted/20" />,
 });
+
+/**
+ * Tampilan bawaan tab (#427) — pembanding tombol Reset sekaligus isi reset. Kunci
+ * selain `cari` = kunci URL; bawaan = kunci tidak ada di URL (parser mengembalikan
+ * nilai di sini), jadi reset menghapusnya.
+ */
+const FILTER_DEFAULTS = { persen: OVERLAP_PCT_DEFAULT, jenis: null, label: null, distrik: null, lembaga: null, cari: "" };
 
 interface Props {
   rows: ParcelOverlapRow[];
@@ -193,6 +202,16 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
   const districtParam = get("distrik");
   const districtId = options.districts.some((d) => d.id === districtParam) ? districtParam : null;
   const pairCounts = useMemo(() => pairCountByParcel(rows), [rows]);
+  const [search, setSearch] = useState(FILTER_DEFAULTS.cari);
+  const filtersActive = hasActiveFilters(
+    { persen: pct, jenis: kind, label: level, distrik: districtId, lembaga: groupId, cari: search },
+    FILTER_DEFAULTS
+  );
+  const resetFilters = () => {
+    const { cari, ...url } = FILTER_DEFAULTS;
+    setMany(Object.fromEntries(Object.keys(url).map((k) => [k, null])));
+    setSearch(cari);
+  };
 
   // Chip label menghitung dari filter LAIN (tanpa label) — angkanya tetap terbaca
   // saat satu chip aktif, sehingga chip lain bisa langsung diklik.
@@ -510,6 +529,7 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
             widthClass="w-[220px]"
           />
         </FilterField>
+        <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
       </div>
 
       {/* Chip label = filter: klik untuk menyaring, klik lagi untuk melepas. */}
@@ -566,6 +586,8 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
               );
             }}
             searchPlaceholder="Cari ID lahan / petani..."
+            search={search}
+            onSearchChange={setSearch}
             emptyMessage="Tidak ada lahan tumpang tindih pada filter ini."
             defaultPageSize={25}
             onRowClick={selectRow}

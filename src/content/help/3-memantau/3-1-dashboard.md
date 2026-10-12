@@ -23,4 +23,6 @@ icon: LayoutDashboard
 
 **Kenapa angkanya belum berubah?** — Main Dashboard dan BMP Dashboard membaca snapshot (rekaman berkala), bukan menghitung ulang tiap kali dibuka, agar tetap cepat. Setelah input data besar, minta admin generate snapshot baru lewat menu Tools. Dashboard Pelatihan dan Dashboard Monev BMP tidak memakai snapshot — angkanya dihitung langsung saat halaman dibuka, jadi perubahan data pelatihan atau skor Monev langsung terlihat tanpa perlu generate apa pun.
 
+**Kembali ke tampilan awal** — Bila ada filter yang Anda ubah, tombol **↺ Reset** muncul di ujung baris filter. Klik untuk mengembalikan Distrik, Lembaga, Kategori, dan Tahun ke pilihan saat dashboard pertama dibuka (mis. BMP Dashboard kembali ke tahun berjalan, Dashboard Monev BMP ke tahun survei terbaru).
+
 **Angka mengikuti hak akses Anda** — Semua dashboard hanya menghitung lembaga dan petani dalam cakupan wilayah atau lembaga yang ditugaskan ke akun Anda. Karena itu angka total bisa berbeda antar pengguna, dan itu normal.

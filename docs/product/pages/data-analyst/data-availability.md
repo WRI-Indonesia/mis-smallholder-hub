@@ -22,7 +22,7 @@ Halaman: Ketersediaan Data › Semua Lembaga (/admin/data-analyst/data-availabil
 │   ├── H1 "Ketersediaan Data" + Panduan · sub-nav keluarga menu (AvailabilityNav, server): Semua Lembaga · Per Lembaga · Produksi (hanya yang ber-VIEW; item aktif = sub-judul)
 │   ├── Deskripsi satu baris + tanggal data
 │   └── Filter (state di URL): Kategori ?kategori= · Distrik ?distrik= · Lembaga ?lembaga= (cascade) · Excel (gate EXPORT) — pindah ke baris sendiri di bawah xl
-├── Filter aktif (ActiveFilterBar) — chip per kunci (kategori · distrik · lembaga · band "Tingkat skor" · urut) dengan ✕ + "Reset semua"; tidak tampil tanpa pilihan
+├── Filter aktif (ActiveFilterBar) — chip per kunci (kategori · distrik · lembaga · band "Tingkat skor" · urut) dengan ✕; tidak tampil tanpa pilihan. Reset-semua = ↺ Reset (`ResetFiltersButton`, #427) di ujung bar filter atas
 ├── Hero satu baris (AvailabilityHero) — ScoreGauge 88 · label tingkat skor · "n Lembaga · n petani · n lahan" · bar sebaran Lembaga per tingkat skor selebar sisa baris (segmen = tombol ?band=, jumlah + nama pendek di dalam, aria-label)
 ├── Kartu domain (5) — ikon + nama pendek · chip bobot · skor besar · bar · "n entitas · n kritis" · chip "Urutkan ⇅"/"Terurut ↑" (satu-satunya tombol kartu) → ?urut=<domain>
 ├── Matriks (satu kartu, bukan <Card> agar sticky jalan)
@@ -73,7 +73,7 @@ Halaman: Ketersediaan Data › Semua Lembaga (/admin/data-analyst/data-availabil
 | Filter Lembaga | `FilterCombobox` (#352) | "Cari lembaga petani..."; opsi "Semua Lembaga"; daftar mengikuti Distrik/Kategori; memfokuskan semua panel ke satu Lembaga |
 | "Excel" | Tombol (gate `EXPORT`) | `ketersediaan-data-semua-lembaga-<yyyyMMdd>.xlsx`: sheet **Kelengkapan Inti** (Lembaga, Kode, Distrik, Kategori, Petani, Persil, 5 skor domain, Skor Total, Temuan Anomali) + sheet **Cakupan Modul** (Lembaga × modul, % atau "belum dimulai") — atas irisan yang tampil |
 | Perilaku filter | Catatan | Nilai tersimpan di URL (`?distrik=…&kategori=…&lembaga=…&band=…&urut=…&arah=turun&tampilan=heatmap&kerja=entitas`; urut modul `?urut=modul:<key>`); nilai tak valid diabaikan; `tampilan=inti` (nilai lama v0.36) dipetakan ke `heatmap` agar bookmark lama tetap membuka tabel |
-| Filter aktif | Baris chip + Reset semua (#417) | Lihat rincian di bawah |
+| Filter aktif | Baris chip (#417); ↺ Reset di bar filter (#427) | Lihat rincian di bawah |
 | Hero | Kartu satu baris | Lihat rincian di bawah |
 | Kartu domain (5) | Kartu + chip Urutkan | Lihat rincian di bawah |
 | Radar per Lembaga (bawaan) | Grid kartu pentagon + modal | Lihat rincian di bawah |
@@ -92,7 +92,7 @@ Halaman: Ketersediaan Data › Semua Lembaga (/admin/data-analyst/data-availabil
 
 ## Filter aktif (`ActiveFilterBar`, #417 A)
 
-Chip per pilihan yang berlaku — Kategori · Distrik · Lembaga · Tingkat skor (`band`) · Urut (bukan bawaan Skor Total menaik; di tampilan modul: nama modul) — masing-masing dengan tombol ✕ bernama ("Lepas filter Tingkat skor: kritis"), plus **Reset semua** (hapus `kategori distrik lembaga band urut arah`; `tampilan` & `kerja` bukan filter). Tidak dirender tanpa chip.
+Chip per pilihan yang berlaku — Kategori · Distrik · Lembaga · Tingkat skor (`band`) · Urut (bukan bawaan Skor Total menaik; di tampilan modul: nama modul) — masing-masing dengan tombol ✕ bernama ("Lepas filter Tingkat skor: kritis"), Reset-semua pindah ke **↺ Reset** di ujung bar filter (#427; hapus `kategori distrik lembaga band urut arah` + kosongkan Cari; `tampilan` & `kerja` bukan filter). Tidak dirender tanpa chip.
 
 ## Kartu domain (`AvailabilityDomainCards`)
 

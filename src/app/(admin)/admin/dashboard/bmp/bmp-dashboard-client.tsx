@@ -10,6 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import {
   bmpAgeSeries,
   bmpDefaultYear,
@@ -39,14 +41,19 @@ const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
 };
 
 export function BmpDashboardClient({ initialView, helpSlot, canExport = false }: Props) {
-  const [districtId, setDistrictId] = useState<string | null>(null);
-  const [groupId, setGroupId] = useState<string | null>(null);
-  const [category, setCategory] = useState<BmpFarmerGroupCategory | null>(null);
+  // Tampilan bawaan saat halaman dibuka — inisialisasi state + tombol Reset (#427).
   // Default tahun berjalan (#191, revisi dari default "Rataan"); fallback tahun
   // terbaru ber-data bila tahun ini belum ada di snapshot — jangan menunjuk tahun kosong.
-  const [year, setYear] = useState<number | "average">(() =>
-    bmpDefaultYear(bmpYearOptions(initialView?.data.groups ?? []), new Date().getFullYear())
-  );
+  const [defaultFilters] = useState(() => ({
+    category: null as BmpFarmerGroupCategory | null,
+    districtId: null as string | null,
+    groupId: null as string | null,
+    year: bmpDefaultYear(bmpYearOptions(initialView?.data.groups ?? []), new Date().getFullYear()),
+  }));
+  const [districtId, setDistrictId] = useState<string | null>(defaultFilters.districtId);
+  const [groupId, setGroupId] = useState<string | null>(defaultFilters.groupId);
+  const [category, setCategory] = useState<BmpFarmerGroupCategory | null>(defaultFilters.category);
+  const [year, setYear] = useState<number | "average">(defaultFilters.year);
 
   const [districtOpen, setDistrictOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -185,6 +192,14 @@ export function BmpDashboardClient({ initialView, helpSlot, canExport = false }:
 
   const selectedDistrict = districtOptions.find((d) => d.id === districtId);
   const selectedGroup = allGroups.find((g) => g.id === groupId);
+
+  const filtersActive = hasActiveFilters({ category, districtId, groupId, year }, defaultFilters);
+  const resetFilters = () => {
+    setCategory(defaultFilters.category);
+    setDistrictId(defaultFilters.districtId);
+    setGroupId(defaultFilters.groupId);
+    setYear(defaultFilters.year);
+  };
 
   return (
     <div className="space-y-6">
@@ -328,6 +343,8 @@ export function BmpDashboardClient({ initialView, helpSlot, canExport = false }:
                 <SelectItem value="average">Rataan</SelectItem>
               </SelectContent>
             </Select>
+
+            <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
 
             {canExport && (
               <Button

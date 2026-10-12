@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -143,6 +145,34 @@ const TOGGLEABLE: { key: ColKey; label: string }[] = [
 /** Kolom yang menyala saat halaman dibuka — dipakai juga tombol "Bawaan". */
 const DEFAULT_COLS: ColKey[] = ["kelompokTani", "tahunTanam", "luas", "koordinat"];
 
+/**
+ * Tampilan bawaan filter (#427) — nilai awal state, pembanding & isi tombol Reset.
+ * Distrik/Lembaga SENGAJA tidak di sini: Lembaga parameter wajib laporan (#179),
+ * Reset tidak mengosongkan laporan yang sedang dibuka.
+ * Cakupan bawaan "Semua lahan" (owner 2026-09-02): bawaan "Sudah didata" diam-diam
+ * menyembunyikan lahan yang belum punya UL Parcel Code, sehingga laporan terbaca
+ * seperti roster lengkap padahal tersaring. `rowOrder` = Urutan No (#371).
+ */
+const FILTER_DEFAULTS: {
+  coverage: "all" | "mapped";
+  documentStatus: "all" | "with" | "without";
+  documentTypes: readonly string[];
+  stdbStatus: string;
+  areaDiff: "all" | "gte";
+  nktStatus: string;
+  marker: string;
+  rowOrder: LandParcelRowOrder;
+} = {
+  coverage: "all",
+  documentStatus: "all",
+  documentTypes: [],
+  stdbStatus: "all",
+  areaDiff: "all",
+  nktStatus: "all",
+  marker: "all",
+  rowOrder: "pemilik",
+};
+
 export function LandParcelReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
@@ -153,7 +183,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   // Pecah sheet Excel (#371): per sel grid (bawaan), per Kelompok Tani, atau per Blok.
   const [sheetSplit, setSheetSplit] = useState<LandParcelSheetSplit>("grid");
   // Urutan No (#371): abjad pemilik (urutan server) atau posisi lahan di peta.
-  const [rowOrder, setRowOrder] = useState<LandParcelRowOrder>("pemilik");
+  const [rowOrder, setRowOrder] = useState<LandParcelRowOrder>(FILTER_DEFAULTS.rowOrder);
   const [gridCols, setGridCols] = useState(1);
   // Ceklis isi label poligon di peta (minimal satu).
   const [labelParts, setLabelParts] = useState<Set<LabelKey>>(new Set<LabelKey>(["no"]));
@@ -190,16 +220,14 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     });
 
   // ── Filter legalitas (#305) — yang mengubah laporan dari roster jadi worklist.
-  // Cakupan bawaan "Semua lahan" (owner 2026-09-02): bawaan "Sudah didata"
-  // diam-diam menyembunyikan lahan yang belum punya UL Parcel Code, sehingga
-  // laporan terbaca seperti roster lengkap padahal tersaring.
-  const [coverage, setCoverage] = useState<"all" | "mapped">("all");
-  const [documentStatus, setDocumentStatus] = useState<"all" | "with" | "without">("all");
-  const [documentTypes, setDocumentTypes] = useState<Set<string>>(new Set());
-  const [stdbStatus, setStdbStatus] = useState<string>("all");
-  const [areaDiff, setAreaDiff] = useState<"all" | "gte">("all");
-  const [nktStatus, setNktStatus] = useState<string>("all");
-  const [marker, setMarker] = useState<string>("all");
+  // Bawaan di FILTER_DEFAULTS (#427).
+  const [coverage, setCoverage] = useState(FILTER_DEFAULTS.coverage);
+  const [documentStatus, setDocumentStatus] = useState(FILTER_DEFAULTS.documentStatus);
+  const [documentTypes, setDocumentTypes] = useState<Set<string>>(() => new Set(FILTER_DEFAULTS.documentTypes));
+  const [stdbStatus, setStdbStatus] = useState(FILTER_DEFAULTS.stdbStatus);
+  const [areaDiff, setAreaDiff] = useState(FILTER_DEFAULTS.areaDiff);
+  const [nktStatus, setNktStatus] = useState(FILTER_DEFAULTS.nktStatus);
+  const [marker, setMarker] = useState(FILTER_DEFAULTS.marker);
 
   const legalFilters: LandParcelLegalFilters = useMemo(
     () => ({
@@ -213,8 +241,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     }),
     [coverage, documentStatus, documentTypes, stdbStatus, areaDiff, nktStatus, marker],
   );
-  const legalFilterActive =
-    documentStatus !== "all" || documentTypes.size > 0 || stdbStatus !== "all" || areaDiff !== "all" || nktStatus !== "all" || marker !== "all";
+  const filtersActive = hasActiveFilters({ ...legalFilters, rowOrder }, FILTER_DEFAULTS);
 
   const toggleDocumentType = (t: string) =>
     setDocumentTypes((prev) => {
@@ -224,13 +251,16 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       return next;
     });
 
-  const resetLegalFilters = () => {
-    setDocumentStatus("all");
-    setDocumentTypes(new Set());
-    setStdbStatus("all");
-    setAreaDiff("all");
-    setNktStatus("all");
-    setMarker("all");
+  /** Reset (#427): semua filter tampilan + Urutan No; Distrik/Lembaga tidak (parameter wajib). */
+  const resetFilters = () => {
+    setCoverage(FILTER_DEFAULTS.coverage);
+    setDocumentStatus(FILTER_DEFAULTS.documentStatus);
+    setDocumentTypes(new Set(FILTER_DEFAULTS.documentTypes));
+    setStdbStatus(FILTER_DEFAULTS.stdbStatus);
+    setAreaDiff(FILTER_DEFAULTS.areaDiff);
+    setNktStatus(FILTER_DEFAULTS.nktStatus);
+    setMarker(FILTER_DEFAULTS.marker);
+    setRowOrder(FILTER_DEFAULTS.rowOrder);
   };
 
   const [reportData, setReportData] = useState<LandParcelReportResult | null>(null);
@@ -982,11 +1012,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 </select>
               </div>
 
-              {legalFilterActive && (
-                <Button variant="ghost" size="sm" className="h-9" onClick={resetLegalFilters}>
-                  Reset filter legalitas
-                </Button>
-              )}
+              <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
             </div>
 
             <p className="text-xs text-muted-foreground mt-3">

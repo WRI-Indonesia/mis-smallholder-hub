@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { DataTableColumn } from "@/components/shared/data-table";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import { useUrlFilters } from "@/hooks/use-url-filters";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import { formatArea, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { exportFileBase } from "@/lib/parcel-export-data";
@@ -32,6 +34,12 @@ const pctText = (n: number) => `${n.toLocaleString("id-ID", { maximumFractionDig
 const distanceText = (m: number) => (m >= 1000 ? `${(m / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} km` : `${formatNumber(m)} m`);
 
 /**
+ * Tampilan bawaan tab (#427) — pembanding tombol Reset sekaligus isi reset. Kunci
+ * selain `cari` = kunci URL; bawaan = kunci tidak ada di URL, jadi reset menghapusnya.
+ */
+const FILTER_DEFAULTS = { luar: "FULL", distrik: null, lembaga: null, cari: "" };
+
+/**
  * Tab Luar Boundary (#317 Fase 2; keputusan owner 2026-10-07): peringatan + ringkasan
  * per Lembaga di atas — temuan menumpuk di sedikit Lembaga menandakan boundary-nya yang
  * perlu diperbarui, bukan lahannya — lalu split view tabel + peta (lahan & garis
@@ -45,6 +53,13 @@ export function OutsideBoundaryTab({ rows, canExport }: { rows: OutsideBoundaryR
   const groupId = options.groups.some((g) => g.id === groupParam) ? groupParam : null;
   const districtParam = get("distrik");
   const districtId = options.districts.some((d) => d.id === districtParam) ? districtParam : null;
+  const [search, setSearch] = useState(FILTER_DEFAULTS.cari);
+  const filtersActive = hasActiveFilters({ luar: kind, distrik: districtId, lembaga: groupId, cari: search }, FILTER_DEFAULTS);
+  const resetFilters = () => {
+    const { cari, ...url } = FILTER_DEFAULTS;
+    setMany(Object.fromEntries(Object.keys(url).map((k) => [k, null])));
+    setSearch(cari);
+  };
 
   const counts = useMemo(() => {
     const c: Record<OutsideKind, number> = { FULL: 0, PARTIAL: 0 };
@@ -185,12 +200,15 @@ export function OutsideBoundaryTab({ rows, canExport }: { rows: OutsideBoundaryR
           />
         </div>
         <span className="text-sm font-semibold tabular-nums">{formatNumber(filtered.length)} lahan</span>
+        <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
       </div>
 
       <ParcelFindingSplitView
         rows={filtered}
         columns={columns}
         emptyMessage="Tidak ada lahan di luar boundary pada filter ini."
+        search={search}
+        onSearchChange={setSearch}
         withBoundary
         canExport={canExport}
         fileBase={fileBase}

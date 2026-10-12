@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useUrlFilters } from "@/hooks/use-url-filters";
+import { hasActiveFilters } from "@/lib/filter-reset";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +36,10 @@ import { BmpMonevTrendChart } from "./bmp-monev-trend-chart";
 import { BmpMonevGroupTable } from "./bmp-monev-group-table";
 import { formatGeneratedAt } from "@/lib/format";
 
+// Tampilan bawaan = kunci URL filter dihapus (Semua Distrik/Lembaga, tahun
+// survei terbaru ber-data) — dipakai tombol Reset (#427).
+const DEFAULT_FILTERS = { distrik: null, lembaga: null, tahun: null } as const;
+
 export function BmpMonevDashboardClient({
   view,
   helpSlot,
@@ -54,15 +60,23 @@ export function BmpMonevDashboardClient({
 
   const yearOptions = useMemo(() => bmpMonevAvailableYears(allGroups), [allGroups]);
   // Default = tahun terbaru ber-data (penilaian bersifat per tahun, bukan kumulatif).
+  const defaultYear = yearOptions[0] ?? null;
   const yearParam = get("tahun");
   const year =
     yearParam != null && /^\d{4}$/.test(yearParam) && yearOptions.includes(Number(yearParam))
       ? Number(yearParam)
-      : (yearOptions[0] ?? null);
+      : defaultYear;
 
   const setDistrictId = (v: string | null) => setMany({ distrik: v, lembaga: null });
   const setGroupId = (v: string | null) => setMany({ lembaga: v });
   const setYear = (v: number | null) => setMany({ tahun: v == null ? null : String(v) });
+
+  // Tahun bawaan dipetakan ke "kunci dihapus" — memilih tahun terbaru secara
+  // eksplisit tetap tampilan bawaan, jadi tombol Reset tidak muncul.
+  const filtersActive = hasActiveFilters(
+    { distrik: districtId, lembaga: groupId, tahun: year === defaultYear ? null : year },
+    DEFAULT_FILTERS,
+  );
 
   const [districtOpen, setDistrictOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -215,6 +229,8 @@ export function BmpMonevDashboardClient({
               ))}
             </SelectContent>
           </Select>
+
+          <ResetFiltersButton active={filtersActive} onReset={() => setMany(DEFAULT_FILTERS)} />
         </div>
       </div>
 

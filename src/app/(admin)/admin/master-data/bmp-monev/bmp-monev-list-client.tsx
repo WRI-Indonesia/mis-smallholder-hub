@@ -29,6 +29,18 @@ import { formatNumber } from "@/lib/format";
 import { BmpAssessmentFormModal } from "./bmp-assessment-form-modal";
 import { BmpMonevImportDialog } from "./bmp-monev-import-dialog";
 import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
+
+/** Tampilan bawaan halaman — dipakai inisialisasi state & tombol Reset (#427). */
+const FILTER_DEFAULTS = {
+  district: "all",
+  group: "all",
+  year: "all",
+  category: "all",
+  status: "active" as StatusFilterValue,
+  search: "",
+};
 
 interface Props {
   initialRows: BmpAssessmentListItem[];
@@ -41,16 +53,31 @@ interface Props {
 
 export function BmpMonevListClient({ initialRows, farmerGroups, districts, permissions, isSuperAdmin }: Props) {
   const router = useRouter();
-  const [districtFilter, setDistrictFilter] = useState("all");
-  const [groupFilter, setGroupFilter] = useState("all");
-  const [yearFilter, setYearFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
+  const [districtFilter, setDistrictFilter] = useState(FILTER_DEFAULTS.district);
+  const [groupFilter, setGroupFilter] = useState(FILTER_DEFAULTS.group);
+  const [yearFilter, setYearFilter] = useState(FILTER_DEFAULTS.year);
+  const [categoryFilter, setCategoryFilter] = useState(FILTER_DEFAULTS.category);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>(FILTER_DEFAULTS.status);
+  const [search, setSearch] = useState(FILTER_DEFAULTS.search);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editRow, setEditRow] = useState<BmpAssessmentListItem | null>(null);
   // Naik tiap kali "Tambah" dibuka → modal di-remount, state isian sebelumnya tak terbawa (temuan review).
   const [formNonce, setFormNonce] = useState(0);
+
+  const filtersActive = hasActiveFilters(
+    { district: districtFilter, group: groupFilter, year: yearFilter, category: categoryFilter, status: statusFilter, search },
+    FILTER_DEFAULTS,
+  );
+  function resetFilters() {
+    // Distrik & Lembaga saling bergantung → di-reset bersama.
+    setDistrictFilter(FILTER_DEFAULTS.district);
+    setGroupFilter(FILTER_DEFAULTS.group);
+    setYearFilter(FILTER_DEFAULTS.year);
+    setCategoryFilter(FILTER_DEFAULTS.category);
+    setStatusFilter(FILTER_DEFAULTS.status);
+    setSearch(FILTER_DEFAULTS.search);
+  }
 
   const years = useMemo(
     () => [...new Set(initialRows.map((r) => r.surveyYear))].sort((a, b) => b - a),
@@ -232,6 +259,8 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
       {isSuperAdmin && (
         <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
+
+      <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
     </div>
   );
 
@@ -316,6 +345,8 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
           data={filtered}
           rowKey={(r) => r.id}
           searchPlaceholder="Cari nama / ID petani, lembaga, lahan..."
+          search={search}
+          onSearchChange={setSearch}
           searchFn={(row, q) =>
             row.farmerName.toLowerCase().includes(q) ||
             row.farmerCode.toLowerCase().includes(q) ||

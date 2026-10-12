@@ -9,9 +9,9 @@
 ```text
 Halaman: Dashboard Rantai Pasok (/admin/dashboard/supply-chain)
 ├── Header: judul + badge Prototipe + HelpHint · tombol "Unduh Excel" (izin EXPORT; 3 sheet Jalur · Mill · Lembaga, filter aktif) · "Lihat di Peta" (membawa filter)
-├── Bar filter (dipakai bersama Peta; tersimpan di URL) + chip filter aktif GLOBAL di bawahnya (✕ per chip · Hapus semua)
+├── Bar filter (dipakai bersama Peta; tersimpan di URL) + chip filter aktif GLOBAL di bawahnya (✕ per chip; reset-semua lewat ↺ Reset di ujung bar, #427)
 │   ├── Lingkup: Distrik · Kategori (Swadaya/Ex-Plasma) · UL & Non-UL · Tahun
-│   └── Rantai: Lembaga › Agen·KT/Koperasi › RAMP › Mill (pilihan faset) — Reset hanya di panel Peta (vertikal)
+│   └── Rantai: Lembaga › Agen·KT/Koperasi › RAMP › Mill (pilihan faset) · ↺ Reset (`ResetFiltersButton`, juga di panel Peta vertikal; Tahun ikut kembali ke terbaru, #427)
 ├── Kartu KPI: TBS · Ke Mill Pemasok UL · Sampai PKS Pasti (sub: % disebut langsung) · Offtaker
 ├── Kartu lipat* "Sorotan" — 4 ubin dari filter aktif (`supplyChainInsights`): Konsentrasi ke Mill (Mill bernama saja; dilewati bila tak ada) · Ketergantungan offtaker (≥ 80% ke satu pembeli **luar** = `mainExternal`; koperasi Lembaga sendiri dilewati, pembeli di belakangnya dihitung) · Mill belum pasti (Lembaga ≥ 50% tak pasti) · Jarak garis lurus (K8) — nama = tombol filter, "+N lagi" = buka kartu Lembaga (walau terlipat) + tampilkan semua + gulir, terurut
 ├── Kartu lipat* "Jalur TBS & Kepastian Mill" — dua batang 100%: Jalur (= legenda warna) · Kepastian Mill (disebut · dipetakan · belum pasti · tak diketahui → klik = filter)

@@ -4,14 +4,11 @@ import { getProductionRecords } from "@/server/actions/production";
 import { getFarmerGroupOptions } from "@/lib/select-options";
 import { getDistrictsForSelect } from "@/server/actions/farmer-group";
 import { ProductionListClient } from "./components/production-list-client";
-
-interface SearchParams {
-  search?: string;
-  farmerGroupId?: string;
-  period?: string;
-  hasParcel?: string;
-  status?: string;
-}
+import {
+  hasProductionQuery,
+  productionFiltersFromSearchParams,
+  type ProductionListSearchParams as SearchParams,
+} from "@/lib/production-list-filters";
 
 export default async function ProductionPage({
   searchParams,
@@ -38,6 +35,12 @@ export default async function ProductionPage({
     isSuperAdmin(),
   ]);
 
+  // #427: saringan server dari query (tautan Kalender Ketersediaan) ditampilkan
+  // sebagai nilai awal filter client agar terlihat & bisa di-Reset. `key` me-mount
+  // ulang client saat query berubah (Reset/kembali) agar state ikut query baru.
+  const { search, farmerGroupId, period, hasParcel, status } = resolvedParams;
+  const queryKey = JSON.stringify([search, farmerGroupId, period, hasParcel, status]);
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -50,7 +53,10 @@ export default async function ProductionPage({
         </p>
       </div>
       <ProductionListClient
+        key={queryKey}
         initialRecords={records}
+        initialFilters={productionFiltersFromSearchParams(resolvedParams, farmerGroups)}
+        hasServerQuery={hasProductionQuery(resolvedParams)}
         farmerGroups={farmerGroups}
         districts={districts}
         permissions={permissions}
