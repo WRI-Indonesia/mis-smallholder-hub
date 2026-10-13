@@ -90,6 +90,8 @@ const DINYATAKAN: Record<string, string[]> = {
   "data-analyst-parcel-overlap": ["ADMIN", "MANAGEMENT", "OPERATOR", "SUPERADMIN"],
   // Rencana sprint pengembangan (#378) — audiens sama dengan Metrik Rilis.
   "data-analyst-sprint": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
+  // Daftar Issue GitHub (#429) — audiens sama dengan saudaranya (owner 2026-10-13).
+  "platform-developer-issues": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
   // Administrasi sistem.
   "settings-roles": ["SUPERADMIN"],
   "settings-menu": ["SUPERADMIN"],
