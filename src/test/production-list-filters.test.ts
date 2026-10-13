@@ -42,4 +42,13 @@ describe("productionFiltersFromSearchParams (#427)", () => {
       status: "active",
     });
   });
+
+  it("kunci diulang (array dari Next) → diabaikan, Cari tetap string (tak crash di .trim())", () => {
+    const f = productionFiltersFromSearchParams(
+      { search: ["a", "b"], farmerGroupId: ["g1", "g2"], period: ["2026-03", "2026-04"], status: ["inactive", "all"] },
+      groups,
+    );
+    expect(f).toEqual(PRODUCTION_FILTER_DEFAULTS);
+    expect(typeof f.search).toBe("string");
+  });
 });

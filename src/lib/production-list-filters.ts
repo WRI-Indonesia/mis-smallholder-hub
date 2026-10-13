@@ -16,13 +16,16 @@ export type ProductionListFilters = {
   search: string;
 };
 
-/** Query URL yang dibaca page.tsx sebagai nilai awal filter. */
+/**
+ * Query URL yang dibaca page.tsx sebagai nilai awal filter. Kunci yang diulang
+ * (`?search=a&search=b`) tiba dari Next sebagai array — diabaikan, bukan dipakai.
+ */
 export interface ProductionListSearchParams {
-  search?: string;
-  farmerGroupId?: string;
-  period?: string;
-  hasParcel?: string;
-  status?: string;
+  search?: string | string[];
+  farmerGroupId?: string | string[];
+  period?: string | string[];
+  hasParcel?: string | string[];
+  status?: string | string[];
 }
 
 /** Tampilan bawaan = halaman TANPA query — dasar inisialisasi & tombol Reset. */
@@ -39,6 +42,9 @@ const HAS_PARCEL_VALUES = new Set(["all", "true", "false"]);
 const STATUS_VALUES = new Set<string>(["all", "active", "inactive"]);
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
+/** Hanya nilai tunggal; array (kunci diulang) → tidak ada. */
+const single = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
+
 /**
  * Nilai awal filter client dari query. Nilai yang tak bisa DITAMPILKAN kontrolnya
  * jatuh ke bawaan agar tak ada saringan tersembunyi: Lembaga di luar opsi akun
@@ -50,13 +56,17 @@ export function productionFiltersFromSearchParams(
   farmerGroups: readonly { id: string; districtId: string }[],
 ): ProductionListFilters {
   const d = PRODUCTION_FILTER_DEFAULTS;
-  const match = params.farmerGroupId ? farmerGroups.find((g) => g.id === params.farmerGroupId) : undefined;
+  const farmerGroupId = single(params.farmerGroupId);
+  const period = single(params.period);
+  const hasParcel = single(params.hasParcel);
+  const status = single(params.status);
+  const match = farmerGroupId ? farmerGroups.find((g) => g.id === farmerGroupId) : undefined;
   return {
     district: match?.districtId ?? d.district,
     group: match?.id ?? d.group,
-    period: params.period && PERIOD_RE.test(params.period) ? params.period : d.period,
-    hasParcel: params.hasParcel && HAS_PARCEL_VALUES.has(params.hasParcel) ? params.hasParcel : d.hasParcel,
-    status: params.status && STATUS_VALUES.has(params.status) ? (params.status as StatusFilterValue) : d.status,
-    search: params.search ?? d.search,
+    period: period && PERIOD_RE.test(period) ? period : d.period,
+    hasParcel: hasParcel && HAS_PARCEL_VALUES.has(hasParcel) ? hasParcel : d.hasParcel,
+    status: status && STATUS_VALUES.has(status) ? (status as StatusFilterValue) : d.status,
+    search: single(params.search) ?? d.search,
   };
 }
