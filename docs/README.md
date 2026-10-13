@@ -51,6 +51,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [qa/regression.md](./qa/regression.md) | Kasus `[regresi]` yang ikut setiap rilis (lahir dari temuan review/bug) |
 | [qa/v1.5.0/](./qa/v1.5.0/) · [v1.6.0](./qa/v1.6.0/) · [v1.7.0](./qa/v1.7.0/) | Paket QA tiga rilis terakhir yang sudah terbit (00–05 + `runs/`; v1.5.1 hotfix tanpa paket); lebih lama di [qa/archive/](./qa/archive/) |
 | [qa/archive/](./qa/archive/) | Paket QA rilis lebih lama (v0.35.0 — rilis pertama proses ini — s.d. v1.4.0) |
+| [qa/v1.8.0/](./qa/v1.8.0/) | Rilis berjalan — MINOR v1.8.0 (2026-10-13 → 10-25; kasus uji TC-425/426/427/428/429/424; seed menu `platform-developer-issues` + generate ulang snapshot BMP) |
 | `scripts/qa/` | `data-qc.ts` (cek DB read-only → tabel markdown) · `new-run.mjs` (lembar run dari spesifikasi) · `summary.mjs` (rekap Pass/Fail per run) |
 
 ## 🧭 Keputusan (`decisions/`) — catatan keputusan besar
