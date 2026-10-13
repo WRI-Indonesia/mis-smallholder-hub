@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react";
-import { requirePermission } from "@/lib/rbac";
+import { hasPermission, requirePermission } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { Card, CardContent } from "@/components/ui/card";
 import { getGithubIssues } from "@/server/actions/github-issues";
@@ -15,7 +15,10 @@ export default async function GithubIssuesPage() {
 
   // Hari ini (WIB) dihitung server per request — pola Rencana Pengembangan.
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
-  const result = await getGithubIssues();
+  const [result, canExport] = await Promise.all([
+    getGithubIssues(),
+    hasPermission("platform-developer-issues", "EXPORT"),
+  ]);
 
   return (
     <div className="p-6 space-y-6">
@@ -30,7 +33,7 @@ export default async function GithubIssuesPage() {
         </p>
       </div>
       {result.success && result.data ? (
-        <IssuesViewClient data={result.data} today={today} />
+        <IssuesViewClient data={result.data} today={today} canExport={canExport} />
       ) : (
         <Card className="border-amber-500/40">
           <CardContent className="flex gap-3 pt-6 text-sm">

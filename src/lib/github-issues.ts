@@ -134,8 +134,17 @@ export interface DayActivity {
   closed: GithubIssue[];
 }
 
-/** Kalender: tanggal WIB → issue yang dibuat & ditutup pada tanggal itu. */
-export function dailyActivity(issues: GithubIssue[]): Map<string, DayActivity> {
+/**
+ * Kalender: tanggal WIB → issue yang dibuat & ditutup pada tanggal itu. Dengan
+ * rentang Aktivitas, hanya kejadian DI DALAM rentang yang diplot (owner
+ * 2026-10-13) — issue dibuat di rentang tapi ditutup sesudahnya tidak memunculkan
+ * ✓ di luar rentang, dan sebaliknya.
+ */
+export function dailyActivity(
+  issues: GithubIssue[],
+  range: { from?: string | null; to?: string | null } = {},
+): Map<string, DayActivity> {
+  const inRange = (d: string) => (!range.from || d >= range.from) && (!range.to || d <= range.to);
   const m = new Map<string, DayActivity>();
   const slot = (d: string) => {
     let a = m.get(d);
@@ -143,8 +152,8 @@ export function dailyActivity(issues: GithubIssue[]): Map<string, DayActivity> {
     return a;
   };
   for (const i of issues) {
-    slot(i.createdDate).created.push(i);
-    if (i.closedDate) slot(i.closedDate).closed.push(i);
+    if (inRange(i.createdDate)) slot(i.createdDate).created.push(i);
+    if (i.closedDate && inRange(i.closedDate)) slot(i.closedDate).closed.push(i);
   }
   return m;
 }

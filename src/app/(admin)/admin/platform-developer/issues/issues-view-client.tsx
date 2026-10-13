@@ -43,7 +43,16 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  * urutan List) — "apa yang terlihat = apa yang diunduh". Tren memakai cari +
  * label saja lalu dipotong ke rentang aktivitas (lihat `clipWeeks`).
  */
-export function IssuesViewClient({ data, today }: { data: GithubIssuesData; today: string }) {
+export function IssuesViewClient({
+  data,
+  today,
+  canExport,
+}: {
+  data: GithubIssuesData;
+  today: string;
+  /** Izin EXPORT menu ini (rbac.md §Keluaran) — tanpa izin, tombol Unduh Excel tak tampil. */
+  canExport: boolean;
+}) {
   const { get, setMany } = useUrlFilters();
   const [exporting, setExporting] = useState(false);
   const [sort, setSort] = useState<IssueSort>(DEFAULT_ISSUE_SORT);
@@ -151,10 +160,12 @@ export function IssuesViewClient({ data, today }: { data: GithubIssuesData; toda
             />
           </div>
           <ResetFiltersButton active={active} onReset={() => setMany(clearedUrlKeys(FILTER_DEFAULTS))} />
-          <Button type="button" variant="outline" className="ml-auto h-9" onClick={onExport} disabled={exporting || filtered.length === 0}>
-            {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-            Unduh Excel
-          </Button>
+          {canExport && (
+            <Button type="button" variant="outline" className="ml-auto h-9" onClick={onExport} disabled={exporting || filtered.length === 0}>
+              {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Unduh Excel
+            </Button>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter status">
           <span className="w-14 text-xs text-muted-foreground">Status</span>
@@ -181,7 +192,7 @@ export function IssuesViewClient({ data, today }: { data: GithubIssuesData; toda
           <IssuesList issues={filtered} sort={sort} onSort={setSort} />
         </TabsContent>
         <TabsContent value="kalender">
-          <IssuesCalendar issues={filtered} today={today} get={get} setMany={setMany} />
+          <IssuesCalendar issues={filtered} from={from} to={to} today={today} get={get} setMany={setMany} />
         </TabsContent>
         <TabsContent value="tren">
           <IssuesTrend issues={trendBase} today={today} from={from} to={to} />

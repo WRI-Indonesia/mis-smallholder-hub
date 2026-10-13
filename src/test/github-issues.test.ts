@@ -117,6 +117,22 @@ describe("kalender", () => {
     expect(m.get("2026-10-03")!.closed.map((i) => i.number)).toEqual([1]);
   });
 
+  it("dailyActivity dengan rentang Aktivitas: kejadian di luar rentang tidak diplot (owner 2026-10-13)", () => {
+    const m = dailyActivity(
+      [
+        issue({ number: 1, createdDate: "2026-10-03", closedDate: "2026-10-20", status: "closed" }),
+        issue({ number: 2, createdDate: "2026-09-28", closedDate: "2026-10-04", status: "closed" }),
+      ],
+      { from: "2026-10-01", to: "2026-10-05" },
+    );
+    expect(m.get("2026-10-03")!.created.map((i) => i.number)).toEqual([1]);
+    expect(m.get("2026-10-04")!.closed.map((i) => i.number)).toEqual([2]);
+    expect(m.has("2026-10-20")).toBe(false); // ditutup sesudah rentang
+    expect(m.has("2026-09-28")).toBe(false); // dibuat sebelum rentang
+    // Hanya satu sisi rentang yang terisi tetap membatasi sisi itu saja.
+    expect(dailyActivity([issue({ number: 3, createdDate: "2026-10-03", closedDate: "2026-10-20", status: "closed" })], { from: "2026-10-10" }).has("2026-10-03")).toBe(false);
+  });
+
   it("monthGrid: Senin di kolom pertama, kelipatan 7", () => {
     // 1 Oktober 2026 = Kamis → 3 sel kosong (Sen–Rab).
     const cells = monthGrid("2026-10");

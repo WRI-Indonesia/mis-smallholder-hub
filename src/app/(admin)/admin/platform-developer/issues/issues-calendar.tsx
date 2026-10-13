@@ -94,16 +94,21 @@ function ActivityList({ activity, withDate }: { activity: DayActivity; withDate:
  */
 export function IssuesCalendar({
   issues,
+  from,
+  to,
   today,
   get,
   setMany,
 }: {
   issues: GithubIssue[];
+  /** Rentang Aktivitas (`?dari=`/`?sampai=`): kejadian di luarnya tidak diplot. */
+  from: string | null;
+  to: string | null;
   today: string;
   get: (key: string) => string | null;
   setMany: (values: Record<string, string | null>) => void;
 }) {
-  const activity = useMemo(() => dailyActivity(issues), [issues]);
+  const activity = useMemo(() => dailyActivity(issues, { from, to }), [issues, from, to]);
   const currentMonth = today.slice(0, 7);
   const monthParam = get("bulan");
   const month = MONTH_RE.test(monthParam ?? "") ? (monthParam as string) : currentMonth;

@@ -164,6 +164,17 @@ describe("spesifikasi peran (rbac.md §Inventaris Role) ditegakkan seed", () => 
     expect(punya("DONOR", "report", ["PRINT"]).length).toBeGreaterThan(0);
   });
 
+  it("Daftar Issue (#429): tombol Unduh Excel dijaga EXPORT — hanya peran yang bisa membuka menunya", () => {
+    // rbac.md §Keluaran: tombol unduh = izin EXPORT (owner 2026-10-13, sebelumnya
+    // tombol tampil hanya dengan VIEW).
+    for (const role of ["ADMIN", "MANAGEMENT", "SUPERADMIN"]) {
+      expect(punya(role, "platform-developer-issues", ["EXPORT"]), role).toEqual(["platform-developer-issues"]);
+    }
+    for (const role of ["OPERATOR", "DONOR"]) {
+      expect(punya(role, "platform-developer-issues", ["VIEW", "EXPORT"]), role).toEqual([]);
+    }
+  });
+
   it("DONOR tetap bisa membuka Bantuan", () => {
     expect(punya("DONOR", "help", ["VIEW"])).toEqual(["help"]);
   });
