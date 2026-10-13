@@ -209,7 +209,7 @@ export async function getFarmerGroupDetail(id: string) {
         },
         productionRecords: {
           where: { isActive: true },
-          select: { id: true, parcelId: true, period: true, yieldKg: true },
+          select: { parcelId: true, period: true, yieldKg: true },
         },
       },
     }),
@@ -302,12 +302,7 @@ export async function getFarmerGroupDetail(id: string) {
         postTestScore: tp.postTestScore,
         packageCode: tp.activity.package.code,
       })),
-      productionRecords: f.productionRecords.map((r) => ({
-        id: r.id,
-        parcelId: r.parcelId,
-        period: r.period,
-        yieldKg: r.yieldKg,
-      })),
+      productionRecords: f.productionRecords,
     })),
   };
   const completeness = computeCompleteness(completenessInput);

@@ -211,7 +211,7 @@ describe("getDataAvailabilityView — scope satelit lintas Lembaga", () => {
     expect(db.landParcel.findMany.mock.calls[0][0].where).toMatchObject({ isActive: true, farmer: farmerWhere });
     // Kolom `notes` produksi tidak ikut kueri utama (penanda Estimasi dibuang v1.8.0).
     const farmerSelect = db.farmerGroup.findMany.mock.calls[0][0].select.farmers.select;
-    expect(farmerSelect.productionRecords.select).toEqual({ id: true, parcelId: true, period: true, yieldKg: true });
+    expect(farmerSelect.productionRecords.select).toEqual({ parcelId: true, period: true, yieldKg: true });
     expect(db.productionRecord.findMany).not.toHaveBeenCalled();
     expect(db.landParcelDocument.groupBy.mock.calls[0][0].where).toMatchObject({
       isActive: true,

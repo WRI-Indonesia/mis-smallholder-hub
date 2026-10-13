@@ -30,11 +30,7 @@ import type {
 
 type Loaded<T> = { state: "loading" } | { state: "error"; message: string } | { state: "ready"; data: T };
 
-/**
- * Penanda kualitas (K5): 0 = ada record 0 kg, TP = tanpa persil. Penanda E
- * (Estimasi) dibuang di v1.8.0 — label sudah dilepas dari record prod; penanda
- * Meragukan menyusul (#424).
- */
+/** Penanda kualitas (K5): 0 = ada record 0 kg, TP = tanpa persil. */
 export const MARKERS = {
   zero: { code: "0", label: "Record 0 kg", className: "bg-rose-200 text-rose-900" },
   noParcel: { code: "TP", label: "Tanpa persil", className: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100" },

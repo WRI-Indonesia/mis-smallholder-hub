@@ -52,9 +52,7 @@ const toCell = (r: CellRow): ProductionCellStats => ({
  * Agregat per (pemilik, periode) yang sama untuk tingkat Lembaga dan petani.
  * `parcels_reporting` = lahan AKTIF non-PSR berbeda yang ditunjuk record
  * (LEFT JOIN: record ke lahan nonaktif/hilang tidak dihitung lahan melapor,
- * tetapi tetap masuk `records`/`kg`). Penanda Estimasi (`notes` memuat
- * "estimasi") dibuang di v1.8.0: labelnya sudah dilepas dari semua record prod
- * 2026-10-12 — penggantinya penanda Meragukan terstruktur (#424).
+ * tetapi tetap masuk `records`/`kg`).
  */
 const CELL_AGGREGATES = Prisma.sql`
   COUNT(DISTINCT lp.id) FILTER (WHERE lp.is_psr = false)::int AS parcels_reporting,

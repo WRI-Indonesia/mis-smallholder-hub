@@ -229,7 +229,7 @@ export function ProductionAvailabilityClient({
         { header: "Luas (ha)", key: "area", width: 9 },
         ...periods.map((p, i) => ({ header: `${MONTH_SHORT_ID[i]} ${year} (kg)`, key: p, width: 11 })),
         { header: `Bulan ber-record ${year}`, key: "months", width: 12 },
-        { header: "Record 0 kg", key: "zero", width: 10 },
+        { header: `Record 0 kg ${year}`, key: "zero", width: 12 },
       ];
       const selected = groupId ? allGroups.find((g) => g.id === groupId) : undefined;
       const parcelRows = selected ? await getProductionAvailabilityGroupParcels(selected.id, year) : [];

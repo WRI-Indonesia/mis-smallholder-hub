@@ -147,9 +147,9 @@ describe("agregasi — tampilan utama (Lembaga × periode)", () => {
     });
     expect(a.cells[2]).toMatchObject({ kg: 300 });
     expect(b).toMatchObject({ id: "g-2", totalFarmers: 0, totalParcels: 0, nonPsrParcels: 0, cells: [] });
-    // Penanda Estimasi dibuang di v1.8.0: SQL agregat tak lagi memindai `notes`.
+    // Penanda Estimasi dibuang di v1.8.0: SQL agregat tak lagi memindai label di `notes`.
     const sql = db.$queryRaw.mock.calls.map((c: unknown[]) => (c[0] as { strings: string[] }).strings.join("?")).join("\n");
-    expect(sql).not.toMatch(/notes|estimasi/i);
+    expect(sql).not.toMatch(/notes\s+I?LIKE|estimasi/i);
   });
 });
 

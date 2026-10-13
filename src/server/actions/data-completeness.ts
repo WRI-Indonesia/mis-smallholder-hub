@@ -151,7 +151,7 @@ export async function analyzeFarmerGroupCompleteness(
             },
             productionRecords: {
               where: { isActive: true },
-              select: { id: true, parcelId: true, period: true, yieldKg: true },
+              select: { parcelId: true, period: true, yieldKg: true },
             },
           },
         },
@@ -231,12 +231,7 @@ export async function analyzeFarmerGroupCompleteness(
         postTestScore: tp.postTestScore,
         packageCode: tp.activity.package.code,
       })),
-      productionRecords: f.productionRecords.map((r) => ({
-        id: r.id,
-        parcelId: r.parcelId,
-        period: r.period,
-        yieldKg: r.yieldKg,
-      })),
+      productionRecords: f.productionRecords,
       modules: farmerModuleFlags(moduleSets, f.id),
     })),
     modules: groupModuleFlags(moduleSets, group),

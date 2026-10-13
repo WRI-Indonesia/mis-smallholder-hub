@@ -308,7 +308,6 @@ export type CompletenessFarmerInput = {
     packageCode: string; // kode paket dari activity terkait (this-KT, aktif)
   }[];
   productionRecords: {
-    id: string;
     parcelId: string | null; // LandParcel.id
     period: string;          // YYYY-MM
     yieldKg: number;

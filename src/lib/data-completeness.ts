@@ -610,9 +610,7 @@ export function computePelatihanDomain(
 // Skor tetap "% petani ber-produksi" (#352 P1: check baru informatif/anomali,
 // tidak mengubah Index). Tambahan #352: kebaruan (produksi basi ≥ N bulan),
 // grain lahan (lahan non-PSR tanpa produksi), isPsr dikecualikan dari
-// "berlahan tanpa produksi", dan kualitas: record 0 kg, bulan bolong. Kartu
-// pangsa record "Estimasi" dibuang di v1.8.0 (label dilepas dari record prod
-// 2026-10-12; penanda Meragukan menyusul, #424).
+// "berlahan tanpa produksi", dan kualitas: record 0 kg, bulan bolong.
 export function computeProduksiDomain(
   farmers: CompletenessFarmerInput[],
   referencePeriod: string = currentPeriod()
