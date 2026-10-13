@@ -10,12 +10,13 @@ import { addDays, clipWeeks, weeklyTrend, type GithubIssue, type WeekBucket } fr
 /**
  * Tab Tren mingguan (minggu Senin–Minggu, WIB), tiga kartu:
  * 1. batang dibuat vs ditutup per minggu;
- * 2. akumulasi bertumpuk (permintaan owner 2026-10-13): kumulatif ditutup
- *    (bawah) + masih terbuka (atas) — tinggi batang = kumulatif dibuat;
+ * 2. akumulasi area bertumpuk (permintaan owner 2026-10-13, batang → area di
+ *    hari yang sama): kumulatif ditutup (bawah) + masih terbuka (atas) —
+ *    tepi atas = kumulatif dibuat;
  * 3. garis masih terbuka di akhir minggu — grafik terpisah, bukan sumbu kedua.
  * Warna per entitas (Dibuat biru · Ditutup aqua · Masih terbuka oranye) dari
  * `CATEGORICAL`, lulus validator dataviz light & dark; kontras aqua di light
- * < 3:1 → direlief readout angka, legenda, dan tabel.
+ * < 3:1 → direlief tooltip angka, legenda, dan tabel.
  *
  * Data = issue tersaring cari + label SAJA (bukan status/rentang), lalu
  * minggu dipotong ke rentang aktivitas — lihat `clipWeeks`.
@@ -88,8 +89,37 @@ function Legend({ keys, color }: { keys: SeriesKey[]; color: (k: SeriesKey) => s
   );
 }
 
-/** Kartu satu grafik: judul, legenda, dan readout angka minggu yang disorot/diketuk. */
-function ChartCard({ title, legend, readout, children }: { title: string; legend?: ReactNode; readout: ReactNode; children: ReactNode }) {
+type TipRow = { key: SeriesKey | null; label: string; value: number };
+
+/**
+ * Tooltip minggu yang disorot/diketuk, menempel di samping garis minggu itu;
+ * pindah ke kiri bila melewati separuh kanan plot. Angka berwarna teks —
+ * warna seri hanya di kotak kecil penanda.
+ */
+function ChartTooltip({ x, w, week, rows, color }: { x: number; w: number; week: string; rows: TipRow[]; color: (k: SeriesKey) => string }) {
+  const right = x > w / 2;
+  return (
+    <div
+      className="pointer-events-none absolute top-1 z-10 min-w-40 rounded-md border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-md"
+      style={right ? { right: w - x + 10 } : { left: x + 10 }}
+      role="status"
+    >
+      <p className="mb-1 font-medium">{weekRange(week)}</p>
+      {rows.map((r) => (
+        <p key={r.label} className="flex items-center justify-between gap-4 tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            {r.key && <span className="h-2.5 w-2.5 rounded-sm" style={{ background: color(r.key) }} aria-hidden />}
+            {r.label}
+          </span>
+          <span className="font-medium">{r.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/** Kartu satu grafik: judul, legenda, petunjuk, dan tooltip minggu yang disorot/diketuk. */
+function ChartCard({ title, legend, tooltip, children }: { title: string; legend?: ReactNode; tooltip: ReactNode; children: ReactNode }) {
   return (
     <Card className="border border-border/60 shadow-sm">
       <CardContent className="space-y-2 pt-5">
@@ -97,8 +127,11 @@ function ChartCard({ title, legend, readout, children }: { title: string; legend
           <h3 className="text-sm font-medium">{title}</h3>
           {legend}
         </div>
-        <p className="min-h-4 text-xs tabular-nums text-muted-foreground">{readout}</p>
-        {children}
+        <p className="text-xs text-muted-foreground">Arahkan kursor (atau ketuk) sebuah minggu untuk melihat angkanya.</p>
+        <div className="relative">
+          {children}
+          {tooltip}
+        </div>
       </CardContent>
     </Card>
   );
@@ -123,7 +156,7 @@ export function IssuesTrend({
   const weeks = useMemo(() => clipWeeks(weeklyTrend(issues, today), from, to), [issues, today, from, to]);
 
   // Sorotan = minggu (kunci), bukan indeks: filter yang mengubah daftar minggu
-  // tak boleh membuat readout menunjuk minggu lain (review #429).
+  // tak boleh membuat tooltip menunjuk minggu lain (review #429).
   const [hoverWeek, setHoverWeek] = useState<string | null>(null);
   const hoverIdx = hoverWeek ? weeks.findIndex((b) => b.week === hoverWeek) : -1;
   const hovered = hoverIdx >= 0 ? weeks[hoverIdx] : null;
@@ -152,13 +185,23 @@ export function IssuesTrend({
 
   const slot = (W - PAD.l - PAD.r) / weeks.length;
   const pairW = Math.max(2, Math.min(18, (slot - 6) / 2));
-  const stackW = Math.max(3, Math.min(28, slot - 4));
   const barMax = axisMax(Math.max(...weeks.map((b) => Math.max(b.created, b.closed))), 5);
   const stackMax = axisMax(Math.max(...weeks.map((b) => b.closedTotal + b.openAtEnd)), 5);
   const openMax = axisMax(Math.max(...weeks.map((b) => b.openAtEnd)), 5);
   const cx = (i: number) => PAD.l + slot * i + slot / 2;
   const base = (h: number) => h - PAD.b;
   const yOf = (v: number, max: number, h: number) => PAD.t + (h - PAD.t - PAD.b) * (1 - v / max);
+
+  // Area bertumpuk: titik di tengah slot tiap minggu; satu minggu saja → dilebarkan
+  // selebar plot agar area tetap terlihat (bukan garis nol lebar).
+  const areaX = weeks.length === 1 ? [PAD.l, W - PAD.r] : weeks.map((_, i) => cx(i));
+  const areaWeeks = weeks.length === 1 ? [weeks[0], weeks[0]] : weeks;
+  const yClosed = areaWeeks.map((b) => yOf(b.closedTotal, stackMax, BAR_H));
+  const yTotal = areaWeeks.map((b) => yOf(b.closedTotal + b.openAtEnd, stackMax, BAR_H));
+  const pts = (ys: number[]) => ys.map((y, i) => `${areaX[i]},${y}`);
+  const closedEdge = pts(yClosed).join(" ");
+  const closedArea = `M${areaX[0]},${base(BAR_H)} L${pts(yClosed).join(" L")} L${areaX[areaX.length - 1]},${base(BAR_H)} Z`;
+  const openArea = `M${pts(yTotal).join(" L")} L${pts(yClosed).reverse().join(" L")} Z`;
 
   // Target sorot/ketuk selebar slot penuh — lebih besar dari batangnya; onClick
   // supaya ketukan di layar sentuh juga menampilkan angka.
@@ -175,7 +218,8 @@ export function IssuesTrend({
         onClick={() => setHoverWeek(b.week)}
       />
     ));
-  const hint = "Arahkan kursor (atau ketuk) sebuah minggu untuk melihat angkanya.";
+  const tip = (rows: TipRow[]) =>
+    hovered ? <ChartTooltip x={cx(hoverIdx)} w={W} week={hovered.week} rows={rows} color={color} /> : null;
   const svgProps = (h: number, label: string) => ({
     width: W,
     height: h,
@@ -190,7 +234,13 @@ export function IssuesTrend({
       <ChartCard
         title="Issue dibuat vs ditutup per minggu"
         legend={<Legend keys={["created", "closed"]} color={color} />}
-        readout={hovered ? `${weekRange(hovered.week)} · Dibuat ${hovered.created} · Ditutup ${hovered.closed}` : hint}
+        tooltip={
+          hovered &&
+          tip([
+            { key: "created", label: "Dibuat", value: hovered.created },
+            { key: "closed", label: "Ditutup", value: hovered.closed },
+          ])
+        }
       >
         <svg {...svgProps(BAR_H, "Grafik batang issue dibuat dan ditutup per minggu")}>
           <Gridlines max={barMax} w={W} h={BAR_H} grid={grid} />
@@ -210,35 +260,40 @@ export function IssuesTrend({
       <ChartCard
         title="Akumulasi issue: ditutup + masih terbuka"
         legend={<Legend keys={["closed", "open"]} color={color} />}
-        readout={
-          hovered
-            ? `${weekRange(hovered.week)} · Total dibuat ${hovered.closedTotal + hovered.openAtEnd} = Ditutup ${hovered.closedTotal} + Masih terbuka ${hovered.openAtEnd}`
-            : hint
+        tooltip={
+          hovered &&
+          tip([
+            { key: "open", label: "Masih terbuka", value: hovered.openAtEnd },
+            { key: "closed", label: "Ditutup", value: hovered.closedTotal },
+            { key: null, label: "Total dibuat", value: hovered.closedTotal + hovered.openAtEnd },
+          ])
         }
       >
-        <svg {...svgProps(BAR_H, "Grafik batang bertumpuk akumulasi issue ditutup dan masih terbuka per akhir minggu")}>
+        <svg {...svgProps(BAR_H, "Grafik area bertumpuk akumulasi issue ditutup dan masih terbuka per akhir minggu")}>
           <Gridlines max={stackMax} w={W} h={BAR_H} grid={grid} />
-          {weeks.map((b, i) => {
-            const yClosed = yOf(b.closedTotal, stackMax, BAR_H);
-            const yTotal = yOf(b.closedTotal + b.openAtEnd, stackMax, BAR_H);
-            const x = cx(i) - stackW / 2;
-            // Celah 2px warna permukaan antar-segmen (spec mark dataviz).
-            const gap = b.closedTotal > 0 ? 2 : 0;
-            return (
-              <g key={b.week}>
-                {b.closedTotal > 0 && <rect x={x} y={yClosed} width={stackW} height={base(BAR_H) - yClosed} rx={2} fill={color("closed")} />}
-                {b.openAtEnd > 0 && (
-                  <rect x={x} y={yTotal} width={stackW} height={Math.max(1, yClosed - yTotal - gap)} rx={2} fill={color("open")} />
-                )}
-              </g>
-            );
-          })}
+          <path d={closedArea} fill={color("closed")} />
+          <path d={openArea} fill={color("open")} />
+          {/* Celah 2px warna permukaan di batas kedua area (spec mark dataviz). */}
+          <polyline points={closedEdge} fill="none" stroke={surface} strokeWidth={2} strokeLinejoin="round" />
+          {hovered && (
+            <>
+              <line x1={cx(hoverIdx)} x2={cx(hoverIdx)} y1={PAD.t} y2={base(BAR_H)} stroke={dark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)"} />
+              {(
+                [
+                  ["closed", hovered.closedTotal],
+                  ["open", hovered.closedTotal + hovered.openAtEnd],
+                ] as const
+              ).map(([k, v]) => (
+                <circle key={k} cx={cx(hoverIdx)} cy={yOf(v, stackMax, BAR_H)} r={4} fill={color(k)} stroke={surface} strokeWidth={2} />
+              ))}
+            </>
+          )}
           <MonthTicks weeks={weeks} slot={slot} h={BAR_H} />
           {hitTargets(BAR_H)}
         </svg>
       </ChartCard>
 
-      <ChartCard title="Issue yang masih terbuka di akhir minggu" readout={hovered ? `${weekRange(hovered.week)} · Masih terbuka ${hovered.openAtEnd}` : hint}>
+      <ChartCard title="Issue yang masih terbuka di akhir minggu" tooltip={hovered && tip([{ key: "open", label: "Masih terbuka", value: hovered.openAtEnd }])}>
         <svg {...svgProps(LINE_H, "Grafik garis jumlah issue terbuka per akhir minggu")}>
           <Gridlines max={openMax} w={W} h={LINE_H} grid={grid} />
           <polyline

@@ -8,7 +8,7 @@ Sub menu `platform-developer-issues`, satu halaman: `/admin/platform-developer/i
 
 - **Sumber data = GitHub REST API langsung + cache 30 menit**, bukan berkas md/json yang di-generate. Tidak ada berkas yang lupa diperbarui dan tidak perlu build ulang.
 - **Submenu baru**, bukan tab di Rencana Pengembangan. Rencana Pengembangan = *rencana* dari `sprint.md`; Daftar Issue = *kondisi nyata* di GitHub, termasuk riwayat issue yang sudah ditutup.
-- **Lima tampilan:** List · Kalender · Tren mingguan · Kanban · Unduh Excel. Lanjutan hari yang sama: Kalender **kiri 1/3 : kanan 2/3** + tooltip saat disorot; Tren + kartu **akumulasi bertumpuk** ditutup + masih terbuka.
+- **Lima tampilan:** List · Kalender · Tren mingguan · Kanban · Unduh Excel. Lanjutan hari yang sama: Kalender **kiri 1/3 : kanan 2/3** + tooltip saat disorot; Tren + kartu **akumulasi area bertumpuk** ditutup + masih terbuka (awalnya batang, diganti area atas permintaan owner).
 - **Kanban 5 kolom dari label `status:*`**, yang disamakan dengan `sprint.md` oleh `/pagi` Tahap 4 (sesudah owner menyetujui diff) dan dicabut oleh `/wrapup` saat issue ditutup.
 - **Akses sama dengan saudaranya** (SUPERADMIN · ADMIN · MANAGEMENT) — isinya data repo public.
 
@@ -42,7 +42,7 @@ Halaman: Daftar Issue (/admin/platform-developer/issues)
     │   · sorot sel = tooltip (jumlah + ≤ 3 judul per jenis); klik = ?tgl= → panel kanan hari itu, klik lagi / ← Seluruh bulan = seluruh bulan
     ├── Tren mingguan — minggu Senin–Minggu dari minggu issue pertama s.d. minggu ini:
     │   · batang Dibuat vs Ditutup (CATEGORICAL biru/aqua, lulus validator dataviz light & dark)
-    │   · akumulasi bertumpuk (owner 2026-10-13): kumulatif Ditutup (aqua, bawah) + Masih terbuka (oranye, atas) = kumulatif dibuat
+    │   · akumulasi area bertumpuk (owner 2026-10-13; batang → area): kumulatif Ditutup (aqua, bawah) + Masih terbuka (oranye, atas) = kumulatif dibuat
     │   · grafik TERPISAH garis "masih terbuka di akhir minggu" (bukan sumbu kedua)
     │   · data = cari + label saja (`clipWeeks` memotong ke rentang) — status/rentang tak boleh membuang issue yang terbuka sepanjang rentang
     │   · readout per kartu (sorot/ketuk minggu) + tabel per minggu (relief kontras aqua < 3:1 di light)
