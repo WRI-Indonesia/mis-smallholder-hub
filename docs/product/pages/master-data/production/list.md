@@ -44,6 +44,8 @@ Halaman: Produksi (/admin/master-data/production)
 | Filter Lahan | Select | `Semua Lahan` / `Terpetakan` / `Belum Terpetakan` |
 | Filter Status | Select | SUPERADMIN saja |
 | Pencarian | Filter | `Cari nama petani atau ID petani...` |
+| Reset filter | Tombol | `ResetFiltersButton` (#427) — muncul hanya bila filter ≠ bawaan halaman; kembali ke bawaan + kosongkan Cari dan membuang query URL |
+| Nilai awal dari URL | Query | `?farmerGroupId=…&period=YYYY-MM[&search=…&hasParcel=…&status=…]` (tautan sel Kalender Ketersediaan Produksi) hanya mengisi **nilai awal** filter client lewat `productionFiltersFromSearchParams` (`src/lib/production-list-filters.ts`); data tetap dimuat penuh. Nilai yang tak bisa ditampilkan kontrolnya (Lembaga di luar opsi, periode bukan `YYYY-MM`, kunci yang diulang) jatuh ke bawaan |
 | Tombol `Tambah Data` | Tombol | CREATE — navigasi ke `/admin/master-data/production/new` |
 | Tabel daftar | Tabel | Kolom: `Petani` (nama + ID), `Lembaga Petani`, `Lahan` (badge parcelId atau `—`), `Periode` (bulan-tahun ID), `Tanggal Panen`, `Panen Ke-` (badge), `Hasil (kg)`, `Status` (SUPERADMIN) |
 | Aksi baris | Tombol | Lihat → `/{id}`; Edit → `/{id}/edit`; Nonaktifkan → `toggleProductionRecordActive` |
