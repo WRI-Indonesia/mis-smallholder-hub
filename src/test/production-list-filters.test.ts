@@ -43,12 +43,23 @@ describe("productionFiltersFromSearchParams (#427)", () => {
     });
   });
 
-  it("kunci diulang (array dari Next) → diabaikan, Cari tetap string (tak crash di .trim())", () => {
+  it("kunci diulang (array dari Next) → nilai pertama seperti URLSearchParams.get, Cari tetap string (tak crash di .trim())", () => {
     const f = productionFiltersFromSearchParams(
-      { search: ["a", "b"], farmerGroupId: ["g1", "g2"], period: ["2026-03", "2026-04"], status: ["inactive", "all"] },
+      {
+        search: ["a", "b"],
+        farmerGroupId: ["g2", "g1"],
+        period: ["2026-03", "2026-04"],
+        hasParcel: ["false", "true"],
+        status: ["inactive", "all"],
+      },
       groups,
     );
-    expect(f).toEqual(PRODUCTION_FILTER_DEFAULTS);
+    expect(f).toEqual({ district: "d2", group: "g2", period: "2026-03", hasParcel: "false", status: "inactive", search: "a" });
     expect(typeof f.search).toBe("string");
+    // Nilai pertama yang tak sah tetap jatuh ke bawaan.
+    expect(productionFiltersFromSearchParams({ hasParcel: ["x", "true"], period: ["2026-13"] }, groups)).toMatchObject({
+      hasParcel: "all",
+      period: "",
+    });
   });
 });

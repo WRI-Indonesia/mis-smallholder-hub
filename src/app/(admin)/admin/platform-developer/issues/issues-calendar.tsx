@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MONTH_NAMES_ID } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { dailyActivity, monthGrid, shiftMonth, type DayActivity, type GithubIssue } from "@/lib/github-issues";
+import { calendarDefaultMonth, dailyActivity, monthGrid, shiftMonth, type DayActivity, type GithubIssue } from "@/lib/github-issues";
 import { IssueLine, IssueStatusBadge, fmtDay } from "./issues-shared";
 
 const WEEKDAYS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
@@ -111,7 +111,8 @@ export function IssuesCalendar({
   const activity = useMemo(() => dailyActivity(issues, { from, to }), [issues, from, to]);
   const currentMonth = today.slice(0, 7);
   const monthParam = get("bulan");
-  const month = MONTH_RE.test(monthParam ?? "") ? (monthParam as string) : currentMonth;
+  const defaultMonth = calendarDefaultMonth(today, from, to);
+  const month = MONTH_RE.test(monthParam ?? "") ? (monthParam as string) : defaultMonth;
   const dayParam = get("tgl");
   const selected = dayParam && DATE_RE.test(dayParam) && dayParam.startsWith(month) && activity.has(dayParam) ? dayParam : null;
   const cells = monthGrid(month);
@@ -124,7 +125,7 @@ export function IssuesCalendar({
     monthActivity.created.push(...a.created);
     monthActivity.closed.push(...a.closed);
   }
-  const goMonth = (m: string) => setMany({ bulan: m === currentMonth ? null : m, tgl: null });
+  const goMonth = (m: string) => setMany({ bulan: m === defaultMonth ? null : m, tgl: null });
   const detail = (selected && activity.get(selected)) || monthActivity;
   const detailEmpty = detail.created.length + detail.closed.length === 0;
 

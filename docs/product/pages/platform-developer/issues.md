@@ -38,7 +38,7 @@ Halaman: Daftar Issue (/admin/platform-developer/issues)
 └── Tabs (?tab=kalender|tren|kanban; bawaan List)
     ├── List — No. (tautan GitHub) · Judul · Label (≥ lg) · Dibuat · Ditutup · Status; urut No./Dibuat/Ditutup
     ├── Kalender — kiri ±1/3 kalender, kanan ±2/3 detail (owner 2026-10-13, dipilih atas popup / di bawah kalender; layar < lg tersusun):
-    │   · ?bulan=YYYY-MM (01–12, bawaan bulan berjalan WIB), sel +n dibuat / ✓n ditutup — dengan ?dari=/?sampai= hanya kejadian DI DALAM rentang yang diplot (`dailyActivity(issues, range)`, owner 2026-10-13)
+    │   · ?bulan=YYYY-MM (01–12, bawaan bulan berjalan WIB), sel +n dibuat / ✓n ditutup — dengan ?dari=/?sampai= hanya kejadian DI DALAM rentang yang diplot (`dailyActivity(issues, range)`, owner 2026-10-13); tanpa ?bulan= bawaannya `calendarDefaultMonth` = bulan berjalan, atau bulan akhir rentang bila rentang tak mencakup bulan berjalan
     │   · sorot sel = tooltip (jumlah + ≤ 3 judul per jenis); klik = ?tgl= → panel kanan hari itu, klik lagi / ← Seluruh bulan = seluruh bulan
     ├── Tren mingguan — minggu Senin–Minggu dari minggu issue pertama s.d. minggu ini:
     │   · batang Dibuat vs Ditutup (CATEGORICAL biru/aqua, lulus validator dataviz light & dark)

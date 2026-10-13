@@ -3,6 +3,8 @@ import {
   addDays,
   clipWeeks,
   dailyActivity,
+  calendarDefaultMonth,
+  inActivityRange,
   filterIssues,
   issueExportRows,
   kanbanBoard,
@@ -131,6 +133,21 @@ describe("kalender", () => {
     expect(m.has("2026-09-28")).toBe(false); // dibuat sebelum rentang
     // Hanya satu sisi rentang yang terisi tetap membatasi sisi itu saja.
     expect(dailyActivity([issue({ number: 3, createdDate: "2026-10-03", closedDate: "2026-10-20", status: "closed" })], { from: "2026-10-10" }).has("2026-10-03")).toBe(false);
+  });
+
+  it("calendarDefaultMonth: bulan berjalan kecuali rentang Aktivitas tak mencakupnya", () => {
+    expect(calendarDefaultMonth("2026-10-13")).toBe("2026-10");
+    expect(calendarDefaultMonth("2026-10-13", "2026-09-15", "2026-11-02")).toBe("2026-10"); // tercakup
+    expect(calendarDefaultMonth("2026-10-13", "2026-08-01", "2026-08-31")).toBe("2026-08"); // rentang lampau → bulan akhir
+    expect(calendarDefaultMonth("2026-10-13", "2026-12-01", null)).toBe("2026-12"); // hanya dari, di depan
+    expect(calendarDefaultMonth("2026-10-13", null, "2026-07-10")).toBe("2026-07"); // hanya sampai, di belakang
+  });
+
+  it("inActivityRange: inklusif, sisi kosong terbuka, null = di luar", () => {
+    expect(inActivityRange("2026-10-01", "2026-10-01", "2026-10-05")).toBe(true);
+    expect(inActivityRange("2026-10-06", "2026-10-01", "2026-10-05")).toBe(false);
+    expect(inActivityRange("2020-01-01", null, "2026-10-05")).toBe(true);
+    expect(inActivityRange(null, "2026-10-01", null)).toBe(false);
   });
 
   it("monthGrid: Senin di kolom pertama, kelipatan 7", () => {

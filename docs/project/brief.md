@@ -67,7 +67,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | **Rantai Pasok (prototipe)** 🔵 | Dashboard (4 tampilan aliran, Sorotan, volume per Mill/Lembaga, jarak, Excel) + Peta dari CSV survei 2025 di S3 privat — untuk diskusi, bukan versi final. | Bahan keputusan sebelum SC-01..03 (versi DB, v1.7.0 10-26 → 11-08). Lisensi UML sudah diputuskan (CC BY 4.0). |
 | **Keamanan akses** 🟢 | Satu celah kelas BUG-007 ditemukan audit dan ditutup hotfix v1.5.1 hari yang sama; dua celah laten (#409, #386) dan guard Peta BMP (#384) dirilis di v1.7.0 (2026-10-12). | Tidak ada temuan P1 terbuka; audit mingguan `/audit` menjadi rutin. |
 | **Kualitas data prod** 🟢 | DQ-01: tanggal lahir, Detail Lahan Siak, Monev BMP Kampar, tahun tanam & alamat belasan Lembaga sudah masuk prod lewat skrip idempoten (dry-run → persetujuan → tulis). | Dashboard & laporan makin mewakili kondisi lapangan; sisa: APKASDU (ID lahan lama ≠ poligon baru), 82 UL Parcel Code ganda (#395). |
-| Delivery confidence | Test 2.461 → 2.937; TD aktif 27 (10 TD cepat #412 selesai di v1.7.0; register diverifikasi audit 2026-10-12; +4 TD-062…065 dari wrap-up v1.8.0 2026-10-13). | Debt terkendali; tidak ada fase Blocked. |
+| Delivery confidence | Test 2.937 → 3.077 (siklus v1.8.0, per wrap-up 2026-10-13); TD aktif 27 (10 TD cepat #412 selesai di v1.7.0; register diverifikasi audit 2026-10-12; +4 TD-062…065 dari wrap-up v1.8.0 2026-10-13). | Debt terkendali; tidak ada fase Blocked. |
 
 ### Keputusan yang Dibutuhkan
 

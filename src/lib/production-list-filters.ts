@@ -18,7 +18,8 @@ export type ProductionListFilters = {
 
 /**
  * Query URL yang dibaca page.tsx sebagai nilai awal filter. Kunci yang diulang
- * (`?search=a&search=b`) tiba dari Next sebagai array — diabaikan, bukan dipakai.
+ * (`?search=a&search=b`) tiba dari Next sebagai array — dipakai nilai pertamanya,
+ * sama dengan `URLSearchParams.get` di halaman lain (`useUrlFilters`).
  */
 export interface ProductionListSearchParams {
   search?: string | string[];
@@ -42,8 +43,8 @@ const HAS_PARCEL_VALUES = new Set(["all", "true", "false"]);
 const STATUS_VALUES = new Set<string>(["all", "active", "inactive"]);
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-/** Hanya nilai tunggal; array (kunci diulang) → tidak ada. */
-const single = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
+/** Nilai pertama bila kunci diulang (array), seperti `URLSearchParams.get`. */
+const single = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 /**
  * Nilai awal filter client dari query. Nilai yang tak bisa DITAMPILKAN kontrolnya

@@ -115,11 +115,12 @@ Langkah:
 Harapan:
 - Langkah 1: berkas berkolom Date Solved (Close) · No Issue · Simple Desc · Date Created · Status sesuai filter yang tampil.
 - Langkah 2: tombol **Unduh Excel** tidak tampil (halaman tetap terbuka). OPERATOR/DONOR = N/A (menu tidak terbuka).
-Baseline dev: `menu-access.test.ts` (EXPORT hanya ADMIN/MANAGEMENT/SUPERADMIN).
+Baseline dev: `menu-access.test.ts` (EXPORT hanya ADMIN/MANAGEMENT/SUPERADMIN). Catatan: EXPORT di sini **menyembunyikan tombol**, bukan penegakan server — berkas dibangun di browser dari data issue yang sama dengan List (data GitHub publik, diterima owner; TD-064).
 
 ### TC-429-03 · Kalender hanya memplot kejadian di dalam rentang Aktivitas [P2] (2 mnt)
 Langkah:
 1. Daftar Issue → isi Aktivitas `2026-10-01` s.d. `2026-10-05` → tab Kalender, bulan Oktober 2026.
 Harapan:
 - Tanda +n/✓n hanya pada tanggal 1–5 Oktober; issue yang dibuat di rentang tetapi ditutup sesudahnya tidak memunculkan ✓ di luar rentang.
+- Isi rentang lampau (mis. Agustus 2026) lalu buka Kalender tanpa memilih bulan: kalender langsung terbuka di bulan akhir rentang (bukan bulan berjalan yang kosong); tombol **Bulan ini** tetap membawa ke bulan berjalan.
 Baseline dev: `github-issues.test.ts` (`dailyActivity` dengan rentang).

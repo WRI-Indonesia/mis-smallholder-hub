@@ -107,15 +107,17 @@ export interface IssueFilter {
   to?: string | null;
 }
 
+/** Tanggal `YYYY-MM-DD` di dalam rentang Aktivitas [from, to] (inklusif; sisi kosong = terbuka). */
+export function inActivityRange(d: string | null, from?: string | null, to?: string | null): boolean {
+  return d != null && (!from || d >= from) && (!to || d <= to);
+}
+
 export function filterIssues(issues: GithubIssue[], f: IssueFilter): GithubIssue[] {
   const words = (f.query ?? "").toLowerCase().split(/\s+/).filter(Boolean);
-  const from = f.from || "0000-00-00";
-  const to = f.to || "9999-99-99";
-  const inRange = (d: string | null) => d != null && d >= from && d <= to;
   return issues.filter((i) => {
     if (f.status && i.status !== f.status) return false;
     if (f.label && !i.labels.includes(f.label)) return false;
-    if ((f.from || f.to) && !inRange(i.createdDate) && !inRange(i.closedDate)) return false;
+    if ((f.from || f.to) && !inActivityRange(i.createdDate, f.from, f.to) && !inActivityRange(i.closedDate, f.from, f.to)) return false;
     if (words.length === 0) return true;
     const hay = `#${i.number} ${i.title} ${i.labels.join(" ")}`.toLowerCase();
     return words.every((w) => hay.includes(w));
@@ -144,7 +146,7 @@ export function dailyActivity(
   issues: GithubIssue[],
   range: { from?: string | null; to?: string | null } = {},
 ): Map<string, DayActivity> {
-  const inRange = (d: string) => (!range.from || d >= range.from) && (!range.to || d <= range.to);
+  const inRange = (d: string) => inActivityRange(d, range.from, range.to);
   const m = new Map<string, DayActivity>();
   const slot = (d: string) => {
     let a = m.get(d);
@@ -156,6 +158,19 @@ export function dailyActivity(
     if (i.closedDate && inRange(i.closedDate)) slot(i.closedDate).closed.push(i);
   }
   return m;
+}
+
+/**
+ * Bulan bawaan Kalender (tanpa `?bulan=`): bulan berjalan, kecuali rentang
+ * Aktivitas tidak mencakupnya — maka bulan akhir rentang (atau awal bila hanya
+ * `from`), agar kalender tak terbuka kosong karena kejadian di luar rentang tak
+ * diplot (review wrap-up v1.8.0).
+ */
+export function calendarDefaultMonth(today: string, from?: string | null, to?: string | null): string {
+  const current = today.slice(0, 7);
+  if (!from && !to) return current;
+  const inside = (!from || current >= from.slice(0, 7)) && (!to || current <= to.slice(0, 7));
+  return inside ? current : (to ?? from)!.slice(0, 7);
 }
 
 /** Sel kalender bulanan (Senin di kolom pertama); `null` = sel kosong pengisi. */
