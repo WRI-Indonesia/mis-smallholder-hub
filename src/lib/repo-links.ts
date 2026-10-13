@@ -1,5 +1,7 @@
 /** Repo GitHub proyek — tautan versi (release tag) & issue (Metrik Rilis, Rencana Pengembangan). */
-const REPO_URL = "https://github.com/WRI-Indonesia/mis-smallholder-hub";
+/** `owner/repo` — satu sumber untuk tautan web & GitHub API (Daftar Issue #429). */
+export const REPO_SLUG = "WRI-Indonesia/mis-smallholder-hub";
+const REPO_URL = `https://github.com/${REPO_SLUG}`;
 export const releaseUrl = (version: string) => `${REPO_URL}/releases/tag/${version}`;
 export const issueUrl = (ref: string) => `${REPO_URL}/issues/${ref.replace("#", "")}`;
 /** Berkas docs versi yang sedang berjalan di produksi (`main`), bukan rencana di `mvp`. */

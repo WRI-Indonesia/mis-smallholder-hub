@@ -74,10 +74,15 @@ function issueStatus(raw: GithubIssueRaw): IssueStatus {
   return "closed";
 }
 
-/** Buang pull request, ratakan label, tanggal ke WIB; urut nomor menurun. */
+/**
+ * Buang pull request, ratakan label, tanggal ke WIB; urut nomor menurun.
+ * Dedup per nomor: paginasi `page=` atas daftar yang berubah selama diambil
+ * bisa mengembalikan item yang sama di dua halaman (review #429).
+ */
 export function normalizeIssues(raw: GithubIssueRaw[]): GithubIssue[] {
+  const seen = new Set<number>();
   return raw
-    .filter((r) => r.pull_request == null)
+    .filter((r) => r.pull_request == null && !seen.has(r.number) && seen.add(r.number))
     .map((r) => ({
       number: r.number,
       title: r.title,
@@ -169,6 +174,8 @@ export interface WeekBucket {
   closed: number;
   /** Issue yang masih terbuka di akhir minggu (Minggu) — atau hari ini untuk minggu berjalan. */
   openAtEnd: number;
+  /** Kumulatif issue yang sudah ditutup s.d. akhir minggu; `closedTotal + openAtEnd` = kumulatif dibuat. */
+  closedTotal: number;
 }
 
 /**
@@ -192,13 +199,51 @@ export function weeklyTrend(issues: GithubIssue[], today: string): WeekBucket[] 
   const out: WeekBucket[] = [];
   const last = isoWeekStart(today);
   let open = 0;
+  let closedTotal = 0;
   for (let w = start; w <= last; w = addDays(w, 7)) {
     const c = created.get(w) ?? 0;
     const x = closed.get(w) ?? 0;
     open += c - x;
-    out.push({ week: w, created: c, closed: x, openAtEnd: open });
+    closedTotal += x;
+    out.push({ week: w, created: c, closed: x, openAtEnd: open, closedTotal });
   }
   return out;
+}
+
+/**
+ * Potong tren ke rentang aktivitas: minggu yang beririsan dengan [from, to].
+ * Tren SELALU dihitung dari daftar tanpa filter Status & Aktivitas (hanya
+ * cari + label) lalu dipotong di sini — menghitungnya dari daftar yang sudah
+ * disaring rentang membuang issue yang terbuka sepanjang rentang, sehingga
+ * angka "masih terbuka" dan kumulatifnya salah (review #429).
+ */
+export function clipWeeks(weeks: WeekBucket[], from?: string | null, to?: string | null): WeekBucket[] {
+  return weeks.filter((b) => (!from || addDays(b.week, 6) >= from) && (!to || b.week <= to));
+}
+
+export type IssueSortKey = "number" | "created" | "closed";
+export interface IssueSort {
+  key: IssueSortKey;
+  dir: "asc" | "desc";
+}
+export const DEFAULT_ISSUE_SORT: IssueSort = { key: "number", dir: "desc" };
+
+/**
+ * Urutan tab List — dipakai juga Unduh Excel supaya berkas = tampilan.
+ * Issue tanpa tanggal tutup selalu di bawah saat diurut menurut Ditutup;
+ * nilai sama → nomor menurun.
+ */
+export function sortIssues(issues: GithubIssue[], sort: IssueSort): GithubIssue[] {
+  const val = (i: GithubIssue): number | string =>
+    sort.key === "number" ? i.number : sort.key === "created" ? i.createdDate : (i.closedDate ?? "");
+  return [...issues].sort((a, b) => {
+    const va = val(a);
+    const vb = val(b);
+    if (sort.key === "closed" && (va === "" || vb === "")) return va === vb ? b.number - a.number : va === "" ? 1 : -1;
+    if (va === vb) return b.number - a.number;
+    const c = va < vb ? -1 : 1;
+    return sort.dir === "asc" ? c : -c;
+  });
 }
 
 export type KanbanColumn = "unplanned" | "todo" | "in_progress" | "decision" | "closed";

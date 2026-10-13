@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,13 @@ import { clearedUrlKeys, hasActiveFilters } from "@/lib/filter-reset";
 import { formatGeneratedAt, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
+  DEFAULT_ISSUE_SORT,
   ISSUE_STATUS_LABEL,
   ISSUE_STATUS_ORDER,
   filterIssues,
   labelCounts,
+  sortIssues,
+  type IssueSort,
   type IssueStatus,
 } from "@/lib/github-issues";
 import type { GithubIssuesData } from "@/server/actions/github-issues";
@@ -36,12 +39,14 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Daftar Issue (#429). Filter (cari, status, label, rentang aktivitas) di URL
- * dan berlaku untuk keempat tab sekaligus serta isi Unduh Excel — "apa yang
- * terlihat = apa yang diunduh".
+ * dan berlaku untuk List, Kalender, Kanban, serta isi Unduh Excel (dengan
+ * urutan List) — "apa yang terlihat = apa yang diunduh". Tren memakai cari +
+ * label saja lalu dipotong ke rentang aktivitas (lihat `clipWeeks`).
  */
 export function IssuesViewClient({ data, today }: { data: GithubIssuesData; today: string }) {
   const { get, setMany } = useUrlFilters();
   const [exporting, setExporting] = useState(false);
+  const [sort, setSort] = useState<IssueSort>(DEFAULT_ISSUE_SORT);
 
   const tabParam = get("tab");
   const tab: Tab = (TABS as readonly string[]).includes(tabParam ?? "") ? (tabParam as Tab) : "list";
@@ -54,6 +59,8 @@ export function IssuesViewClient({ data, today }: { data: GithubIssuesData; toda
   const from = DATE_RE.test(get("dari") ?? "") ? get("dari") : null;
   const to = DATE_RE.test(get("sampai") ?? "") ? get("sampai") : null;
 
+  // Dasar Tren: cari + label saja (status & rentang aktivitas merusak angka kumulatif).
+  const trendBase = useMemo(() => filterIssues(data.issues, { query, label }), [data.issues, query, label]);
   // Jumlah per chip status dihitung tanpa filter status itu sendiri.
   const withoutStatus = useMemo(
     () => filterIssues(data.issues, { query, label, from, to }),
@@ -73,7 +80,7 @@ export function IssuesViewClient({ data, today }: { data: GithubIssuesData; toda
     setExporting(true);
     try {
       const { exportIssuesToExcel } = await import("@/lib/github-issues-xlsx");
-      await exportIssuesToExcel(filtered, `daftar-issue-${today}`);
+      await exportIssuesToExcel(sortIssues(filtered, sort), `daftar-issue-${today}`);
     } catch (e) {
       console.error(e);
       toast.error("Gagal membuat berkas Excel.");
@@ -99,6 +106,12 @@ export function IssuesViewClient({ data, today }: { data: GithubIssuesData; toda
 
   return (
     <div className="space-y-4">
+      {data.truncated && (
+        <p className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-sm text-amber-800 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+          Daftar tidak lengkap: jumlah issue melebihi batas pengambilan halaman ini. Issue paling lama tidak ikut tampil.
+        </p>
+      )}
       <p className="text-sm text-muted-foreground">
         {formatNumber(data.issues.length)} issue · {formatNumber(openTotal)} terbuka · data GitHub per{" "}
         <span className="tabular-nums">{formatGeneratedAt(data.fetchedAt)}</span>
@@ -165,13 +178,13 @@ export function IssuesViewClient({ data, today }: { data: GithubIssuesData; toda
           <TabsTrigger value="kanban">Kanban</TabsTrigger>
         </TabsList>
         <TabsContent value="list">
-          <IssuesList issues={filtered} />
+          <IssuesList issues={filtered} sort={sort} onSort={setSort} />
         </TabsContent>
         <TabsContent value="kalender">
           <IssuesCalendar issues={filtered} today={today} get={get} setMany={setMany} />
         </TabsContent>
         <TabsContent value="tren">
-          <IssuesTrend issues={filtered} today={today} />
+          <IssuesTrend issues={trendBase} today={today} from={from} to={to} />
         </TabsContent>
         <TabsContent value="kanban">
           <IssuesKanban issues={filtered} today={today} />

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  clipWeeks,
   dailyActivity,
   filterIssues,
   issueExportRows,
@@ -10,6 +11,7 @@ import {
   monthGrid,
   normalizeIssues,
   shiftMonth,
+  sortIssues,
   toWibDate,
   weeklyTrend,
   type GithubIssue,
@@ -55,6 +57,10 @@ describe("normalizeIssues", () => {
 
   it("membuang pull request dan mengurutkan nomor menurun", () => {
     expect(out.map((i) => i.number)).toEqual([5, 4, 2, 1]);
+  });
+
+  it("dedup per nomor — paginasi atas daftar yang berubah bisa mengulang item (review #429)", () => {
+    expect(normalizeIssues([raw({ number: 7 }), raw({ number: 7 }), raw({ number: 6 })]).map((i) => i.number)).toEqual([7, 6]);
   });
 
   it("status dari state + state_reason; label objek & string diratakan; tanggal WIB", () => {
@@ -136,10 +142,24 @@ describe("weeklyTrend", () => {
       "2026-10-13",
     );
     expect(weeks).toEqual([
-      { week: "2026-09-28", created: 2, closed: 0, openAtEnd: 2 },
-      { week: "2026-10-05", created: 0, closed: 1, openAtEnd: 1 },
-      { week: "2026-10-12", created: 0, closed: 0, openAtEnd: 1 },
+      { week: "2026-09-28", created: 2, closed: 0, openAtEnd: 2, closedTotal: 0 },
+      { week: "2026-10-05", created: 0, closed: 1, openAtEnd: 1, closedTotal: 1 },
+      { week: "2026-10-12", created: 0, closed: 0, openAtEnd: 1, closedTotal: 1 },
     ]);
+    // Akumulasi bertumpuk: ditutup + terbuka = kumulatif dibuat.
+    for (const w of weeks) expect(w.closedTotal + w.openAtEnd).toBe(2);
+  });
+
+  it("clipWeeks: minggu yang beririsan rentang; angka terbuka tetap dari riwayat penuh", () => {
+    // #1 terbuka sejak Juni tanpa aktivitas di Oktober — tetap terhitung terbuka.
+    const all = weeklyTrend(
+      [issue({ number: 1, createdDate: "2026-06-01" }), issue({ number: 2, createdDate: "2026-10-07" })],
+      "2026-10-13",
+    );
+    const clipped = clipWeeks(all, "2026-10-01", "2026-10-13");
+    expect(clipped.map((w) => w.week)).toEqual(["2026-09-28", "2026-10-05", "2026-10-12"]);
+    expect(clipped.map((w) => w.openAtEnd)).toEqual([1, 2, 2]);
+    expect(clipWeeks(all, null, null)).toHaveLength(all.length);
   });
 
   it("kosong → []", () => {
@@ -174,6 +194,23 @@ describe("kanban", () => {
     );
     expect(board.closed.map((i) => i.number)).toEqual([2, 1]);
     expect(board.unplanned.map((i) => i.number)).toEqual([3]);
+  });
+});
+
+describe("sortIssues (List & Excel)", () => {
+  const list = [
+    issue({ number: 1, createdDate: "2026-10-02", closedDate: "2026-10-05", status: "closed" }),
+    issue({ number: 2, createdDate: "2026-10-01" }),
+    issue({ number: 3, createdDate: "2026-10-02", closedDate: "2026-10-03", status: "closed" }),
+  ];
+  it("bawaan nomor menurun; tanggal sama → nomor menurun apa pun arahnya", () => {
+    expect(sortIssues(list, { key: "number", dir: "desc" }).map((i) => i.number)).toEqual([3, 2, 1]);
+    expect(sortIssues(list, { key: "created", dir: "asc" }).map((i) => i.number)).toEqual([2, 3, 1]);
+    expect(sortIssues(list, { key: "created", dir: "desc" }).map((i) => i.number)).toEqual([3, 1, 2]);
+  });
+  it("Ditutup: issue terbuka selalu di bawah", () => {
+    expect(sortIssues(list, { key: "closed", dir: "asc" }).map((i) => i.number)).toEqual([3, 1, 2]);
+    expect(sortIssues(list, { key: "closed", dir: "desc" }).map((i) => i.number)).toEqual([1, 3, 2]);
   });
 });
 

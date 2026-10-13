@@ -1,32 +1,26 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import type { GithubIssue } from "@/lib/github-issues";
+import { sortIssues, type GithubIssue, type IssueSort, type IssueSortKey } from "@/lib/github-issues";
 import { IssueNumberLink, IssueStatusBadge, fmtDay } from "./issues-shared";
 
-type SortKey = "number" | "created" | "closed";
-
-const sortValue = (i: GithubIssue, key: SortKey): number | string =>
-  key === "number" ? i.number : key === "created" ? i.createdDate : (i.closedDate ?? "");
-
-/** Tab List: tabel issue tersaring; urutan bawaan nomor menurun (terbaru di atas). */
-export function IssuesList({ issues }: { issues: GithubIssue[] }) {
-  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "number", dir: "desc" });
-  const shown = [...issues].sort((a, b) => {
-    const va = sortValue(a, sort.key);
-    const vb = sortValue(b, sort.key);
-    // Issue tanpa tanggal tutup selalu di bawah, apa pun arahnya.
-    if (sort.key === "closed" && (va === "" || vb === "")) return va === vb ? b.number - a.number : va === "" ? 1 : -1;
-    const c = va < vb ? -1 : va > vb ? 1 : b.number - a.number;
-    return sort.dir === "asc" ? c : -c;
-  });
+/** Tab List: tabel issue tersaring; urutan dipegang induk supaya Unduh Excel ikut (review #429). */
+export function IssuesList({
+  issues,
+  sort,
+  onSort: setSort,
+}: {
+  issues: GithubIssue[];
+  sort: IssueSort;
+  onSort: (sort: IssueSort) => void;
+}) {
+  const shown = sortIssues(issues, sort);
 
   // Klik kolom yang sama membalik arah; kolom lain mulai dari yang terbaru.
-  const sortHead = (key: SortKey, label: string, className: string) => {
+  const sortHead = (key: IssueSortKey, label: string, className: string) => {
     const on = sort.key === key;
     const Icon = !on ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
     return (

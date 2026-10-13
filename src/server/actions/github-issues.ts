@@ -2,6 +2,7 @@
 
 import { unstable_cache } from "next/cache";
 import { hasPermission } from "@/lib/rbac";
+import { REPO_SLUG } from "@/lib/repo-links";
 import { normalizeIssues, type GithubIssue, type GithubIssueRaw } from "@/lib/github-issues";
 import type { ActionResult } from "@/types/action-result";
 
@@ -17,17 +18,25 @@ import type { ActionResult } from "@/types/action-result";
  */
 
 const MENU_KEY = "platform-developer-issues";
-const REPO = "WRI-Indonesia/mis-smallholder-hub";
 const PER_PAGE = 100;
 /** Pengaman paginasi: 20 halaman = 2.000 issue + PR. */
 const MAX_PAGES = 20;
 const TIMEOUT_MS = 15_000;
 const REVALIDATE_SECONDS = 1800;
+/**
+ * `unstable_cache` tidak menyimpan kegagalan: tanpa jeda, setiap pembukaan
+ * halaman saat GitHub galat/kena limit memanggil GitHub lagi dan menghabiskan
+ * kuota 60/jam (review #429). Galat terakhir diingat per instance server.
+ */
+const FAILURE_COOLDOWN_MS = 60_000;
+let lastFailure: { at: number; message: string } | null = null;
 
 export interface GithubIssuesData {
   issues: GithubIssue[];
   /** Waktu data diambil dari GitHub (ISO) — bukan waktu halaman dibuka. */
   fetchedAt: string;
+  /** `true` bila paginasi berhenti di pengaman MAX_PAGES — daftar tidak lengkap. */
+  truncated: boolean;
 }
 
 /** Galat yang pesannya aman ditampilkan apa adanya ke pengguna. */
@@ -40,11 +49,12 @@ const wibTime = (epochSeconds: number) =>
 
 async function fetchAllIssues(): Promise<GithubIssuesData> {
   const raw: GithubIssueRaw[] = [];
+  let truncated = true;
   for (let page = 1; page <= MAX_PAGES; page++) {
     let res: Response;
     try {
       res = await fetch(
-        `https://api.github.com/repos/${REPO}/issues?state=all&per_page=${PER_PAGE}&page=${page}`,
+        `https://api.github.com/repos/${REPO_SLUG}/issues?state=all&per_page=${PER_PAGE}&page=${page}`,
         {
           headers: {
             Accept: "application/vnd.github+json",
@@ -69,12 +79,16 @@ async function fetchAllIssues(): Promise<GithubIssuesData> {
     }
     const batch = (await res.json()) as GithubIssueRaw[];
     raw.push(...batch);
-    if (batch.length < PER_PAGE) break;
+    if (batch.length < PER_PAGE) {
+      truncated = false;
+      break;
+    }
   }
-  return { issues: normalizeIssues(raw), fetchedAt: new Date().toISOString() };
+  if (truncated) console.warn(`[github-issues] paginasi berhenti di ${MAX_PAGES} halaman — daftar tidak lengkap`);
+  return { issues: normalizeIssues(raw), fetchedAt: new Date().toISOString(), truncated };
 }
 
-const cachedIssues = unstable_cache(fetchAllIssues, ["github-issues", REPO], {
+const cachedIssues = unstable_cache(fetchAllIssues, ["github-issues", REPO_SLUG], {
   revalidate: REVALIDATE_SECONDS,
 });
 
@@ -82,11 +96,17 @@ export async function getGithubIssues(): Promise<ActionResult<GithubIssuesData>>
   if (!(await hasPermission(MENU_KEY, "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+  if (lastFailure && Date.now() - lastFailure.at < FAILURE_COOLDOWN_MS) {
+    return { success: false, error: lastFailure.message };
+  }
   try {
-    return { success: true, data: await cachedIssues() };
+    const data = await cachedIssues();
+    lastFailure = null;
+    return { success: true, data };
   } catch (e) {
-    if (e instanceof GithubFetchError) return { success: false, error: e.message };
-    console.error("[github-issues]", e);
-    return { success: false, error: "Gagal memproses daftar issue dari GitHub." };
+    if (!(e instanceof GithubFetchError)) console.error("[github-issues]", e);
+    const message = e instanceof GithubFetchError ? e.message : "Gagal memproses daftar issue dari GitHub.";
+    lastFailure = { at: Date.now(), message };
+    return { success: false, error: message };
   }
 }

@@ -9,7 +9,8 @@ const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
 vi.mock("next/cache", () => ({ unstable_cache: <T,>(fn: T) => fn }));
 
-const { getGithubIssues } = await import("@/server/actions/github-issues");
+// Modul diimpor ulang per test: jeda-gagal (`lastFailure`) disimpan di level modul.
+let getGithubIssues: typeof import("@/server/actions/github-issues").getGithubIssues;
 
 const item = (n: number, extra: Record<string, unknown> = {}) => ({
   number: n,
@@ -25,7 +26,9 @@ const json = (body: unknown, init: ResponseInit = {}) =>
 
 const fetchMock = vi.fn();
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules();
+  ({ getGithubIssues } = await import("@/server/actions/github-issues"));
   hasPermission.mockReset().mockResolvedValue(true);
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
@@ -49,6 +52,7 @@ describe("getGithubIssues", () => {
     expect(res.success).toBe(true);
     if (!res.success) return;
     expect(res.data!.issues).toHaveLength(101);
+    expect(res.data!.truncated).toBe(false);
     expect(res.data!.issues.some((i) => i.number === 49)).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(String(fetchMock.mock.calls[0][0])).toContain("state=all&per_page=100&page=1");
@@ -71,6 +75,22 @@ describe("getGithubIssues", () => {
     const res = await getGithubIssues();
     expect(res.success).toBe(false);
     if (!res.success) expect(res.error).toMatch(/tidak dapat dihubungi/);
+  });
+
+  it("setelah gagal, permintaan berikutnya ≤ 60 detik tidak memanggil GitHub lagi (hemat kuota)", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+    await getGithubIssues();
+    const again = await getGithubIssues();
+    expect(again.success).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("berhenti di pengaman 20 halaman → truncated", async () => {
+    let n = 10_000;
+    fetchMock.mockImplementation(async () => json(Array.from({ length: 100 }, () => item(n--))));
+    const res = await getGithubIssues();
+    expect(fetchMock).toHaveBeenCalledTimes(20);
+    expect(res.success && res.data!.truncated).toBe(true);
   });
 
   it("HTTP lain → pesan berkode status", async () => {
