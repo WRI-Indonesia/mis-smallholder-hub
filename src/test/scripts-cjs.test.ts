@@ -1,6 +1,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { transformSync } from "esbuild";
+import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -10,34 +10,46 @@ import { describe, expect, it } from "vitest";
  * kompilasi sejak TD-053b (#412) tanpa tertangkap typecheck/test, karena
  * `tsc` menerima top-level await dan tak ada test yang menjalankan skripnya.
  *
- * Transformasi memakai esbuild (mesin yang sama di balik tsx) dengan format
- * CJS — hanya kompilasi, skrip tidak dijalankan (banyak yang menulis DB).
+ * Transformasi memakai esbuild MILIK tsx (bukan dependensi langsung repo, jadi
+ * di-resolve lewat tsx — kompiler yang sama dengan saat skrip dijalankan)
+ * dengan format CJS. Hanya kompilasi; skrip tidak dijalankan (banyak yang
+ * menulis DB). Peringatan juga dianggap gagal: mis. `import.meta` di CJS hanya
+ * diperingatkan esbuild lalu diganti `{}`, dan baru meledak saat dijalankan.
+ * Skrip lokal yang tidak di-track (`scripts/local/`) di luar jangkauan guard ini.
  */
-const tracked = execFileSync("git", ["ls-files", "scripts/*.ts", "scripts/**/*.ts", "prisma/*.ts", "prisma/**/*.ts"], {
-  encoding: "utf8",
-})
+const require = createRequire(import.meta.url);
+const tsxRequire = createRequire(require.resolve("tsx/package.json"));
+const esbuild = tsxRequire("esbuild") as typeof import("esbuild");
+
+// Pathspec git: `*` juga melewati `/`, jadi ini mencakup semua subfolder.
+const tracked = execFileSync("git", ["ls-files", "scripts/*.ts", "prisma/*.ts"], { encoding: "utf8" })
   .split("\n")
   .filter(Boolean);
 
 describe("skrip tsx terkompilasi sebagai CJS", () => {
-  it("menemukan skrip untuk diperiksa", () => {
+  it("menemukan skrip untuk diperiksa, termasuk subfolder", () => {
     expect(tracked).toContain("scripts/seed/seed-menu-key.ts");
   });
 
   it.each(tracked)("%s", (file) => {
-    expect(() =>
-      transformSync(readFileSync(file, "utf8"), { loader: "ts", format: "cjs", sourcefile: file, logLevel: "silent" }),
-    ).not.toThrow();
+    const result = esbuild.transformSync(readFileSync(file, "utf8"), {
+      loader: "ts",
+      format: "cjs",
+      sourcefile: file,
+      logLevel: "silent",
+    });
+    expect(result.warnings.map((w) => w.text)).toEqual([]);
   });
 });
 
 describe("scripts/seed/seed-menu-key.ts", () => {
   it("tanpa argumen → pesan Pemakaian (berhenti sebelum menyentuh DB), bukan galat kompilasi", () => {
     // DATABASE_URL dikosongkan: andai skrip lolos dari cek argumen, ia tetap tak bisa menulis.
-    const res = spawnSync(process.execPath, ["node_modules/tsx/dist/cli.mjs", "scripts/seed/seed-menu-key.ts"], {
+    // Batas waktu proses < batas waktu test, agar macet terbaca sebagai status/stderr, bukan timeout test.
+    const res = spawnSync(process.execPath, [require.resolve("tsx/cli"), "scripts/seed/seed-menu-key.ts"], {
       encoding: "utf8",
       env: { ...process.env, DATABASE_URL: "" },
-      timeout: 30_000,
+      timeout: 20_000,
     });
     expect(res.stderr).toContain("Pemakaian:");
     expect(res.stderr).not.toMatch(/TransformError|Top-level await/);

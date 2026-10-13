@@ -18,6 +18,7 @@
  */
 import "dotenv/config";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { parse } from "csv-parse/sync";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -31,7 +32,7 @@ if (!KEY) {
   process.exit(1);
 }
 
-async function main(key: string) {
+async function main(key: string, apply: boolean) {
   // `readMenuSeed` sudah menjalankan `validateMenuSeedRows` (induk ada, tanpa siklus,
   // kedalaman ≤ 3) — aturan yang sama dengan seeder penuh, tanpa salinan di sini.
   const menuRows = readMenuSeed();
@@ -47,14 +48,14 @@ async function main(key: string) {
     isActive: row.isActive,
     isVisible: row.isVisible,
   };
-  const PERMS = (parse(readFileSync("prisma/seeds/data/role-permissions.csv", "utf8"), { columns: true, skip_empty_lines: true }) as { role: Role; menu_key: string; permission: PermissionLevel }[]).filter(
+  const PERMS = (parse(readFileSync(join(__dirname, "../../prisma/seeds/data/role-permissions.csv"), "utf8"), { columns: true, skip_empty_lines: true }) as { role: Role; menu_key: string; permission: PermissionLevel }[]).filter(
     (r) => r.menu_key === key,
   );
   if (PERMS.length === 0) throw new Error(`Tidak ada izin untuk "${key}" di role-permissions.csv`);
 
   const url = process.env.DATABASE_URL ?? "";
   console.log(`DB efektif : ${url.replace(/\/\/([^:]+):[^@]*@/, "//$1:***@")}`);
-  console.log(`Mode       : ${APPLY ? "APPLY (menulis)" : "DRY-RUN (tidak menulis)"}\n`);
+  console.log(`Mode       : ${apply ? "APPLY (menulis)" : "DRY-RUN (tidak menulis)"}\n`);
 
   const pool = new Pool({ connectionString: url });
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
@@ -71,7 +72,7 @@ async function main(key: string) {
     const have = new Set((await prisma.rolePermission.findMany({ where: { menuKey: MENU.key } })).map((p) => `${p.role}:${p.permission}`));
     const missing = PERMS.filter((p) => !have.has(`${p.role}:${p.permission}`));
     console.log(`Permission: CSV ${PERMS.length}, ada ${have.size}, akan dibuat ${missing.length}: ${missing.map((m) => `${m.role}/${m.permission}`).join(", ") || "-"}`);
-    if (APPLY) {
+    if (apply) {
       if (!existingMenu) {
         await prisma.menuItem.create({ data: MENU });
         console.log(`\n✓ Menu ${MENU.key} dibuat`);
@@ -87,7 +88,8 @@ async function main(key: string) {
   }
 }
 
-main(KEY).catch((e) => {
+// exitCode, bukan exit(): galat panjang (mis. Prisma) tetap ter-flush saat stderr di-pipe.
+main(KEY, APPLY).catch((e) => {
   console.error("❌ Gagal:", e);
-  process.exit(1);
+  process.exitCode = 1;
 });
