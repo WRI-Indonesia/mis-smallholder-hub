@@ -55,14 +55,14 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 ## Struktur Menu Sidebar
 
 <!-- GENERATED:menu-summary — npm run build:docs; jangan sunting tangan -->
-**10 menu top-level · 40 sub menu · 4 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
+**10 menu top-level · 41 sub menu · 4 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
 
 - **Dashboard** (`dashboard`, order 0) — 6 sub menu + Fire Alert (level 3)
 - **Report** (`report`, order 1) — 7 sub menu
 - **Map** (`map`, order 2) — 3 sub menu
 - **Master Data** (`master-data`, order 3) — 7 sub menu
 - **Data Analyst** (`data-analyst`, order 4) — 4 sub menu + Semua Lembaga, Per Lembaga, Produksi (level 3)
-- **Platform Developer** (`platform-developer`, order 5) — 3 sub menu
+- **Platform Developer** (`platform-developer`, order 5) — 4 sub menu
 - **Tools** (`tools`, order 6) — 2 sub menu
 - **Bantuan** (`help`, order 9) — tanpa sub menu
 - **Bulk Upload** (`bulk-upload`, order 10) — 4 sub menu
@@ -127,7 +127,7 @@ Tidak direncanakan: Lembaga Petani/KT & Region (BULK-02) — issue #69/#70 ditut
 | ✅ [Ringkasan Petani](pages/data-analyst/farmer-summary.md) | `data-analyst-farmer-summary` | DA-01 (#103) | Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel |
 | ✅ Ketersediaan Data → [Per Lembaga](pages/data-analyst/data-completeness.md) (halaman Ketersediaan Data — Per Lembaga; anak level 3 sejak #416) | `data-analyst-data-completeness` | DA-02 (#118, #122, #352) | Index Ketersediaan Data (registri check, bobot tampil) + cakupan modul informatif + 5 section anomali (Profil KT, Petani, Lahan, Pelatihan, Produksi) berdaftar kerja bertautan & anomali sistemik dilipat + Excel multi-sheet; `?lembaga=` |
 | ✅ Ketersediaan Data → [Semua Lembaga](pages/data-analyst/data-availability.md) (halaman Ketersediaan Data — Semua Lembaga; anak level 3 sejak #416) | `data-analyst-data-availability` | DA-03 (#193, #352) | Roll-up skor DA-02 lintas Lembaga: 6 KPI + matriks Lembaga×domain / Lembaga×modul + bar chart terendah-dulu + panel anomali (per entitas vs sistemik) + Excel; deep link ke DA-02; live query, tanpa DONOR |
-| 🟠 Ketersediaan Data → [Produksi](pages/data-analyst/availability-production.md) (kode di `mvp`, staging + seed menu ✅, TC-416 Pass 2026-10-11; prod saat rilis v1.7.0) | `data-analyst-availability-production` (induk `data-analyst-availability`) | DA-08 (#415, #416) | Kalender cakupan produksi Lembaga × bulan: tabel pohon Lembaga → petani → lahan (lazy), sel = % lahan aktif non-PSR melapor, pilih tahun, ringkasan rentang penuh (`dataMonthsPerYear`), penanda Estimasi/0 kg/tanpa persil/basi, Excel 2 sheet; live, tanpa DONOR |
+| 🟠 Ketersediaan Data → [Produksi](pages/data-analyst/availability-production.md) (kode di `mvp`, staging + seed menu ✅, TC-416 Pass 2026-10-11; prod saat rilis v1.7.0) | `data-analyst-availability-production` (induk `data-analyst-availability`) | DA-08 (#415, #416) | Kalender cakupan produksi Lembaga × bulan: tabel pohon Lembaga → petani → lahan (lazy), sel = % lahan aktif non-PSR melapor, pilih tahun, ringkasan rentang penuh (`dataMonthsPerYear`), penanda 0 kg/tanpa persil/basi (Estimasi dibuang v1.8.0), Excel 2 sheet; live, tanpa DONOR |
 | 🟠 [Tumpang Tindih Lahan](pages/data-analyst/parcel-overlap.md) | `data-analyst-parcel-overlap` | #317 Fase 2 (tab Tumpang Tindih) | Self-join `ST_Intersects` atas `LandParcel.geom` (GiST), live; split view tabel + peta preview; filter %/jenis/Distrik/Lembaga/label di URL; Duplikat vs Tercakup; Excel + SHP/GeoJSON irisan; scope minimal satu sisi; tanpa DONOR. Tab Luar Boundary/Selisih Luas + guard upload + layer peta belum |
 | ✅ [Komparasi Data Acuan](pages/data-analyst/benchmark-comparison.md) | `data-analyst-benchmark-comparison` | DA-06 (#243) | Angka acuan manual per Lembaga vs data MIS |
 
@@ -140,6 +140,7 @@ Grup tooling internal (2026-10-07); route & key tetap di segmen lama. Katalog: [
 | ✅ [Metrik Rilis](pages/data-analyst/metrics.md) | `dashboard-metrics` | — | Roadmap %, KPI & RVS per rilis dari `docs/project/metrics.md` + Detail Roadmap (route `/admin/dashboard/metrics`) |
 | ✅ [Peta Data & Skema](pages/data-analyst/data-map.md) | `data-analyst-data-map` | DA-07 | Lineage menu → entitas + skema dari artefak `*.generated.ts` |
 | ✅ [Rencana Pengembangan](pages/data-analyst/sprint.md) | `data-analyst-sprint` | #378 · #389 (kanban) · per rilis 2026-09-30 | Rencana pengembangan **per rilis** dari `docs/project/sprint.md` (di-bundle saat build, pola Metrik Rilis; dulu Sprint Mingguan): strip ringkasan (umur dokumen, rilis yang dikejar, keputusan menunggu) + tab Rilis (pemilih rilis belum tuntas + combobox Riwayat, progres poin S/M/L, papan kanban 4 kolom) + tab Analisa (kartu ringkasan, beban & kapasitas per rilis, fokus per kategori, keputusan menunggu owner, carry-over) + tab Semua Issue (satu baris per issue dari tabel Rilis + Backlog, combobox rilis, filter status, cari, urutkan) |
+| ✅ [Daftar Issue](pages/platform-developer/issues.md) | `platform-developer-issues` | #429 | Semua issue GitHub (open + closed) **langsung dari GitHub API** (cache 30 menit, beda dengan Rencana Pengembangan yang membaca `sprint.md`): filter cari/label/rentang aktivitas/status di URL + tab List · Kalender (dibuat/ditutup per tanggal) · Tren mingguan (batang dibuat vs ditutup + garis masih terbuka) · Kanban 5 kolom dari label `status:*` (disinkronkan `/pagi`) + Unduh Excel |
 
 ### 📈 Report — `/admin/report`
 

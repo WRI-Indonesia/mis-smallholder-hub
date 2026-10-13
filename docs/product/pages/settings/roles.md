@@ -12,7 +12,7 @@ Halaman: Role & Permission (/admin/settings/roles)
 ├── Toolbar
 │   ├── Pencarian: Cari menu... (title / key, level 1–3; induk tetap tampil bila anak cocok)
 │   ├── Buka semua / Tutup semua (nonaktif saat mencari)
-│   └── Selektor role: chip toggle ADMIN · OPERATOR · MANAGEMENT · DONOR (default semua) + "Semua"
+│   └── Selektor role: chip toggle ADMIN · OPERATOR · MANAGEMENT · DONOR (default semua) + ↺ Reset (#427)
 ├── Matrix role × permission (scroll box, sticky header + kolom Menu)
 │   ├── Header baris 1: Menu · [role yang dipilih] (tiap role colSpan=6)  — SUPERADMIN TIDAK ditampilkan
 │   ├── Header baris 2: ikon per izin + tooltip — grup Data (Create · View · Edit · Delete)
@@ -57,7 +57,7 @@ Halaman: Role & Permission (/admin/settings/roles)
 | `Role & Permission` | Heading | `h1`, deskripsi: `Atur default permission per role untuk setiap menu` |
 | Pencarian | Filter | Placeholder `Cari menu...`; mencocokkan `title`/`key` level 1–3, leluhur ikut tampil, subtree cocok di-expand paksa |
 | `Buka semua` / `Tutup semua` | Tombol | Buka/tutup seluruh induk; state disimpan `localStorage` (`role-matrix:open`), default *collapsed*; nonaktif saat mencari |
-| Selektor role | Chip toggle | Pilih role yang ditampilkan (`ADMIN`, `OPERATOR`, `MANAGEMENT`, `DONOR`); default semua; minimal 1; tombol `Semua` untuk reset. **SUPERADMIN dikecualikan** dari matriks (selalu akses penuh, tak dapat diubah) |
+| Selektor role | Chip toggle | Pilih role yang ditampilkan (`ADMIN`, `OPERATOR`, `MANAGEMENT`, `DONOR`); default semua; minimal 1; tombol `↺ Reset` (`ResetFiltersButton`, #427) di ujung baris menampilkan semua role dan mengosongkan Cari menu. **SUPERADMIN dikecualikan** dari matriks (selalu akses penuh, tak dapat diubah) |
 | Matrix role × permission | Matrix | Dalam scroll box (`overflow-auto max-h-[70vh]`); header baris role & baris ikon izin **sticky top**, kolom `Menu` **sticky left**. **6 izin per role** (`PERMISSION_META`): grup Data `CREATE·VIEW·EDIT·DELETE` ┊ grup Keluaran `EXPORT·PRINT` dengan pemisah border tebal antar grup. Baris dirender **rekursif 3 level** (fix bug level-3) |
 | Header izin | Tombol | Ikon per izin (Plus/Eye/Pencil/Trash2/FileSpreadsheet/Printer) + tooltip `title`; **klik = toggle satu kolom** (satu izin × semua menu × role tsb) lewat dialog konfirmasi |
 | Baris menu | Baris | Chevron buka/tutup (bila punya anak), judul terindentasi per kedalaman, dropdown `ListChecks` berisi **preset baris** |

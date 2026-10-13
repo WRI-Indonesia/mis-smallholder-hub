@@ -117,11 +117,6 @@ export function areaMismatchRatio(recordedHa: number | null, polygonHa: number |
   return Math.abs(recordedHa - polygonHa) / Math.max(recordedHa, polygonHa);
 }
 
-export function isAreaMismatch(recordedHa: number | null, polygonHa: number | null): boolean {
-  const r = areaMismatchRatio(recordedHa, polygonHa);
-  return r != null && r > PARCEL_AREA_MISMATCH_RATIO;
-}
-
 export interface AreaMismatchRaw extends Omit<ParcelFindingBase, "polygonHa"> {
   recordedHa: number;
   polygonM2: number;

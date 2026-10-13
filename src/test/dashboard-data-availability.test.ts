@@ -192,7 +192,7 @@ describe("buildAvailabilityEntry", () => {
         farmers: [
           farmer({
             landParcels: [parcel, { ...parcel, id: "lp-2", parcelId: "P-2" }],
-            productionRecords: [{ id: "r1", parcelId: null, period: "2026-09", yieldKg: 10, isEstimate: false }],
+            productionRecords: [{ parcelId: null, period: "2026-09", yieldKg: 10 }],
           }),
           farmer({ id: "db-2", farmerId: "F-002", nik: "2222222222222222" }),
         ],

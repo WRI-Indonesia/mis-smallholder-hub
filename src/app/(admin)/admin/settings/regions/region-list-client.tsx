@@ -18,6 +18,8 @@ import {
 } from "@/server/actions/region";
 import { RegionFormModal, type RegionLevel, type RegionFormData } from "./region-form-modal";
 import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,6 +49,12 @@ const LEVEL_ICONS = {
   district: <Building2 className="h-3.5 w-3.5 text-green-500" />,
   subdistrict: <MapPin className="h-3.5 w-3.5 text-orange-500" />,
   village: <Home className="h-3.5 w-3.5 text-purple-500" />,
+};
+
+/** Tampilan bawaan halaman — dipakai inisialisasi state & tombol Reset (#427). */
+const FILTER_DEFAULTS = {
+  search: "",
+  status: "all" as StatusFilterValue,
 };
 
 type RegionNodeLevel = "province" | "district" | "subdistrict" | "village";
@@ -118,8 +126,8 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
   const router = useRouter();
   const [, startTransition] = useTransition();
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("all");
+  const [search, setSearch] = useState(FILTER_DEFAULTS.search);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>(FILTER_DEFAULTS.status);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Modal state
@@ -174,7 +182,13 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
 
   // ─── Search / Filter helpers ────────────────────────────────────────────────
 
-  const q = search.toLowerCase();
+  const filtersActive = hasActiveFilters({ search, status: statusFilter }, FILTER_DEFAULTS);
+  function resetFilters() {
+    setSearch(FILTER_DEFAULTS.search);
+    setStatusFilter(FILTER_DEFAULTS.status);
+  }
+
+  const q = search.trim().toLowerCase();
 
   function matchesSearch(item: { code: string; name: string }) {
     return !q || item.code.toLowerCase().includes(q) || item.name.toLowerCase().includes(q);
@@ -382,6 +396,8 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
           </div>
 
           <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} fallback="all" className="w-[150px]" />
+
+          <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
 
           {permissions.includes("CREATE") && (
             <Button onClick={() => openCreate("province")}>

@@ -40,7 +40,7 @@ Catatan panen muncul di **Master Data → Produksi**. Peta BMP langsung membaca 
 
 ## Kalau bermasalah
 
-**Error "petani tidak ditemukan"** — ID Petani di berkas tidak cocok dengan yang ada di sistem. Periksa spasi berlebih, nol di depan yang hilang, atau format sel Excel yang berubah jadi angka.
+**Error "ID Petani … tidak ditemukan dalam database atau akses Anda"** — ID Petani di berkas tidak cocok dengan yang ada di sistem, atau petaninya di luar wilayah/Lembaga akun Anda. Periksa spasi berlebih, nol di depan yang hilang, atau format sel Excel yang berubah jadi angka.
 
 + Cara memastikannya: ubah format kolom ID di Excel jadi **Teks** sebelum menempel data, lalu bandingkan satu ID dengan yang tampil di Master Data → Petani. Nol di depan yang hilang (`007` jadi `7`) adalah penyebab paling sering.
 

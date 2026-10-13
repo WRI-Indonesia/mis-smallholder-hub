@@ -204,8 +204,8 @@ export function BmpCategoryPanel({
               />
             ) : (
               <p className="text-xs text-muted-foreground">
-                Snapshot ini belum memuat data umur tanaman — generate ulang snapshot BMP melalui
-                menu Tools untuk mengisi analisa ini.
+                Snapshot ini belum memuat data umur tanaman, atau masih memakai batas umur lama —
+                generate ulang snapshot BMP melalui menu Tools untuk mengisi analisa ini.
               </p>
             )}
           </div>

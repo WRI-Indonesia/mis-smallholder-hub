@@ -11,10 +11,10 @@ export default defineConfig({
     // Zona waktu runner dipin (#288): test tanggal (NIK ↔ tanggal lahir +12 jam,
     // WIB vs UTC di snapshot/laporan) tidak boleh bergantung TZ mesin.
     env: { TZ: 'UTC' },
-    // Cakupan diukur atas kode server/lib/validasi — termasuk berkas yang belum
+    // Cakupan diukur atas kode server/lib/validasi/hooks (hanya .ts/.tsx) — termasuk berkas yang belum
     // diimpor test mana pun (tanpa `include`, berkas tak tersentuh tak terhitung).
     coverage: {
-      include: ['src/server/**', 'src/lib/**', 'src/validations/**'],
+      include: ['src/{server,lib,validations,hooks}/**/*.{ts,tsx}'],
     },
   },
   resolve: {

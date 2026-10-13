@@ -28,7 +28,6 @@ interface CellRow {
   linked_records: number;
   kg: number;
   zero_records: number;
-  estimate_records: number;
   no_parcel_records: number;
 }
 
@@ -39,7 +38,6 @@ const toCell = (r: CellRow): ProductionCellStats => ({
   linkedRecords: r.linked_records,
   kg: r.kg,
   zeroRecords: r.zero_records,
-  estimateRecords: r.estimate_records,
   noParcelRecords: r.no_parcel_records,
 });
 
@@ -54,8 +52,7 @@ const toCell = (r: CellRow): ProductionCellStats => ({
  * Agregat per (pemilik, periode) yang sama untuk tingkat Lembaga dan petani.
  * `parcels_reporting` = lahan AKTIF non-PSR berbeda yang ditunjuk record
  * (LEFT JOIN: record ke lahan nonaktif/hilang tidak dihitung lahan melapor,
- * tetapi tetap masuk `records`/`kg`). Label Estimasi = `notes` memuat "estimasi"
- * (definisi `loadEstimateRecordIds`, DA-02).
+ * tetapi tetap masuk `records`/`kg`).
  */
 const CELL_AGGREGATES = Prisma.sql`
   COUNT(DISTINCT lp.id) FILTER (WHERE lp.is_psr = false)::int AS parcels_reporting,
@@ -63,7 +60,6 @@ const CELL_AGGREGATES = Prisma.sql`
   COUNT(pr.parcel_id)::int AS linked_records,
   COALESCE(SUM(pr.yield_kg), 0)::float8 AS kg,
   COUNT(*) FILTER (WHERE pr.yield_kg = 0)::int AS zero_records,
-  COUNT(*) FILTER (WHERE pr.notes ILIKE '%estimasi%')::int AS estimate_records,
   COUNT(*) FILTER (WHERE pr.parcel_id IS NULL)::int AS no_parcel_records`;
 
 /** Rentang periode satu tahun sebagai klausa — memakai indeks `period`. */
@@ -233,12 +229,11 @@ export async function getProductionAvailabilityGroupParcels(groupId: string, yea
       select: { id: true, parcelId: true, isPsr: true, area: true, farmerId: true, farmer: { select: { name: true, farmerId: true } } },
       orderBy: [{ farmer: { name: "asc" } }, { parcelId: "asc" }],
     }),
-    prisma.$queryRaw<{ parcel_id: string; farmer_id: string; period: string; records: number; kg: number; zero_records: number; estimate_records: number }[]>(Prisma.sql`
+    prisma.$queryRaw<{ parcel_id: string; farmer_id: string; period: string; records: number; kg: number; zero_records: number }[]>(Prisma.sql`
       SELECT pr.parcel_id, pr.farmer_id, pr.period,
         COUNT(*)::int AS records,
         COALESCE(SUM(pr.yield_kg), 0)::float8 AS kg,
-        COUNT(*) FILTER (WHERE pr.yield_kg = 0)::int AS zero_records,
-        COUNT(*) FILTER (WHERE pr.notes ILIKE '%estimasi%')::int AS estimate_records
+        COUNT(*) FILTER (WHERE pr.yield_kg = 0)::int AS zero_records
       FROM tbl_production_record pr
       JOIN tbl_farmer f ON f.id = pr.farmer_id AND f.is_active
       WHERE pr.is_active AND pr.parcel_id IS NOT NULL AND f.farmer_group_id = ${groupId} AND ${yearRange(year)}
@@ -250,7 +245,7 @@ export async function getProductionAvailabilityGroupParcels(groupId: string, yea
   for (const r of cells) {
     const k = rowKey(r.parcel_id, r.farmer_id);
     const list = byRow.get(k) ?? [];
-    list.push({ period: r.period, records: r.records, kg: r.kg, zeroRecords: r.zero_records, estimateRecords: r.estimate_records });
+    list.push({ period: r.period, records: r.records, kg: r.kg, zeroRecords: r.zero_records });
     byRow.set(k, list);
   }
   const sortCells = (list: ProductionParcelCell[] | undefined) => (list ?? []).sort((a, b) => a.period.localeCompare(b.period));
@@ -330,7 +325,6 @@ export async function getProductionAvailabilityParcels(farmerId: string, year: n
       parcelId: true,
       period: true,
       yieldKg: true,
-      notes: true,
       parcel: { select: { id: true, parcelId: true, isPsr: true, area: true, isActive: true } },
     },
   });
@@ -338,12 +332,11 @@ export async function getProductionAvailabilityParcels(farmerId: string, year: n
   type Acc = Map<string, ProductionParcelCell>;
   const byParcel = new Map<string, Acc>();
   const noParcel: Acc = new Map();
-  const bump = (acc: Acc, r: { period: string; yieldKg: number; notes: string | null }) => {
-    const c = acc.get(r.period) ?? { period: r.period, records: 0, kg: 0, zeroRecords: 0, estimateRecords: 0 };
+  const bump = (acc: Acc, r: { period: string; yieldKg: number }) => {
+    const c = acc.get(r.period) ?? { period: r.period, records: 0, kg: 0, zeroRecords: 0 };
     c.records += 1;
     c.kg += r.yieldKg;
     if (r.yieldKg === 0) c.zeroRecords += 1;
-    if (r.notes && /estimasi/i.test(r.notes)) c.estimateRecords += 1;
     acc.set(r.period, c);
   };
   // Lahan "lain": ditunjuk record petani ini tetapi bukan lahan aktifnya (milik

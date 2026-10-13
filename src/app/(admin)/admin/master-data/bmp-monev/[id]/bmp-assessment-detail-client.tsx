@@ -14,7 +14,7 @@ import { formatScore, formatUtcDate } from "@/lib/bmp-assessment";
 import { BMP_EXCLUSIVE_CRITERIA, bmpScoreLabel, bmpWeightedSlotKey, type BmpIndicatorRef } from "@/lib/bmp-survey-form";
 import type { BmpAssessmentDetailView } from "@/server/actions/bmp-assessment-detail";
 import { BmpIndicatorEditModal } from "./bmp-indicator-edit-modal";
-import { BmpActivityRaport } from "./bmp-activity-raport";
+import { BmpActivityReportCard } from "./bmp-activity-report-card";
 
 /**
  * Halaman detail penilaian (#346). Skor tersimpan = angka resmi; hitung ulang
@@ -109,7 +109,7 @@ export function BmpAssessmentDetailClient({ view, permissions }: { view: BmpAsse
         </div>
       )}
 
-      {recomputed && <BmpActivityRaport activities={recomputed.activities} total={recomputed.total} indicators={indicators} />}
+      {recomputed && <BmpActivityReportCard activities={recomputed.activities} total={recomputed.total} indicators={indicators} />}
 
       <Card className="p-6">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

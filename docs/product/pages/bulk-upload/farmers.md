@@ -57,7 +57,7 @@ Halaman: Upload Data Petani (/admin/bulk-upload/farmers)
 | File | `src/app/(admin)/admin/bulk-upload/farmers/page.tsx` (Server Component) + `src/app/(admin)/admin/bulk-upload/farmers/bulk-upload-client.tsx` (`"use client"`) |
 | Tipe | Wizard unggah massal 4 langkah (kartu berurutan, bukan stepper terpisah) |
 | Guard | `requirePermission("bulk-upload-farmers")`; aksi data guard `hasPermission("bulk-upload-farmers", "VIEW"\|"CREATE")` |
-| Server action / data | `getFarmerGroupsForMapping()` (daftar Lembaga dibatasi scope pengguna — TD-029), `getExistingFarmerIds(farmerGroupId)`, `bulkCreateFarmers()` — semua di `src/server/actions/bulk-upload.ts` |
+| Server action / data | `getFarmerGroupsForMapping()` (daftar Lembaga dibatasi scope pengguna — TD-029), `getExistingFarmerIds(farmerGroupId)`, `bulkCreateFarmers()` — semua di `src/server/actions/bulk-upload-farmer.ts` |
 | Format file diterima | `.xlsx` dan `.csv` (`accept=".xlsx,.csv"`); selain itu toast *"Hanya mendukung berkas Excel (.xlsx) atau CSV"* (`src/lib/excel-sheet-reader.ts`) |
 | Tombol unduh template | **Ada** sejak #419 (owner 2026-10-11; sebelumnya sengaja tanpa template) — "Unduh Template Excel" → `template_upload_petani.xlsx`. Tajuk = label `FARMER_UPLOAD_FIELDS` (`src/lib/farmer-upload-fields.ts`) yang dijamin terpetakan otomatis (test `bulk-upload-templates.test.ts`); pencocokan kolom dinamis tetap berlaku untuk berkas lapangan. ID berawalan `CTH.` (baris contoh template) ditolak `isTemplateExampleId` di klien **dan** `bulkCreateFarmers` |
 | Redirect setelah simpan | `/admin/master-data/farmers` |

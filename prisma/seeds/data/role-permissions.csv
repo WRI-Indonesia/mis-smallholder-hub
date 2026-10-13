@@ -68,6 +68,8 @@ ADMIN,data-analyst-data-map,VIEW
 ADMIN,data-analyst-parcel-overlap,EXPORT
 ADMIN,data-analyst-parcel-overlap,VIEW
 ADMIN,data-analyst-sprint,VIEW
+ADMIN,platform-developer-issues,EXPORT
+ADMIN,platform-developer-issues,VIEW
 ADMIN,help,EXPORT
 ADMIN,help,PRINT
 ADMIN,help,VIEW
@@ -207,6 +209,8 @@ MANAGEMENT,data-analyst-data-map,VIEW
 MANAGEMENT,data-analyst-parcel-overlap,EXPORT
 MANAGEMENT,data-analyst-parcel-overlap,VIEW
 MANAGEMENT,data-analyst-sprint,VIEW
+MANAGEMENT,platform-developer-issues,EXPORT
+MANAGEMENT,platform-developer-issues,VIEW
 MANAGEMENT,help,EXPORT
 MANAGEMENT,help,PRINT
 MANAGEMENT,help,VIEW
@@ -383,6 +387,8 @@ SUPERADMIN,data-analyst-farmer-summary,VIEW
 SUPERADMIN,data-analyst-parcel-overlap,EXPORT
 SUPERADMIN,data-analyst-parcel-overlap,VIEW
 SUPERADMIN,data-analyst-sprint,VIEW
+SUPERADMIN,platform-developer-issues,EXPORT
+SUPERADMIN,platform-developer-issues,VIEW
 SUPERADMIN,data-analyst,VIEW
 SUPERADMIN,platform-developer,VIEW
 SUPERADMIN,help,EXPORT

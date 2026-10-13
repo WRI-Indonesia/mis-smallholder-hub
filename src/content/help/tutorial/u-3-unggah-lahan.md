@@ -59,7 +59,7 @@ Lahan tampil di **Peta Lahan**, dan bisa dipakai di **Laporan Lahan** yang menye
 
 **ZIP ditolak atau terbaca kosong** — pastikan `.shp`, `.dbf`, `.shx`, `.prj` berada langsung di dalam ZIP, bukan di dalam folder.
 
-**Semua baris error "petani tidak ditemukan"** — kolom ID Petani salah dipetakan, atau petaninya memang belum terdaftar.
+**Semua baris error "ID Petani … tidak terdaftar di database"** — kolom ID Petani salah dipetakan, atau petaninya memang belum terdaftar.
 
 + Bila petaninya belum ada, daftarkan lebih dulu — lewat form Master Data untuk beberapa orang, atau **Upload Data Petani** bila jumlahnya banyak. Unggahan lahan tidak bisa membuat petani baru.
 

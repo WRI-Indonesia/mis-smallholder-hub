@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
- * Guard, scope, dan aturan tulis Bulk Upload Petani (`bulk-upload.ts`) — tanpa
+ * Guard, scope, dan aturan tulis Bulk Upload Petani (`bulk-upload-farmer.ts`) — tanpa
  * DB, pola mock `land-parcel-export-guard.test.ts`. Menu key di-hardcode
  * `bulk-upload-farmers`; Lembaga tujuan wajib dalam scope (TD-029/TD-024);
  * validasi Zod gagal → tak ada tulis; P2002 diterjemahkan ke Bahasa Indonesia.
@@ -23,7 +23,7 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
-const actions = await import("@/server/actions/bulk-upload");
+const actions = await import("@/server/actions/bulk-upload-farmer");
 
 const row = (o: Record<string, unknown> = {}) => ({
   farmerGroupId: "kt-1", gender: "M", name: "Budi", farmerId: "P-001", ...o,

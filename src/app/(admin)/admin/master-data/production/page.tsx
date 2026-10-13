@@ -4,14 +4,10 @@ import { getProductionRecords } from "@/server/actions/production";
 import { getFarmerGroupOptions } from "@/lib/select-options";
 import { getDistrictsForSelect } from "@/server/actions/farmer-group";
 import { ProductionListClient } from "./components/production-list-client";
-
-interface SearchParams {
-  search?: string;
-  farmerGroupId?: string;
-  period?: string;
-  hasParcel?: string;
-  status?: string;
-}
+import {
+  productionFiltersFromSearchParams,
+  type ProductionListSearchParams as SearchParams,
+} from "@/lib/production-list-filters";
 
 export default async function ProductionPage({
   searchParams,
@@ -23,20 +19,21 @@ export default async function ProductionPage({
   const resolvedParams = await searchParams;
 
   const [records, farmerGroups, districts, permissions, superAdmin] = await Promise.all([
-    getProductionRecords({
-      search: resolvedParams.search,
-      farmerGroupId: resolvedParams.farmerGroupId,
-      period: resolvedParams.period,
-      hasParcel: resolvedParams.hasParcel,
-      // SUPERADMIN memuat semua status (filter Status di client, default "Aktif");
-      // user lain dibatasi ke aktif oleh action apa pun nilai status ini.
-      status: resolvedParams.status ?? "all",
-    }),
+    // Selalu data penuh (#427): query URL hanya nilai awal filter client, agar
+    // filter yang tampil bisa dilonggarkan dan di-Reset tanpa saringan server
+    // tersembunyi. SUPERADMIN memuat semua status (filter Status di client,
+    // default "Aktif"); user lain dibatasi ke aktif oleh action.
+    getProductionRecords({ status: "all" }),
     getFarmerGroupOptions("master-data-production"),
     getDistrictsForSelect(),
     getUserPermissionsForMenu("master-data-production"),
     isSuperAdmin(),
   ]);
+
+  // #427: query (tautan Kalender Ketersediaan) = nilai awal filter client. `key`
+  // me-mount ulang client saat query berubah (tombol kembali / tautan lain).
+  const { search, farmerGroupId, period, hasParcel, status } = resolvedParams;
+  const queryKey = JSON.stringify([search, farmerGroupId, period, hasParcel, status]);
 
   return (
     <div className="p-6 space-y-6">
@@ -50,7 +47,9 @@ export default async function ProductionPage({
         </p>
       </div>
       <ProductionListClient
+        key={queryKey}
         initialRecords={records}
+        initialFilters={productionFiltersFromSearchParams(resolvedParams, farmerGroups)}
         farmerGroups={farmerGroups}
         districts={districts}
         permissions={permissions}

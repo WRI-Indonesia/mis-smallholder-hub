@@ -90,6 +90,8 @@ const DINYATAKAN: Record<string, string[]> = {
   "data-analyst-parcel-overlap": ["ADMIN", "MANAGEMENT", "OPERATOR", "SUPERADMIN"],
   // Rencana sprint pengembangan (#378) — audiens sama dengan Metrik Rilis.
   "data-analyst-sprint": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
+  // Daftar Issue GitHub (#429) — audiens sama dengan saudaranya (owner 2026-10-13).
+  "platform-developer-issues": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
   // Administrasi sistem.
   "settings-roles": ["SUPERADMIN"],
   "settings-menu": ["SUPERADMIN"],
@@ -160,6 +162,17 @@ describe("spesifikasi peran (rbac.md §Inventaris Role) ditegakkan seed", () => 
   it("DONOR tidak bisa mengekspor data mentah, tapi boleh mencetak", () => {
     expect(punya("DONOR", "", ["EXPORT"])).toEqual([]);
     expect(punya("DONOR", "report", ["PRINT"]).length).toBeGreaterThan(0);
+  });
+
+  it("Daftar Issue (#429): tombol Unduh Excel dijaga EXPORT — hanya peran yang bisa membuka menunya", () => {
+    // rbac.md §Keluaran: tombol unduh = izin EXPORT (owner 2026-10-13, sebelumnya
+    // tombol tampil hanya dengan VIEW).
+    for (const role of ["ADMIN", "MANAGEMENT", "SUPERADMIN"]) {
+      expect(punya(role, "platform-developer-issues", ["EXPORT"]), role).toEqual(["platform-developer-issues"]);
+    }
+    for (const role of ["OPERATOR", "DONOR"]) {
+      expect(punya(role, "platform-developer-issues", ["VIEW", "EXPORT"]), role).toEqual([]);
+    }
   });
 
   it("DONOR tetap bisa membuka Bantuan", () => {

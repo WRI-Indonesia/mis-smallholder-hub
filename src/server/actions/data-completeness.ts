@@ -6,10 +6,10 @@ import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
 import { farmerGroupAccessFilter, rawFarmerGroupScope } from "@/lib/access-scope";
 import { computeCompleteness, currentPeriod } from "@/lib/data-completeness";
+import { hasTrainingEvidence } from "@/lib/training-evidence";
 import {
   farmerModuleFlags,
   groupModuleFlags,
-  loadEstimateRecordIds,
   loadModuleFlagSets,
   parcelGeometryAreaHa,
   parcelModuleFlags,
@@ -82,7 +82,7 @@ export async function analyzeFarmerGroupCompleteness(
   const farmerWhere = { isActive: true, farmerGroup: groupWhere };
 
   // Paket wajib (isActive, exclude OTHER) — kolom matriks & basis cakupan pelatihan.
-  const [trainingPackages, group, withGeometry, moduleSets, estimateIds] = await Promise.all([
+  const [trainingPackages, group, withGeometry, moduleSets] = await Promise.all([
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
       select: { code: true, name: true },
@@ -109,7 +109,7 @@ export async function analyzeFarmerGroupCompleteness(
         district: { select: { id: true, name: true } },
         activities: {
           where: { isActive: true },
-          select: { evidenceKey: true, package: { select: { code: true } } },
+          select: { id: true, evidenceKey: true, package: { select: { code: true } } },
         },
         farmers: {
           where: { isActive: true },
@@ -151,7 +151,7 @@ export async function analyzeFarmerGroupCompleteness(
             },
             productionRecords: {
               where: { isActive: true },
-              select: { id: true, parcelId: true, period: true, yieldKg: true },
+              select: { parcelId: true, period: true, yieldKg: true },
             },
           },
         },
@@ -170,7 +170,6 @@ export async function analyzeFarmerGroupCompleteness(
       scope: rawFarmerGroupScope(access, [farmerGroupId]),
       referenceYear,
     }),
-    loadEstimateRecordIds(farmerWhere),
   ]);
   const geometryIds = new Set(withGeometry.map((p) => p.id));
 
@@ -199,7 +198,7 @@ export async function analyzeFarmerGroupCompleteness(
     trainingPackages,
     activities: group.activities.map((a) => ({
       packageCode: a.package.code,
-      hasEvidence: !!a.evidenceKey, // "" dari import ≠ ada bukti (#385)
+      hasEvidence: hasTrainingEvidence(a), // "" dari import ≠ ada bukti (#385); kunci asing ≠ bukti (TD-053a)
     })),
     farmers: group.farmers.map((f) => ({
       id: f.id,
@@ -232,13 +231,7 @@ export async function analyzeFarmerGroupCompleteness(
         postTestScore: tp.postTestScore,
         packageCode: tp.activity.package.code,
       })),
-      productionRecords: f.productionRecords.map((r) => ({
-        id: r.id,
-        parcelId: r.parcelId,
-        period: r.period,
-        yieldKg: r.yieldKg,
-        isEstimate: estimateIds.has(r.id),
-      })),
+      productionRecords: f.productionRecords,
       modules: farmerModuleFlags(moduleSets, f.id),
     })),
     modules: groupModuleFlags(moduleSets, group),

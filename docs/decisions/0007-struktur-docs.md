@@ -18,6 +18,9 @@ Audit docs 2026-09-29 menemukan fakta yang sama disalin di banyak berkas dan sud
 7. QA: paket **tiga rilis terakhir yang sudah terbit** + paket rilis yang sedang disiapkan tetap di `qa/`; sisanya `qa/archive/`. `01-smoke.md` tetap **salinan penuh** per versi (snapshot yang diuji), bukan selisih dari template.
 8. Tautan docs di aplikasi menunjuk `main` (versi produksi).
 
+## Alternatif yang ditolak
+Tidak dicatat saat keputusan dibuat (audit docs 2026-09-29); seksi ini ditambahkan 2026-10-12 agar format sama dengan 0001–0006.
+
 ## Konsekuensi
 `sprint.md`, `roadmap.md`, `metrics.md`, `tech-debt.md` tetap di tempatnya (diimpor build). Setiap perubahan struktur harus di-commit bersama kode/test yang merujuknya.
 

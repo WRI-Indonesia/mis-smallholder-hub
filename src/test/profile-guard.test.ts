@@ -49,7 +49,7 @@ describe("changePassword", () => {
   it("sukses → hanya user sesi yang diubah, disimpan hash (bukan plaintext)", async () => {
     expect(await changePassword("lama", "baru123")).toEqual({ success: true });
     expect(db.user.findUnique).toHaveBeenCalledWith({ where: { id: "user-1" } });
-    expect(db.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: "user-1" }, data: { password: "hash-baru" } });
+    expect(db.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: "user-1" }, data: { password: "hash-baru", modifiedBy: "user-1" } });
     expect(bcrypt.hash).toHaveBeenCalledWith("baru123", 10);
   });
 });

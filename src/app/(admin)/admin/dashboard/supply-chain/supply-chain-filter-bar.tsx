@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import { GROUP_CATEGORY_LABEL, UL_FILTER_LABEL, type GroupCategory, type UlFilter } from "@/lib/supply-chain-flow";
 import type { SupplyChainFilterState } from "./use-supply-chain-filters";
 
@@ -23,13 +23,10 @@ export function SupplyChainFilterBar({
   f,
   vertical = false,
   years,
-  showReset = true,
 }: {
   f: SupplyChainFilterState;
   vertical?: boolean;
   years: number[];
-  /** Dashboard memakai chip filter global (Hapus semua) di bawah bar, jadi tombol Reset di sini disembunyikan. */
-  showReset?: boolean;
 }) {
   const w = vertical ? "w-full" : undefined;
   const Arrow = vertical ? ChevronDown : ChevronRight;
@@ -111,11 +108,8 @@ export function SupplyChainFilterBar({
               </Active>
             </div>
           ))}
-          {showReset && f.hasFilter && (
-            <Button variant="ghost" size="sm" onClick={f.reset} className={cn("text-muted-foreground", vertical && "self-start")}>
-              <RotateCcw className="h-3.5 w-3.5" /> Reset
-            </Button>
-          )}
+          {/* Reset standar (#427) di ujung bar — Dashboard & Peta; ikut mengembalikan Tahun ke terbaru. */}
+          <ResetFiltersButton active={f.hasFilter} onReset={f.reset} className={vertical ? "w-full justify-start" : undefined} />
         </div>
       </div>
     </div>

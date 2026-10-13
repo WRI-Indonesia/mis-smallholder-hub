@@ -18,7 +18,7 @@ Dashboard ini masih **prototipe** untuk bahan diskusi. Datanya berasal dari **fo
 ## Langkah
 
 1. Buka **Dashboard → Dashboard Rantai Pasok**.
-2. Atur filter di kotak atas. Baris **Lingkup**: Distrik, Kategori (Swadaya / Ex-Plasma), dan UL & Non-UL. Baris **Rantai**: Lembaga → Agen → RAMP → Mill, mengikuti arah aliran TBS. Filter yang aktif diberi bingkai berwarna dan muncul sebagai **chip** tepat di bawah kotak filter; hapus satu per satu (✕) atau sekaligus (**Hapus semua**).
+2. Atur filter di kotak atas. Baris **Lingkup**: Distrik, Kategori (Swadaya / Ex-Plasma), dan UL & Non-UL. Baris **Rantai**: Lembaga → Agen → RAMP → Mill, mengikuti arah aliran TBS. Filter yang aktif diberi bingkai berwarna dan muncul sebagai **chip** tepat di bawah kotak filter; hapus satu per satu (✕), atau klik **↺ Reset** di ujung baris filter untuk melepas semuanya sekaligus — Tahun ikut kembali ke tahun terbaru.
 + Pilihan tiap dropdown menyesuaikan filter lain. Setelah satu Lembaga dipilih, misalnya, daftar Agen, RAMP, dan Mill hanya berisi yang terhubung dengannya. Filter tersimpan di alamat halaman, jadi tampilan bisa di-bookmark atau dikirim ke rekan. Semua kartu, diagram, dan tabel di halaman ini mengikuti filter yang sama.
 3. Baca empat kartu ringkasan: **TBS**, **Ke Mill Pemasok UL**, **Sampai PKS Pasti** (berapa yang PKS-nya jelas), dan **Offtaker** (jumlah agen, RAMP, dan KT/koperasi).
 4. Baca kartu **Sorotan**: empat temuan otomatis dari filter aktif.
@@ -53,7 +53,7 @@ Dashboard ini masih **prototipe** untuk bahan diskusi. Datanya berasal dari **fo
 
 **Tertulis "Data prototipe rantai pasok belum tersedia".** Tabel survei belum diunggah ke server ini. Hubungi admin aplikasi.
 
-**Diagram kosong setelah memilih filter.** Kombinasi filter tidak punya aliran bertonase, misalnya agen yang tidak memasok Mill terpilih. Hapus chip filter (✕) di bawah kotak filter. Bila ada beberapa chip, **Hapus semua** melepas semuanya sekaligus.
+**Diagram kosong setelah memilih filter.** Kombinasi filter tidak punya aliran bertonase, misalnya agen yang tidak memasok Mill terpilih. Hapus chip filter (✕) di bawah kotak filter. Untuk melepas semuanya sekaligus, klik **↺ Reset** di ujung baris filter.
 
 **Sankey sulit dibaca karena pitanya saling menimpa.** Pakai tab **Jalur** atau **Tabel Pohon**: angkanya sama, tanpa garis yang bersilangan.
 

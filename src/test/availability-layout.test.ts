@@ -51,10 +51,10 @@ describe("AvailabilityHero — segmen tingkat skor (T4)", () => {
 
 describe("ActiveFilterBar — chip ↔ URL (T3)", () => {
   it("tanpa chip → tidak dirender (tampilan bawaan bersih)", () => {
-    expect(renderToStaticMarkup(createElement(ActiveFilterBar, { chips: [], onReset: () => {} }))).toBe("");
+    expect(renderToStaticMarkup(createElement(ActiveFilterBar, { chips: [] }))).toBe("");
   });
 
-  it("satu chip per kunci URL dengan tombol lepas bernama + Reset semua", () => {
+  it("satu chip per kunci URL dengan tombol lepas bernama; Reset di bar filter, bukan di baris chip (#427)", () => {
     const onRemove = vi.fn();
     const html = renderToStaticMarkup(
       createElement(ActiveFilterBar, {
@@ -62,13 +62,12 @@ describe("ActiveFilterBar — chip ↔ URL (T3)", () => {
           { id: "band", label: "Tingkat skor", value: "kritis", onRemove },
           { id: "urut", label: "Urut", value: "produksi ↑", onRemove },
         ],
-        onReset: () => {},
       }),
     );
     expect(html).toContain('data-filter="band"');
     expect(html).toContain('data-filter="urut"');
     expect(html).toContain('aria-label="Lepas filter Tingkat skor: kritis"');
-    expect(html).toContain("Reset semua");
+    expect(html).not.toContain("Reset semua");
   });
 });
 

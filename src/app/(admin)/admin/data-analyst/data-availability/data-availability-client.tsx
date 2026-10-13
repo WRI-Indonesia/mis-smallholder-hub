@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { clearedUrlKeys, hasActiveFilters } from "@/lib/filter-reset";
 import {
   AVAILABILITY_DOMAIN_KEYS,
   AVAILABILITY_DOMAIN_LABELS,
@@ -50,6 +52,13 @@ const MODULE_SORT_OPTIONS: MatrixSortOption[] = [
   ...MODULE_CATALOG.map((m) => ({ value: `${MODULE_SORT_PREFIX}${m.key}`, label: m.short })),
 ];
 const BANDS: AvailabilityScoreBand[] = ["full", "good", "warn", "bad"];
+/**
+ * Tampilan bawaan filter (#427) — pembanding & isi tombol Reset. Kunci selain `cari`
+ * = kunci URL (bawaan = tidak ada di URL, jadi reset menghapusnya); `urut`/`arah`
+ * dibaca dalam bentuk yang ditulis `setSort`/`setModuleSort` (null = urutan bawaan
+ * tampilan aktif). Tampilan (`tampilan`) & tab Kerja bukan filter — tidak ikut.
+ */
+const FILTER_DEFAULTS = { kategori: null, distrik: null, lembaga: null, band: null, urut: null, arah: null, cari: "" };
 const NO_ROWS: AvailabilityGroupEntry[] = [];
 
 export function DataAvailabilityClient({
@@ -143,7 +152,7 @@ export function DataAvailabilityClient({
 
   // Cari & Ringkas milik halaman (#417 B): satu toolbar untuk ketiga tampilan;
   // bawaan Ringkas 10 terendah (K2) — pencarian tetap menampilkan semua hasil.
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(FILTER_DEFAULTS.cari);
   const [showAll, setShowAll] = useState(false);
 
   const [matrixEl, setMatrixEl] = useState<HTMLDivElement | null>(null);
@@ -206,9 +215,24 @@ export function DataAvailabilityClient({
   ];
   // Pencarian ikut menyempitkan matriks → tampil sebagai chip dan ikut Reset (review #417).
   if (query.trim()) filterChips.push({ id: "cari", label: "Cari", value: query.trim(), onRemove: () => setQuery("") });
+  // Urut/arah dibaca MENTAH dari URL (setSort/setModuleSort menulis null untuk
+  // bawaan): urutan tampilan lain yang tertinggal di URL (mis. urut domain saat
+  // tampilan modul, review #427) tetap memunculkan Reset.
+  const filtersActive = hasActiveFilters(
+    {
+      kategori: category,
+      distrik: districtId,
+      lembaga: groupId,
+      band,
+      urut: get("urut"),
+      arah: get("arah"),
+      cari: query,
+    },
+    FILTER_DEFAULTS,
+  );
   const resetFilters = () => {
-    setMany({ kategori: null, distrik: null, lembaga: null, band: null, urut: null, arah: null });
-    setQuery("");
+    setMany(clearedUrlKeys(FILTER_DEFAULTS, ["cari"]));
+    setQuery(FILTER_DEFAULTS.cari);
   };
 
   const totals = useMemo(() => availabilityTotals(scope), [scope]);
@@ -344,6 +368,8 @@ export function DataAvailabilityClient({
             widthClass="w-[220px]"
           />
 
+          <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
+
           {canExport && (
             <Button variant="outline" className="h-9" onClick={handleExport} disabled={groups.length === 0}>
               <Download className="mr-2 h-4 w-4" />
@@ -354,7 +380,7 @@ export function DataAvailabilityClient({
       </div>
 
       {/* Filter aktif (#417 A, T3): satu tempat untuk melihat & melepas pilihan filter/urutan. */}
-      <ActiveFilterBar chips={filterChips} onReset={resetFilters} />
+      <ActiveFilterBar chips={filterChips} />
 
       {/* Hero satu baris: skor, kalimat ringkas, sebaran Lembaga per tingkat skor (segmen = filter). */}
       <AvailabilityHero totals={totals} distribution={distribution} activeBand={band} onBandChange={setBand} />

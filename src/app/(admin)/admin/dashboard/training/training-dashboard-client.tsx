@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useUrlFilters } from "@/hooks/use-url-filters";
+import { hasActiveFilters } from "@/lib/filter-reset";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,10 @@ import type { TrainingDashboardView } from "@/types/dashboard";
 import type { ProgramTargetRecord } from "@/lib/program-target";
 import { formatGeneratedAt } from "@/lib/format";
 
+// Tampilan bawaan = kunci URL filter dihapus (Semua Distrik/Lembaga/Tahun) —
+// dipakai tombol Reset (#427) untuk deteksi & pengosongan.
+const DEFAULT_FILTERS = { distrik: null, lembaga: null, tahun: null } as const;
+
 export function TrainingDashboardClient({
   view,
   helpSlot,
@@ -80,6 +86,8 @@ export function TrainingDashboardClient({
   const setDistrictId = (v: string | null) => setMany({ distrik: v, lembaga: null });
   const setGroupId = (v: string | null) => setMany({ lembaga: v });
   const setYear = (v: number | null) => setMany({ tahun: v == null ? null : String(v) });
+
+  const filtersActive = hasActiveFilters({ distrik: districtId, lembaga: groupId, tahun: year }, DEFAULT_FILTERS);
 
   const [districtOpen, setDistrictOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -266,6 +274,8 @@ export function TrainingDashboardClient({
               ))}
             </SelectContent>
           </Select>
+
+          <ResetFiltersButton active={filtersActive} onReset={() => setMany(DEFAULT_FILTERS)} />
         </div>
       </div>
 

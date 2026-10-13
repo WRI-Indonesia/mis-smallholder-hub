@@ -16,7 +16,7 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 │   ├── Distrik (combobox)
 │   ├── Lembaga Petani (combobox)
 │   ├── Tahun (select, default tahun berjalan; "Rataan" di paling bawah)
-│   └── Kelengkapan data (select)
+│   └── Tombol Excel (izin EXPORT, #426)
 ├── Kartu KPI (4)
 │   ├── Produktivitas
 │   ├── Total Produksi
@@ -63,7 +63,7 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani..."; opsi "Semua Lembaga Petani"; empty: "Lembaga petani tidak ditemukan." |
 | Filter Tahun | Select | Default **tahun berjalan** (fallback tahun terbaru ber-data; #191); daftar tahun (desc) lalu "Rataan" di paling bawah |
-| Filter Kelengkapan data | Select | "Semua Data" (`all`) / "Data Full 1 Tahun" (`full` — hanya lahan dengan 12 bulan penuh) |
+| Tombol `Excel` | Tombol outline (`Download`/`Loader2`) | Hanya bila `dashboard-bmp:EXPORT` (#426). Unduh `produktivitas-umur-tanaman-bmp-<YYYY-MM-DD snapshot>.xlsx` dari snapshot yang sudah dimuat (scope viewer), **mengabaikan filter UI** (owner 2026-10-12). Sheet `Produktivitas` & `Luas terdata`: header 3 baris ber-merge — Distrik · Lembaga · Kategori Lembaga, lalu per periode (Rataan, tiap tahun naik) 7 kolom: Semua umur (`sumBmpGroups`), 5 bucket umur + Tanpa thn tanam (`bmpAgeSeries`); baris Lembaga urut Distrik → nama (AutoFilter), satu baris kosong, lalu Subtotal Distrik / Subtotal Kategori / Total tertimbang (Σ produksi disetahunkan ÷ Σ luas). Sel tanpa luas = kosong. Sheet `Keterangan` = definisi. Builder `src/lib/bmp-age-productivity-xlsx.ts` |
 | Kartu KPI (4 kartu) | Kartu KPI | Lihat rincian di bawah |
 | Chart tren | Chart kombinasi (bar + line, SVG kustom) | Lihat rincian di bawah |
 | Chart ranking | Bar horizontal Top-10 | Lihat rincian di bawah |
@@ -84,7 +84,7 @@ Card "Lahan dengan Data Produksi" (jumlah persil ber-data / total persil) **diha
 
 Urutan sub-teks seragam antar card: **%, total, tahun** (tanpa kata "aktif" — membingungkan); token persen & total beraksen emerald (light) / foreground (dark), konteks tahun tetap muted.
 
-Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}", ditambah " · lahan full 1 tahun" bila mode `full`.
+Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}". (Filter kelengkapan "Semua Data / Data Full 1 Tahun" dihapus di #425 — dashboard selalu memakai semua record.)
 
 ## Chart tren (`BmpTrendChart`)
 
@@ -113,8 +113,8 @@ Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}", ditambah "
 | Judul | Heading kartu | "Ex-Plasma vs Swadaya — {label tahun}" + legend warna kategori (`CategoryLegend`) |
 | Ringkasan 3 metrik | Grid 3 kolom | Total Produksi (Ton), Produktivitas (Ton/Ha/tahun, disetahunkan), Luas Terdata (Ha) — dua nilai berwarna per metrik, masing-masing berlabel kecil "Ex-Plasma" / "Swadaya" di bawahnya |
 | "Produktivitas per Distrik (Ton/Ha/tahun)" | Tabel pembanding (`CompareTable`, owner 2026-10-08 — dulu Produksi per Distrik (Ton)) | Baris = distrik dalam scope filter; kolom Ex-Plasma · Swadaya, sel = `sumBmpGroups(…).produktivitasTonHa` (disetahunkan) + mini bar satu skala per tabel; luas terdata 0 → "—" + catatan "— = belum ada lahan terdata yang melapor produksi"; tooltip sel "Luas terdata {n} Ha" |
-| "Produktivitas per Umur Tanaman (Ton/Ha/tahun)" | Tabel pembanding (`CompareTable`) | Sel tanpa luas terdata → "—" (bukan 0,00), tooltip sel "Luas terdata {n} Ha"; bucket `bmpAgeSeries` mengikuti fase kurva hasil sawit: "< 4 thn (TBM)", "4–8 thn (TM muda)", "9–15 thn (TM prima)", "16–25 thn (TM tua)", "> 25 thn (renta)", "Tanpa thn tanam" (hanya bila ber-data); umur = tahun produksi − tahun tanam |
-| Empty state umur | Teks | "Snapshot ini belum memuat data umur tanaman — generate ulang snapshot BMP melalui menu Tools untuk mengisi analisa ini." |
+| "Produktivitas per Umur Tanaman (Ton/Ha/tahun)" | Tabel pembanding (`CompareTable`) | Sel tanpa luas terdata → "—" (bukan 0,00), tooltip sel "Luas terdata {n} Ha"; bucket `bmpAgeSeries` mengikuti fase kurva hasil sawit: "< 3 thn (TBM)", "3–8 thn (TM muda)" (#428; dulu < 4 / 4–8), "9–15 thn (TM prima)", "16–25 thn (TM tua)", "> 25 thn (renta)", "Tanpa thn tanam" (hanya bila ber-data); umur = tahun produksi − tahun tanam |
+| Empty state umur | Teks | "Snapshot ini belum memuat data umur tanaman, atau masih memakai batas umur lama — generate ulang snapshot BMP melalui menu Tools untuk mengisi analisa ini." Snapshot sebelum #428 (kunci bucket `lt4`/`4-8`) dikosongkan data umurnya oleh `normalizeBmpSnapshotData` |
 | Catatan | Teks | "Mengikuti filter aktif kecuali filter Kategori. Umur tanaman dihitung pada tahun produksinya…" |
 
 Panel Ketersediaan Data Produksi (Baik/Cukup/Kurang/Tidak Ada) **dihapus** dari dashboard (#191, keputusan owner) — kategori yang sama tetap tersedia di Peta BMP.

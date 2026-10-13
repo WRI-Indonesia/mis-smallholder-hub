@@ -25,6 +25,8 @@ icon: Map
 
 **Peta BMP** — Peta tematik: pilih layer Ketersediaan Data Produksi atau Produktivitas (Ton/Ha/tahun, disetahunkan seperti BMP Dashboard). Pilih Lembaga terlebih dulu, lalu klik Muat Data.
 
+**Peta Rantai Pasok (prototipe)** — Sebaran Lembaga, agen/RAMP, dan Mill beserta arah dan besar aliran TBS di antara mereka, dari form survei rantai pasok 2025; klik titik atau garis untuk menjadikannya filter. Lihat tutorial **Membaca Peta Rantai Pasok (prototipe)**.
+
 **Cetak peta** — Tombol Cetak menghasilkan PDF sesuai tampilan layer aktif (peta, legenda, dan tabel data), dan tersedia juga unduhan Excel. Tombol Cetak hanya tampil bila akun Anda punya izin **Print**, dan unduhan Excel bila punya izin **Export**, pada menu peta tersebut.
 
 **Profil Lahan (PDF)** — Dari peta atau halaman detail Petani, Anda dapat mencetak Profil Lahan satu persil (PDF, biasanya 2 halaman): kartu ringkasan (Luas, Legalitas, Tanaman, Produksi), layout kebun beserta **lahan tetangga** (lahan lain yang terdaftar di MIS dalam 25 m — garis putus-putus bernomor, dengan skala dan panah utara, lalu legenda nomor: pemilik, ID lahan, lembaga, jarak), informasi lahan & pemilik, **sepadan** (batas Utara/Timur/Selatan/Barat yang dicatat manual), serta Legalitas & Dokumen (surat kepemilikan, STDB, UL Parcel Code, program), lalu pelatihan dan produksi. Tombolnya hanya tampil bila akun Anda punya izin **Print** pada menu halaman tersebut.

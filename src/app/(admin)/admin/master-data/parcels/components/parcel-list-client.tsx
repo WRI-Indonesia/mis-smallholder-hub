@@ -34,6 +34,18 @@ import { getMasterDataParcelExportData } from "@/server/actions/land-parcel-expo
 import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
 import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
+
+/** Tampilan bawaan halaman — dipakai inisialisasi state & tombol Reset (#427). */
+const FILTER_DEFAULTS = {
+  district: "all",
+  group: "all",
+  nkt: "all",
+  marker: "all",
+  status: "active" as StatusFilterValue,
+  search: "",
+};
 
 interface Props {
   initialParcels: unknown[];
@@ -53,17 +65,32 @@ export function ParcelListClient({
   permissions,
   isSuperAdmin,
 }: Props) {
-  const [districtFilter, setDistrictFilter] = useState("all");
-  const [groupFilter, setGroupFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
+  const [districtFilter, setDistrictFilter] = useState(FILTER_DEFAULTS.district);
+  const [groupFilter, setGroupFilter] = useState(FILTER_DEFAULTS.group);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>(FILTER_DEFAULTS.status);
   // NKT (#328): all · affected (termasuk+terdampak) · INCLUDED/AFFECTED/NOT_AFFECTED · none (belum dinilai).
-  const [nktFilter, setNktFilter] = useState("all");
+  const [nktFilter, setNktFilter] = useState(FILTER_DEFAULTS.nkt);
   // Patok (#329): all · with · without.
-  const [markerFilter, setMarkerFilter] = useState("all");
+  const [markerFilter, setMarkerFilter] = useState(FILTER_DEFAULTS.marker);
+  const [search, setSearch] = useState(FILTER_DEFAULTS.search);
   const [showForm, setShowForm] = useState(false);
   const [editParcel, setEditParcel] = useState<LandParcel | null>(null);
   const [spatialExporting, setSpatialExporting] = useState(false);
   const router = useRouter();
+
+  const filtersActive = hasActiveFilters(
+    { district: districtFilter, group: groupFilter, nkt: nktFilter, marker: markerFilter, status: statusFilter, search },
+    FILTER_DEFAULTS,
+  );
+  function resetFilters() {
+    // Distrik & Lembaga saling bergantung → di-reset bersama.
+    setDistrictFilter(FILTER_DEFAULTS.district);
+    setGroupFilter(FILTER_DEFAULTS.group);
+    setNktFilter(FILTER_DEFAULTS.nkt);
+    setMarkerFilter(FILTER_DEFAULTS.marker);
+    setStatusFilter(FILTER_DEFAULTS.status);
+    setSearch(FILTER_DEFAULTS.search);
+  }
 
   const filtered = (initialParcels as LandParcel[]).filter((p) => {
     const matchGroup = groupFilter === "all" || p.farmer.farmerGroup.id === groupFilter;
@@ -333,6 +360,8 @@ export function ParcelListClient({
       {isSuperAdmin && (
         <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
+
+      <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
     </div>
   );
 
@@ -373,6 +402,8 @@ export function ParcelListClient({
           data={filtered}
           rowKey={(p) => p.id}
           searchPlaceholder="Cari ID Lahan atau nama petani..."
+          search={search}
+          onSearchChange={setSearch}
           searchFn={(row, query) => {
             return (
               row.parcelId.toLowerCase().includes(query) ||

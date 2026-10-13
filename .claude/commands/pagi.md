@@ -55,6 +55,9 @@ Lalu **sinkron dengan roadmap** (`docs/project/roadmap.md` — tabel §Phase Sta
 5. **Issue untuk selisih no. 1 → fase mana?** Sebut fase roadmap yang menaunginya, atau "Parkir"/"tanpa fase". Issue fitur tanpa fase = sinyal fase baru → butuh keputusan owner (issue induk + horizon + Decision Log + baris `metrics.md`), bukan disisipkan diam-diam.
 6. **Status fase basi** — semua issue di Next step sebuah fase sudah closed tapi Status belum ✅ Done (atau sebaliknya).
 
+Lalu **sinkron label status**:
+7. **Label `status:*` GitHub ≠ status di rencana** (kanban menu Daftar Issue #429 membaca label ini). Pemetaan butir rilis/backlog yang open: 🔲 Todo → `status:todo` · 🟡 Dikerjakan → `status:in-progress` · ⚖️ Menunggu keputusan → `status:decision`; ⏭️ mengikuti status di rilis tujuannya; ✅ atau issue di luar rencana → **tanpa** label status. Satu issue paling banyak satu label `status:*`; issue yang dipecah per bagian memakai tahap bagian yang paling lanjut. Sebut jumlah selisihnya + contoh (≤ 5), jangan dieksekusi di sini.
+
 Lalu **cek keputusan yang mungkin sudah diambil**: untuk tiap issue di `decisions` dan `backlogDecisions`, `gh issue view <n> --json comments` — komentar sesudah `updatedAt` yang menjawab pertanyaannya berarti keputusan sudah ada. Jangan tanyakan ulang; bawa ke Tahap 4 sebagai perubahan status.
 
 ## Tahap 3 — Prioritas & saran
@@ -77,4 +80,6 @@ Tutup dengan satu rekomendasi: kerjakan apa dulu, dan kenapa.
 
 Tampilkan diff yang diusulkan untuk `sprint.md` (dan `roadmap.md` bila selisih no. 4–6 ada): issue baru masuk rilis/backlog, status yang berubah (termasuk keputusan yang ditemukan di komentar atau dijawab lewat `AskUserQuestion` — isi kolom ⚖️ dengan `✅ Diputuskan: …`), baris `Terakhir diperbarui:` ke tanggal hari ini. Bila tak ada selisih: tulis "Tidak ada perubahan" dan selesai.
 
-**Jangan edit sebelum owner setuju.** Setelah disetujui: edit, jalankan `npx vitest run src/test/release-plan.test.ts src/test/plan-status.test.ts` (+ `src/test/roadmap.test.ts` bila `roadmap.md` diubah — perubahan Status fase mengubah Roadmap % → baris `metrics.md` ikut), commit dengan path eksplisit (`docs(rencana): …`).
+Sertakan juga daftar perubahan label `status:*` (selisih no. 7) sebagai bagian diff yang diusulkan.
+
+**Jangan edit sebelum owner setuju.** Setelah disetujui: samakan label (`gh issue edit <n> --add-label … --remove-label …`, satu perintah per issue), edit, jalankan `npx vitest run src/test/release-plan.test.ts src/test/plan-status.test.ts` (+ `src/test/roadmap.test.ts` bila `roadmap.md` diubah — perubahan Status fase mengubah Roadmap % → baris `metrics.md` ikut), commit dengan path eksplisit (`docs(rencana): …`).

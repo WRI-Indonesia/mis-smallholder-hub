@@ -41,7 +41,7 @@ import {
   Check,
   ChevronsUpDown,
 } from "lucide-react";
-import { bulkCreateFarmers, getExistingFarmerIds } from "@/server/actions/bulk-upload";
+import { bulkCreateFarmers, getExistingFarmerIds } from "@/server/actions/bulk-upload-farmer";
 import { FARMER_UPLOAD_FIELDS, FARMER_AUTO_MATCH_RULES } from "@/lib/farmer-upload-fields";
 import { FARMER_TEMPLATE, TEMPLATE_EXAMPLE_ERROR, isTemplateExampleId } from "@/lib/bulk-upload-templates";
 import { downloadExcelTemplate } from "@/lib/bulk-upload-template-download";

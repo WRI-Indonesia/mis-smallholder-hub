@@ -15,7 +15,7 @@ Keempat kartu di atas tabel **mengikuti filter yang sedang aktif**, bukan seluru
 
 **Total Petani** — jumlah baris petani yang tampil.
 
-**Petani Laki-laki / Perempuan** — pecahan dari Total Petani berdasarkan kolom Jenis Kelamin. Bila keduanya tidak berjumlah sama dengan Total Petani, ada data yang jenis kelaminnya belum terisi.
+**Petani Laki-laki / Perempuan** — pecahan dari Total Petani berdasarkan kolom Jenis Kelamin. Jenis kelamin wajib diisi, jadi keduanya selalu berjumlah sama dengan Total Petani.
 
 ## Filter & pencarian
 

@@ -39,6 +39,8 @@ import {
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import { TRAINING_CATEGORY_LABELS } from "@/lib/training-category-labels";
 
 interface TrainingActivity {
@@ -76,6 +78,15 @@ interface TrainingPackage {
   name: string;
 }
 
+/** Tampilan bawaan halaman — dipakai inisialisasi state & tombol Reset (#427). */
+const FILTER_DEFAULTS = {
+  district: "all",
+  group: "all",
+  package: "all",
+  status: "active" as StatusFilterValue,
+  search: "",
+};
+
 interface Props {
   initialActivities: TrainingActivity[];
   packages: TrainingPackage[];
@@ -93,14 +104,28 @@ export function TrainingListClient({
   permissions,
   isSuperAdmin,
 }: Props) {
-  const [districtFilter, setDistrictFilter] = useState("all");
-  const [groupFilter, setGroupFilter] = useState("all");
-  const [packageFilter, setPackageFilter] = useState("all");
+  const [districtFilter, setDistrictFilter] = useState(FILTER_DEFAULTS.district);
+  const [groupFilter, setGroupFilter] = useState(FILTER_DEFAULTS.group);
+  const [packageFilter, setPackageFilter] = useState(FILTER_DEFAULTS.package);
   const [packageComboOpen, setPackageComboOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>(FILTER_DEFAULTS.status);
+  const [search, setSearch] = useState(FILTER_DEFAULTS.search);
   const [showForm, setShowForm] = useState(false);
   const [editActivity, setEditActivity] = useState<TrainingActivity | null>(null);
   const router = useRouter();
+
+  const filtersActive = hasActiveFilters(
+    { district: districtFilter, group: groupFilter, package: packageFilter, status: statusFilter, search },
+    FILTER_DEFAULTS,
+  );
+  function resetFilters() {
+    // Distrik & Lembaga saling bergantung → di-reset bersama.
+    setDistrictFilter(FILTER_DEFAULTS.district);
+    setGroupFilter(FILTER_DEFAULTS.group);
+    setPackageFilter(FILTER_DEFAULTS.package);
+    setStatusFilter(FILTER_DEFAULTS.status);
+    setSearch(FILTER_DEFAULTS.search);
+  }
 
   const filtered = initialActivities.filter((a) => {
     const matchGroup = groupFilter === "all" || a.farmerGroupId === groupFilter;
@@ -319,6 +344,8 @@ export function TrainingListClient({
       {isSuperAdmin && (
         <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
+
+      <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
     </div>
   );
 
@@ -417,6 +444,8 @@ export function TrainingListClient({
           data={filtered}
           rowKey={(a) => a.id}
           searchPlaceholder="Cari lokasi, lembaga petani atau paket..."
+          search={search}
+          onSearchChange={setSearch}
           searchFn={(row, query) => {
             const packageName = (
               TRAINING_CATEGORY_LABELS[row.package.code] || row.package.name

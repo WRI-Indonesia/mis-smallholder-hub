@@ -17,7 +17,7 @@
 ```
 src/
 ├── app/
-│   ├── (admin)/admin/        # dashboard, master-data, data-analyst, map, report, bulk-upload, settings, tools, profile, help
+│   ├── (admin)/admin/        # dashboard, master-data, data-analyst, map, report, bulk-upload, settings, tools, profile, help, platform-developer
 │   ├── (public)/             # Home, community, knowledge-management
 │   ├── api/                  # NextAuth + proxy tile peta (map-overlay, map-hotspot, map-basemap)
 │   ├── login/                # Halaman login
@@ -29,14 +29,14 @@ src/
 │   ├── auth/                 # Login form
 │   ├── layout/               # Admin & public layout
 │   └── session-provider.tsx, theme-provider.tsx
-├── content/                  # Materi Bantuan (help/, 65 file .md — dibundel via loader asset/source di next.config.ts)
+├── content/                  # Materi Bantuan (help/, jumlah berkas: tabel Ringkasan Teknis di bawah — dibundel via loader asset/source di next.config.ts)
 ├── hooks/                    # Custom hooks (use-mobile, use-url-filters, use-vector-basemap)
 ├── lib/                      # Prisma, rbac, access-context, utils, helper murni (firms, map-data, dsb)
 ├── server/actions/           # Server Actions
 ├── test/                     # Unit test Vitest (jumlah: tabel Ringkasan Teknis di bawah)
 ├── validations/              # Zod schemas
 ├── types/                    # Custom types
-└── middleware.ts             # NextAuth guard /admin/* & /login
+└── middleware.ts             # NextAuth guard /admin/* (/login me-redirect sendiri, #342)
 ```
 
 ### Teknologi
@@ -59,11 +59,11 @@ src/
 <!-- GENERATED:tech-summary — npm run build:docs; jangan sunting tangan -->
 | Aspek | Angka | Sumber |
 |---|---|---|
-| Berkas test | **192** | `src/test/**/*.test.ts(x)` — jumlah kasus uji per rilis di [metrics.md](../project/metrics.md) |
-| Server Actions | **43 berkas** | `src/server/actions/` — satu berkas per domain, seluruh akses data lewat sini |
+| Berkas test | **198** | `src/test/**/*.test.ts(x)` — jumlah kasus uji per rilis di [metrics.md](../project/metrics.md) |
+| Server Actions | **44 berkas** | `src/server/actions/` — satu berkas per domain, seluruh akses data lewat sini |
 | Prisma | **26 berkas skema · 41 model · 21 enum · 41 migrasi** | `prisma/schema/`, `prisma/migrations/` |
-| Menu | **10 top-level · 40 sub menu · 4 level-3** | `prisma/seeds/data/menu.csv` |
-| Materi Bantuan | **70 berkas Markdown** | `src/content/help/**` |
+| Menu | **10 top-level · 41 sub menu · 4 level-3** | `prisma/seeds/data/menu.csv` |
+| Materi Bantuan | **71 berkas Markdown** | `src/content/help/**` |
 <!-- /GENERATED:tech-summary -->
 
 Status fase: [roadmap.md § Phase Status](../project/roadmap.md#phase-status-indeks). Semua model ber-audit field + `isActive` (pengecualian: [decisions/0001](../decisions/0001-soft-delete-dan-pengecualian.md)).

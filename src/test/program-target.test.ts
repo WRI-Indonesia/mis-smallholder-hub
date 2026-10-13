@@ -6,7 +6,6 @@ import {
   PROGRAM_TARGET_PACKAGE,
   buildProgramTargetGrid,
   programContractRows,
-  programTargetRowTotal,
   type ProgramTargetRecord,
 } from "@/lib/program-target";
 import { programTargetSaveSchema } from "@/validations/program-target.schema";
@@ -33,13 +32,13 @@ const group = (id: string, activities: ReturnType<typeof act>[]): TrainingGroupE
 });
 
 describe("grid Target Program (#403)", () => {
-  it("baseline + tahun target; total baris = baseline + Σ tahunan", () => {
+  it("baseline + tahun target", () => {
     const g = buildProgramTargetGrid(records);
     expect(g.baselineYear).toBe(2025);
     expect(g.years).toEqual([2026, 2027]);
-    expect(programTargetRowTotal(g, "TRAINING_P1_BMP")).toBe(140);
-    expect(programTargetRowTotal(g, "TRAINING_P3_GEDSI_LIVELIHOOD")).toBe(90);
-    expect(programTargetRowTotal(g, "TRAINING_P2_HSE")).toBe(0);
+    expect(g.baseline.TRAINING_P1_BMP).toBe(100);
+    expect(g.annual.TRAINING_P1_BMP).toEqual({ 2026: 20, 2027: 20 });
+    expect(g.baseline.TRAINING_P2_HSE).toBeUndefined();
   });
 
   it("target per paket = baris kartu Training Benefit per year (keputusan owner)", () => {

@@ -12,7 +12,7 @@ Halaman: Peta Rantai Pasok (/admin/map/supply-chain)
 │   ├── Judul + badge Prototipe + HelpHint · baris TBS · % tergambar · tautan Dashboard (membawa filter)
 │   ├── Toggle Ringkas (Lembaga → Mill) | Detail (singgah agen/RAMP bertitik + titik lahan)
 │   └── Satu gulir, bagian lipat (diingat per browser `sc-dashboard:map:*`; bawaan Filter terbuka, lainnya terlipat dengan ringkasan di judul):
-│       Filter (bar filter bersama, vertikal + Reset) · Lapisan (garis alir · animasi arah · label · titik lahan · garis lahan → Mill)
+│       Filter (bar filter bersama, vertikal + ↺ Reset `ResetFiltersButton`, #427) · Lapisan (garis alir · animasi arah · label · titik lahan · garis lahan → Mill)
 │       · Legenda (warna jalur + contoh tebal 3 tonase + titik/ikon) · Ringkasan (tergambar / tidak tergambar + daftar NAMA Mill/Lembaga/offtaker tanpa titik)
 ├── Peta
 │   ├── Garis alir melengkung (`arcCoordinates`, bezier ke kiri arah aliran), warna = jalur, tebal ∝ √tonase (`flowLineWidth`)
