@@ -101,7 +101,7 @@ describe("scope data", () => {
 
 /** Baris agregat SQL (owner, periode) — bentuk `CellRow` setelah cast ::int/::float8. */
 const cellRow = (owner_id: string, period: string, o: Partial<Record<string, number>> = {}) => ({
-  owner_id, period, parcels_reporting: 1, records: 1, linked_records: 1, kg: 100, zero_records: 0, estimate_records: 0, no_parcel_records: 0, ...o,
+  owner_id, period, parcels_reporting: 1, records: 1, linked_records: 1, kg: 100, zero_records: 0, no_parcel_records: 0, ...o,
 });
 
 describe("tahun tidak valid", () => {
@@ -133,7 +133,7 @@ describe("agregasi — tampilan utama (Lembaga × periode)", () => {
       .mockResolvedValueOnce([{ group_id: "g-in", total_farmers: 3, total_parcels: 5, non_psr_parcels: 4 }])
       // 2) sel — sengaja tidak terurut
       .mockResolvedValueOnce([
-        cellRow("g-in", "2026-03", { kg: 300, estimate_records: 1 }),
+        cellRow("g-in", "2026-03", { kg: 300 }),
         cellRow("g-in", "2025-12"),
         cellRow("g-in", "2026-01", { zero_records: 1, kg: 0, no_parcel_records: 1, linked_records: 0 }),
       ]);
@@ -143,10 +143,13 @@ describe("agregasi — tampilan utama (Lembaga × periode)", () => {
     expect(a).toMatchObject({ id: "g-in", districtName: "Siak", totalFarmers: 3, totalParcels: 5, nonPsrParcels: 4 });
     expect(a.cells.map((c) => c.period)).toEqual(["2025-12", "2026-01", "2026-03"]);
     expect(a.cells[1]).toEqual({
-      period: "2026-01", parcelsReporting: 1, records: 1, linkedRecords: 0, kg: 0, zeroRecords: 1, estimateRecords: 0, noParcelRecords: 1,
+      period: "2026-01", parcelsReporting: 1, records: 1, linkedRecords: 0, kg: 0, zeroRecords: 1, noParcelRecords: 1,
     });
-    expect(a.cells[2]).toMatchObject({ kg: 300, estimateRecords: 1 });
+    expect(a.cells[2]).toMatchObject({ kg: 300 });
     expect(b).toMatchObject({ id: "g-2", totalFarmers: 0, totalParcels: 0, nonPsrParcels: 0, cells: [] });
+    // Penanda Estimasi dibuang di v1.8.0: SQL agregat tak lagi memindai `notes`.
+    const sql = db.$queryRaw.mock.calls.map((c: unknown[]) => (c[0] as { strings: string[] }).strings.join("?")).join("\n");
+    expect(sql).not.toMatch(/notes|estimasi/i);
   });
 });
 
@@ -180,20 +183,20 @@ describe("agregasi — Sheet 2 ekspor (lahan × bulan satu Lembaga)", () => {
   });
 
   const cell = (parcel_id: string, farmer_id: string, period: string, o: Partial<Record<string, number>> = {}) => ({
-    parcel_id, farmer_id, period, records: 1, kg: 50, zero_records: 0, estimate_records: 0, ...o,
+    parcel_id, farmer_id, period, records: 1, kg: 50, zero_records: 0, ...o,
   });
 
   it("tanpa record lain → hanya baris lahan sendiri, sel terurut, tanpa kueri tambahan", async () => {
     db.landParcel.findMany.mockResolvedValueOnce([
       { id: "lp-1", parcelId: "L.01", isPsr: false, area: 1.5, farmerId: "f-1", farmer: { name: "Ani", farmerId: "P.01" } },
     ]);
-    db.$queryRaw.mockResolvedValueOnce([cell("lp-1", "f-1", "2026-04"), cell("lp-1", "f-1", "2026-01", { estimate_records: 1 })]);
+    db.$queryRaw.mockResolvedValueOnce([cell("lp-1", "f-1", "2026-04"), cell("lp-1", "f-1", "2026-01")]);
     const rows = await actions.getProductionAvailabilityGroupParcels("g-in", 2026);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ id: "lp-1", parcelCode: "L.01", isOwn: true, farmerName: "Ani", farmerCode: "P.01" });
     expect(rows[0].cells).toEqual([
-      { period: "2026-01", records: 1, kg: 50, zeroRecords: 0, estimateRecords: 1 },
-      { period: "2026-04", records: 1, kg: 50, zeroRecords: 0, estimateRecords: 0 },
+      { period: "2026-01", records: 1, kg: 50, zeroRecords: 0 },
+      { period: "2026-04", records: 1, kg: 50, zeroRecords: 0 },
     ]);
     expect(db.landParcel.findMany).toHaveBeenCalledOnce();
     expect(db.farmer.findMany).not.toHaveBeenCalled();
@@ -231,7 +234,7 @@ describe("agregasi — Sheet 2 ekspor (lahan × bulan satu Lembaga)", () => {
     expect(rows[0].cells.map((c) => c.period)).toEqual(["2026-01"]);
     expect(rows[1].cells.map((c) => c.period)).toEqual(["2026-02"]);
     expect(rows[2]).toMatchObject({ isPsr: true, area: 2 });
-    expect(rows[3]).toMatchObject({ isPsr: false, area: null, cells: [{ period: "2026-04", records: 1, kg: 0, zeroRecords: 1, estimateRecords: 0 }] });
+    expect(rows[3]).toMatchObject({ isPsr: false, area: null, cells: [{ period: "2026-04", records: 1, kg: 0, zeroRecords: 1 }] });
     // Kueri tambahan: id unik lahan & petani dari kunci "lain".
     expect(db.landParcel.findMany.mock.calls[1][0].where).toEqual({ id: { in: ["lp-1", "lp-old", "lp-gone"] } });
     expect(db.farmer.findMany.mock.calls[0][0].where).toEqual({ id: { in: ["f-2", "f-1"] } });
@@ -258,7 +261,7 @@ describe("agregasi — baris lahan satu petani", () => {
     parcel: o.parcel === undefined ? { id: "lp-1", parcelId: "L.01", isPsr: false, area: 1, isActive: true } : o.parcel,
   });
 
-  it("record dijumlah per lahan × periode; 'Estimasi' → estimateRecords; 0 kg → zeroRecords; tanpa parcelId → noParcel", async () => {
+  it("record dijumlah per lahan × periode; 0 kg → zeroRecords; tanpa parcelId → noParcel; notes 'Estimasi' tak lagi jadi penanda (v1.8.0)", async () => {
     db.productionRecord.findMany.mockResolvedValue([
       rec({ period: "2026-03", yieldKg: 200, notes: "Estimasi fasilitator" }),
       rec({ period: "2026-03", yieldKg: 0 }),
@@ -269,11 +272,12 @@ describe("agregasi — baris lahan satu petani", () => {
     const res = await actions.getProductionAvailabilityParcels("f-1", 2026);
     expect(res.parcels.map((p) => [p.id, p.isOwn])).toEqual([["lp-1", true], ["lp-2", true]]);
     expect(res.parcels[0].cells).toEqual([
-      { period: "2026-01", records: 1, kg: 50, zeroRecords: 0, estimateRecords: 1 },
-      { period: "2026-03", records: 2, kg: 200, zeroRecords: 1, estimateRecords: 1 },
+      { period: "2026-01", records: 1, kg: 50, zeroRecords: 0 },
+      { period: "2026-03", records: 2, kg: 200, zeroRecords: 1 },
     ]);
     expect(res.parcels[1].cells).toEqual([]);
-    expect(res.noParcel).toEqual([{ period: "2026-02", records: 2, kg: 15, zeroRecords: 0, estimateRecords: 1 }]);
+    expect(res.noParcel).toEqual([{ period: "2026-02", records: 2, kg: 15, zeroRecords: 0 }]);
+    expect(db.productionRecord.findMany.mock.calls[0][0].select).not.toHaveProperty("notes");
     expect(db.productionRecord.findMany.mock.calls[0][0].where).toEqual({
       isActive: true,
       period: { gte: "2026-01", lte: "2026-12" },

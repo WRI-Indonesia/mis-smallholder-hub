@@ -10,7 +10,6 @@ import { hasTrainingEvidence } from "@/lib/training-evidence";
 import {
   farmerModuleFlags,
   groupModuleFlags,
-  loadEstimateRecordIds,
   loadModuleFlagSets,
   parcelGeometryAreaHa,
   parcelModuleFlags,
@@ -83,7 +82,7 @@ export async function analyzeFarmerGroupCompleteness(
   const farmerWhere = { isActive: true, farmerGroup: groupWhere };
 
   // Paket wajib (isActive, exclude OTHER) — kolom matriks & basis cakupan pelatihan.
-  const [trainingPackages, group, withGeometry, moduleSets, estimateIds] = await Promise.all([
+  const [trainingPackages, group, withGeometry, moduleSets] = await Promise.all([
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
       select: { code: true, name: true },
@@ -171,7 +170,6 @@ export async function analyzeFarmerGroupCompleteness(
       scope: rawFarmerGroupScope(access, [farmerGroupId]),
       referenceYear,
     }),
-    loadEstimateRecordIds(farmerWhere),
   ]);
   const geometryIds = new Set(withGeometry.map((p) => p.id));
 
@@ -238,7 +236,6 @@ export async function analyzeFarmerGroupCompleteness(
         parcelId: r.parcelId,
         period: r.period,
         yieldKg: r.yieldKg,
-        isEstimate: estimateIds.has(r.id),
       })),
       modules: farmerModuleFlags(moduleSets, f.id),
     })),

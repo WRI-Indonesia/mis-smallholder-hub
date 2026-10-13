@@ -312,7 +312,6 @@ export type CompletenessFarmerInput = {
     parcelId: string | null; // LandParcel.id
     period: string;          // YYYY-MM
     yieldKg: number;
-    isEstimate: boolean;     // notes berlabel "Estimasi" (impor #TBR/#RSB)
   }[];
   modules?: FarmerModuleFlags;
 };

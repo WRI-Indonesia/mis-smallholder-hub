@@ -48,9 +48,6 @@ export interface ProductionRangeSummary {
   /** `gapMonths ≥ PRODUCTION_STALE_MONTHS` (K5-d). */
   stale: boolean;
   totalRecords: number;
-  estimateRecords: number;
-  /** % record berlabel Estimasi terhadap semua record; 0 bila tanpa record. */
-  estimatePct: number;
   zeroRecords: number;
   noParcelRecords: number;
 }
@@ -65,7 +62,6 @@ export function summarizeRange(cells: ProductionCellStats[], referencePeriod: st
   const gapMonths = Number.isFinite(gap) ? Math.max(0, gap) : null;
   const futureLast = Number.isFinite(gap) && gap < 0;
   const totalRecords = valid.reduce((s, c) => s + c.records, 0);
-  const estimateRecords = valid.reduce((s, c) => s + c.estimateRecords, 0);
   return {
     firstPeriod,
     lastPeriod,
@@ -74,15 +70,13 @@ export function summarizeRange(cells: ProductionCellStats[], referencePeriod: st
     futureLast,
     stale: gapMonths != null && gapMonths >= PRODUCTION_STALE_MONTHS,
     totalRecords,
-    estimateRecords,
-    estimatePct: totalRecords > 0 ? (estimateRecords / totalRecords) * 100 : 0,
     zeroRecords: valid.reduce((s, c) => s + c.zeroRecords, 0),
     noParcelRecords: valid.reduce((s, c) => s + c.noParcelRecords, 0),
   };
 }
 
 /**
- * Ringkasan SATU tahun (sel periode `YYYY-…`) — kolom Record/Estimasi/0 kg/tanpa
+ * Ringkasan SATU tahun (sel periode `YYYY-…`) — kolom Record/0 kg/tanpa
  * persil Sheet 1 Excel harus satu cakupan dengan kolom bulannya dan Sheet 2
  * (review pra-rilis v1.7.0, keputusan owner 2026-10-12: semua angka per tahun).
  */
@@ -153,13 +147,12 @@ export interface ProductionAvailabilityDistrictRow {
 export function mergeCells(lists: ProductionCellStats[][]): ProductionCellStats[] {
   const acc = new Map<string, ProductionCellStats>();
   for (const cells of lists) for (const c of cells) {
-    const m = acc.get(c.period) ?? { period: c.period, parcelsReporting: 0, records: 0, linkedRecords: 0, kg: 0, zeroRecords: 0, estimateRecords: 0, noParcelRecords: 0 };
+    const m = acc.get(c.period) ?? { period: c.period, parcelsReporting: 0, records: 0, linkedRecords: 0, kg: 0, zeroRecords: 0, noParcelRecords: 0 };
     m.parcelsReporting += c.parcelsReporting;
     m.records += c.records;
     m.linkedRecords += c.linkedRecords;
     m.kg += c.kg;
     m.zeroRecords += c.zeroRecords;
-    m.estimateRecords += c.estimateRecords;
     m.noParcelRecords += c.noParcelRecords;
     acc.set(c.period, m);
   }

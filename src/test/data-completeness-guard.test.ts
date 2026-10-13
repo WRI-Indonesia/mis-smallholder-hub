@@ -143,11 +143,8 @@ describe("analyzeFarmerGroupCompleteness — scope", () => {
       parcel: { farmer: { isActive: true, farmerGroup: groupWhere } },
     });
     expect(db.farmerGroupBoundary.groupBy.mock.calls[0][0].where).toMatchObject({ farmerGroup: groupWhere });
-    expect(db.productionRecord.findMany.mock.calls[0][0].where).toMatchObject({
-      isActive: true,
-      farmer: { isActive: true, farmerGroup: groupWhere },
-      notes: { contains: "estimasi", mode: "insensitive" },
-    });
+    // Scan id-set "Estimasi" dibuang di v1.8.0 — tak ada kueri `notes` produksi lagi.
+    expect(db.productionRecord.findMany).not.toHaveBeenCalled();
     // Poligon GeoJSON tidak diangkut — kehadiran geometry lewat id-set ber-scope (review pra-rilis #352).
     const parcelSelect = db.farmerGroup.findFirst.mock.calls[0][0].select.farmers.select.landParcels.select;
     expect(parcelSelect.geometry).toBeUndefined();
@@ -212,8 +209,7 @@ describe("getDataAvailabilityView — scope satelit lintas Lembaga", () => {
     const farmerWhere = { isActive: true, farmerGroup: groupWhere };
     expect(db.farmerGroup.findMany.mock.calls[0][0].where).toMatchObject(groupWhere);
     expect(db.landParcel.findMany.mock.calls[0][0].where).toMatchObject({ isActive: true, farmer: farmerWhere });
-    // Kolom `notes` produksi tidak ikut kueri utama; scan id-set "Estimasi" pun
-    // DILEWATI di DA-03 — labelnya hanya dipakai kartu DA-02 (review pra-rilis #352).
+    // Kolom `notes` produksi tidak ikut kueri utama (penanda Estimasi dibuang v1.8.0).
     const farmerSelect = db.farmerGroup.findMany.mock.calls[0][0].select.farmers.select;
     expect(farmerSelect.productionRecords.select).toEqual({ id: true, parcelId: true, period: true, yieldKg: true });
     expect(db.productionRecord.findMany).not.toHaveBeenCalled();

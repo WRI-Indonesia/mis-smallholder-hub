@@ -72,7 +72,6 @@ const freshRecord = (id = "pr-1", parcelId: string | null = "lp-1") => ({
   parcelId,
   period: REF,
   yieldKg: 100,
-  isEstimate: false,
 });
 
 const P1 = { code: "PAKET_1_BMP_PC_RSPO_NKT", name: "Paket 1 - BMP" };
@@ -475,7 +474,7 @@ describe("computeProduksiDomain", () => {
     expect(Number.isNaN(monthsBetween("2026-6", "2026-09"))).toBe(true);
     const at = (period: string) =>
       computeProduksiDomain(
-        [farmer({ productionRecords: [{ id: "a", parcelId: "lp-1", period: "2024-01", yieldKg: 1, isEstimate: false }, { id: "b", parcelId: "lp-1", period, yieldKg: 1, isEstimate: false }] })],
+        [farmer({ productionRecords: [{ id: "a", parcelId: "lp-1", period: "2024-01", yieldKg: 1 }, { id: "b", parcelId: "lp-1", period, yieldKg: 1 }] })],
         REF
       ).anomalies.find((x) => x.key === "produksi-basi");
     expect(at("2026-06")).toBeDefined(); // selisih 3 → basi
@@ -485,17 +484,9 @@ describe("computeProduksiDomain", () => {
     const none = computeProduksiDomain([farmer({ productionRecords: [] })], REF);
     expect(none.anomalies.find((x) => x.key === "produksi-basi")).toBeUndefined();
   });
-  it("#352: record 'Estimasi' tampil di kartu, tidak menambah anomali", () => {
-    const d = computeProduksiDomain(
-      [
-        farmer({
-          landParcels: [validParcel],
-          productionRecords: [freshRecord("a"), { ...freshRecord("b"), isEstimate: true }],
-        }),
-      ],
-      REF
-    );
-    expect(d.cards.find((c) => c.label === "Record Estimasi")!.value).toBe("1 (50.0%)");
+  it("v1.8.0: kartu 'Record Estimasi' dibuang (label dilepas dari record prod; Meragukan menyusul #424)", () => {
+    const d = computeProduksiDomain([farmer({ landParcels: [validParcel], productionRecords: [freshRecord("a")] })], REF);
+    expect(d.cards.map((c) => c.label)).not.toContain("Record Estimasi");
     expect(d.anomalies).toHaveLength(0);
   });
 });
@@ -609,7 +600,7 @@ describe("anomali sistemik (#352 A3)", () => {
     // 20 petani ber-produksi semua basi → 20 temuan (sinyal "seluruh Lembaga tertinggal" tetap terlihat).
     const stale = computeProduksiDomain(
       Array.from({ length: 20 }, (_, i) =>
-        farmer({ id: `f${i}`, farmerId: `F-${i}`, productionRecords: [{ id: `r${i}`, parcelId: null, period: "2026-01", yieldKg: 1, isEstimate: false }] })
+        farmer({ id: `f${i}`, farmerId: `F-${i}`, productionRecords: [{ id: `r${i}`, parcelId: null, period: "2026-01", yieldKg: 1 }] })
       ),
       REF
     ).anomalies.find((a) => a.key === "produksi-basi")!;
@@ -774,9 +765,9 @@ describe("check kualitas (#352 putaran 2)", () => {
         farmer({
           landParcels: [validParcel],
           productionRecords: [
-            { id: "r1", parcelId: "lp-1", period: "2026-05", yieldKg: 0, isEstimate: false },
-            { id: "r2", parcelId: "lp-1", period: "2026-07", yieldKg: 50, isEstimate: false },
-            { id: "r3", parcelId: "lp-1", period: "2026-09", yieldKg: 50, isEstimate: false },
+            { id: "r1", parcelId: "lp-1", period: "2026-05", yieldKg: 0 },
+            { id: "r2", parcelId: "lp-1", period: "2026-07", yieldKg: 50 },
+            { id: "r3", parcelId: "lp-1", period: "2026-09", yieldKg: 50 },
           ],
         }),
       ],

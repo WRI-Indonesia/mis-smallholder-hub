@@ -610,8 +610,9 @@ export function computePelatihanDomain(
 // Skor tetap "% petani ber-produksi" (#352 P1: check baru informatif/anomali,
 // tidak mengubah Index). Tambahan #352: kebaruan (produksi basi ≥ N bulan),
 // grain lahan (lahan non-PSR tanpa produksi), isPsr dikecualikan dari
-// "berlahan tanpa produksi", pangsa record "Estimasi" sebagai kartu, dan
-// kualitas: record 0 kg, bulan bolong.
+// "berlahan tanpa produksi", dan kualitas: record 0 kg, bulan bolong. Kartu
+// pangsa record "Estimasi" dibuang di v1.8.0 (label dilepas dari record prod
+// 2026-10-12; penanda Meragukan menyusul, #424).
 export function computeProduksiDomain(
   farmers: CompletenessFarmerInput[],
   referencePeriod: string = currentPeriod()
@@ -655,12 +656,6 @@ export function computeProduksiDomain(
     .filter((x) => x.missing > 0)
     .map((x) => toItem(x.f, `${x.missing} bulan bolong (${x.first} … ${x.last})`));
 
-  const totalRecords = farmers.reduce((s, f) => s + f.productionRecords.length, 0);
-  const estimateRecords = farmers.reduce(
-    (s, f) => s + f.productionRecords.filter((r) => r.isEstimate).length,
-    0
-  );
-
   const all: DomainAnomaly[] = [
     anomaly("petani-tanpa-produksi", noProduction.map((f) => toItem(f)), total),
     anomaly("berlahan-tanpa-produksi", landNoProduction.map((f) => toItem(f)), total),
@@ -671,8 +666,6 @@ export function computeProduksiDomain(
     anomaly("produksi-bulan-bolong", gaps, withProduction.length),
   ];
   const anomalies = withFindings(all);
-
-  const estimatePct = totalRecords > 0 ? (estimateRecords / totalRecords) * 100 : 0;
 
   return {
     domain: "produksi",
@@ -688,8 +681,6 @@ export function computeProduksiDomain(
         label: "Lahan Berproduksi (non-PSR)",
         value: `${nonPsrParcels.length - parcelsNoProduction.length} / ${nonPsrParcels.length}`,
       },
-      // Informatif (P1): bukan anomali, hanya pangsa angka sintetis dari impor rekap.
-      { label: "Record Estimasi", value: `${estimateRecords} (${estimatePct.toFixed(1)}%)` },
     ],
     anomalies,
     // Satu-satunya check berskor: % petani ber-produksi (bobot 1).

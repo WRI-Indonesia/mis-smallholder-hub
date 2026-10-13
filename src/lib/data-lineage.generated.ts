@@ -255,7 +255,6 @@ export const DATA_LINEAGE: DataLineage = [
       "landParcelProgram": "R",
       "landParcelStdb": "R",
       "landStdb": "R",
-      "productionRecord": "R",
       "referenceBenchmark": "R",
       "trainingPackage": "R",
       "tree": "R"

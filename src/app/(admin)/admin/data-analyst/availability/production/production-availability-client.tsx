@@ -187,7 +187,6 @@ export function ProductionAvailabilityClient({
           { header: "Jeda (bulan)", key: "gap", width: 10 },
           // Per tahun terpilih (owner 2026-10-12) — satu cakupan dengan kolom bulan & Sheet 2.
           { header: `Record ${year}`, key: "records", width: 11 },
-          { header: `Record Estimasi ${year}`, key: "estimate", width: 14 },
           { header: `Record 0 kg ${year}`, key: "zero", width: 12 },
           { header: `Record tanpa persil ${year}`, key: "noParcel", width: 16 },
           { header: "Catatan", key: "note", width: 30 },
@@ -216,7 +215,6 @@ export function ProductionAvailabilityClient({
             last: s.lastPeriod ?? "",
             gap: s.gapMonths ?? "",
             records: ys.totalRecords,
-            estimate: ys.estimateRecords,
             zero: ys.zeroRecords,
             noParcel: ys.noParcelRecords,
             note: percentUnavailableNote(g.nonPsrParcels, g.totalParcels, ys.totalRecords),
@@ -231,7 +229,6 @@ export function ProductionAvailabilityClient({
         { header: "Luas (ha)", key: "area", width: 9 },
         ...periods.map((p, i) => ({ header: `${MONTH_SHORT_ID[i]} ${year} (kg)`, key: p, width: 11 })),
         { header: `Bulan ber-record ${year}`, key: "months", width: 12 },
-        { header: "Record Estimasi", key: "estimate", width: 12 },
         { header: "Record 0 kg", key: "zero", width: 10 },
       ];
       const selected = groupId ? allGroups.find((g) => g.id === groupId) : undefined;
@@ -254,7 +251,6 @@ export function ProductionAvailabilityClient({
                 area: p.area ?? "",
                 ...months,
                 months: periods.filter((per) => (cellAt(p.cells, per)?.records ?? 0) > 0).length,
-                estimate: p.cells.reduce((s, c) => s + c.estimateRecords, 0),
                 zero: p.cells.reduce((s, c) => s + c.zeroRecords, 0),
               };
             })

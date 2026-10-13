@@ -237,7 +237,7 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       })),
       productionRecords:
         i % 2 === 0
-          ? [{ id: `pr-${i}`, parcelId: `lp-${i}`, period: i % 6 === 0 ? "2025-12" : "2026-08", yieldKg: i % 13 === 0 ? 0 : 120, isEstimate: i % 10 === 0 }]
+          ? [{ id: `pr-${i}`, parcelId: `lp-${i}`, period: i % 6 === 0 ? "2025-12" : "2026-08", yieldKg: i % 13 === 0 ? 0 : 120 }]
           : [],
     }));
   }

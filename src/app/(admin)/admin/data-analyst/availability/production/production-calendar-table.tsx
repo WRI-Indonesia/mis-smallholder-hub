@@ -30,9 +30,12 @@ import type {
 
 type Loaded<T> = { state: "loading" } | { state: "error"; message: string } | { state: "ready"; data: T };
 
-/** Penanda kualitas (K5): E = Estimasi, 0 = ada record 0 kg, TP = tanpa persil. */
+/**
+ * Penanda kualitas (K5): 0 = ada record 0 kg, TP = tanpa persil. Penanda E
+ * (Estimasi) dibuang di v1.8.0 — label sudah dilepas dari record prod; penanda
+ * Meragukan menyusul (#424).
+ */
 export const MARKERS = {
-  estimate: { code: "E", label: "Estimasi", className: "bg-amber-200 text-amber-900" },
   zero: { code: "0", label: "Record 0 kg", className: "bg-rose-200 text-rose-900" },
   noParcel: { code: "TP", label: "Tanpa persil", className: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100" },
 } as const;
@@ -48,12 +51,11 @@ function Marker({ kind, children }: { kind: keyof typeof MARKERS; children?: Rea
 }
 
 /** Penanda di pojok sel — hanya huruf, tanpa angka (angkanya di tooltip). */
-function MarkerStrip({ cell }: { cell: { estimateRecords: number; zeroRecords: number; noParcelRecords?: number } }) {
-  const any = cell.estimateRecords > 0 || cell.zeroRecords > 0 || (cell.noParcelRecords ?? 0) > 0;
+function MarkerStrip({ cell }: { cell: { zeroRecords: number; noParcelRecords?: number } }) {
+  const any = cell.zeroRecords > 0 || (cell.noParcelRecords ?? 0) > 0;
   if (!any) return null;
   return (
     <span className="pointer-events-none absolute right-0.5 top-0.5 flex gap-px">
-      {cell.estimateRecords > 0 && <Marker kind="estimate" />}
       {cell.zeroRecords > 0 && <Marker kind="zero" />}
       {(cell.noParcelRecords ?? 0) > 0 && <Marker kind="noParcel" />}
     </span>
@@ -103,7 +105,6 @@ function CoverageCell({
       {pct != null && <StatTooltipRow chip={BAND_BAR[scoreBand(pct)]} label="Lahan non-PSR melapor" value={`${formatNumber(cell.parcelsReporting)} / ${formatNumber(nonPsrParcels)} (${formatPct(pct)}%)`} />}
       <StatTooltipRow chip="bg-slate-400" label="Record" value={formatNumber(cell.records)} />
       <StatTooltipRow chip="bg-emerald-500" label="Σ hasil" value={`${formatNumber(Math.round(cell.kg))} kg`} />
-      {cell.estimateRecords > 0 && <StatTooltipRow chip="bg-amber-400" label="Record Estimasi" value={formatNumber(cell.estimateRecords)} />}
       {cell.zeroRecords > 0 && <StatTooltipRow chip="bg-rose-500" label="Record 0 kg" value={formatNumber(cell.zeroRecords)} />}
       {cell.noParcelRecords > 0 && <StatTooltipRow chip="bg-slate-500" label="Tanpa persil" value={formatNumber(cell.noParcelRecords)} />}
     </>
@@ -136,7 +137,7 @@ function CoverageCell({
   );
 }
 
-/** Sel lahan × bulan: kg; 0 kg merah; Estimasi bertanda; PSR dibisukan. Klik → Master Data Produksi (Lembaga + periode + petani). */
+/** Sel lahan × bulan: kg; 0 kg merah; PSR dibisukan. Klik → Master Data Produksi (Lembaga + periode + petani). */
 function ParcelCell({ cell, period, isPsr, href, future }: { cell: ProductionParcelCell | undefined; period: string; isPsr: boolean; href: string; future: boolean }) {
   if (!cell || cell.records === 0) {
     return (
@@ -176,8 +177,6 @@ const EMPTY_SUMMARY: ProductionRangeSummary = {
   futureLast: false,
   stale: false,
   totalRecords: 0,
-  estimateRecords: 0,
-  estimatePct: 0,
   zeroRecords: 0,
   noParcelRecords: 0,
 };
@@ -216,11 +215,6 @@ function SummaryCells({ sum, year }: { sum: ProductionRangeSummary; year: number
       </td>
       <td className="px-1 py-0">
         <div className="flex h-7 items-center justify-center gap-1">
-          {sum.estimateRecords > 0 && (
-            <span title={`${formatNumber(sum.estimateRecords)} dari ${formatNumber(sum.totalRecords)} record berlabel Estimasi`}>
-              <Marker kind="estimate">{Math.round(sum.estimatePct)}%</Marker>
-            </span>
-          )}
           {sum.zeroRecords > 0 && (
             <span title={`${formatNumber(sum.zeroRecords)} record 0 kg`}>
               <Marker kind="zero">{formatNumber(sum.zeroRecords)}</Marker>
@@ -231,7 +225,7 @@ function SummaryCells({ sum, year }: { sum: ProductionRangeSummary; year: number
               <Marker kind="noParcel">{formatNumber(sum.noParcelRecords)}</Marker>
             </span>
           )}
-          {sum.estimateRecords === 0 && sum.zeroRecords === 0 && sum.noParcelRecords === 0 && <span className="text-xs text-muted-foreground/60">—</span>}
+          {sum.zeroRecords === 0 && sum.noParcelRecords === 0 && <span className="text-xs text-muted-foreground/60">—</span>}
         </div>
       </td>
     </>
@@ -558,7 +552,7 @@ export function ProductionCalendarTable({
               Rentang
             </th>
             <th className="px-1 py-2 text-center font-semibold">{headBtn("last", "Jeda", `Bulan sejak periode terakhir ke ${referencePeriod}; merah bila ≥ ${PRODUCTION_STALE_MONTHS}`)}</th>
-            <th className="px-1 py-2 text-center font-semibold" title="Rentang penuh: % record Estimasi · record 0 kg · record tanpa ID Lahan">
+            <th className="px-1 py-2 text-center font-semibold" title="Rentang penuh: record 0 kg · record tanpa ID Lahan">
               Penanda
             </th>
           </tr>

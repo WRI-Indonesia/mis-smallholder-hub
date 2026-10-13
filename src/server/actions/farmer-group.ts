@@ -307,9 +307,6 @@ export async function getFarmerGroupDetail(id: string) {
         parcelId: r.parcelId,
         period: r.period,
         yieldKg: r.yieldKg,
-        // Kartu KPI hanya memakai healthScore — label Estimasi (kartu DA-02) tak
-        // dibutuhkan, scan `notes ILIKE` dilewati (review pra-rilis #352).
-        isEstimate: false,
       })),
     })),
   };

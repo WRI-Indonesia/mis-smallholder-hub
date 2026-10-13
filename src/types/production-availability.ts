@@ -20,8 +20,6 @@ export interface ProductionCellStats {
   kg: number;
   /** Record 0 kg (penanda K5-b). */
   zeroRecords: number;
-  /** Record berlabel "Estimasi" di `notes` (penanda K5-a). */
-  estimateRecords: number;
   /** Record tanpa ID Lahan (penanda K5-c) — tidak masuk `parcelsReporting`. */
   noParcelRecords: number;
 }
@@ -69,7 +67,6 @@ export interface ProductionParcelCell {
   records: number;
   kg: number;
   zeroRecords: number;
-  estimateRecords: number;
 }
 
 /** Baris lahan (anak petani). */
