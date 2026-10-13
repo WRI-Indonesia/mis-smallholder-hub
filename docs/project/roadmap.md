@@ -249,7 +249,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>DA-08</strong> · 🟠 Partial — Ketersediaan data lanjutan</summary>
 
 - **Evidence:** DA-02/DA-03 selesai di arsip MVP (#352). Tiga lanjutan keputusan #352 belum dikerjakan. **2026-10-11:** epic #415 — Ketersediaan Data jadi keluarga menu per entitas (parent level 2 + anak Semua Lembaga · Per Lembaga · Produksi), keputusan K1–K9 di issue. **Kode #416 ✅ 2026-10-11 di `mvp`** (menu induk + Produksi, pohon 3 tingkat, Excel 2 sheet, tutorial p-18). **Kode #417 ✅ 2026-10-11** (Semua Lembaga ringkas: tinggi 3.817 → 1.680 px, sub-nav keluarga menu). Staging `bb045d7` + **seed menu staging ✅** 2026-10-11 (TC-416-01..03 & TC-417-01..03 Pass); **v1.7.0 (2026-10-12): 🔲 → 🟠 Partial** — #416 & #417 dirilis (QA staging 0 Fail) + seed menu prod (`seed-menu-only.ts`, 2 dibuat · 2 diperbarui).
-- **Next step:** kalender Pelatihan (B, issue menyusul). K2 2027: nilai eksplisit `NONE` sertifikasi agar "belum diisi" ≠ "tidak bersertifikat" (#355), bobot cakupan modul ke Index (#356), peta kesiapan data per Lembaga (#358).
+- **Next step:** v1.10.0: kalender Pelatihan (#415 B, issue anak dibuat saat mulai). K2 2027: nilai eksplisit `NONE` sertifikasi agar "belum diisi" ≠ "tidak bersertifikat" (#355), bobot cakupan modul ke Index (#356), peta kesiapan data per Lembaga (#358).
 - **Selesai bila:** #416, #417, #355, #356, #358 ditutup (epic #415 ditutup saat semua anak yang modulnya sudah ada selesai).
 
 </details>

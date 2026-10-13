@@ -164,7 +164,8 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 4 | **#317** Tumpang tindih lahan — Fase 4 layer Peta Lahan | Fitur | M | Layer tumpang tindih di Peta Lahan → #317 & fase DA-09 tuntas | 🔲 Todo | — |
 | 5 | Concept note **GIS-02 Deforestation** | Fitur | S | Sumber data tutupan hutan + lisensi, tahun *cut-off*, ambang luas, butuh GeoServer (GIS-04) atau tidak → issue induk | 🔲 Todo | Sumber data & cut-off |
 | 6 | Concept note **MD-12 Certification** | Fitur | S | Skema (RSPO/ISPO), unit sertifikasi Lembaga vs petani, siklus audit & temuan, dokumen S3 → issue induk | 🔲 Todo | Cakupan skema |
-| 7 | **Rilis v1.10.0** | Rilis | M | Semua butir di atas + limpahan v1.7.0–v1.9.0 yang digeser ke sini | 🔲 Todo | Go rilis |
+| 7 | **#415 B** Ketersediaan Data: kalender cakupan Pelatihan | Fitur | M | Anak B epic #415: kalender per paket × tahun, pola sama dengan Produksi (#416); issue anak dibuat saat mulai, bentuk disetujui owner | 🔲 Todo | ✅ Diputuskan 2026-10-13: masuk v1.10.0 agar DA-08 tetap Now |
+| 8 | **Rilis v1.10.0** | Rilis | M | Semua butir di atas + limpahan v1.7.0–v1.9.0 yang digeser ke sini | 🔲 Todo | Go rilis |
 
 #### Backlog terurut (setelah v1.10.0)
 
