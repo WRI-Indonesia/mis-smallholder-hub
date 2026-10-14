@@ -124,3 +124,62 @@ Harapan:
 - Tanda +n/✓n hanya pada tanggal 1–5 Oktober; issue yang dibuat di rentang tetapi ditutup sesudahnya tidak memunculkan ✓ di luar rentang.
 - Isi rentang lampau (mis. Agustus 2026) lalu buka Kalender tanpa memilih bulan: kalender langsung terbuka di bulan akhir rentang (bukan bulan berjalan yang kosong); tombol **Bulan ini** tetap membawa ke bulan berjalan.
 Baseline dev: `github-issues.test.ts` (`dailyActivity` dengan rentang).
+
+### TC-429-04 · Mengetik cepat di Cari tidak memicu galat, URL menyusul [P2] (2 mnt)
+Asal: `/code-review` penuh wrap-up 2026-10-14 (Safari melempar `SecurityError` bila `replaceState` > 100×/30 dtk).
+Langkah:
+1. Daftar Issue (sebaiknya di **Safari**) → ketik cepat ±40 karakter di Cari, hapus, ketik lagi beberapa kali.
+2. Berhenti mengetik ±1 detik, lihat bilah alamat; lalu klik Reset.
+Harapan:
+- Daftar menyaring seketika saat mengetik; tidak ada galat di konsol / halaman tidak macet.
+- Setelah berhenti, URL memuat `?q=<teks>`; Reset mengosongkan kotak Cari **dan** `q` di URL.
+
+## #433 — Layer hutan & deforestasi (Kemenhut + EUDR/GFW)
+
+### TC-433-01 · Peta Lahan: 9 overlay dalam dua kelompok, di bawah poligon lahan & label [P1] [regresi] (6 mnt)
+Prasyarat: akun OPERATOR ter-scope; server staging bisa menjangkau `geoportal.planologi.kehutanan.go.id` dan `kspservices.big.go.id`; browser bisa menjangkau `tiles.globalforestwatch.org`.
+Langkah:
+1. Map › **Peta Lahan** → pilih Distrik dalam scope → **Muat Data**.
+2. Buka **Peta Lainnya** → kelompok **Kemenhut / BIG** → centang **Penutupan Lahan 2025**; tunggu tile (server pemerintah bisa 2–10 dtk).
+3. Geser **Transparansi** ke 100%.
+4. Matikan, lalu buka kelompok **EUDR (Global Forest Watch)** → centang **Tutupan Hutan 2020 (JRC)**, lalu **Kehilangan Tutupan Pohon ≥ 2021**, lalu **Peringatan Deforestasi Terpadu** (satu per satu).
+5. Ganti basemap ke **SAT**, lalu kembali ke **LIGHT**; nyalakan **Terrain 3D**.
+Harapan:
+- Dua kelompok terlipat bawaan; kelompok dan judul Peta Lainnya menampilkan chip **"n aktif"**.
+- Poligon lahan (ungu), titik Lembaga, dan **nama tempat basemap** tetap terlihat **di atas** overlay, juga pada transparansi 100%.
+- Tiap layer aktif menampilkan legenda + "Sumber: …"; layer GFW menampilkan catatan (JRC: "tidak mengikat secara hukum"; Kehilangan: "termasuk panen kebun/HTI"; Peringatan: **"bukan konfirmasi deforestasi"**).
+- Kehilangan Tutupan Pohon hanya menampilkan bercak sejak 2021 (warna merah muda).
+- Setelah ganti basemap & Terrain, overlay tetap tampil (boleh menunggu tile) dan hillshade tergambar; tidak ada galat merah di konsol.
+Baseline dev: `map-overlays.test.ts` (definisi, urutan gambar, filter ≥ 2021); smoke lokal 2026-10-14 (Siak, LIGHT → SAT → LIGHT + Terrain).
+
+### TC-433-02 · Peta Rantai Pasok: Peta Lainnya di panel & popover Lapisan, raster di bawah garis alir [P1] (4 mnt)
+Langkah:
+1. Map › **Peta Rantai Pasok** → buka bagian **Peta Lainnya** di panel → centang **Deforestasi 2023–2024** (Kemenhut) dan **Tutupan Hutan 2020 (JRC)**.
+2. Klik tombol **Lapisan** (kanan atas) → lihat bagian Peta Lainnya di popover → matikan JRC dari popover.
+3. Muat ulang halaman.
+Harapan:
+- Garis alir, titik Lembaga/Mill, dan label nama tetap **di atas** overlay.
+- Popover dan panel menunjukkan status centang yang sama; kelompok yang punya layer aktif terbuka; judul bagian panel terlipat menunjukkan "n aktif".
+- Atribusi peta di kanan bawah memuat sumber layer aktif.
+- Sesudah muat ulang semua overlay mati (pilihan tidak diingat — sesuai Bantuan p-17).
+
+### TC-433-03 · Tile Kemenhut dijaga izin peta [P2] (3 mnt)
+Prasyarat: akun uji dengan override **revoke `map-parcel` VIEW** (tetap punya `map-supply-chain`), bila tersedia; akun tanpa kedua izin peta (mis. role ber-override revoke keduanya).
+Langkah:
+1. Akun "hanya `map-supply-chain`" membuka Peta Rantai Pasok → nyalakan **Kawasan Hutan**.
+2. Pada tab yang sama buka `/api/map-overlay/kawasanHutan?bbox=11286627,-55659,11325763,-16523`.
+3. Buka URL yang sama dengan akun tanpa kedua izin peta, lalu dengan key `jrcForest2020`.
+Harapan:
+- Langkah 1–2: tile tampil / gambar PNG (200).
+- Langkah 3: **403** untuk akun tanpa izin; key GFW → **404** (GFW tidak lewat proxy, dimuat langsung).
+- Header respons tile: `Cache-Control: private, …` (bukan `public`).
+Baseline dev: `map-overlay-route.test.ts` (guard OR, memo izin, whitelist 6 key ArcGIS, GFW 404, cache `private`). Catatan: pencabutan izin berlaku paling lambat 60 detik (memo izin per pengguna, pola `/api/map-basemap`).
+
+### TC-433-04 · Tambah Data GIS Lain tetap di bawah poligon lahan [P2] (3 mnt)
+Asal: `/code-review` penuh wrap-up 2026-10-14 (layer pengguna sempat menutupi lahan & label).
+Langkah:
+1. Peta Lahan → Muat Data satu Distrik.
+2. **Tambah Data GIS Lain** → WMS URL: `https://tiles.globalforestwatch.org/jrc_global_forest_cover/latest/dynamic/{z}/{x}/{y}.png?implementation=default` → tambahkan.
+3. Ganti basemap ke SAT lalu kembali ke LIGHT.
+Harapan:
+- Layer tambahan tergambar **di atas** overlay referensi tetapi **di bawah** poligon lahan, titik Lembaga, dan nama tempat basemap — juga sesudah ganti basemap.
