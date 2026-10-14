@@ -259,17 +259,3 @@ export function groupModuleFlags(sets: ModuleFlagSets, group: { id: string }): G
     coordinateOutsideDistrict: sets.groupCoordinateOutside.get(group.id) ?? null,
   };
 }
-
-/**
- * Id record produksi berlabel "Estimasi" (impor rekap #TBR/#RSB) — informatif,
- * bukan anomali. Id-set terpisah supaya kueri utama tidak mengangkut kolom
- * `notes` (@db.Text) untuk SEMUA record produksi (tabel tumbuh paling cepat,
- * proyeksi 2028 ~85×) hanya demi satu boolean per record (review #352).
- */
-export async function loadEstimateRecordIds(farmerWhere: Prisma.FarmerWhereInput): Promise<Set<string>> {
-  const rows = await prisma.productionRecord.findMany({
-    where: { isActive: true, farmer: farmerWhere, notes: { contains: "estimasi", mode: "insensitive" } },
-    select: { id: true },
-  });
-  return new Set(rows.map((r) => r.id));
-}

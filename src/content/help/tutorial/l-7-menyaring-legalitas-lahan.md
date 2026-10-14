@@ -36,7 +36,7 @@ Karena itu filter **Cakupan Pendataan** ada. Sejak awal filter ini disetel **Sem
 | Lahan mana yang belum pernah dinilai NKT | **NKT** → *Belum dinilai* |
 
 + Filter bisa digabung. Menggabungkan *Tanpa surat* dengan *Tanpa STDB* memberi daftar lahan yang belum punya keduanya.
-+ Tombol **Reset filter legalitas** (muncul bila ada filter aktif) mengembalikan Status Surat, Jenis Surat, Status STDB, NKT, Patok, dan Selisih Luas ke *Semua*; Cakupan Pendataan tetap seperti pilihan Anda.
++ Tombol **↺ Reset** di ujung baris filter (muncul bila ada filter yang berubah) mengembalikan Cakupan Pendataan, Status Surat, Jenis Surat, Status STDB, NKT, Patok, dan Selisih Luas ke *Semua* serta Urutan No ke bawaan. Distrik dan Lembaga yang sudah Anda pilih tetap, jadi laporan tidak perlu dimuat ulang.
 + **Belum dinilai** dan **Tidak terdampak** berbeda: yang pertama belum pernah diasesmen sama sekali, yang kedua sudah diasesmen dan bersih. Kolom NKT di tabel dan berkas juga menulis "Belum dinilai" secara eksplisit, bukan sel kosong.
 
 4. Nyalakan kolom yang relevan lewat tombol **Kolom** — Surat Kepemilikan, STDB, Luas Tertera, UL Parcel Code, Program, NKT, Luas NKT. Semuanya mati secara bawaan supaya tabel harian tidak melebar.

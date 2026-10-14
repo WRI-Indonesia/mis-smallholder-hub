@@ -50,12 +50,11 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
   // identik dengan `analyzeFarmerGroupCompleteness`; (2) satu query nested
   // mengikuti bentuk DA-02, lintas seluruh Lembaga dalam scope — MINUS kolom
   // `geometry` (GeoJSON poligon; memuat semuanya sekaligus membengkakkan
-  // payload padahal scoring hanya butuh ada/tidaknya) dan MINUS `notes`
-  // produksi (label Estimasi lewat id-set); (3) kehadiran geometry per persil —
+  // payload padahal scoring hanya butuh ada/tidaknya); (3) kehadiran geometry per persil —
   // id saja, poligonnya tidak ikut terangkut; `farmer.isActive` ikut difilter
   // agar himpunannya sama dengan persil yang memang dinilai; scope digabung
   // lewat relasi farmer (bukan spread `districtId` literal — pitfall BUG-007);
-  // (4) kehadiran modul (#352 A1) + id record Estimasi, pola yang sama.
+  // (4) kehadiran modul (#352 A1), pola yang sama.
   const [trainingPackages, groups, withGeometry, moduleSets] = await Promise.all([
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
@@ -128,7 +127,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
             },
             productionRecords: {
               where: { isActive: true },
-              select: { id: true, parcelId: true, period: true, yieldKg: true },
+              select: { parcelId: true, period: true, yieldKg: true },
             },
           },
         },
@@ -207,15 +206,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
             postTestScore: tp.postTestScore,
             packageCode: tp.activity.package.code,
           })),
-        productionRecords: f.productionRecords.map((r) => ({
-          id: r.id,
-          parcelId: r.parcelId,
-          period: r.period,
-          yieldKg: r.yieldKg,
-          // Label "Estimasi" hanya dipakai kartu DA-02; di sini skor tidak
-          // membutuhkannya → scan `notes ILIKE` dilewati (review pra-rilis #352).
-          isEstimate: false,
-        })),
+        productionRecords: f.productionRecords,
         modules: farmerModuleFlags(moduleSets, f.id),
       })),
       modules: groupModuleFlags(moduleSets, g),

@@ -145,7 +145,7 @@ describe("bulkCreateLandParcels — revisi", () => {
     const res = await actions.bulkCreateLandParcels([row()]);
     expect(res.success).toBe(true);
     expect(db.landParcel.findMany.mock.calls[0][0].where.isActive).toBe(true);
-    expect(db.landParcel.update).toHaveBeenCalledWith({ where: { id: "lp-old" }, data: { isActive: false } });
+    expect(db.landParcel.update).toHaveBeenCalledWith({ where: { id: "lp-old" }, data: { isActive: false, modifiedBy: "user-1" } });
     expect(db.landParcel.create.mock.calls[0][0].data.revision).toBe(3);
     expect(db.productionRecord.updateMany).toHaveBeenCalledWith({ where: { parcelId: "lp-old" }, data: { parcelId: "lp-new", modifiedBy: "user-1" } });
     expect(db.tree.updateMany).toHaveBeenCalledWith({ where: { landParcelId: "lp-old" }, data: { landParcelId: "lp-new", modifiedBy: "user-1" } });
@@ -164,7 +164,7 @@ describe("bulkCreateLandParcels — revisi", () => {
     db.landParcel.create.mockResolvedValueOnce({ id: "lp-1" }).mockResolvedValueOnce({ id: "lp-2" });
     const res = await actions.bulkCreateLandParcels([row(), row({ geometry: GEOM_B })]);
     expect(res.success).toBe(true);
-    expect(db.landParcel.update).toHaveBeenCalledWith({ where: { id: "lp-1" }, data: { isActive: false } });
+    expect(db.landParcel.update).toHaveBeenCalledWith({ where: { id: "lp-1" }, data: { isActive: false, modifiedBy: "user-1" } });
     expect(db.landParcel.create.mock.calls.map((c) => c[0].data.revision)).toEqual([0, 1]);
   });
 });

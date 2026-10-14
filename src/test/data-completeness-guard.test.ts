@@ -46,7 +46,9 @@ const db = vi.hoisted(() => {
 });
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
-const { analyzeFarmerGroupCompleteness } = await import("@/server/actions/data-completeness");
+const { analyzeFarmerGroupCompleteness, getDistrictsForCompleteness, getFarmerGroupsForCompleteness } = await import(
+  "@/server/actions/data-completeness"
+);
 const { getDataAvailabilityView } = await import("@/server/actions/data-availability");
 
 const GROUP = {
@@ -141,11 +143,8 @@ describe("analyzeFarmerGroupCompleteness — scope", () => {
       parcel: { farmer: { isActive: true, farmerGroup: groupWhere } },
     });
     expect(db.farmerGroupBoundary.groupBy.mock.calls[0][0].where).toMatchObject({ farmerGroup: groupWhere });
-    expect(db.productionRecord.findMany.mock.calls[0][0].where).toMatchObject({
-      isActive: true,
-      farmer: { isActive: true, farmerGroup: groupWhere },
-      notes: { contains: "estimasi", mode: "insensitive" },
-    });
+    // Scan id-set "Estimasi" dibuang di v1.8.0 — tak ada kueri `notes` produksi lagi.
+    expect(db.productionRecord.findMany).not.toHaveBeenCalled();
     // Poligon GeoJSON tidak diangkut — kehadiran geometry lewat id-set ber-scope (review pra-rilis #352).
     const parcelSelect = db.farmerGroup.findFirst.mock.calls[0][0].select.farmers.select.landParcels.select;
     expect(parcelSelect.geometry).toBeUndefined();
@@ -210,10 +209,9 @@ describe("getDataAvailabilityView — scope satelit lintas Lembaga", () => {
     const farmerWhere = { isActive: true, farmerGroup: groupWhere };
     expect(db.farmerGroup.findMany.mock.calls[0][0].where).toMatchObject(groupWhere);
     expect(db.landParcel.findMany.mock.calls[0][0].where).toMatchObject({ isActive: true, farmer: farmerWhere });
-    // Kolom `notes` produksi tidak ikut kueri utama; scan id-set "Estimasi" pun
-    // DILEWATI di DA-03 — labelnya hanya dipakai kartu DA-02 (review pra-rilis #352).
+    // Kolom `notes` produksi tidak ikut kueri utama (penanda Estimasi dibuang v1.8.0).
     const farmerSelect = db.farmerGroup.findMany.mock.calls[0][0].select.farmers.select;
-    expect(farmerSelect.productionRecords.select).toEqual({ id: true, parcelId: true, period: true, yieldKg: true });
+    expect(farmerSelect.productionRecords.select).toEqual({ parcelId: true, period: true, yieldKg: true });
     expect(db.productionRecord.findMany).not.toHaveBeenCalled();
     expect(db.landParcelDocument.groupBy.mock.calls[0][0].where).toMatchObject({
       isActive: true,
@@ -241,12 +239,91 @@ describe("modul bukti aktivitas (#385)", () => {
     db.farmerGroup.findFirst.mockResolvedValue({
       ...GROUP,
       activities: [
-        { evidenceKey: "", package: { code: "P1" } },
-        { evidenceKey: null, package: { code: "P1" } },
-        { evidenceKey: "training/ta-1/1-bukti.pdf", package: { code: "P1" } },
+        { id: "ta-0", evidenceKey: "", package: { code: "P1" } },
+        { id: "ta-2", evidenceKey: null, package: { code: "P1" } },
+        { id: "ta-1", evidenceKey: "training/ta-1/1-bukti.pdf", package: { code: "P1" } },
       ],
     });
     const res = await analyzeFarmerGroupCompleteness("g-1");
     expect(res.moduleCoverage.find((m) => m.key === "bukti-aktivitas")).toMatchObject({ covered: 1, total: 3 });
+  });
+
+  it("predikat sama dengan Ketersediaan Data (TD-053a): kunci milik aktivitas LAIN bukan bukti; kunci sendiri (format kini & lama) = bukti", async () => {
+    db.farmerGroup.findFirst.mockResolvedValue({
+      ...GROUP,
+      activities: [
+        // Kunci asing: milik ta-9, disimpan di ta-1 → detail tak membuka tautannya, jadi tak boleh terhitung.
+        { id: "ta-1", evidenceKey: "training/ta-9/1700000000000-bukti.pdf", package: { code: "P1" } },
+        // Kunci objek lain di bucket (foto patok) — bukan bukti pelatihan.
+        { id: "ta-3", evidenceKey: "land-marker/m-1/1700000000000-foto.jpg", package: { code: "P1" } },
+        { id: "ta-2", evidenceKey: "training/ta-2/1700000000000-bukti.pdf", package: { code: "P1" } },
+        { id: "ta-4", evidenceKey: "training/evidence/2025/03/ta-4/notulen.pdf", package: { code: "P1" } },
+      ],
+    });
+    const res = await analyzeFarmerGroupCompleteness("g-1");
+    expect(res.moduleCoverage.find((m) => m.key === "bukti-aktivitas")).toMatchObject({ covered: 2, total: 4 });
+    // `id` wajib ikut di-select — tanpa id predikat kepemilikan tak bisa dievaluasi.
+    expect(db.farmerGroup.findFirst.mock.calls[0][0].select.activities.select).toMatchObject({ id: true, evidenceKey: true });
+  });
+
+  it("hasil Data Completeness = Ketersediaan Data untuk aktivitas yang sama", async () => {
+    const activities = [
+      { id: "ta-1", evidenceKey: "training/ta-9/1700000000000-bukti.pdf", package: { code: "P1" } },
+      { id: "ta-2", evidenceKey: "training/ta-2/1700000000000-bukti.pdf", package: { code: "P1" } },
+    ];
+    db.farmerGroup.findFirst.mockResolvedValue({ ...GROUP, activities });
+    db.farmerGroup.findMany.mockResolvedValue([{ ...GROUP, activities }]);
+    const completeness = await analyzeFarmerGroupCompleteness("g-1");
+    const view = await getDataAvailabilityView();
+    const pick = (list: { key: string; covered: number; total: number }[]) => {
+      const m = list.find((x) => x.key === "bukti-aktivitas");
+      return m && { covered: m.covered, total: m.total };
+    };
+    expect(pick(completeness.moduleCoverage)).toEqual({ covered: 1, total: 2 });
+    expect(pick(view.data.groups[0].moduleCoverage)).toEqual(pick(completeness.moduleCoverage));
+  });
+});
+
+describe("filter dropdown — getDistrictsForCompleteness & getFarmerGroupsForCompleteness", () => {
+  const MENU = "data-analyst-data-completeness";
+
+  it("VIEW ditolak → throw tanpa kueri; menu & level persis", async () => {
+    hasPermission.mockResolvedValue(false);
+    await expect(getDistrictsForCompleteness()).rejects.toThrow(/izin/);
+    await expect(getFarmerGroupsForCompleteness()).rejects.toThrow(/izin/);
+    expect(hasPermission.mock.calls).toEqual([
+      [MENU, "VIEW"],
+      [MENU, "VIEW"],
+    ]);
+    expect(getAccessContext).not.toHaveBeenCalled();
+    expect(db.district.findMany).not.toHaveBeenCalled();
+    expect(db.farmerGroup.findMany).not.toHaveBeenCalled();
+  });
+
+  it("distrik: ALL → semua aktif; BY_DISTRICT → id distrik; BY_FARMER_GROUP → distrik yang punya Lembaga aktif dalam scope", async () => {
+    await getDistrictsForCompleteness();
+    expect(db.district.findMany.mock.calls[0][0].where).toEqual({ isActive: true });
+
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["d-1"] });
+    await getDistrictsForCompleteness();
+    expect(db.district.findMany.mock.calls[1][0].where).toEqual({ isActive: true, id: { in: ["d-1"] } });
+
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["g-1"] });
+    await getDistrictsForCompleteness();
+    expect(db.district.findMany.mock.calls[2][0].where).toEqual({
+      isActive: true,
+      farmerGroups: { some: { id: { in: ["g-1"] }, isActive: true } },
+    });
+  });
+
+  it("Lembaga: filter aktif + scope (BY_DISTRICT → districtId, BY_FARMER_GROUP → id)", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["d-1"] });
+    await getFarmerGroupsForCompleteness();
+    expect(db.farmerGroup.findMany.mock.calls[0][0].where).toEqual({ isActive: true, districtId: { in: ["d-1"] } });
+
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["g-1"] });
+    await getFarmerGroupsForCompleteness();
+    expect(db.farmerGroup.findMany.mock.calls[1][0].where).toEqual({ isActive: true, id: { in: ["g-1"] } });
+    expect(db.farmerGroup.findMany.mock.calls[1][0].select).toEqual({ id: true, name: true, code: true, districtId: true });
   });
 });

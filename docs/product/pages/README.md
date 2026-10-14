@@ -54,7 +54,7 @@ Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, 
 | 2 | Map | `map` | `/admin/map` | 3 | [map/](./map/README.md) |
 | 3 | Master Data | `master-data` | `/admin/master-data` | 7 | [master-data/](./master-data/README.md) |
 | 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 4 | [data-analyst/](./data-analyst/README.md) |
-| 5 | Platform Developer | `platform-developer` | `/admin/platform-developer` | 3 | [platform-developer/](./platform-developer/README.md) |
+| 5 | Platform Developer | `platform-developer` | `/admin/platform-developer` | 4 | [platform-developer/](./platform-developer/README.md) |
 | 6 | Tools | `tools` | `/admin/tools` | 2 | [tools/](./tools/README.md) |
 | 9 | Bantuan | `help` | `/admin/help` | — (tree bab/topik) | [help/](./help/README.md) |
 | 10 | Bulk Upload | `bulk-upload` | `/admin/bulk-upload` | 4 | [bulk-upload/](./bulk-upload/README.md) |
@@ -83,7 +83,7 @@ Beberapa menu induk hanya berfungsi sebagai grup navigasi di sidebar:
 | `/admin/report` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan `/admin/report/farmer`) |
 | `/admin/tools` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan snapshot) |
 | `/admin/map` | Redirect ke anak pertama yang boleh diakses (TD-051; bawaan `/admin/map/parcel`) |
-| `/admin/settings` | Tidak ada `page.tsx` — grup navigasi saja |
+| `/admin/settings` | Redirect ke anak pertama yang boleh diakses (`redirectToFirstAccessibleChild`, TD-051) |
 | `/admin/data-analyst` | Redirect ke anak pertama yang boleh diakses (TD-051; SUPERADMIN → Ringkasan Petani, peran lain → induk Ketersediaan Data → Semua Lembaga); `/admin/data-analyst/availability`, `/admin/settings`, `/admin/dashboard`, `/admin/dashboard/risk`, `/admin/platform-developer` memakai helper yang sama |
 
 ## Kerangka umum halaman admin

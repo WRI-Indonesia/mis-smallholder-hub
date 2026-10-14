@@ -20,7 +20,7 @@ Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan 
 ## Langkah
 
 1. Buka menu **Data Analyst → Ketersediaan Data → Semua Lembaga**. Judul halamannya **Ketersediaan Data**; tab di bawahnya (**Semua Lembaga · Per Lembaga · Produksi**) berpindah antar halaman keluarga ini.
-2. Persempit dengan filter **Kategori**, **Distrik**, dan **Lembaga**. Setiap pilihan yang berlaku tampil sebagai chip di baris **Filter aktif**; klik ✕ pada chip untuk melepasnya, atau **Reset semua** untuk kembali ke tampilan bawaan.
+2. Persempit dengan filter **Kategori**, **Distrik**, dan **Lembaga**. Setiap pilihan yang berlaku tampil sebagai chip di baris **Filter aktif**; klik ✕ pada chip untuk melepasnya, atau tombol **↺ Reset** di ujung baris filter untuk kembali ke tampilan bawaan.
 + Filter, tingkat skor, urutan, tampilan, dan tab Daftar Kerja tersimpan di alamat halaman, jadi tampilannya bisa di-bookmark atau dikirim ke rekan kerja.
 3. Baca **hero** satu baris: cincin **Skor Keseluruhan** dengan label tingkat skornya, satu kalimat jumlah Lembaga · petani · lahan, dan bar **Sebaran Lembaga per tingkat skor** (kritis · perhatian · baik · lengkap) dengan jumlah di dalam tiap segmen.
 + Klik segmen (misalnya merah "kritis") untuk menyaring matriks dan Daftar Kerja ke Lembaga di tingkat itu; klik lagi, atau ✕ pada chip "Tingkat skor", untuk melepasnya.
@@ -45,9 +45,9 @@ Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan 
 
 ## Kalau bermasalah
 
-**Semua skor 0 / halaman kosong** — kemungkinan tidak ada lembaga dalam cakupan akses Anda, atau pilihan filter terlalu sempit. Klik **Reset semua** di baris Filter aktif.
+**Semua skor 0 / halaman kosong** — kemungkinan tidak ada lembaga dalam cakupan akses Anda, atau pilihan filter terlalu sempit. Klik **↺ Reset** di ujung baris filter.
 
-**Radar/matriks hanya menampilkan 10 Lembaga** — itu tampilan bawaan (10 terendah menurut urutan aktif). Klik **Tampilkan n lagi** di bawah grid. Bila jumlahnya tetap sedikit, periksa baris **Filter aktif** (misalnya chip "Tingkat skor" atau "Cari") dan klik ✕ atau **Reset semua** — Reset juga mengosongkan kotak Cari.
+**Radar/matriks hanya menampilkan 10 Lembaga** — itu tampilan bawaan (10 terendah menurut urutan aktif). Klik **Tampilkan n lagi** di bawah grid. Bila jumlahnya tetap sedikit, periksa baris **Filter aktif** (misalnya chip "Tingkat skor" atau "Cari") dan klik ✕, atau **↺ Reset** di ujung baris filter — Reset juga mengosongkan kotak Cari.
 
 **Skor tidak berubah setelah data diperbaiki** — muat ulang halamannya; angka dihitung saat halaman dibuka.
 

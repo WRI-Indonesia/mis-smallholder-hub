@@ -15,11 +15,10 @@ const isSuperAdmin = vi.hoisted(() => vi.fn(async () => false));
 vi.mock("@/lib/rbac", () => ({ hasPermission, isSuperAdmin }));
 
 const getAccessContext = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/access-context", () => ({
+// Helper scope ASLI dari `access-scope` (murni) — BY_DISTRICT ikut teruji, bukan salinan.
+vi.mock("@/lib/access-context", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/access-scope")>("@/lib/access-scope")),
   getAccessContext,
-  farmerAccessFilter: (access: { mode: string; ids: string[] }) => (access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } : {}),
-  farmerGroupAccessFilter: (access: { mode: string; ids: string[] }) => (access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } : {}),
-  farmerRelationAccessFilter: (access: { mode: string; ids: string[] }) => (access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } : {}),
 }));
 vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "user-1" } }) }));
 
@@ -41,7 +40,8 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
-const { getBmpAssessmentDetailView, saveBmpAssessmentDetails, upsertBmpGroupAssessment, importBmpSurveyForms } = await import("@/server/actions/bmp-assessment-detail");
+const { getBmpAssessmentDetailView, saveBmpAssessmentDetails, upsertBmpGroupAssessment, importBmpSurveyForms, getBmpIndicators, getBmpGroupAssessments } =
+  await import("@/server/actions/bmp-assessment-detail");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -269,5 +269,66 @@ describe("importBmpSurveyForms", () => {
     const bad = await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [form("a.xlsx", "f-1")] });
     expect(bad.success).toBe(false);
     expect((bad as { error: string }).error).toMatch(/tidak ada yang tersimpan/);
+  });
+});
+
+describe("baca master indikator & daftar penilaian Lembaga — izin VIEW + scope", () => {
+  const MENU = "master-data-bmp-monev";
+  beforeEach(() => db.bmpGroupAssessment.findMany.mockResolvedValue([]));
+
+  it("getBmpIndicators / getBmpGroupAssessments: VIEW ditolak → throw tanpa DB; izin dicek persis (menu, VIEW)", async () => {
+    hasPermission.mockResolvedValue(false);
+    await expect(getBmpIndicators()).rejects.toThrow(/izin/);
+    expect(hasPermission).toHaveBeenLastCalledWith(MENU, "VIEW");
+    await expect(getBmpGroupAssessments()).rejects.toThrow(/izin/);
+    expect(hasPermission).toHaveBeenLastCalledWith(MENU, "VIEW");
+    expect(hasPermission).toHaveBeenCalledTimes(2);
+    expect(getAccessContext).not.toHaveBeenCalled();
+    expect(db.bmpIndicator.findMany).not.toHaveBeenCalled();
+    expect(db.bmpGroupAssessment.findMany).not.toHaveBeenCalled();
+  });
+
+  it("getBmpIndicators: hanya indikator aktif, urut sortOrder", async () => {
+    const rows = await getBmpIndicators();
+    expect(rows).toEqual(IND);
+    const arg = db.bmpIndicator.findMany.mock.calls[0][0];
+    expect(arg.where).toEqual({ isActive: true });
+    expect(arg.orderBy).toEqual({ sortOrder: "asc" });
+  });
+
+  it("getBmpGroupAssessments: penilaian & Lembaga aktif, scope Lembaga lewat AND (BY_FARMER_GROUP & BY_DISTRICT)", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["g-1"] });
+    await getBmpGroupAssessments();
+    expect(db.bmpGroupAssessment.findMany.mock.calls[0][0].where).toEqual({
+      isActive: true,
+      farmerGroup: { isActive: true, AND: [{ id: { in: ["g-1"] } }] },
+    });
+
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["d-1"] });
+    await getBmpGroupAssessments();
+    expect(db.bmpGroupAssessment.findMany.mock.calls[1][0].where).toEqual({
+      isActive: true,
+      farmerGroup: { isActive: true, AND: [{ districtId: { in: ["d-1"] } }] },
+    });
+    // Rincian nonaktif tak ikut terbawa ke form.
+    expect(db.bmpGroupAssessment.findMany.mock.calls[1][0].select.details.where).toEqual({ isActive: true });
+  });
+
+  it("getBmpGroupAssessments: baris dipetakan dengan nama Lembaga & rincian", async () => {
+    db.bmpGroupAssessment.findMany.mockResolvedValue([
+      {
+        id: "ga-1", farmerGroupId: "g-1", surveyYear: 2026, surveyDate: null, assessor: "Fasilitator", notes: null,
+        farmerGroup: { name: "Lembaga A" },
+        details: [{ indicatorId: "l1", score: 2, weightUsed: 0.7, notes: null }],
+      },
+    ]);
+    const rows = await getBmpGroupAssessments();
+    expect(rows[0]).toMatchObject({
+      id: "ga-1",
+      farmerGroupId: "g-1",
+      farmerGroupName: "Lembaga A",
+      surveyYear: 2026,
+      details: [{ indicatorId: "l1", score: 2, weightUsed: 0.7, notes: null }],
+    });
   });
 });

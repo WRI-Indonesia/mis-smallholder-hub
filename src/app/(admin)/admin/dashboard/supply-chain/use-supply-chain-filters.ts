@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useUrlFilters } from "@/hooks/use-url-filters";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import {
   GROUP_CATEGORY_LABEL,
   UL_FILTER_LABEL,
@@ -18,6 +19,12 @@ import {
 export const SC_FILTER_PARAMS = ["distrik", "kategori", "lembaga", "agen", "ramp", "mill", "ul", "tahun"] as const;
 export type ScFilterParam = (typeof SC_FILTER_PARAMS)[number];
 type Patch = Partial<Record<ScFilterParam, string | null>>;
+/**
+ * Tampilan bawaan (#427): semua filter lepas & Tahun = tahun terbaru — semuanya =
+ * kunci tidak ada di URL (`values.tahun` null saat tahun terbaru). Pembanding
+ * tombol Reset sekaligus isi reset; Reset kini ikut mengembalikan Tahun.
+ */
+const SC_FILTER_DEFAULTS = Object.fromEntries(SC_FILTER_PARAMS.map((k) => [k, null])) as Record<ScFilterParam, null>;
 
 /**
  * Satu sumber state filter untuk Dashboard & Peta Rantai Pasok: dibaca dari
@@ -64,16 +71,20 @@ export function useSupplyChainFilters(view: SupplyChainView) {
     },
     [setMany],
   );
-  const reset = useCallback(() => setMany(Object.fromEntries(SC_FILTER_PARAMS.filter((k) => k !== "tahun").map((k) => [k, null]))), [setMany]);
+  const reset = useCallback(() => setMany(SC_FILTER_DEFAULTS), [setMany]);
 
   const values: Record<ScFilterParam, string | null> = {
     distrik: district, kategori: category, lembaga: groupCode, agen: collectorId, ramp: rampId, mill: millId, ul,
     tahun: year != null && year !== view.years[0] ? String(year) : null,
   };
   const query = new URLSearchParams(Object.entries(values).filter((e): e is [string, string] => e[1] != null)).toString();
-  const hasFilter = !!(district || category || groupCode || collectorId || rampId || millId || ul);
+  // Termasuk Tahun ≠ terbaru (#427) — Reset tampil & mengembalikannya.
+  const hasFilter = hasActiveFilters(values, SC_FILTER_DEFAULTS);
+  // Penanda "Filter aktif" di panel Peta: hanya filter entitas — Tahun adalah
+  // periode tampilan, bukan saringan (makna penanda sebelum #427).
+  const hasEntityFilter = hasActiveFilters({ ...values, tahun: null }, SC_FILTER_DEFAULTS);
 
-  return { district, category, year, filter, baseRecords, records, options, districtOptions, offtakers, millsById, update, reset, hasFilter, query };
+  return { district, category, year, filter, baseRecords, records, options, districtOptions, offtakers, millsById, update, reset, hasFilter, hasEntityFilter, query };
 }
 
 export type SupplyChainFilterState = ReturnType<typeof useSupplyChainFilters>;

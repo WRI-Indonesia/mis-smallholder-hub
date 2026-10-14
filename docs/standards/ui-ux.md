@@ -73,6 +73,14 @@ Data pribadi petani **wajib disensor di semua tampilan layar** via helper `src/l
 
 - **Wajib menggunakan Combobox**: Untuk mempermudah pencarian dan penyaringan data di semua halaman list master data (terutama data Petani) atau alur lainnya, semua komponen filter/dropdown **Lembaga Petani** wajib menggunakan komponen **searchable Combobox** (kombinasi Popover & Command Shadcn UI) dengan kemampuan pencarian teks, dan tidak diperbolehkan menggunakan dropdown Select box standar.
 
+### Tombol Reset Filter (#427, keputusan owner 2026-10-12)
+
+- **Satu bentuk:** `ResetFiltersButton` (`src/components/shared/reset-filters-button.tsx`) — tombol ghost **↺ Reset** di **ujung bar filter**, label selalu "Reset". Tampil **hanya** saat ada filter yang berbeda dari bawaan; hitung dengan `hasActiveFilters(state, BAWAAN)` (`src/lib/filter-reset.ts`) terhadap **satu** objek bawaan yang juga dipakai saat inisialisasi state.
+- **Semantik:** kembali ke tampilan saat halaman pertama dibuka — Tahun ke tahun bawaan halaman (bukan "Semua"), Status ke bawaan (Aktif di daftar Master Data), Urut ke bawaan, kotak **Cari dikosongkan** (DataTable: teruskan `search`/`onSearchChange`). Parameter **wajib** laporan (mis. Lembaga di Laporan Lahan) tidak ikut di-reset; toggle tampilan (tab, mode grafik, kolom) bukan filter.
+- **Cakupan:** wajib di halaman dengan ≥ 2 filter opsional. Halaman yang filternya parameter wajib (Report Petani/Produksi/KT Detail/Patok/Pelatihan, Data Completeness, Peta Lahan, Peta BMP) tidak memakainya.
+- **Chip filter aktif** (Ketersediaan Data, Dashboard Rantai Pasok) boleh tetap ada untuk ✕ per filter, tetapi reset-semua hanya lewat tombol di ujung bar — tidak ada "Reset semua"/"Hapus semua" kedua.
+- Filter yang datang dari URL (tautan antarhalaman) **wajib terlihat** di kontrol filternya dan bisa di-reset — jangan menyaring di server dari query tanpa menampilkannya.
+
 ## PDF (jsPDF) — glyph & verifikasi
 
 - Font bawaan jsPDF (Helvetica/Times/Courier) ber-encoding **WinAnsi**. Satu karakter di luar WinAnsi (`≥ ≤ → ✓ ✗ ≈`, emoji, aksara non-Latin) membuat jsPDF menulis **seluruh string** sebagai UTF-16 → tercetak sampah (`Selisih Luas "e 0,50 Ha`, temuan #2 QA v1.7.0). Teks layar boleh tetap memakai simbol; petakan di **titik render PDF** dengan `toWinAnsiText` (`src/lib/pdf-winansi.ts`: `≥`→`>=`, `→`→`->`, sisanya `?`). Diterapkan di Laporan Lahan (metadata, filter/ringkasan, tabel, label peta, catatan kaki) dan eksportir bersama `buildPDF` (`src/lib/pdf.ts` — judul, metadata, tajuk & sel tabel report Petani/KT/Pelatihan/Produksi); generator lain menyusul (TD-061). PDF ber-font tertanam (Acumin: Fire Alert, Profil Petani) tidak terkena.

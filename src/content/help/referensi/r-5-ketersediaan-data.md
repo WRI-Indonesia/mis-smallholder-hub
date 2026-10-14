@@ -27,7 +27,7 @@ Satu angka 0–100 per Lembaga Petani, dipakai sama persis oleh tiga tempat: hal
 
 **Pelatihan** — rata-rata per petani dari proporsi paket wajib yang pernah diikuti (kehadiran pada aktivitas Lembaga itu; nilai pre/post-test tidak memengaruhi skor, hanya dicatat sebagai anomali).
 
-**Produksi** — persentase petani yang punya minimal satu record produksi. Kebaruan (tidak ada record ≥ 3 bulan terakhir) dan lahan non-PSR tanpa produksi dicatat sebagai **anomali**, tidak mengubah skor. Record berlabel "Estimasi" ditampilkan sebagai kartu informatif.
+**Produksi** — persentase petani yang punya minimal satu record produksi. Kebaruan (tidak ada record ≥ 3 bulan terakhir) dan lahan non-PSR tanpa produksi dicatat sebagai **anomali**, tidak mengubah skor.
 
 ## Jenis check
 
@@ -79,4 +79,4 @@ Halaman **Ketersediaan Data → Produksi** tidak memakai Index di atas. Sel Lemb
 
 + **Bulan ber-data** (kolom "Bulan") = aturan penyetahunan produktivitas yang dipakai Peta BMP dan Detail Lembaga: sebuah bulan dihitung ber-data bila total produksinya > 0 ton (dibulatkan 2 desimal) **atau** ada record yang ber-ID Lahan. Jadi bulan yang hanya berisi record 0 kg tanpa ID Lahan tidak dihitung, walau selnya tetap tampil berwarna karena "ada record".
 + **Jeda** = selisih bulan dari periode terakhir ke bulan berjalan; ≥ 3 bulan = basi — ambang yang sama dengan anomali *produksi basi* di atas.
-+ Record berlabel **Estimasi** (kolom catatan berisi kata "estimasi", tidak peka huruf besar) dan record **0 kg** dihitung sebagai penanda, bukan pengurang persen; record **tanpa ID Lahan** tidak masuk pembilang dan ditampilkan terpisah.
++ Record **0 kg** dihitung sebagai penanda, bukan pengurang persen; record **tanpa ID Lahan** tidak masuk pembilang dan ditampilkan terpisah.

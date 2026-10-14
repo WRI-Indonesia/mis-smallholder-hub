@@ -49,7 +49,7 @@ Tampilkan dulu, jangan langsung eksekusi:
 1. Draft issue baru (judul + body) untuk perubahan tanpa issue dari Tahap 0.
 2. Daftar issue yang layak ditutup + alasan + bukti recheck-nya.
 
-Setelah owner menyetujui: buat/tutup issue, tulis **retro 6 bagian collapsible** (§Issue Close — Retrospektif wajib), dan tulis **kasus uji manual** ke `docs/qa/<versi berikutnya>/02-test-cases.md` (§Issue Close — Kasus uji manual) selagi masih hangat.
+Setelah owner menyetujui: buat/tutup issue (saat menutup, cabut label `status:*`-nya — `gh issue edit <n> --remove-label status:todo,status:in-progress,status:decision`; kanban Daftar Issue #429 membaca label ini), tulis **retro 6 bagian collapsible** (§Issue Close — Retrospektif wajib), dan tulis **kasus uji manual** ke `docs/qa/<versi berikutnya>/02-test-cases.md` (§Issue Close — Kasus uji manual) selagi masih hangat.
 
 ## Tahap 8 — Insight & improvement
 

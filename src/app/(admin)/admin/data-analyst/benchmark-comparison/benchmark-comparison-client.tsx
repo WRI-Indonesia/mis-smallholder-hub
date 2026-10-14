@@ -22,7 +22,9 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import { useUrlFilters } from "@/hooks/use-url-filters";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import { applySavedBenchmark, BENCHMARK_METRICS } from "@/lib/benchmark-comparison";
 import type { ReferenceBenchmarkInput } from "@/validations/reference-benchmark.schema";
 import type {
@@ -102,6 +104,11 @@ function problemScore(row: BenchmarkComparisonRow): [number, number] {
   return [row.diffSummary.length, maxRel];
 }
 
+// Tampilan bawaan = kunci URL filter dihapus (Semua distrik, urut kode, semua
+// lembaga, Cari kosong) — dipakai tombol Reset (#427). Tab Ringkas/Detail
+// (`mode`) adalah tampilan, bukan filter, jadi tidak ikut di-reset.
+const DEFAULT_FILTERS = { distrik: null, urut: null, selisih: null, q: null } as const;
+
 export function BenchmarkComparisonClient({ view, canEdit, canExport }: Props) {
   const { get, setMany } = useUrlFilters();
   const [editing, setEditing] = useState<BenchmarkComparisonRow | null>(null);
@@ -132,6 +139,20 @@ export function BenchmarkComparisonClient({ view, canEdit, canExport }: Props) {
     const timer = setTimeout(() => setMany({ q: search.trim() || null }), 400);
     return () => clearTimeout(timer);
   }, [search, setMany]);
+
+  const filtersActive = hasActiveFilters(
+    {
+      distrik: districtFilter === "all" ? null : districtFilter,
+      urut: sortBy === "kode" ? null : sortBy,
+      selisih: onlyDiff ? "1" : null,
+      q: search,
+    },
+    DEFAULT_FILTERS,
+  );
+  const resetFilters = () => {
+    setSearch(DEFAULT_FILTERS.q ?? "");
+    setMany(DEFAULT_FILTERS);
+  };
 
   const filteredSections = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -282,6 +303,8 @@ export function BenchmarkComparisonClient({ view, canEdit, canExport }: Props) {
             className="pl-8"
           />
         </div>
+
+        <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
       </div>
 
       {mode === "ringkas" && (

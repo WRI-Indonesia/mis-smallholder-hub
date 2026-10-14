@@ -1,6 +1,6 @@
 import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
-import { getFarmerGroupsForMapping } from "@/server/actions/bulk-upload";
+import { getFarmerGroupsForMapping } from "@/server/actions/bulk-upload-farmer";
 import { BulkUploadClient } from "./bulk-upload-client";
 
 export default async function FarmerBulkUploadPage() {

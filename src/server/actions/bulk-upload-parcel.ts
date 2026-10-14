@@ -172,7 +172,7 @@ export async function bulkCreateLandParcels(
             // Set old active record to inactive
             await tx.landParcel.update({
               where: { id: duplicate.id },
-              data: { isActive: false },
+              data: { isActive: false, modifiedBy: userId },
             });
             finalRevision = duplicate.revision + 1;
           }

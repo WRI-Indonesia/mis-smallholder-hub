@@ -50,4 +50,4 @@ Dokumen grup Platform Developer yang tetap di folder ini: [metrics.md](metrics.m
 
 ## Catatan route induk
 
-Tidak ada `page.tsx` untuk route induk `/admin/data-analyst` — hanya `src/app/(admin)/admin/data-analyst/layout.tsx` yang menetapkan `metadata.title = "Data Analyst"`. Menu induk hanya berfungsi sebagai grup pada sidebar.
+`src/app/(admin)/admin/data-analyst/page.tsx` me-redirect ke anak pertama yang boleh diakses (`redirectToFirstAccessibleChild`, TD-051); `layout.tsx` menetapkan `metadata.title = "Data Analyst"`. Di sidebar menu induk berfungsi sebagai grup.

@@ -18,6 +18,7 @@ export function notifyFilter(label: string, description = "Kartu, diagram, dan t
 /**
  * Chip filter aktif — satu tempat untuk seluruh halaman (dulu hanya di kartu
  * Aliran TBS, padahal filter memengaruhi kartu angka dan tabel Mill juga).
+ * Lepas semua = tombol Reset standar di ujung bar filter (#427), bukan di sini.
  */
 export function SupplyChainFilterChips({ f, view, className }: { f: SupplyChainFilterState; view: SupplyChainView; className?: string }) {
   const { offtakers, millsById } = f;
@@ -53,11 +54,6 @@ export function SupplyChainFilterChips({ f, view, className }: { f: SupplyChainF
           </button>
         </span>
       ))}
-      {chips.length > 1 && (
-        <button type="button" onClick={f.reset} className="ml-1 text-primary underline-offset-2 hover:underline">
-          Hapus semua
-        </button>
-      )}
     </div>
   );
 }

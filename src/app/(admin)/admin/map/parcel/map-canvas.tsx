@@ -34,13 +34,9 @@ import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/ser
 import type { MapData, MapMarkerTuple, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
 import { LAND_MARKER_CONDITION_LABELS, labelOf } from "@/lib/land-marker";
 import type { LayerVisibility, LayerZoomTarget } from "./map-control-panel";
-import {
-  MAP_OVERLAYS,
-  overlayTileUrl,
-  geojsonBounds,
-  type OverlayState,
-  type CustomLayer,
-} from "./map-overlays";
+import { geojsonBounds, type CustomLayer } from "./map-custom-layers";
+import { OVERLAY_BOTTOM_LAYER_ID, type OverlayState } from "@/lib/map-overlays";
+import { MapOverlaySources } from "@/components/shared/map-overlay-picker";
 import {
   HOTSPOT_CONF_COLORS,
   formatWib,
@@ -594,6 +590,12 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           console.warn("Map source error:", e.error?.message ?? e.error);
         }}
       >
+        {/* Peta lainnya (raster overlay, #433) — di bawah label basemap & data lahan
+            (data lahan juga disisipkan sebelum labelBeforeId, jadi tetap di atas overlay).
+            Dipasang sebelum Terrain agar hillshade (beforeId = overlay terbawah) selalu
+            menemukan jangkarnya, juga saat layer dipasang ulang sesudah ganti basemap. */}
+        <MapOverlaySources overlays={overlays} beforeId={labelBeforeId} />
+
         {/* Terrain 3D: DEM (raster-dem) untuk `terrain` + hillshade tipis di atas basemap,
             di bawah semua overlay/data. Dipasang hanya saat aktif. */}
         {terrainOn && (
@@ -615,84 +617,11 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
               <Layer
                 id="terrain-hillshade"
                 type="hillshade"
-                beforeId={`overlay-${MAP_OVERLAYS[MAP_OVERLAYS.length - 1].key}-layer`}
+                beforeId={OVERLAY_BOTTOM_LAYER_ID}
                 paint={{ "hillshade-exaggeration": 0.35 }}
               />
             </Source>
           </>
-        )}
-
-        {/* Peta lainnya (raster overlay) — below farmer data layers.
-            Rendered in reverse so the first entry in MAP_OVERLAYS ends up on top. */}
-        {[...MAP_OVERLAYS].reverse().map((o) => (
-          <Source
-            key={o.key}
-            id={`overlay-${o.key}`}
-            type="raster"
-            tiles={[overlayTileUrl(o.key)]}
-            tileSize={256}
-            attribution={o.source}
-          >
-            <Layer
-              id={`overlay-${o.key}-layer`}
-              type="raster"
-              layout={vis(!!overlays.visible[o.key])}
-              paint={{ "raster-opacity": overlays.opacity }}
-            />
-          </Source>
-        ))}
-
-        {/* GIS tambahan dari user ("Tambah Data GIS Lain") — di atas overlay referensi,
-            di bawah data petani. WMS → raster; vektor → fill+line+circle. */}
-        {customLayers.map((l) =>
-          l.kind === "wms" ? (
-            <Source
-              key={l.id}
-              id={`custom-${l.id}`}
-              type="raster"
-              tiles={[l.tileUrl]}
-              tileSize={256}
-            >
-              <Layer id={`custom-${l.id}-raster`} type="raster" layout={vis(l.visible)} />
-            </Source>
-          ) : (
-            <Source key={l.id} id={`custom-${l.id}`} type="geojson" data={l.data}>
-              {/* Filter per tipe geometri: tanpa ini layer circle menggambar
-                  lingkaran di SETIAP vertex polygon/garis dan menutupi fill-nya. */}
-              <Layer
-                id={`custom-${l.id}-fill`}
-                type="fill"
-                beforeId={labelBeforeId}
-                filter={["==", ["geometry-type"], "Polygon"]}
-                layout={vis(l.visible)}
-                paint={{
-                  "fill-color": customLayerColor(l),
-                  // Symbology butuh fill lebih pekat agar kelas warnanya terbaca.
-                  "fill-opacity": l.symbology ? 0.5 : 0.25,
-                }}
-              />
-              <Layer
-                id={`custom-${l.id}-line`}
-                type="line"
-                beforeId={labelBeforeId}
-                filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "LineString"]]}
-                layout={vis(l.visible)}
-                paint={{ "line-color": customLayerColor(l), "line-width": 1.5 }}
-              />
-              <Layer
-                id={`custom-${l.id}-circle`}
-                type="circle"
-                filter={["==", ["geometry-type"], "Point"]}
-                layout={vis(l.visible)}
-                paint={{
-                  "circle-color": customLayerColor(l),
-                  "circle-radius": 4,
-                  "circle-stroke-width": 1,
-                  "circle-stroke-color": "#ffffff",
-                }}
-              />
-            </Source>
-          )
         )}
 
         {/* Area lahan (polygon) — bottom */}
@@ -751,6 +680,62 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             paint={{ "line-color": "#ca8a04", "line-width": 3.5 }}
           />
         </Source>
+
+        {/* GIS tambahan dari user ("Tambah Data GIS Lain") — di atas overlay referensi,
+            di bawah data petani: dijangkarkan ke `parcel-fill` (selalu terpasang). Blok ini
+            sengaja ditulis SESUDAH sumber area lahan agar saat layer dipasang ulang
+            (ganti basemap) jangkarnya sudah ada. WMS → raster; vektor → fill+line+circle. */}
+        {customLayers.map((l) =>
+          l.kind === "wms" ? (
+            <Source
+              key={l.id}
+              id={`custom-${l.id}`}
+              type="raster"
+              tiles={[l.tileUrl]}
+              tileSize={256}
+            >
+              <Layer id={`custom-${l.id}-raster`} type="raster" beforeId="parcel-fill" layout={vis(l.visible)} />
+            </Source>
+          ) : (
+            <Source key={l.id} id={`custom-${l.id}`} type="geojson" data={l.data}>
+              {/* Filter per tipe geometri: tanpa ini layer circle menggambar
+                  lingkaran di SETIAP vertex polygon/garis dan menutupi fill-nya. */}
+              <Layer
+                id={`custom-${l.id}-fill`}
+                type="fill"
+                beforeId="parcel-fill"
+                filter={["==", ["geometry-type"], "Polygon"]}
+                layout={vis(l.visible)}
+                paint={{
+                  "fill-color": customLayerColor(l),
+                  // Symbology butuh fill lebih pekat agar kelas warnanya terbaca.
+                  "fill-opacity": l.symbology ? 0.5 : 0.25,
+                }}
+              />
+              <Layer
+                id={`custom-${l.id}-line`}
+                type="line"
+                beforeId="parcel-fill"
+                filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "LineString"]]}
+                layout={vis(l.visible)}
+                paint={{ "line-color": customLayerColor(l), "line-width": 1.5 }}
+              />
+              <Layer
+                id={`custom-${l.id}-circle`}
+                type="circle"
+                beforeId="parcel-fill"
+                filter={["==", ["geometry-type"], "Point"]}
+                layout={vis(l.visible)}
+                paint={{
+                  "circle-color": customLayerColor(l),
+                  "circle-radius": 4,
+                  "circle-stroke-width": 1,
+                  "circle-stroke-color": "#ffffff",
+                }}
+              />
+            </Source>
+          )
+        )}
 
         {/* Parcel farmer-name labels — only where the name fits inside the polygon */}
         {labelsReady && (

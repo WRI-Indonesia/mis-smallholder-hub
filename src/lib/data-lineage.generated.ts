@@ -13,7 +13,7 @@ export const DATA_LINEAGE: DataLineage = [
       "farmerGroup": "R"
     },
     "modules": [
-      "src/server/actions/bulk-upload.ts"
+      "src/server/actions/bulk-upload-farmer.ts"
     ],
     "dynamicAccess": null
   },
@@ -255,7 +255,6 @@ export const DATA_LINEAGE: DataLineage = [
       "landParcelProgram": "R",
       "landParcelStdb": "R",
       "landStdb": "R",
-      "productionRecord": "R",
       "referenceBenchmark": "R",
       "trainingPackage": "R",
       "tree": "R"
@@ -529,6 +528,13 @@ export const DATA_LINEAGE: DataLineage = [
       "src/server/actions/training.ts",
       "src/server/actions/upload.ts"
     ],
+    "dynamicAccess": null
+  },
+  {
+    "menuKey": "platform-developer-issues",
+    "route": "(admin)/admin/platform-developer/issues",
+    "models": {},
+    "modules": [],
     "dynamicAccess": null
   },
   {

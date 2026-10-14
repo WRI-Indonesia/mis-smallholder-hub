@@ -118,6 +118,13 @@ export interface DataTableProps<T> {
   selectedRowKey?: string | null;
   /** Baris setelah pencarian & urutan (semua halaman) — mis. untuk navigasi Sebelumnya/Berikutnya di luar tabel. */
   onVisibleRowsChange?: (rows: T[]) => void;
+  /**
+   * Pencarian terkendali (#427): isi bila halaman perlu membaca/mengosongkan kotak
+   * Cari dari luar (tombol Reset filter). Tanpa prop ini DataTable memegang
+   * pencariannya sendiri seperti biasa.
+   */
+  search?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 /**
@@ -243,8 +250,15 @@ export function DataTable<T>({
   onRowClick,
   selectedRowKey,
   onVisibleRowsChange,
+  search: controlledSearch,
+  onSearchChange,
 }: DataTableProps<T>) {
-  const [search, setSearch] = useState("");
+  const [uncontrolledSearch, setUncontrolledSearch] = useState("");
+  const search = controlledSearch ?? uncontrolledSearch;
+  const setSearch = (value: string) => {
+    if (controlledSearch === undefined) setUncontrolledSearch(value);
+    onSearchChange?.(value);
+  };
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection>(null);
   const [page, setPage] = useState(0);
@@ -282,9 +296,11 @@ export function DataTable<T>({
   // ─── Search filter ──────────────────────────────────────────────────────
 
   const filteredData = useMemo(() => {
-    if (!search) return data;
+    // Trim seperti `hasActiveFilters` (#427): Cari berisi spasi saja = tanpa pencarian.
+    const query = search.trim();
+    if (!query) return data;
 
-    const lower = search.toLowerCase();
+    const lower = query.toLowerCase();
 
     // Custom search function takes priority
     if (searchFn) {

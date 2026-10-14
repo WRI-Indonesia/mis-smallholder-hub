@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -28,6 +28,9 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
+import { PRODUCTION_FILTER_DEFAULTS, type ProductionListFilters } from "@/lib/production-list-filters";
 
 interface ProductionRecord {
   id: string;
@@ -55,6 +58,8 @@ interface Props {
   districts: DistrictFilterOption[];
   permissions: string[];
   isSuperAdmin: boolean;
+  /** Nilai awal filter dari query URL (#427); tanpa query = bawaan. */
+  initialFilters?: ProductionListFilters;
 }
 
 export function ProductionListClient({
@@ -63,13 +68,46 @@ export function ProductionListClient({
   districts,
   permissions,
   isSuperAdmin,
+  initialFilters = PRODUCTION_FILTER_DEFAULTS,
 }: Props) {
-  const [districtFilter, setDistrictFilter] = useState("all");
-  const [farmerGroupFilter, setFarmerGroupFilter] = useState("all");
-  const [periodFilter, setPeriodFilter] = useState("");
-  const [hasParcelFilter, setHasParcelFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
+  const [districtFilter, setDistrictFilter] = useState(initialFilters.district);
+  const [farmerGroupFilter, setFarmerGroupFilter] = useState(initialFilters.group);
+  const [periodFilter, setPeriodFilter] = useState(initialFilters.period);
+  const [hasParcelFilter, setHasParcelFilter] = useState(initialFilters.hasParcel);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>(initialFilters.status);
+  const [search, setSearch] = useState(initialFilters.search);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Reset (#427) = halaman TANPA query (data selalu dimuat penuh).
+  const filtersActive = hasActiveFilters(
+      {
+        district: districtFilter,
+        group: farmerGroupFilter,
+        period: periodFilter,
+        hasParcel: hasParcelFilter,
+        // Status hanya berlaku (dan tampil) untuk SUPERADMIN — `?status=` di URL
+        // user lain diabaikan matchStatus, jadi jangan memunculkan Reset.
+        status: isSuperAdmin ? statusFilter : PRODUCTION_FILTER_DEFAULTS.status,
+        search,
+      },
+      PRODUCTION_FILTER_DEFAULTS,
+    );
+  function resetFilters() {
+    const d = PRODUCTION_FILTER_DEFAULTS;
+    // Distrik & Lembaga saling bergantung → di-reset bersama.
+    setDistrictFilter(d.district);
+    setFarmerGroupFilter(d.group);
+    setPeriodFilter(d.period);
+    setHasParcelFilter(d.hasParcel);
+    setStatusFilter(d.status);
+    setSearch(d.search);
+    // Buang query tautan lewat router (bukan History API): `key` client = query,
+    // jadi router.refresh() berikutnya (mis. ubah status) pada URL hasil
+    // replaceState me-mount ulang client dan membuang filter yang dipilih setelah
+    // Reset. Remount di sini aman — state-nya memang sudah bawaan.
+    if (window.location.search) router.replace(pathname, { scroll: false });
+  }
 
   const filtered = initialRecords.filter((r) => {
     const matchGroup = farmerGroupFilter === "all" || r.farmer.farmerGroupId === farmerGroupFilter;
@@ -234,6 +272,8 @@ export function ProductionListClient({
       {isSuperAdmin && (
         <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
+
+      <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
     </div>
   );
 
@@ -255,6 +295,8 @@ export function ProductionListClient({
         data={filtered}
         rowKey={(r) => r.id}
         searchPlaceholder="Cari nama petani atau ID petani..."
+        search={search}
+        onSearchChange={setSearch}
         searchFn={(row, query) => {
           return (
             row.farmer.name.toLowerCase().includes(query) ||

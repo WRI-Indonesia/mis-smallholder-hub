@@ -45,7 +45,7 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **PSR** — penanda lahan sedang diremajakan. Tanpa penanda ini, lahan PSR akan terbaca sebagai lahan bermasalah pada analisa ketersediaan data, padahal nol hasil memang wajar selama peremajaan.
 
-**Tahun Tanam** — dasar memperkirakan umur tanaman. Sawit di bawah 4 tahun belum berbuah optimal; di atas 25 tahun hasilnya menurun.
+**Tahun Tanam** — dasar memperkirakan umur tanaman. Sawit di bawah 3 tahun belum berbuah optimal; di atas 25 tahun hasilnya menurun.
 
 **Kelompok Tani** — kelompok di bawah Lembaga Petani. Untuk sementara disimpan **per lahan**, belum sebagai tabel tersendiri. Tulis namanya persis sama untuk semua lahan di kelompok yang sama — beda satu spasi akan terhitung sebagai dua kelompok berbeda.
 
@@ -53,7 +53,7 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **Sepadan** (hanya di detail lahan dan Profil Lahan PDF, bukan kolom tabel) — dengan siapa atau apa lahan berbatasan di sisi Utara, Timur, Selatan, dan Barat, ditulis bebas seperti pada SKT: "Lahan Pak Budi", "Jalan desa", "Sungai", "PT X". Ini catatan lapangan, bukan hasil hitungan peta — jadi bisa menyebut jalan, sungai, atau lahan yang belum terdaftar di MIS. Berbeda dengan *lahan tetangga* yang dihitung dari poligon dan hanya memuat lahan yang ada di MIS.
 
-**Revisi** — bertambah otomatis setiap data lahan diperbarui. Jejak riwayat, bukan kolom yang perlu diisi.
+**Revisi** — bertambah otomatis setiap data lahan diperbarui (edit form atau unggah ulang shapefile). Penghitung perubahan, bukan kolom yang perlu diisi.
 
 ## Tombol
 

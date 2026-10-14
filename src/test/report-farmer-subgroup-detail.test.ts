@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
+import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-farmer-subgroup-detail";
 
 const P = (o: Partial<KtDetailRawParcel> & { farmerId: string }): KtDetailRawParcel => ({
   farmerCode: `KODE-${o.farmerId}`,

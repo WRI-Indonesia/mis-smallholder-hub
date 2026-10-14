@@ -108,11 +108,6 @@ export function programTargetPlanError(records: ProgramTargetRecord[]): string |
   return null;
 }
 
-export function programTargetRowTotal(grid: ProgramTargetGrid, indicator: ProgramTargetIndicatorCode): number {
-  const annual = grid.annual[indicator] ?? {};
-  return (grid.baseline[indicator] ?? 0) + grid.years.reduce((s, y) => s + (annual[y] ?? 0), 0);
-}
-
 export interface ContractCell {
   target: number | null;
   actual: number;

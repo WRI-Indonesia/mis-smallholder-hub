@@ -11,10 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import { DashboardSummaryCards } from "./summary-cards";
 import { ktStatsForYear, sumKelompokTaniStats } from "@/lib/dashboard-aggregation";
 import { formatCertStatus } from "@/lib/farmer-group-labels";
 import { formatArea, formatGeneratedAt } from "@/lib/format";
+import { hasActiveFilters } from "@/lib/filter-reset";
 import type { DashboardSnapshotView, KTDetails } from "@/types/dashboard";
 
 const DashboardMap = dynamic(() => import("./dashboard-map").then((m) => m.DashboardMap), {
@@ -37,6 +39,10 @@ const PACKAGE_LABELS: { key: keyof KTDetails["trainingCoverage"]; label: string 
 
 const formatAreaHa = (n: number) => `${formatArea(n)} ha`;
 
+// Tampilan bawaan saat halaman dibuka — dipakai untuk inisialisasi state dan
+// tombol Reset (#427). Tahun bawaan = Semua Tahun (Tahun Bergabung).
+const DEFAULT_FILTERS = { districtId: null, joinedYear: null, selectedKtId: null } as const;
+
 // Badge sertifikasi di bawah kode Lembaga pada info panel (#169) — hanya tampil
 // bila statusnya ada; CERTIFIED = filled, PLANNED = outline.
 function CertBadge({ scheme, year, status }: { scheme: string; year?: number | null; status?: string | null }) {
@@ -49,9 +55,9 @@ function CertBadge({ scheme, year, status }: { scheme: string; year?: number | n
 }
 
 export function DashboardClient({ initialView, helpSlot }: Props) {
-  const [districtId, setDistrictId] = useState<string | null>(null);
-  const [joinedYear, setJoinedYear] = useState<number | null>(null);
-  const [selectedKtId, setSelectedKtId] = useState<string | null>(null);
+  const [districtId, setDistrictId] = useState<string | null>(DEFAULT_FILTERS.districtId);
+  const [joinedYear, setJoinedYear] = useState<number | null>(DEFAULT_FILTERS.joinedYear);
+  const [selectedKtId, setSelectedKtId] = useState<string | null>(DEFAULT_FILTERS.selectedKtId);
 
   const [districtOpen, setDistrictOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -90,6 +96,13 @@ export function DashboardClient({ initialView, helpSlot }: Props) {
   const displayedStats = sumKelompokTaniStats(selectedKt ? [selectedKt] : activeKts);
 
   const selectedDistrict = districtOptions.find((d) => d.id === districtId);
+
+  const filtersActive = hasActiveFilters({ districtId, joinedYear, selectedKtId }, DEFAULT_FILTERS);
+  const resetFilters = () => {
+    setDistrictId(DEFAULT_FILTERS.districtId);
+    setJoinedYear(DEFAULT_FILTERS.joinedYear);
+    setSelectedKtId(DEFAULT_FILTERS.selectedKtId);
+  };
 
   return (
     <div className="space-y-6">
@@ -215,6 +228,8 @@ export function DashboardClient({ initialView, helpSlot }: Props) {
                 ))}
               </SelectContent>
             </Select>
+
+            <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
           </div>
         )}
       </div>

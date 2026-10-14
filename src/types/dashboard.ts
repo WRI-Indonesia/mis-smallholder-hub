@@ -187,27 +187,15 @@ export interface BmpGroupEntry {
   /** Breakdown per tahun (key = tahun) untuk filter Tahun global — pola byYear Main Dashboard. */
   byYear: Record<string, BmpYearStats>;
   /**
-   * Subset "Full 1 Tahun": hanya record dari LAHAN yang punya data di SEMUA
-   * 12 bulan (Jan–Des) tahun ybs — tahun berjalan belum bisa full sampai
-   * Desember terisi. Record tanpa lahan tidak pernah masuk subset ini.
-   */
-  monthlyFull: Record<string, BmpMonthlyStat>;
-  byYearFull: Record<string, BmpYearStats>;
-  /**
    * Breakdown per tahun × bucket umur tanaman (#191) — umur dihitung pada
    * tahun produksinya (tahun produksi − tahun tanam). Hanya record ber-lahan;
    * lahan tanpa tahun tanam masuk bucket "unknown". Snapshot lama belum
    * memuat field ini → {} (analisa umur kosong sampai snapshot di-generate ulang).
    */
   byYearAge: Record<string, Record<string, BmpAgeBucketStat>>;
-  /** Subset "Full 1 Tahun" dari byYearAge. */
-  byYearAgeFull: Record<string, Record<string, BmpAgeBucketStat>>;
   availability: BmpAvailabilityCounts;
   totals: BmpGroupTotals;
 }
-
-/** Mode kelengkapan data pada slicing dashboard BMP. */
-export type BmpDataMode = "all" | "full";
 
 export interface BmpSnapshotData {
   groups: BmpGroupEntry[];

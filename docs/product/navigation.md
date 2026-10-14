@@ -32,7 +32,7 @@ Legenda status: ✅ Done · 🟠 Partial · 🔲 Planned · 🔴 Blocked — def
 | Publik | `/` (Home ✅), `/community` 🔲, `/knowledge-management` 🔲 | — |
 | Autentikasi | `/login` ✅ · `/api/auth/[...nextauth]` | NextAuth (Credentials) |
 | Admin | `/admin/**` | `src/middleware.ts` (sesi) → `requirePermission(menuKey)` per halaman |
-| Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) · `/api/map-basemap` (latar peta cetak Laporan Lahan, #318) | `hasPermission(menuKey, "VIEW")` per endpoint (overlay: `map-parcel`; hotspot: `map-parcel` atau `dashboard-risk-fire`; basemap: `report-land-parcel` — **dimemo per pengguna ≤ 60 dtk** karena satu ekspor = 1.000–4.000 tile; pencabutan izin berlaku paling lambat 60 dtk, perubahan role langsung, #320), same-origin |
+| Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) · `/api/map-basemap` (latar peta cetak Laporan Lahan, #318) | `hasPermission(menuKey, "VIEW")` per endpoint (overlay: `map-parcel` atau `map-supply-chain`, dimemo per pengguna ≤ 60 dtk, #433; hotspot: `map-parcel` atau `dashboard-risk-fire`; basemap: `report-land-parcel` — **dimemo per pengguna ≤ 60 dtk** karena satu ekspor = 1.000–4.000 tile; pencabutan izin berlaku paling lambat 60 dtk, perubahan role langsung, #320), same-origin |
 
 Semua akses data lewat **Server Actions** (`src/server/actions/`) dengan 3 lapis pengaman: permission menu → access context → soft delete. Tidak ada REST API selain NextAuth & proxy tile.
 
@@ -55,14 +55,14 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 ## Struktur Menu Sidebar
 
 <!-- GENERATED:menu-summary — npm run build:docs; jangan sunting tangan -->
-**10 menu top-level · 40 sub menu · 4 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
+**10 menu top-level · 41 sub menu · 4 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
 
 - **Dashboard** (`dashboard`, order 0) — 6 sub menu + Fire Alert (level 3)
 - **Report** (`report`, order 1) — 7 sub menu
 - **Map** (`map`, order 2) — 3 sub menu
 - **Master Data** (`master-data`, order 3) — 7 sub menu
 - **Data Analyst** (`data-analyst`, order 4) — 4 sub menu + Semua Lembaga, Per Lembaga, Produksi (level 3)
-- **Platform Developer** (`platform-developer`, order 5) — 3 sub menu
+- **Platform Developer** (`platform-developer`, order 5) — 4 sub menu
 - **Tools** (`tools`, order 6) — 2 sub menu
 - **Bantuan** (`help`, order 9) — tanpa sub menu
 - **Bulk Upload** (`bulk-upload`, order 10) — 4 sub menu
@@ -127,7 +127,7 @@ Tidak direncanakan: Lembaga Petani/KT & Region (BULK-02) — issue #69/#70 ditut
 | ✅ [Ringkasan Petani](pages/data-analyst/farmer-summary.md) | `data-analyst-farmer-summary` | DA-01 (#103) | Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel |
 | ✅ Ketersediaan Data → [Per Lembaga](pages/data-analyst/data-completeness.md) (halaman Ketersediaan Data — Per Lembaga; anak level 3 sejak #416) | `data-analyst-data-completeness` | DA-02 (#118, #122, #352) | Index Ketersediaan Data (registri check, bobot tampil) + cakupan modul informatif + 5 section anomali (Profil KT, Petani, Lahan, Pelatihan, Produksi) berdaftar kerja bertautan & anomali sistemik dilipat + Excel multi-sheet; `?lembaga=` |
 | ✅ Ketersediaan Data → [Semua Lembaga](pages/data-analyst/data-availability.md) (halaman Ketersediaan Data — Semua Lembaga; anak level 3 sejak #416) | `data-analyst-data-availability` | DA-03 (#193, #352) | Roll-up skor DA-02 lintas Lembaga: 6 KPI + matriks Lembaga×domain / Lembaga×modul + bar chart terendah-dulu + panel anomali (per entitas vs sistemik) + Excel; deep link ke DA-02; live query, tanpa DONOR |
-| 🟠 Ketersediaan Data → [Produksi](pages/data-analyst/availability-production.md) (kode di `mvp`, staging + seed menu ✅, TC-416 Pass 2026-10-11; prod saat rilis v1.7.0) | `data-analyst-availability-production` (induk `data-analyst-availability`) | DA-08 (#415, #416) | Kalender cakupan produksi Lembaga × bulan: tabel pohon Lembaga → petani → lahan (lazy), sel = % lahan aktif non-PSR melapor, pilih tahun, ringkasan rentang penuh (`dataMonthsPerYear`), penanda Estimasi/0 kg/tanpa persil/basi, Excel 2 sheet; live, tanpa DONOR |
+| 🟠 Ketersediaan Data → [Produksi](pages/data-analyst/availability-production.md) (kode di `mvp`, staging + seed menu ✅, TC-416 Pass 2026-10-11; prod saat rilis v1.7.0) | `data-analyst-availability-production` (induk `data-analyst-availability`) | DA-08 (#415, #416) | Kalender cakupan produksi Lembaga × bulan: tabel pohon Lembaga → petani → lahan (lazy), sel = % lahan aktif non-PSR melapor, pilih tahun, ringkasan rentang penuh (`dataMonthsPerYear`), penanda 0 kg/tanpa persil/basi (Estimasi dibuang v1.8.0), Excel 2 sheet; live, tanpa DONOR |
 | 🟠 [Tumpang Tindih Lahan](pages/data-analyst/parcel-overlap.md) | `data-analyst-parcel-overlap` | #317 Fase 2 (tab Tumpang Tindih) | Self-join `ST_Intersects` atas `LandParcel.geom` (GiST), live; split view tabel + peta preview; filter %/jenis/Distrik/Lembaga/label di URL; Duplikat vs Tercakup; Excel + SHP/GeoJSON irisan; scope minimal satu sisi; tanpa DONOR. Tab Luar Boundary/Selisih Luas + guard upload + layer peta belum |
 | ✅ [Komparasi Data Acuan](pages/data-analyst/benchmark-comparison.md) | `data-analyst-benchmark-comparison` | DA-06 (#243) | Angka acuan manual per Lembaga vs data MIS |
 
@@ -140,6 +140,7 @@ Grup tooling internal (2026-10-07); route & key tetap di segmen lama. Katalog: [
 | ✅ [Metrik Rilis](pages/data-analyst/metrics.md) | `dashboard-metrics` | — | Roadmap %, KPI & RVS per rilis dari `docs/project/metrics.md` + Detail Roadmap (route `/admin/dashboard/metrics`) |
 | ✅ [Peta Data & Skema](pages/data-analyst/data-map.md) | `data-analyst-data-map` | DA-07 | Lineage menu → entitas + skema dari artefak `*.generated.ts` |
 | ✅ [Rencana Pengembangan](pages/data-analyst/sprint.md) | `data-analyst-sprint` | #378 · #389 (kanban) · per rilis 2026-09-30 | Rencana pengembangan **per rilis** dari `docs/project/sprint.md` (di-bundle saat build, pola Metrik Rilis; dulu Sprint Mingguan): strip ringkasan (umur dokumen, rilis yang dikejar, keputusan menunggu) + tab Rilis (pemilih rilis belum tuntas + combobox Riwayat, progres poin S/M/L, papan kanban 4 kolom) + tab Analisa (kartu ringkasan, beban & kapasitas per rilis, fokus per kategori, keputusan menunggu owner, carry-over) + tab Semua Issue (satu baris per issue dari tabel Rilis + Backlog, combobox rilis, filter status, cari, urutkan) |
+| ✅ [Daftar Issue](pages/platform-developer/issues.md) | `platform-developer-issues` | #429 | Semua issue GitHub (open + closed) **langsung dari GitHub API** (cache 30 menit, beda dengan Rencana Pengembangan yang membaca `sprint.md`): filter cari/label/rentang aktivitas/status di URL + tab List · Kalender (dibuat/ditutup per tanggal) · Tren mingguan (batang dibuat vs ditutup + garis masih terbuka) · Kanban 5 kolom dari label `status:*` (disinkronkan `/pagi`) + Unduh Excel |
 
 ### 📈 Report — `/admin/report`
 
@@ -166,7 +167,7 @@ Grup tooling internal (2026-10-07); route & key tetap di segmen lama. Katalog: [
 
 | Sub menu | Key | Fase | Ringkasan |
 |---|---|---|---|
-| ✅ [Peta Lahan](pages/map/parcel.md) | `map-parcel` | MAP-01 (#113/#134/#135) | Peta full-bleed + panel filter & legenda minimizable; overlay raster referensi pemerintah (2 layer: Kawasan Hutan Kemenhut & Gambut Satu Peta BIG + legend/sumber per layer + slider transparansi, via proxy same-origin — #215), Titik Api NASA FIRMS (#240: 24 jam bergulir; #284: rentang 24 jam/5/10/30 hari, warna per keyakinan, ringkasan < 15 km + ekspor SHP/PDF), Tambah Data GIS Lain (WMS/Shapefile/GeoJSON, diparse di browser), ruler geodesik, label adaptif; popup lahan (Detail + Pelatihan + Produksi) + tombol **Profil Lahan** → PDF + aksi popup standar #188 (Lihat Detail / Edit Lahan); panel Daftar Lahan ber-search & zoom |
+| ✅ [Peta Lahan](pages/map/parcel.md) | `map-parcel` | MAP-01 (#113/#134/#135) | Peta full-bleed + panel filter & legenda minimizable; overlay raster referensi "Peta Lainnya" (9 layer dalam 2 kelompok lipat: Kemenhut/BIG via proxy same-origin #215 — Kawasan Hutan, Gambut, Penutupan Lahan 2025, PIPPIB 2026, Deforestasi 2023–2024 & 2024–2025; EUDR/GFW langsung — Hutan 2020 JRC, Tree Cover Loss ≥ 2021, Integrated Alerts — #433; legend/sumber per layer + slider transparansi), Titik Api NASA FIRMS (#240: 24 jam bergulir; #284: rentang 24 jam/5/10/30 hari, warna per keyakinan, ringkasan < 15 km + ekspor SHP/PDF), Tambah Data GIS Lain (WMS/Shapefile/GeoJSON, diparse di browser), ruler geodesik, label adaptif; popup lahan (Detail + Pelatihan + Produksi) + tombol **Profil Lahan** → PDF + aksi popup standar #188 (Lihat Detail / Edit Lahan); panel Daftar Lahan ber-search & zoom |
 | ✅ [Peta BMP](pages/map/bmp.md) | `map-bmp` | MAP-02 (#144) · MAP-03 (#174) | Peta tematik poligon-only, 2 layer ber-radio: **Ketersediaan Data Produksi** (4 kategori dari run bulan berturut-turut) & **Produktivitas Ton/Ha/tahun** (per tahun disetahunkan per bulan ber-data Lembaga / rata-rata, 5 kelas, dihitung client-side); Lembaga wajib; panel matriks per lahan × bulan; cetak PDF & Excel WYSIWYG ikut layer aktif; aksi popup standar #188 (Lihat Detail / Edit Lahan) |
 
 > **Popup peta terstandar (#188/TD-028):** primitif bersama `src/components/shared/map-popup.tsx` + tombol **Lihat Detail** (gate VIEW `master-data-parcels`) & **Edit Lahan** (gate EDIT) di 3 peta — Peta Lahan, Peta BMP, dan peta Sebaran Lahan (`ParcelsDistributionMap` di detail Lembaga/Petani) — dengan modal edit lahan langsung dari peta (`ParcelEditModalHost`).

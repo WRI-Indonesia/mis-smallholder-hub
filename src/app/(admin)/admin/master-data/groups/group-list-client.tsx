@@ -25,6 +25,8 @@ import {
 } from "@/lib/farmer-group-labels";
 import { formatNumber, formatArea } from "@/lib/format";
 import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
+import { hasActiveFilters } from "@/lib/filter-reset";
 
 interface FarmerGroup {
   id: string;
@@ -73,13 +75,30 @@ interface Props {
 const certSortValue = (year: number | null, status: string | null) =>
   status === "CERTIFIED" ? `0-${year ?? 9999}` : status === "PLANNED" ? `1-${year ?? 9999}` : null;
 
+/** Tampilan bawaan halaman — dipakai inisialisasi state & tombol Reset (#427). */
+const FILTER_DEFAULTS = {
+  district: "all",
+  status: "active" as StatusFilterValue,
+  search: "",
+};
 
 export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin, groupScoped = false }: Props) {
-  const [districtFilter, setDistrictFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
+  const [districtFilter, setDistrictFilter] = useState(FILTER_DEFAULTS.district);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>(FILTER_DEFAULTS.status);
+  const [search, setSearch] = useState(FILTER_DEFAULTS.search);
   const [showForm, setShowForm] = useState(false);
   const [editGroup, setEditGroup] = useState<FarmerGroup | null>(null);
   const router = useRouter();
+
+  const filtersActive = hasActiveFilters(
+    { district: districtFilter, status: statusFilter, search },
+    FILTER_DEFAULTS,
+  );
+  function resetFilters() {
+    setDistrictFilter(FILTER_DEFAULTS.district);
+    setStatusFilter(FILTER_DEFAULTS.status);
+    setSearch(FILTER_DEFAULTS.search);
+  }
 
   const filtered = initialGroups.filter((g) => {
     const matchDistrict = districtFilter === "all" || g.districtId === districtFilter;
@@ -285,6 +304,8 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       {isSuperAdmin && (
         <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
+
+      <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
     </div>
   );
 
@@ -378,6 +399,8 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
           rowKey={(g) => g.id}
           searchPlaceholder="Cari nama, kode, atau singkatan..."
           searchKeys={["name", "code", "abrv"]}
+          search={search}
+          onSearchChange={setSearch}
           toolbarLeft={toolbarLeft}
           toolbarRight={toolbarRight}
           exportFilename="data-farmer-groups"

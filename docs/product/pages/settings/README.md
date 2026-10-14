@@ -9,14 +9,14 @@
 | Icon | `Settings` |
 | Order | 99 |
 | Sub menu | 4 — User Management (`settings-users`), Menu Management (`settings-menu`), Role & Permission (`settings-roles`), Regions (`settings-regions`) |
-| Catatan | Tidak ada `page.tsx` pada route induk `/admin/settings`; menu induk hanya berfungsi sebagai grup navigasi di sidebar. |
+| Catatan | `src/app/(admin)/admin/settings/page.tsx` me-redirect ke anak pertama yang boleh diakses (`redirectToFirstAccessibleChild`, TD-051); di sidebar menu induk berfungsi sebagai grup navigasi. |
 
 Sumber metadata menu: `prisma/seeds/data/menu.csv`. Semua halaman berada di bawah guard NextAuth (`src/middleware.ts`) dan tiga lapis keamanan (menu permission, access context, soft delete).
 
 ## Diagram objek
 
 ```text
-Menu: Settings (/admin/settings) — grup navigasi, tanpa page.tsx
+Menu: Settings (/admin/settings) — grup navigasi; page.tsx me-redirect ke anak pertama (TD-051)
 ├── Sub Menu: User Management (settings-users)
 │   └── Page: User Management (/admin/settings/users)
 ├── Sub Menu: Menu Management (settings-menu)

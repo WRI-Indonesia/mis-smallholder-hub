@@ -43,6 +43,8 @@ import { ROLES } from "@/lib/roles";
 import { PERMISSION_LEVELS } from "@/lib/permission-levels";
 import { buildMenuTree, collapsibleKeys, descendantKeys, flattenTree } from "@/lib/menu-tree";
 import { useCollapseState } from "@/lib/use-collapse-state";
+import { hasActiveFilters } from "@/lib/filter-reset";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 
 // Daftar & label izin dari sumber tunggal src/lib/permission-levels.ts; ikon lokal UI ini.
 const PERMISSION_ICON: Record<PermissionLevel, React.ComponentType<{ className?: string }>> = {
@@ -73,6 +75,8 @@ const colBorder = (i: number) =>
       : "border-l border-border/40";
 
 const EDITABLE_ROLES = ROLES.filter((r) => r !== "SUPERADMIN");
+/** Tampilan bawaan (#427): semua role tampil, Cari kosong — nilai awal, pembanding & isi tombol Reset. */
+const FILTER_DEFAULTS = { roles: EDITABLE_ROLES, search: "" };
 
 interface Props {
   permissions: { id: string; role: string; menuKey: string; permission: string }[];
@@ -102,8 +106,13 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
     () => new Set(permissions.map((p) => cellKey(p.role, p.menuKey, p.permission)))
   );
   // SUPERADMIN dikecualikan dari matriks — selalu akses penuh & tak dapat diubah.
-  const [visibleRoles, setVisibleRoles] = useState<Set<Role>>(() => new Set(EDITABLE_ROLES));
-  const [search, setSearch] = useState("");
+  const [visibleRoles, setVisibleRoles] = useState<Set<Role>>(() => new Set(FILTER_DEFAULTS.roles));
+  const [search, setSearch] = useState(FILTER_DEFAULTS.search);
+  const filtersActive = hasActiveFilters({ roles: [...visibleRoles], search }, FILTER_DEFAULTS);
+  const resetFilters = () => {
+    setVisibleRoles(new Set(FILTER_DEFAULTS.roles));
+    setSearch(FILTER_DEFAULTS.search);
+  };
   const [saving, setSaving] = useState(false);
   const [cascade, setCascade] = useState<CascadeState | null>(null);
   const [colToggle, setColToggle] = useState<ColumnToggleState | null>(null);
@@ -323,11 +332,8 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
               </button>
             );
           })}
-          {visibleRoles.size < EDITABLE_ROLES.length && (
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setVisibleRoles(new Set(EDITABLE_ROLES))}>
-              Semua
-            </Button>
-          )}
+          {/* Reset (#427) menggantikan tombol "Semua": menampilkan semua role + mengosongkan Cari. */}
+          <ResetFiltersButton active={filtersActive} onReset={resetFilters} size="sm" />
         </div>
       </div>
 

@@ -29,7 +29,6 @@ const cell = (period: string, over: Partial<ProductionCellStats> = {}): Producti
     linkedRecords: over.linkedRecords ?? records - noParcelRecords,
     kg: over.kg ?? records * 100,
     zeroRecords: over.zeroRecords ?? 0,
-    estimateRecords: over.estimateRecords ?? 0,
     noParcelRecords,
   };
 };
@@ -75,7 +74,7 @@ describe("production-availability — periode & persen (K3, K4)", () => {
 describe("production-availability — ringkasan rentang penuh (K4, K5)", () => {
   const cells = [
     cell("2025-11", { records: 3 }),
-    cell("2025-12", { records: 3, estimateRecords: 3 }),
+    cell("2025-12", { records: 3 }),
     cell("2026-01", { records: 4, zeroRecords: 1 }),
     cell("2026-03", { records: 2, noParcelRecords: 1 }),
   ];
@@ -87,10 +86,11 @@ describe("production-availability — ringkasan rentang penuh (K4, K5)", () => {
     expect(s.gapMonths).toBe(2);
     expect(s.stale).toBe(false);
     expect(s.totalRecords).toBe(12);
-    expect(s.estimateRecords).toBe(3);
-    expect(s.estimatePct).toBeCloseTo(25, 6);
     expect(s.zeroRecords).toBe(1);
     expect(s.noParcelRecords).toBe(1);
+    // Penanda Estimasi dibuang di v1.8.0 (label dilepas dari record prod; Meragukan menyusul #424).
+    expect(s).not.toHaveProperty("estimateRecords");
+    expect(s).not.toHaveProperty("estimatePct");
   });
 
   it(`basi bila jeda ≥ PRODUCTION_STALE_MONTHS (${PRODUCTION_STALE_MONTHS}) — ambang DA-02 yang sama`, () => {
@@ -110,7 +110,7 @@ describe("production-availability — ringkasan rentang penuh (K4, K5)", () => {
     expect(s.firstPeriod).toBeNull();
     expect(s.gapMonths).toBeNull();
     expect(s.stale).toBe(false);
-    expect(s.estimatePct).toBe(0);
+    expect(s.totalRecords).toBe(0);
   });
 
   it("periode tak valid dan sel 0 record diabaikan", () => {
@@ -154,14 +154,14 @@ describe("production-availability — tahun, filter, urutan", () => {
 });
 
 describe("production-availability — tingkat Distrik (owner 2026-10-11)", () => {
-  const a = group("a", 10, [cell("2026-01", { parcelsReporting: 4, estimateRecords: 1 })], { name: "Alpha", districtId: "d1", districtName: "Siak", totalFarmers: 5 });
+  const a = group("a", 10, [cell("2026-01", { parcelsReporting: 4, zeroRecords: 1 })], { name: "Alpha", districtId: "d1", districtName: "Siak", totalFarmers: 5 });
   const b = group("b", 20, [cell("2026-01", { parcelsReporting: 10 }), cell("2026-02", { parcelsReporting: 2, noParcelRecords: 1 })], { name: "Beta", districtId: "d1", districtName: "Siak", totalFarmers: 7 });
   const c = group("c", 3, [cell("2025-12")], { name: "Gamma", districtId: "d2", districtName: "Kampar" });
 
   it("mergeCells menjumlahkan tiap kolom per periode dan mengurutkan periode", () => {
     const m = mergeCells([a.cells, b.cells]);
     expect(m.map((x) => x.period)).toEqual(["2026-01", "2026-02"]);
-    expect(m[0]).toMatchObject({ parcelsReporting: 14, records: 2, estimateRecords: 1, kg: 200 });
+    expect(m[0]).toMatchObject({ parcelsReporting: 14, records: 2, zeroRecords: 1, kg: 200 });
     expect(m[1]).toMatchObject({ parcelsReporting: 2, noParcelRecords: 1 });
   });
 
@@ -203,13 +203,12 @@ describe("production-availability — temuan review #416", () => {
 describe("production-availability — Excel Sheet 1 per tahun (review pra-rilis v1.7.0, owner 2026-10-12)", () => {
   it("summarizeYear menghitung hanya sel tahun terpilih; rentang penuh tetap di summarizeRange", () => {
     const cells = [
-      cell("2025-11", { records: 5, estimateRecords: 2, zeroRecords: 1, noParcelRecords: 1 }),
-      cell("2026-01", { records: 3, estimateRecords: 1 }),
+      cell("2025-11", { records: 5, zeroRecords: 1, noParcelRecords: 1 }),
+      cell("2026-01", { records: 3 }),
       cell("2026-02", { records: 4, zeroRecords: 2 }),
     ];
     const y = summarizeYear(cells, 2026, "2026-10");
     expect(y.totalRecords).toBe(7);
-    expect(y.estimateRecords).toBe(1);
     expect(y.zeroRecords).toBe(2);
     expect(y.noParcelRecords).toBe(0);
     expect(summarizeRange(cells, "2026-10").totalRecords).toBe(12);

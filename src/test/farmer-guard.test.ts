@@ -5,8 +5,9 @@ import { matches, type Row } from "./prisma-where";
  * Guard 3 lapis `updateFarmer` (`src/server/actions/farmer.ts`) — tanpa DB:
  * izin EDIT, Zod, petani harus aktif & dalam scope, Lembaga TUJUAN harus dalam
  * scope (anti pemindahan ke luar wilayah), keunikan ID per Lembaga, audit
- * `modifiedBy`. createFarmer & toggleFarmerActive di `rbac-server-guards.test.ts`
- * — tidak diulang.
+ * `modifiedBy`. Ditambah (audit 2026-10-12, TS-6): `createFarmer` (scope
+ * Lembaga, duplikat ID aktif vs nonaktif, `createdBy`), soft delete
+ * `toggleFarmerActive`, dan guard PRINT `getFarmerParcelPassport`.
  *
  * Data contoh: F1 (G1/D1) · F2 (G2/D1) · F3 (G3/D2) · F9 nonaktif (G1).
  */
@@ -34,15 +35,16 @@ vi.mock("@/lib/access-context", async () => ({
 }));
 vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "user-1" } }) }));
 vi.mock("@/lib/land-marker-query", () => ({ fetchFarmerGroupMarkerPoints: vi.fn(), fetchFarmerMarkerPoints: vi.fn(), fetchFarmerGroupMarkerStats: vi.fn(), fetchFarmerMarkerStats: vi.fn() }));
-vi.mock("@/lib/parcel-passport-query", () => ({ fetchParcelPassport: vi.fn(), computeFarmerTrainingItems: vi.fn() }));
+const passport = vi.hoisted(() => ({ fetchParcelPassport: vi.fn(), computeFarmerTrainingItems: vi.fn() }));
+vi.mock("@/lib/parcel-passport-query", () => passport);
 
 const db = vi.hoisted(() => ({
-  farmer: { findFirst: vi.fn(), update: vi.fn() },
+  farmer: { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
   farmerGroup: { findFirst: vi.fn() },
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
-const { updateFarmer } = await import("@/server/actions/farmer");
+const { updateFarmer, createFarmer, toggleFarmerActive, getFarmerParcelPassport } = await import("@/server/actions/farmer");
 
 const BY_GROUP = { mode: "BY_FARMER_GROUP", ids: ["G1"] };
 const BY_DISTRICT = { mode: "BY_DISTRICT", ids: ["D1"] };
@@ -61,6 +63,7 @@ beforeEach(() => {
   db.farmer.findFirst.mockImplementation(async ({ where }: { where: unknown }) => FARMERS.find((f) => matches(f, where)) ?? null);
   db.farmerGroup.findFirst.mockImplementation(async ({ where }: { where: unknown }) => GROUPS.find((g) => matches(g, where)) ?? null);
   db.farmer.update.mockResolvedValue({});
+  db.farmer.create.mockResolvedValue({});
 });
 
 describe("updateFarmer — izin & validasi", () => {
@@ -148,5 +151,89 @@ describe("updateFarmer — keunikan ID per Lembaga & audit", () => {
     getAccessContext.mockResolvedValue(BY_DISTRICT);
     expect(await updateFarmer({ ...INPUT, farmerGroupId: "G2" })).toEqual({ success: true });
     expect(argOf(db.farmer.update).data).toMatchObject({ farmerGroupId: "G2", modifiedBy: "user-1" });
+  });
+});
+
+describe("createFarmer — Lembaga tujuan, keunikan ID, audit (TS-6)", () => {
+  const NEW = { farmerGroupId: "G1", gender: "F" as const, name: "Siti", farmerId: "P.77" };
+
+  it("tanpa CREATE → error, tanpa kueri", async () => {
+    hasPermission.mockResolvedValue(false);
+    expect(await createFarmer(NEW)).toMatchObject({ success: false, error: expect.stringMatching(/izin/) });
+    expect(hasPermission).toHaveBeenCalledExactlyOnceWith("master-data-farmers", "CREATE");
+    expect(db.farmer.create).not.toHaveBeenCalled();
+    expectNoDb();
+  });
+
+  it("Lembaga tujuan di luar scope → ditolak; where = id + isActive + scope di AND; create tak dipanggil", async () => {
+    getAccessContext.mockResolvedValue(BY_DISTRICT);
+    expect(await createFarmer({ ...NEW, farmerGroupId: "G3" })).toMatchObject({ success: false, error: expect.stringMatching(/lembaga tani ini/) });
+    expect(argOf(db.farmerGroup.findFirst).where).toEqual({ id: "G3", isActive: true, AND: { districtId: { in: ["D1"] } } });
+    expect(db.farmer.findFirst).not.toHaveBeenCalled();
+    expect(db.farmer.create).not.toHaveBeenCalled();
+  });
+
+  it("ID dipakai petani AKTIF di Lembaga itu → fieldErrors.farmerId 'sudah terdaftar', create tak dipanggil", async () => {
+    const res = await createFarmer({ ...NEW, farmerId: "P.01" });
+    expect(res).toEqual({ success: false, error: { farmerId: ["ID Petani sudah terdaftar di lembaga ini"] } });
+    // Cek duplikat mencakup baris nonaktif (tanpa filter isActive) — constraint DB tak mengenal soft delete.
+    expect(argOf(db.farmer.findFirst).where).toEqual({ farmerGroupId: "G1", farmerId: "P.01" });
+    expect(db.farmer.create).not.toHaveBeenCalled();
+  });
+
+  it("ID dipakai petani NONAKTIF → pesan 'aktifkan kembali', create tak dipanggil", async () => {
+    const res = await createFarmer({ ...NEW, farmerId: "P.09" });
+    expect(res).toEqual({
+      success: false,
+      error: { farmerId: ["ID Petani dipakai petani nonaktif di lembaga ini — aktifkan kembali datanya"] },
+    });
+    expect(db.farmer.create).not.toHaveBeenCalled();
+  });
+
+  it("ID sama di Lembaga LAIN boleh (unik per Lembaga, TD-024); create membawa createdBy sesi", async () => {
+    expect(await createFarmer({ ...NEW, farmerGroupId: "G2", farmerId: "P.01" })).toEqual({ success: true });
+    expect(db.farmer.create).toHaveBeenCalledOnce();
+    expect(argOf(db.farmer.create).data).toMatchObject({ farmerGroupId: "G2", farmerId: "P.01", name: "Siti", createdBy: "user-1" });
+  });
+});
+
+describe("toggleFarmerActive — soft delete (TS-6)", () => {
+  it("tanpa DELETE → {success:false} tanpa findFirst/update", async () => {
+    hasPermission.mockResolvedValue(false);
+    expect(await toggleFarmerActive("F1")).toMatchObject({ success: false, error: expect.stringMatching(/izin/) });
+    expect(hasPermission).toHaveBeenCalledExactlyOnceWith("master-data-farmers", "DELETE");
+    expect(db.farmer.findFirst).not.toHaveBeenCalled();
+    expect(db.farmer.update).not.toHaveBeenCalled();
+  });
+
+  it("petani di luar scope → 'tidak ditemukan', tanpa update; where = id + scope (tanpa isActive agar bisa restore)", async () => {
+    getAccessContext.mockResolvedValue(BY_GROUP);
+    expect(await toggleFarmerActive("F2")).toEqual({ success: false, error: "Petani tidak ditemukan" });
+    expect(argOf(db.farmer.findFirst).where).toEqual({ id: "F2", farmerGroupId: { in: ["G1"] } });
+    expect(db.farmer.update).not.toHaveBeenCalled();
+  });
+
+  it("dalam scope: aktif → nonaktif, nonaktif → aktif; modifiedBy = id sesi; tak pernah hard delete", async () => {
+    getAccessContext.mockResolvedValue(BY_GROUP);
+    expect(await toggleFarmerActive("F1")).toEqual({ success: true });
+    expect(argOf(db.farmer.update)).toEqual({ where: { id: "F1" }, data: { isActive: false, modifiedBy: "user-1" } });
+
+    expect(await toggleFarmerActive("F9")).toEqual({ success: true });
+    expect(argOf(db.farmer.update, 1)).toEqual({ where: { id: "F9" }, data: { isActive: true, modifiedBy: "user-1" } });
+  });
+});
+
+describe("getFarmerParcelPassport — guard PRINT menu Petani", () => {
+  it("tanpa PRINT → {success:false}, lib passport tak dipanggil", async () => {
+    hasPermission.mockResolvedValue(false);
+    expect(await getFarmerParcelPassport("lp-1")).toMatchObject({ success: false, error: expect.stringMatching(/izin/) });
+    expect(hasPermission).toHaveBeenCalledExactlyOnceWith("master-data-farmers", "PRINT");
+    expect(passport.fetchParcelPassport).not.toHaveBeenCalled();
+  });
+
+  it("dengan PRINT → diteruskan ke fetchParcelPassport(id, true) yang menegakkan scope lahan", async () => {
+    passport.fetchParcelPassport.mockResolvedValue({ success: true, data: { id: "lp-1" } });
+    expect(await getFarmerParcelPassport("lp-1")).toEqual({ success: true, data: { id: "lp-1" } });
+    expect(passport.fetchParcelPassport).toHaveBeenCalledExactlyOnceWith("lp-1", true);
   });
 });

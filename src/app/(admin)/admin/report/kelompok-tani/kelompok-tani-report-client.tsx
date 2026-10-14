@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,6 +23,7 @@ import { getFarmerGroupsForKtReport, getKelompokTaniReport } from "@/server/acti
 import type { KelompokTaniReportResult } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";
 import { formatNumber } from "@/lib/format";
+import { hasActiveFilters } from "@/lib/filter-reset";
 
 interface District {
   id: string;
@@ -42,6 +44,10 @@ interface Props {
 
 const UNKNOWN = "(tidak diketahui)";
 
+// Tampilan bawaan saat halaman dibuka — inisialisasi state + tombol Reset (#427).
+// Pilihan Kolom = visibilitas tampilan, bukan filter, jadi tidak ikut di-reset.
+const DEFAULT_FILTERS = { district: null, farmerGroup: null, search: "" } as const;
+
 type ColKey = "kelompokTani" | "totalPetani" | "totalLahan" | "totalLuas" | "totalLahanNkt" | "totalPatok";
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "kelompokTani", label: "Kelompok Tani" },
@@ -56,11 +62,11 @@ const TOGGLEABLE: { key: ColKey; label: string }[] = [
 const NUMERIC_COLS: ReadonlySet<string> = new Set(["no", "totalPetani", "totalLahan", "totalLuas", "totalLahanNkt", "totalPatok"]);
 
 export function KelompokTaniReportClient({ districts, canExport, canPrint }: Props) {
-  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
-  const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(DEFAULT_FILTERS.district);
+  const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(DEFAULT_FILTERS.farmerGroup);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>([]);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState<string>(DEFAULT_FILTERS.search);
 
   // Kolom yang bisa disembunyikan.
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(
@@ -114,6 +120,16 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
 
   const handleFarmerGroupSelect = (val: string | null) => {
     setSelectedFarmerGroup(val);
+  };
+
+  const filtersActive = hasActiveFilters(
+    { district: selectedDistrict, farmerGroup: selectedFarmerGroup, search },
+    DEFAULT_FILTERS,
+  );
+  const resetFilters = () => {
+    setSelectedDistrict(DEFAULT_FILTERS.district);
+    setSelectedFarmerGroup(DEFAULT_FILTERS.farmerGroup);
+    setSearch(DEFAULT_FILTERS.search);
   };
 
   const selectedDistrictObj = districts.find((d) => d.id === selectedDistrict);
@@ -304,6 +320,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
                 />
               </div>
             </div>
+
+            <ResetFiltersButton active={filtersActive} onReset={resetFilters} />
           </div>
           <p className="text-xs text-muted-foreground mt-3">
             Rekap real-time turunan dari data lahan aktif. Filter Distrik/Lembaga bersifat opsional.
