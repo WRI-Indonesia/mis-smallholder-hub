@@ -32,7 +32,7 @@ describe("parseRoadmapPhases — file roadmap.md nyata", () => {
     const phases = parseRoadmapPhases(roadmapMd);
     // Baseline reset 2026-09-30 (Roadmap 2026–2027): 26 fase (pasca-MVP + Visi Produk); batas bawah longgar.
     expect(phases.length).toBeGreaterThanOrEqual(14);
-    expect(phases[0]).toMatchObject({ key: "PLATFORM-08", stream: "PLATFORM", status: "Partial", weight: "inti" });
+    expect(phases[0]).toMatchObject({ key: "PLATFORM-08", stream: "PLATFORM", status: "Done", weight: "inti" });
     expect(phases.find((p) => p.key === "DQ-01")).toMatchObject({
       status: "Partial",
       horizon: "Now",

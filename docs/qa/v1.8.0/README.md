@@ -22,7 +22,7 @@ _Semua Fail sudah merujuk issue._
 
 ## Keputusan
 
-**Go / No-go:** Developer **Go** & QA **Go** 2026-10-14 (Claude) — menunggu keputusan **Owner** di [05-signoff.md](05-signoff.md). Syarat tag: seed menu `platform-developer-issues` prod (dry-run → `--apply`), generate ulang snapshot BMP prod (#428), run prod `--only P0` ≤ 1 jam setelah deploy.
+**Go / No-go:** **Go** 2026-10-14 — Developer & QA (Claude), Owner (Sofyan); lihat [05-signoff.md](05-signoff.md). Syarat tag: seed menu `platform-developer-issues` prod (dry-run → `--apply`), generate ulang snapshot BMP prod (#428), run prod `--only P0` ≤ 1 jam setelah deploy.
 
 ## Known issues yang dibawa
 
