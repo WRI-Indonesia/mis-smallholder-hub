@@ -14,4 +14,4 @@ Bukan seluruh suite: run ulang (`new-run.mjs --label ulang --only <ID,ID,…>`) 
 
 Prasyarat tag `v1.8.0`: ketiga baris **Go**; migrasi prod applied + checksum disegarkan; run prod (`--only P0`) diisi ≤ 1 jam setelah deploy.
 
-**Status 2026-10-14:** ketiga baris Go ✓ · tanpa migrasi ✓ · seed menu prod ✓ · snapshot BMP prod di-generate ulang ✓ · run prod `runs/2026-10-14-prod.md` (deploy 21:04 → run selesai ±21:50 WIB): smoke 12 Pass · 2 Blocked · kasus 2 Pass · 1 N/A · regresi 1 Pass · 2 Blocked · **0 Fail** · tag `v1.8.0` di `1103b8b`.
+**Status 2026-10-14:** ketiga baris Go ✓ · tanpa migrasi ✓ · seed menu prod ✓ · snapshot BMP prod di-generate ulang ✓ · run prod `runs/2026-10-14-prod.md` (deploy 21:04 → run selesai ±21:50 WIB): smoke 12 Pass · 2 Blocked · kasus 2 Pass · 1 N/A · regresi 1 Pass · 2 Blocked · **0 Fail** · tag `v1.8.0` di `1103b8b` · `rbac:compare` prod SELARAS (588 = 588).
