@@ -267,7 +267,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>GIS-02</strong> · 🔲 Planned — GIS Deforestation: deteksi deforestasi lahan & boundary</summary>
 
 - **Evidence:** Belum ada. Fondasi spasial siap: `LandParcel.geom` + GiST, boundary ICS (`FarmerGroupBoundary`), batas administrasi BIG, pola proxy peta ber-guard (`/api/map-*`).
-- **Next step:** concept note di v1.10.0; implementasi K2 2027 sesudah GIS-01: issue induk (sumber data tutupan hutan & lisensinya, tahun acuan *cut-off*, ambang luas), lalu overlay perubahan tutupan hutan vs poligon lahan/boundary, daftar lahan terindikasi, layer Peta Lahan. Hasilnya dipakai SC-03 (risiko per Mill).
+- **Next step:** v1.8.0: layer visual hutan & deforestasi (Kemenhut + GFW/EUDR) di Peta Lahan & Peta Supply Chain (#433). Analisis % hutan 2020 & deforestasi per lahan = #434 (⚖️ backlog). Sisanya: concept note di v1.10.0; implementasi K2 2027 sesudah GIS-01: issue induk (sumber data tutupan hutan & lisensinya, tahun acuan *cut-off*, ambang luas), lalu overlay perubahan tutupan hutan vs poligon lahan/boundary, daftar lahan terindikasi, layer Peta Lahan. Hasilnya dipakai SC-03 (risiko per Mill).
 - **Selesai bila:** setiap lahan punya status indikasi deforestasi yang bisa difilter di Laporan Lahan dan tampil di peta.
 
 </details>
