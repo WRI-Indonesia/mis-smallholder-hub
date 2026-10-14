@@ -67,8 +67,8 @@ Debt aktif: **TD-066** (dibuka 2026-10-14 dari `/code-review` penuh wrap-up v1.8
 
 ### TD-065 · 🔲 Open — `SearchBox` diimpor lintas folder rute + helper tanggal WIB ganda (P3)
 
-- **Masalah:** `issues-view-client.tsx` (#429) mengimpor `SearchBox` dari `data-analyst/sprint/sprint-shared` (folder privat rute lain) — memindah/mengubah komponen Rencana Pengembangan diam-diam merusak Daftar Issue. `src/lib/github-issues.ts` menulis `toWibDate`/`addDays`/`shiftMonth` sendiri, sementara `page.tsx` menghitung tanggal WIB lewat `Intl` `Asia/Jakarta` — dua implementasi WIB yang bisa bergeser.
-- **Validation:** `SearchBox` pindah ke `src/components/shared/`; satu helper tanggal WIB di `src/lib/` dipakai kedua halaman Platform Developer (+ `date-fns` untuk aritmetika tanggal bila sesuai konvensi). · **Evidence:** `/code-review` wrap-up v1.8.0 (temuan 8). · **Owner:** Frontend.
+- **Masalah:** `issues-view-client.tsx` (#429) mengimpor `SearchBox` dari `data-analyst/sprint/sprint-shared` (folder privat rute lain) — memindah/mengubah komponen Rencana Pengembangan diam-diam merusak Daftar Issue. `src/lib/github-issues.ts` menulis `toWibDate`/`addDays`/`shiftMonth` sendiri, sementara `page.tsx` menghitung tanggal WIB lewat `Intl` `Asia/Jakarta` — dua implementasi WIB yang bisa bergeser. Tambahan wrap-up kedua 2026-10-14: tab **Semua Issue** Rencana Pengembangan (`sprint-issues.tsx`, `setQuery = (v) => setMany({ q: v })`) masih menulis `q` ke URL **tiap ketukan** — risiko `SecurityError` Safari yang sama dengan yang diperbaiki di Daftar Issue (`fff04c3`).
+- **Validation:** `SearchBox` pindah ke `src/components/shared/` **dengan debounce bawaan** (state lokal + tulis URL 400 ms, pola Komparasi Data Acuan) sehingga Rencana Pengembangan & Daftar Issue memakai satu jalur; satu helper tanggal WIB di `src/lib/` dipakai kedua halaman Platform Developer (+ `date-fns` untuk aritmetika tanggal bila sesuai konvensi). · **Evidence:** `/code-review` wrap-up v1.8.0 (temuan 8). · **Owner:** Frontend.
 
 ### TD-010 · 🟠 Partial — Return `ActionResult` ad-hoc: sisa `error: fieldErrors` (P2) · #414
 
