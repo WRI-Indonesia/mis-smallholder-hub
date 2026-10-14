@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,14 @@ export function IssuesViewClient({
 
   const tabParam = get("tab");
   const tab: Tab = (TABS as readonly string[]).includes(tabParam ?? "") ? (tabParam as Tab) : "list";
-  const query = get("q") ?? "";
+  // Kotak cari = state lokal; tulis ke URL di-debounce (pola Komparasi Data
+  // Acuan) — Safari melempar SecurityError bila history.replaceState dipanggil
+  // >100×/30 detik saat mengetik cepat.
+  const [query, setQuery] = useState(get("q") ?? "");
+  useEffect(() => {
+    const timer = setTimeout(() => setMany({ q: query.trim() || null }), 400);
+    return () => clearTimeout(timer);
+  }, [query, setMany]);
   const statusParam = get("status");
   const status = (ISSUE_STATUS_ORDER as string[]).includes(statusParam ?? "") ? (statusParam as IssueStatus) : null;
   const labels = useMemo(() => labelCounts(data.issues), [data.issues]);
@@ -128,7 +135,7 @@ export function IssuesViewClient({
 
       <div className="space-y-3 rounded-lg border border-border/60 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <SearchBox value={query} onChange={(v) => setMany({ q: v })} placeholder="Cari nomor, judul, atau label…" />
+          <SearchBox value={query} onChange={setQuery} placeholder="Cari nomor, judul, atau label…" />
           <FilterCombobox
             options={labels.map((l) => ({ id: l.name, name: `${l.name} (${l.count})` }))}
             value={label}
@@ -159,7 +166,13 @@ export function IssuesViewClient({
               aria-label="Aktivitas sampai tanggal"
             />
           </div>
-          <ResetFiltersButton active={active} onReset={() => setMany(clearedUrlKeys(FILTER_DEFAULTS))} />
+          <ResetFiltersButton
+            active={active}
+            onReset={() => {
+              setQuery("");
+              setMany(clearedUrlKeys(FILTER_DEFAULTS));
+            }}
+          />
           {canExport && (
             <Button type="button" variant="outline" className="ml-auto h-9" onClick={onExport} disabled={exporting || filtered.length === 0}>
               {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}

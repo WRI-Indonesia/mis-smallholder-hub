@@ -40,13 +40,13 @@ const snapshot = buildBmpSnapshotData(
 ).groups;
 
 const matrix = buildBmpAgeExcelMatrix(snapshot);
-const rowOf = (lembaga: string, distrik = "") =>
-  matrix.rows.find((r) => r.lembaga === lembaga && (!distrik || r.distrik === distrik))!;
+const rowOf = (farmerGroup: string, district = "") =>
+  matrix.rows.find((r) => r.farmerGroup === farmerGroup && (!district || r.district === district))!;
 
 describe("buildBmpAgeExcelMatrix (#426)", () => {
   it("periode = Rataan lalu tiap tahun naik; baris Lembaga urut Distrik → nama, lalu subtotal & Total", () => {
     expect(matrix.periods).toEqual(["average", 2024, 2025]);
-    expect(matrix.rows.map((r) => [r.kind, r.distrik, r.lembaga, r.kategori])).toEqual([
+    expect(matrix.rows.map((r) => [r.kind, r.district, r.farmerGroup, r.category])).toEqual([
       ["group", "Kampar", "Alpha", "Swadaya"],
       ["group", "Kampar", "Beta", "Ex-Plasma"],
       ["group", "Siak", "Gamma", "Swadaya"],
@@ -64,10 +64,10 @@ describe("buildBmpAgeExcelMatrix (#426)", () => {
       for (const p of matrix.periods) {
         const cells = row.cells[String(p)];
         const all = sumBmpGroups([g], p);
-        expect(cells.all.produktivitasTonHa).toBe(all.totals.luasMelaporHa > 0 ? all.produktivitasTonHa : null);
+        expect(cells.all.productivityTonHa).toBe(all.totals.luasMelaporHa > 0 ? all.produktivitasTonHa : null);
         for (const a of bmpAgeSeries([g], p)) {
           const cell = cells[a.key as (typeof BMP_AGE_EXCEL_COLUMNS)[number]["key"]];
-          expect(cell.produktivitasTonHa).toBe(a.luasMelaporHa > 0 ? a.produktivitasTonHa : null);
+          expect(cell.productivityTonHa).toBe(a.luasMelaporHa > 0 ? a.produktivitasTonHa : null);
         }
       }
     }
@@ -75,21 +75,21 @@ describe("buildBmpAgeExcelMatrix (#426)", () => {
 
   it("bucket umur dan Tanpa thn tanam terisi; tanpa luas terdata = null (kosong), bukan 0", () => {
     const alpha = rowOf("Alpha").cells["2024"];
-    expect(alpha["9-15"]).toEqual({ produktivitasTonHa: 6, luasMelaporHa: 2 });
-    expect(alpha.lt3).toEqual({ produktivitasTonHa: null, luasMelaporHa: null });
-    expect(rowOf("Alpha").cells["2025"].all).toEqual({ produktivitasTonHa: null, luasMelaporHa: null });
+    expect(alpha["9-15"]).toEqual({ productivityTonHa: 6, reportedAreaHa: 2 });
+    expect(alpha.lt3).toEqual({ productivityTonHa: null, reportedAreaHa: null });
+    expect(rowOf("Alpha").cells["2025"].all).toEqual({ productivityTonHa: null, reportedAreaHa: null });
 
     const gamma = rowOf("Gamma").cells["2025"];
-    expect(gamma.unknown).toEqual({ produktivitasTonHa: 6, luasMelaporHa: 4 }); // disetahunkan ×2
-    expect(gamma.all.produktivitasTonHa).toBe(6);
+    expect(gamma.unknown).toEqual({ productivityTonHa: 6, reportedAreaHa: 4 }); // disetahunkan ×2
+    expect(gamma.all.productivityTonHa).toBe(6);
   });
 
   it("subtotal tertimbang luas (Σ produksi ÷ Σ luas), bukan rata-rata baris", () => {
     // Kampar 2024: (12 + 3) ÷ (2 + 1) = 5 — rata-rata baris akan 4,5.
-    expect(rowOf("Subtotal Distrik", "Kampar").cells["2024"].all).toEqual({ produktivitasTonHa: 5, luasMelaporHa: 3 });
+    expect(rowOf("Subtotal Distrik", "Kampar").cells["2024"].all).toEqual({ productivityTonHa: 5, reportedAreaHa: 3 });
     // Total Rataan: (12 + 3 + 24) ÷ (2 + 1 + 4) = 5,57; luas = 7 ha ÷ 2 tahun ber-data.
-    expect(rowOf("Total").cells.average.all).toEqual({ produktivitasTonHa: 5.57, luasMelaporHa: 3.5 });
-    expect(rowOf("Total").cells.average.all.produktivitasTonHa).toBe(sumBmpGroups(snapshot, "average").produktivitasTonHa);
+    expect(rowOf("Total").cells.average.all).toEqual({ productivityTonHa: 5.57, reportedAreaHa: 3.5 });
+    expect(rowOf("Total").cells.average.all.productivityTonHa).toBe(sumBmpGroups(snapshot, "average").produktivitasTonHa);
   });
 
   it("tanpa Lembaga → hanya periode Rataan, tanpa baris", () => {

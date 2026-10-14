@@ -28,15 +28,15 @@ export type BmpAgeExcelPeriod = number | "average";
 
 /** null = belum ada luas terdata (sel kosong, bukan 0). */
 export interface BmpAgeExcelCell {
-  produktivitasTonHa: number | null;
-  luasMelaporHa: number | null;
+  productivityTonHa: number | null;
+  reportedAreaHa: number | null;
 }
 
 export interface BmpAgeExcelRow {
   kind: "group" | "district" | "category" | "total";
-  distrik: string;
-  lembaga: string;
-  kategori: string;
+  district: string;
+  farmerGroup: string;
+  category: string;
   /** Kunci periode: "average" atau tahun sebagai string. */
   cells: Record<string, Record<BmpAgeExcelColumnKey, BmpAgeExcelCell>>;
 }
@@ -47,7 +47,7 @@ export interface BmpAgeExcelMatrix {
 }
 
 const CATEGORY_LABEL: Record<BmpFarmerGroupCategory, string> = { EX_PLASMA: "Ex-Plasma", SWADAYA: "Swadaya" };
-const EMPTY: BmpAgeExcelCell = { produktivitasTonHa: null, luasMelaporHa: null };
+const EMPTY: BmpAgeExcelCell = { productivityTonHa: null, reportedAreaHa: null };
 
 const periodKey = (p: BmpAgeExcelPeriod) => String(p);
 export const periodLabel = (p: BmpAgeExcelPeriod) => (p === "average" ? "Rataan" : String(p));
@@ -61,9 +61,9 @@ function cellsFor(groups: BmpGroupEntry[], periods: BmpAgeExcelPeriod[]): BmpAge
     for (const col of BMP_AGE_EXCEL_COLUMNS) {
       const src =
         col.key === "all"
-          ? { produktivitasTonHa: all.produktivitasTonHa, luasMelaporHa: all.totals.luasMelaporHa }
+          ? { produktivitasTonHa: all.produktivitasTonHa, luasMelaporHa: all.totals.luasMelaporHa } // bentuk entri agregasi
           : age.get(col.key);
-      row[col.key] = src && src.luasMelaporHa > 0 ? { produktivitasTonHa: src.produktivitasTonHa, luasMelaporHa: src.luasMelaporHa } : EMPTY;
+      row[col.key] = src && src.luasMelaporHa > 0 ? { productivityTonHa: src.produktivitasTonHa, reportedAreaHa: src.luasMelaporHa } : EMPTY;
     }
     out[periodKey(p)] = row;
   }
@@ -81,20 +81,20 @@ export function buildBmpAgeExcelMatrix(groups: BmpGroupEntry[]): BmpAgeExcelMatr
 
   const rows: BmpAgeExcelRow[] = sorted.map((g) => ({
     kind: "group",
-    distrik: districtOf(g),
-    lembaga: g.name,
-    kategori: CATEGORY_LABEL[g.category] ?? g.category,
+    district: districtOf(g),
+    farmerGroup: g.name,
+    category: CATEGORY_LABEL[g.category] ?? g.category,
     cells: cellsFor([g], periods),
   }));
 
   for (const d of [...new Set(sorted.map(districtOf))]) {
-    rows.push({ kind: "district", distrik: d, lembaga: "Subtotal Distrik", kategori: "", cells: cellsFor(sorted.filter((g) => districtOf(g) === d), periods) });
+    rows.push({ kind: "district", district: d, farmerGroup: "Subtotal Distrik", category: "", cells: cellsFor(sorted.filter((g) => districtOf(g) === d), periods) });
   }
   for (const cat of ["EX_PLASMA", "SWADAYA"] as const) {
     const gs = sorted.filter((g) => g.category === cat);
-    if (gs.length) rows.push({ kind: "category", distrik: "", lembaga: "Subtotal Kategori", kategori: CATEGORY_LABEL[cat], cells: cellsFor(gs, periods) });
+    if (gs.length) rows.push({ kind: "category", district: "", farmerGroup: "Subtotal Kategori", category: CATEGORY_LABEL[cat], cells: cellsFor(gs, periods) });
   }
-  if (sorted.length) rows.push({ kind: "total", distrik: "", lembaga: "Total", kategori: "", cells: cellsFor(sorted, periods) });
+  if (sorted.length) rows.push({ kind: "total", district: "", farmerGroup: "Total", category: "", cells: cellsFor(sorted, periods) });
 
   return { periods, rows };
 }
@@ -142,9 +142,9 @@ function fillSheet(ws: ExcelJS.Worksheet, matrix: BmpAgeExcelMatrix, title: stri
   let r = HEADER_ROWS + 1;
   const writeRow = (row: BmpAgeExcelRow) => {
     const xr = ws.getRow(r++);
-    xr.getCell(1).value = row.distrik;
-    xr.getCell(2).value = row.lembaga;
-    xr.getCell(3).value = row.kategori;
+    xr.getCell(1).value = row.district;
+    xr.getCell(2).value = row.farmerGroup;
+    xr.getCell(3).value = row.category;
     matrix.periods.forEach((p, pi) => {
       const cells = row.cells[periodKey(p)];
       BMP_AGE_EXCEL_COLUMNS.forEach((col, ci) => {
@@ -184,8 +184,8 @@ export interface BmpAgeExcelMeta {
 export function buildBmpAgeProductivityWorkbook(groups: BmpGroupEntry[], meta: BmpAgeExcelMeta): ExcelJS.Workbook {
   const matrix = buildBmpAgeExcelMatrix(groups);
   const wb = new ExcelJS.Workbook();
-  fillSheet(wb.addWorksheet("Produktivitas"), matrix, "Produktivitas (YOY) — Ton/Ha/tahun", (c) => c.produktivitasTonHa);
-  fillSheet(wb.addWorksheet("Luas terdata"), matrix, "Luas terdata (Ha)", (c) => c.luasMelaporHa);
+  fillSheet(wb.addWorksheet("Produktivitas"), matrix, "Produktivitas (YOY) — Ton/Ha/tahun", (c) => c.productivityTonHa);
+  fillSheet(wb.addWorksheet("Luas terdata"), matrix, "Luas terdata (Ha)", (c) => c.reportedAreaHa);
 
   const info = wb.addWorksheet("Keterangan");
   info.columns = [{ width: 22 }, { width: 100 }];

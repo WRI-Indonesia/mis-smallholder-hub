@@ -70,6 +70,19 @@ describe("getGithubIssues", () => {
     expect(res).toEqual({ success: false, error: "Batas permintaan ke GitHub tercapai — coba lagi sekitar pukul 10.30 WIB." });
   });
 
+  it("batas laju sekunder (429 + retry-after, remaining ≠ 0) → pesan rate limit, bukan 'HTTP 429'", async () => {
+    vi.useFakeTimers({ now: Date.UTC(2026, 9, 13, 3, 0) }); // 10:00 WIB
+    try {
+      fetchMock.mockResolvedValueOnce(
+        json({ message: "You have exceeded a secondary rate limit" }, { status: 429, headers: { "x-ratelimit-remaining": "45", "retry-after": "120" } }),
+      );
+      const res = await getGithubIssues();
+      expect(res).toEqual({ success: false, error: "Batas permintaan ke GitHub tercapai — coba lagi sekitar pukul 10.02 WIB." });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("jaringan gagal → pesan tak terjangkau, tidak melempar", async () => {
     fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
     const res = await getGithubIssues();

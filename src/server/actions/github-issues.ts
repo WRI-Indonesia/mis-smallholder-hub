@@ -69,8 +69,14 @@ async function fetchAllIssues(): Promise<GithubIssuesData> {
       throw new GithubFetchError("GitHub tidak dapat dihubungi. Coba muat ulang halaman beberapa saat lagi.");
     }
     if (!res.ok) {
-      const reset = Number(res.headers.get("x-ratelimit-reset"));
-      if ((res.status === 403 || res.status === 429) && res.headers.get("x-ratelimit-remaining") === "0") {
+      // Batas primer: `x-ratelimit-remaining: 0` + jam reset. Batas sekunder:
+      // 403/429 dengan `retry-after` (detik) tanpa remaining 0 (review wrap-up v1.8.0).
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const reset = retryAfter > 0
+        ? Math.ceil(Date.now() / 1000) + retryAfter
+        : Number(res.headers.get("x-ratelimit-reset"));
+      const rateLimited = res.headers.get("x-ratelimit-remaining") === "0" || retryAfter > 0;
+      if ((res.status === 403 || res.status === 429) && rateLimited) {
         throw new GithubFetchError(
           `Batas permintaan ke GitHub tercapai${reset ? ` — coba lagi sekitar pukul ${wibTime(reset)} WIB` : ""}.`,
         );
