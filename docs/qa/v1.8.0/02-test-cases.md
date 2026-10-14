@@ -69,11 +69,11 @@ Baseline dev: `filter-reset.test.ts`; smoke lokal 17 halaman 2026-10-13.
 ### TC-427-02 · Tautan Kalender Ketersediaan Produksi → filter Produksi terlihat [P1] (4 mnt)
 Prasyarat: SUPERADMIN; satu Lembaga ber-produksi (mis. ICS-1401-01).
 Langkah:
-1. Data Analyst › Ketersediaan Data › Produksi → klik satu sel Lembaga × bulan yang berangka → tautan ke Master Data › Produksi.
+1. Data Analyst › Ketersediaan Data › Produksi → buka baris Lembaga, lalu satu petani → klik sel **lahan** × bulan yang berangka (sel tingkat Lembaga/petani tidak bertautan) → Master Data › Produksi.
 2. Periksa bar filter; lalu klik **Reset**.
 3. Tekan tombol **Back** browser lalu **Forward**.
 Harapan:
-- Langkah 1–2: Lembaga Petani dan Periode terisi sesuai sel (Distrik ikut), Reset tampil; jumlah baris sesuai sel. Setelah Reset semua bawaan, query hilang dari URL.
+- Langkah 1–2: Lembaga Petani, Periode, dan Cari (kode petani) terisi sesuai sel (Distrik ikut), Reset tampil; jumlah baris sesuai sel. Setelah Reset semua bawaan, query hilang dari URL.
 - Langkah 3: filter mengikuti URL masing-masing tanpa galat.
 
 ### TC-427-03 · Query URL rusak tidak meng-crash halaman Produksi [P2] (2 mnt)
@@ -81,7 +81,9 @@ Langkah:
 1. Buka `/admin/master-data/production?search=a&search=b`.
 2. Buka `/admin/master-data/production?farmerGroupId=TIDAK-ADA&period=2026-13`.
 Harapan:
-- Kedua halaman tampil normal; filter di bawaan (Cari kosong, Periode kosong), Reset tidak tampil; tak ada "Terjadi Kesalahan".
+- Kedua halaman tampil normal; tak ada "Terjadi Kesalahan".
+- Langkah 1: kunci yang diulang memakai **nilai pertama** (seperti `URLSearchParams.get`) → Cari berisi "a", Reset tampil.
+- Langkah 2: Lembaga di luar opsi & Periode tak valid jatuh ke bawaan (Lembaga semua, Periode kosong), Reset tidak tampil.
 Baseline dev: `production-list-filters.test.ts` (temuan /code-review wrap-up v1.8.0).
 
 ## #424 (bagian kecil) — Penanda Estimasi dibuang
