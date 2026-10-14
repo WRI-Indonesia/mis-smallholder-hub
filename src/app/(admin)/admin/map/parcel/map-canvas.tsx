@@ -34,7 +34,7 @@ import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/ser
 import type { MapData, MapMarkerTuple, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
 import { LAND_MARKER_CONDITION_LABELS, labelOf } from "@/lib/land-marker";
 import type { LayerVisibility, LayerZoomTarget } from "./map-control-panel";
-import { geojsonBounds, type CustomLayer } from "./map-overlays";
+import { geojsonBounds, type CustomLayer } from "./map-custom-layers";
 import { OVERLAY_BOTTOM_LAYER_ID, type OverlayState } from "@/lib/map-overlays";
 import { MapOverlaySources } from "@/components/shared/map-overlay-picker";
 import {
@@ -590,6 +590,12 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           console.warn("Map source error:", e.error?.message ?? e.error);
         }}
       >
+        {/* Peta lainnya (raster overlay, #433) — di bawah label basemap & data lahan
+            (data lahan juga disisipkan sebelum labelBeforeId, jadi tetap di atas overlay).
+            Dipasang sebelum Terrain agar hillshade (beforeId = overlay terbawah) selalu
+            menemukan jangkarnya, juga saat layer dipasang ulang sesudah ganti basemap. */}
+        <MapOverlaySources overlays={overlays} beforeId={labelBeforeId} />
+
         {/* Terrain 3D: DEM (raster-dem) untuk `terrain` + hillshade tipis di atas basemap,
             di bawah semua overlay/data. Dipasang hanya saat aktif. */}
         {terrainOn && (
@@ -617,9 +623,6 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             </Source>
           </>
         )}
-
-        {/* Peta lainnya (raster overlay, #433) — below farmer data layers. */}
-        <MapOverlaySources overlays={overlays} />
 
         {/* GIS tambahan dari user ("Tambah Data GIS Lain") — di atas overlay referensi,
             di bawah data petani. WMS → raster; vektor → fill+line+circle. */}

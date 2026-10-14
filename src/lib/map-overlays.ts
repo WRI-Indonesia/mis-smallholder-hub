@@ -173,10 +173,12 @@ export const MAP_OVERLAYS: OverlayDef[] = [
     tier: "change",
     label: "Deforestasi 2024–2025",
     description: "Deforestasi resmi: hutan 2024 yang bukan hutan lagi di 2025",
-    color: "#0891b2",
+    // Warna isi renderer upstream (cyan pucat bertepi abu) — sengaja disamakan
+    // agar yang dicari di peta cocok dengan swatch; lebih samar dari 2023–2024.
+    color: "#b3f2fc",
     service: `${KEMENHUT}/DEFORESTASI_2024_2025_AR_50K/MapServer`,
     source: `${KEMENHUT_SOURCE}, Deforestasi 2024–2025 1:50.000`,
-    legend: [{ color: "#b3f2fc", label: "Deforestasi 2024–2025" }],
+    legend: [{ color: "#b3f2fc", label: "Deforestasi 2024–2025 (cyan pucat, tepi abu)" }],
   },
   {
     key: "deforestasiKlhk2324",

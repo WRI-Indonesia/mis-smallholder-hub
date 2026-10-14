@@ -174,12 +174,12 @@ Debt aktif: **TD-062…065** (dibuka 2026-10-13 dari `/code-review` wrap-up v1.8
 ### TD-030 · 🔲 Open — 3 overlay peta hilang tanpa padanan publik (P3)
 
 - **Masalah:** #215 menghapus overlay **Pelepasan Kawasan Hutan**, **PIPPIB (Moratorium)**, dan **Penutupan Lahan** karena layanan SIGAP KLHK mati dan geoportal Kemenhut baru tidak memublikasikan padanannya (kandidat terdekat PPTPKH ≠ Pelepasan; PIPPIB 2026 & PL 2024 tersedia tapi belum di-review kecocokannya dengan kebutuhan produk). Kapabilitas produk berkurang diam-diam.
-- **Validation:** review berkala geoportal Kemenhut (`Peta_Interaktif_2026`) & Satu Peta BIG; bila layanan publik yang cocok muncul, tambahkan kembali via `MAP_OVERLAYS` (skema sudah mendukung). · **Evidence:** #215 (`map-overlays.ts`). · **Owner:** Product + Frontend.
+- **Validation:** review berkala geoportal Kemenhut (`Peta_Interaktif_2026`) & Satu Peta BIG; bila layanan publik yang cocok muncul, tambahkan kembali via `MAP_OVERLAYS` (skema sudah mendukung). **Sebagian tertutup #433 (2026-10-14):** PIPPIB 2026 Periode I dan Penutupan Lahan 2025 kembali sebagai overlay Kemenhut; tinggal **Pelepasan Kawasan Hutan** yang belum punya padanan publik. · **Evidence:** #215, #433 (`src/lib/map-overlays.ts`). · **Owner:** Product + Frontend.
 
 ### TD-031 · 🔲 Open — Warna legend overlay hardcoded, sinkron manual dengan renderer upstream (P3)
 
 - **Masalah:** `MAP_OVERLAYS[].legend` menyalin warna kelas dari renderer ArcGIS upstream saat #215; bila penyedia mengubah simbologi, legend panel diam-diam tidak cocok dengan tile yang dirender.
-- **Validation:** cek visual berkala (bandingkan legend panel vs endpoint `/MapServer/legend?f=json`); alternatif jangka panjang: fetch legend upstream sekali per sesi dengan fallback ke nilai statis. · **Evidence:** #215/#217 (`map-overlays.ts`). · **Owner:** Frontend.
+- **Validation:** cek visual berkala (bandingkan legend panel vs endpoint `/MapServer/legend?f=json`); alternatif jangka panjang: fetch legend upstream sekali per sesi dengan fallback ke nilai statis. · **Evidence:** #215/#217/#433 (`src/lib/map-overlays.ts`; legend Penutupan Lahan kini ringkasan 16 dari 23 kelas renderer, kelas berarsir Sawah/Tanah Terbuka diberi abu-abu). · **Owner:** Frontend.
 
 ### TD-034 · 🔲 Open — Kontrak `DATE` FIRMS (hari pertama jendela) hanya terverifikasi manual (P3)
 

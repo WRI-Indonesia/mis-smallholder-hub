@@ -150,7 +150,7 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
   const dark = useChartDark();
   const [styleOverride, setStyleOverride] = useState<MapStyleKey | null>(null);
   const styleKey: MapStyleKey = styleOverride ?? (dark ? "dark" : "light");
-  const { mapStyle, labelFont, labelsReady, syncStyle, registerImageFallback } = useVectorBasemap(styleKey, { provideImage: provideIcon });
+  const { mapStyle, labelFont, labelsReady, labelBeforeId, syncStyle, registerImageFallback } = useVectorBasemap(styleKey, { provideImage: provideIcon });
   const mapRef = useRef<MapRef>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -494,8 +494,9 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
         }}
         onError={(e) => console.warn("Map source error:", e.error?.message ?? e.error)}
       >
-        {/* Overlay referensi (raster) dipasang pertama → di bawah garis alir & titik. */}
-        <MapOverlaySources overlays={overlays} />
+        {/* Overlay referensi (raster) dipasang pertama → di bawah garis alir & titik,
+            dan di bawah label basemap vektor (labelBeforeId). */}
+        <MapOverlaySources overlays={overlays} beforeId={labelBeforeId} />
         <Source id="sc-parcel-lines" type="geojson" data={parcelLineFc}>
           <Layer id="sc-parcel-line" type="line" paint={{ "line-color": ["get", "color"], "line-width": 0.6, "line-opacity": 0.25 }} />
         </Source>

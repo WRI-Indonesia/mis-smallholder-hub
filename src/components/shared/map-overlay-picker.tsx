@@ -74,10 +74,13 @@ function OverlayGroupSection({
 }) {
   const defs = MAP_OVERLAYS.filter((o) => o.group === group);
   const activeCount = defs.filter((o) => overlays.visible[o.key]).length;
-  // Terlipat bawaan agar panel tetap pendek; grup yang sudah punya layer aktif dibuka.
-  const [open, setOpen] = useState(activeCount > 0);
+  // Terlipat bawaan agar panel tetap pendek; grup yang punya layer aktif terbuka
+  // sampai pengguna melipatnya sendiri — juga bila layer dinyalakan dari salinan
+  // picker lain (panel ↔ popover Lapisan di Peta Supply Chain).
+  const [userOpen, setUserOpen] = useState<boolean | null>(null);
+  const open = userOpen ?? activeCount > 0;
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
+    <Collapsible open={open} onOpenChange={setUserOpen}>
       <CollapsibleTrigger
         render={
           <button className="flex w-full items-center gap-1.5 py-1.5 text-left text-xs font-semibold text-muted-foreground hover:text-foreground">
@@ -145,12 +148,15 @@ export function MapOverlayPicker({
 
 /**
  * Sumber + layer raster semua overlay, dipasang di dalam `<Map>` sebelum
- * layer data agar tergambar di bawahnya. Dirender terbalik dari urutan gambar
+ * layer data agar tergambar di bawahnya. Pada basemap vektor, oper
+ * `beforeId` = layer label pertama (`labelBeforeId` dari `useVectorBasemap`)
+ * agar overlay tidak menutupi nama tempat — tanpanya overlay ditumpuk di
+ * puncak style. Dirender terbalik dari urutan gambar
  * sehingga entri pertama `MAP_OVERLAYS_DRAW_ORDER` berada paling atas. Layer
  * selalu terpasang (hanya visibility yang berganti) — MapLibre tak menarik
  * tile untuk layer yang tersembunyi.
  */
-export function MapOverlaySources({ overlays }: { overlays: OverlayState }) {
+export function MapOverlaySources({ overlays, beforeId }: { overlays: OverlayState; beforeId?: string }) {
   return (
     <>
       {[...MAP_OVERLAYS_DRAW_ORDER].reverse().map((o) => (
@@ -158,6 +164,7 @@ export function MapOverlaySources({ overlays }: { overlays: OverlayState }) {
           <Layer
             id={overlayLayerId(o.key)}
             type="raster"
+            beforeId={beforeId}
             layout={{ visibility: overlays.visible[o.key] ? "visible" : "none" }}
             paint={{ "raster-opacity": overlays.opacity }}
           />

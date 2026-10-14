@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { MapData, MapSelectOption, MapGroupOption } from "@/types/map";
-import type { CustomLayer } from "./map-overlays";
+import type { CustomLayer } from "./map-custom-layers";
 import type { OverlayState } from "@/lib/map-overlays";
 import { MapOverlayPicker } from "@/components/shared/map-overlay-picker";
 import {
@@ -208,6 +208,7 @@ export function MapControlPanel(props: Props) {
   } = props;
 
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const overlayCount = Object.values(overlays.visible).filter(Boolean).length;
   const [hotspotOpen, setHotspotOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(true);
   const [minimized, setMinimized] = useState(false);
@@ -428,7 +429,12 @@ export function MapControlPanel(props: Props) {
                 <Layers className="h-4 w-4" />
                 Peta Lainnya
               </span>
-              <ChevronDown className={cn("h-4 w-4 transition-transform", overlayOpen ? "rotate-180" : "")} />
+              <span className="flex items-center gap-2">
+                {overlayCount > 0 && (
+                  <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">{overlayCount} aktif</span>
+                )}
+                <ChevronDown className={cn("h-4 w-4 transition-transform", overlayOpen ? "rotate-180" : "")} />
+              </span>
             </button>
           }
         />

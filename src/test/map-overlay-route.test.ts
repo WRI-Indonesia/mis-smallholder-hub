@@ -8,6 +8,11 @@ import { NextRequest } from "next/server";
 // `https.get` (bukan fetch) — modul node:https di-mock; tidak ada jaringan.
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
+// Memo izin (#433, pola #320) adalah state modul route: tiap test memakai user
+// unik supaya hasil memo satu kasus tak bocor ke kasus lain.
+const auth = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/auth", () => ({ auth }));
+let userSeq = 0;
 
 const httpsGet = vi.hoisted(() => vi.fn());
 vi.mock("node:https", () => ({ default: { get: httpsGet } }));
@@ -55,6 +60,8 @@ function mockUpstreamNetworkError() {
 }
 
 beforeEach(() => {
+  userSeq += 1;
+  auth.mockReset().mockResolvedValue({ user: { id: `user-${userSeq}`, role: "ADMIN" } });
   hasPermission.mockReset().mockResolvedValue(true);
   httpsGet.mockReset();
   mockUpstream();
@@ -81,6 +88,29 @@ describe("GET /api/map-overlay/[key] — guard permission", () => {
     expect(res.status).toBe(200);
     expect(hasPermission).toHaveBeenCalledTimes(1);
     expect(hasPermission).toHaveBeenCalledWith("map-parcel", "VIEW");
+  });
+
+  it("403 tanpa sesi, tanpa cek izin maupun upstream", async () => {
+    auth.mockResolvedValue(null);
+    const res = await call(VALID_KEY);
+    expect(res.status).toBe(403);
+    expect(hasPermission).not.toHaveBeenCalled();
+    expect(httpsGet).not.toHaveBeenCalled();
+  });
+
+  it("izin dimemo per pengguna: banyak tile = sekali cek, sesi tetap dicek tiap tile", async () => {
+    hasPermission.mockImplementation(async (menuKey: string) => menuKey === "map-supply-chain");
+    for (let i = 0; i < 10; i++) expect((await call(VALID_KEY)).status).toBe(200);
+    expect(hasPermission).toHaveBeenCalledTimes(2); // map-parcel (tolak) + map-supply-chain (izin), sekali
+    expect(auth).toHaveBeenCalledTimes(10);
+  });
+
+  it("penolakan dimemo tapi tak bocor ke pengguna lain", async () => {
+    hasPermission.mockResolvedValue(false);
+    expect((await call(VALID_KEY)).status).toBe(403);
+    auth.mockResolvedValue({ user: { id: `user-${userSeq}-lain`, role: "ADMIN" } });
+    hasPermission.mockResolvedValue(true);
+    expect((await call(VALID_KEY)).status).toBe(200);
   });
 });
 
@@ -127,7 +157,8 @@ describe("GET /api/map-overlay/[key] — jalur sukses", () => {
     const res = await call(VALID_KEY);
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("image/png");
-    expect(res.headers.get("Cache-Control")).toContain("max-age");
+    // Digerbangi izin → private (cache bersama tak boleh melewati guard).
+    expect(res.headers.get("Cache-Control")).toMatch(/^private, max-age=\d+$/);
     expect(Buffer.from(await res.arrayBuffer())).toEqual(PNG_BODY);
 
     // URL upstream: service overlay + kontrak export ArcGIS + bbox diteruskan.

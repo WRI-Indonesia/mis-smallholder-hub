@@ -1,6 +1,8 @@
 import https from "node:https";
 import type { NextRequest } from "next/server";
+import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { createPermissionMemo } from "@/lib/permission-memo";
 import { findProxiedOverlay } from "@/lib/map-overlays";
 
 // Tile proxy for the "Peta Lainnya" reference overlays. Needed because the
@@ -39,15 +41,26 @@ function fetchTile(url: string): Promise<UpstreamResult> {
   });
 }
 
+/**
+ * Memo izin per pengguna (pola /api/map-basemap, #320): satu geser peta dengan
+ * beberapa overlay aktif = ratusan tile, dan tanpa memo tiap tile mengulang
+ * query izin (dua kali bagi pemegang map-supply-chain saja). Kunci `userId:role`;
+ * pencabutan izin berlaku paling lambat 60 detik (disetujui owner 2026-09-30
+ * untuk endpoint tile baca-saja).
+ */
+const overlayPermission = createPermissionMemo();
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   // Guard permission halaman peta yang memakainya (paritas /api/map-hotspot,
   // dilengkapi saat test #241) — endpoint tile bukan proxy anonim. Peta Lahan
-  // ATAU Peta Supply Chain (#433); dicek berurutan agar pemegang map-parcel
-  // cukup satu query.
-  if (
-    !(await hasPermission("map-parcel", "VIEW")) &&
-    !(await hasPermission("map-supply-chain", "VIEW"))
-  ) {
+  // ATAU Peta Supply Chain (#433); map-parcel dicek dulu, hasil dimemo.
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return new Response("Forbidden", { status: 403 });
+  const allowed = await overlayPermission(`${userId}:${session.user.role ?? ""}`, async () =>
+    (await hasPermission("map-parcel", "VIEW")) || (await hasPermission("map-supply-chain", "VIEW")),
+  );
+  if (!allowed) {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -72,7 +85,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ key:
       status: 200,
       headers: {
         "Content-Type": res.contentType,
-        "Cache-Control": "public, max-age=86400, s-maxage=86400",
+        // `private`: tile digerbangi izin — cache bersama (CDN/proxy) tak boleh
+        // menyajikannya tanpa melewati guard (paritas /api/map-hotspot).
+        "Cache-Control": "private, max-age=86400",
       },
     });
   } catch {

@@ -24,7 +24,7 @@ import type { FeatureCollection, MultiPolygon } from "geojson";
 import { filterPointsWithinAreas } from "@/lib/fire-alert";
 import { getRiauOutline } from "@/server/actions/fire-boundary";
 import { MapControlPanel, type LayerVisibility, type LayerZoomTarget, type LegendExportRow, type LegendExportFormat } from "./map-control-panel";
-import { buildSymbology, type CustomLayer } from "./map-overlays";
+import { buildSymbology, type CustomLayer } from "./map-custom-layers";
 import { DEFAULT_OVERLAY_STATE, type OverlayState } from "@/lib/map-overlays";
 import {
   DEFAULT_HOTSPOT_STATE,

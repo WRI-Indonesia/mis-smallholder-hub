@@ -16,7 +16,7 @@ import {
   symbologyCandidates,
   toFeatureCollection,
   type CustomLayer,
-} from "./map-overlays";
+} from "./map-custom-layers";
 
 type Mode = "wms" | "shapefile" | "geojson";
 
