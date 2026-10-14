@@ -13,7 +13,7 @@ const httpsGet = vi.hoisted(() => vi.fn());
 vi.mock("node:https", () => ({ default: { get: httpsGet } }));
 
 const { GET } = await import("@/app/api/map-overlay/[key]/route");
-const { MAP_OVERLAYS } = await import("@/app/(admin)/admin/map/parcel/map-overlays");
+const { MAP_OVERLAYS, findProxiedOverlay } = await import("@/lib/map-overlays");
 
 const VALID_KEY = "kawasanHutan";
 const UPSTREAM_HOST = "geoportal.planologi.kehutanan.go.id";
@@ -61,12 +61,26 @@ beforeEach(() => {
 });
 
 describe("GET /api/map-overlay/[key] — guard permission", () => {
-  it("403 tanpa permission map-parcel VIEW, tanpa menyentuh upstream", async () => {
+  it("403 tanpa permission map-parcel maupun map-supply-chain VIEW, tanpa menyentuh upstream", async () => {
     hasPermission.mockResolvedValue(false);
     const res = await call(VALID_KEY);
     expect(res.status).toBe(403);
     expect(hasPermission).toHaveBeenCalledWith("map-parcel", "VIEW");
+    expect(hasPermission).toHaveBeenCalledWith("map-supply-chain", "VIEW");
     expect(httpsGet).not.toHaveBeenCalled();
+  });
+
+  it("200 dengan map-supply-chain VIEW saja (Peta Supply Chain, #433)", async () => {
+    hasPermission.mockImplementation(async (menuKey: string) => menuKey === "map-supply-chain");
+    const res = await call(VALID_KEY);
+    expect(res.status).toBe(200);
+  });
+
+  it("pemegang map-parcel VIEW cukup satu cek izin", async () => {
+    const res = await call(VALID_KEY);
+    expect(res.status).toBe(200);
+    expect(hasPermission).toHaveBeenCalledTimes(1);
+    expect(hasPermission).toHaveBeenCalledWith("map-parcel", "VIEW");
   });
 });
 
@@ -77,6 +91,26 @@ describe("GET /api/map-overlay/[key] — validasi parameter", () => {
       expect(res.status).toBe(404);
     }
     expect(httpsGet).not.toHaveBeenCalled();
+  });
+
+  it("404 untuk overlay GFW (xyz dimuat langsung, tak lewat proxy)", async () => {
+    const xyzKeys = MAP_OVERLAYS.filter((o) => o.kind === "xyz").map((o) => o.key);
+    expect(xyzKeys.length).toBeGreaterThan(0);
+    for (const key of xyzKeys) {
+      const res = await call(key);
+      expect(res.status).toBe(404);
+    }
+    expect(httpsGet).not.toHaveBeenCalled();
+  });
+
+  it("semua overlay ArcGIS ada di whitelist dan diteruskan ke service-nya sendiri", async () => {
+    const arcgis = MAP_OVERLAYS.filter((o) => o.kind === "arcgis");
+    for (const o of arcgis) {
+      httpsGet.mockClear();
+      const res = await call(o.key);
+      expect(res.status).toBe(200);
+      expect(String(httpsGet.mock.calls[0][0]).startsWith(`${findProxiedOverlay(o.key)!.service}/export?`)).toBe(true);
+    }
   });
 
   it("400 untuk bbox hilang/rusak", async () => {
@@ -97,7 +131,7 @@ describe("GET /api/map-overlay/[key] — jalur sukses", () => {
     expect(Buffer.from(await res.arrayBuffer())).toEqual(PNG_BODY);
 
     // URL upstream: service overlay + kontrak export ArcGIS + bbox diteruskan.
-    const overlay = MAP_OVERLAYS.find((o) => o.key === VALID_KEY)!;
+    const overlay = findProxiedOverlay(VALID_KEY)!;
     const upstreamUrl = String(httpsGet.mock.calls[0][0]);
     expect(upstreamUrl.startsWith(`${overlay.service}/export?bbox=${VALID_BBOX}`)).toBe(true);
     expect(upstreamUrl).toContain("bboxSR=3857");

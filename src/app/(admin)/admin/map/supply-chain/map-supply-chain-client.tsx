@@ -6,7 +6,7 @@ import Map, { Layer, Popup, Source, type MapLayerMouseEvent, type MapRef } from 
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { ExpressionSpecification, FilterSpecification, SymbolLayerSpecification } from "maplibre-gl";
 import type { Feature, FeatureCollection, LineString, Point } from "geojson";
-import { BarChart3, Building2, ChevronDown, Factory, Filter as FilterIcon, FlaskConical, Layers, ListTree, Map as MapIcon, Maximize, Minus, PanelLeftClose, PanelLeftOpen, Plus, Sprout, Truck, X } from "lucide-react";
+import { BarChart3, Building2, ChevronDown, Factory, Filter as FilterIcon, FlaskConical, Layers, ListTree, Map as MapIcon, Maximize, Minus, PanelLeftClose, PanelLeftOpen, Plus, Sprout, TreePine, Truck, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -14,6 +14,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { MAP_POPUP_PROPS, MapPopupDragHandle, MapPopupHeader, MapPopupHighlight, MapPopupRows, useMapPopupAutoPan, useMapPopupDrag } from "@/components/shared/map-popup";
 import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
 import { useVectorBasemap } from "@/hooks/use-vector-basemap";
+import { DEFAULT_OVERLAY_STATE, type OverlayState } from "@/lib/map-overlays";
+import { MapOverlayPicker, MapOverlaySources } from "@/components/shared/map-overlay-picker";
 import { fmtKm, fmtTon, pctOf } from "@/lib/supply-chain-format";
 import {
   CHANNEL_LABEL,
@@ -166,6 +168,9 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
   const [animateStored, setAnimateStored] = useLayerSwitch("animate", true);
   const animate = animateStored && !reducedMotion;
   const [legendStored, setLegendStored] = useLayerSwitch("legend-strip", true);
+  // Peta Lainnya (#433): overlay hutan & deforestasi bersama Peta Lahan; tak diingat (pola Peta Lahan).
+  const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAY_STATE);
+  const overlayCount = Object.values(overlays.visible).filter(Boolean).length;
   const [selected, setSelected] = useState<Selected>(null);
   const [hover, setHover] = useState<Hover>(null);
   const hoverRef = useRef<FeatureRef | null>(null);
@@ -489,6 +494,8 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
         }}
         onError={(e) => console.warn("Map source error:", e.error?.message ?? e.error)}
       >
+        {/* Overlay referensi (raster) dipasang pertama → di bawah garis alir & titik. */}
+        <MapOverlaySources overlays={overlays} />
         <Source id="sc-parcel-lines" type="geojson" data={parcelLineFc}>
           <Layer id="sc-parcel-line" type="line" paint={{ "line-color": ["get", "color"], "line-width": 0.6, "line-opacity": 0.25 }} />
         </Source>
@@ -643,6 +650,16 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
             </PanelSection>
 
             <PanelSection
+              id="overlays"
+              icon={<TreePine className="h-3.5 w-3.5" />}
+              title="Peta Lainnya"
+              defaultOpen={false}
+              closedAside={overlayCount > 0 && <span className="text-[11px] text-muted-foreground">{overlayCount} aktif</span>}
+            >
+              <MapOverlayPicker overlays={overlays} onChange={setOverlays} />
+            </PanelSection>
+
+            <PanelSection
               id="legend"
               icon={<ListTree className="h-3.5 w-3.5" />}
               title="Legenda"
@@ -701,9 +718,11 @@ export function MapSupplyChainClient({ view, helpSlot }: { view: SupplyChainMapV
         <MapButton title="Paskan ke semua data" onClick={fitAll} className="rounded-md border bg-card/95 shadow backdrop-blur"><Maximize className="h-4 w-4" /></MapButton>
         <Popover>
           <PopoverTrigger render={<MapButton title="Lapisan peta" className="rounded-md border bg-card/95 shadow backdrop-blur"><Layers className="h-4 w-4" /></MapButton>} />
-          <PopoverContent align="end" className="w-64 p-3">
+          <PopoverContent align="end" className="max-h-[calc(100vh-10rem)] w-72 overflow-y-auto p-3">
             <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Lapisan</div>
             {layerToggles}
+            <div className="mb-1 mt-3 border-t pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Peta Lainnya</div>
+            <MapOverlayPicker overlays={overlays} onChange={setOverlays} />
           </PopoverContent>
         </Popover>
         <Popover>

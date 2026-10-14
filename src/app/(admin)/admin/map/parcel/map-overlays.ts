@@ -1,99 +1,10 @@
 /**
- * Reference map overlays for the "Peta Lainnya" panel section.
- *
- * These are third-party thematic maps served as ArcGIS REST MapServer
- * services. We consume the dynamic `export` endpoint as XYZ-style raster tiles
- * so MapLibre can overlay them beneath the farmer data layers.
- *
- * Source history: originally SIGAP KLHK (geoportal.menlhk.go.id). After the
- * ministry split into Kemenhut + KLH, the old domain was removed from DNS
- * (2026) and the services scattered: Kawasan Hutan now lives at
- * geoportal.planologi.kehutanan.go.id (Peta Interaktif 2026), while Fungsi
- * Ekosistem Gambut is no longer public at Kemenhut/KLH — we use the official
- * copy on Satu Peta BIG (kspservices.big.go.id).
+ * User-added GIS layers for Peta Lahan's "Tambah Data GIS Lain" panel.
+ * The built-in reference overlays ("Peta Lainnya") live in `@/lib/map-overlays`
+ * (shared with Peta Supply Chain, #433).
  */
 
 import type { FeatureCollection, Feature, Geometry } from "geojson";
-
-export type OverlayDef = {
-  key: string;
-  label: string;
-  description: string;
-  /** Swatch color shown next to the toggle in the panel. */
-  color: string;
-  /** ArcGIS REST MapServer base URL. */
-  service: string;
-  /**
-   * Optional ArcGIS `layers` param for the export request (e.g. "show:48")
-   * when the MapServer bundles many layers and only some should be drawn.
-   */
-  exportLayers?: string;
-  /** Attribution line shown under the toggle when the overlay is active. */
-  source: string;
-  /** Legend entries (fill colors from the upstream renderer), shown when active. */
-  legend: { color: string; label: string }[];
-};
-
-/** Ordered list of available overlays (top row = drawn on top). */
-export const MAP_OVERLAYS: OverlayDef[] = [
-  {
-    key: "kawasanHutan",
-    label: "Kawasan Hutan",
-    description: "Penunjukan kawasan hutan (HK/HL/HP/HPT/HPK/APL)",
-    color: "#16a34a",
-    service:
-      "https://geoportal.planologi.kehutanan.go.id/server/rest/services/Peta_Interaktif_2026/KWSHUTAN_AR_250K/MapServer",
-    source:
-      "Kementerian Kehutanan — Geoportal Planologi, Peta Kawasan Hutan 1:250.000 (Des 2025)",
-    legend: [
-      { color: "#ad3fff", label: "Kawasan Konservasi (HK)" },
-      { color: "#02ad00", label: "Hutan Lindung (HL)" },
-      { color: "#8af200", label: "Hutan Produksi Terbatas (HPT)" },
-      { color: "#ffff00", label: "Hutan Produksi Tetap (HP)" },
-      { color: "#ff5eff", label: "Hutan Produksi Konversi (HPK)" },
-      { color: "#ffffff", label: "Area Penggunaan Lain (APL)" },
-      { color: "#00c5ff", label: "Tubuh Air" },
-    ],
-  },
-  {
-    key: "gambut",
-    label: "Fungsi Ekosistem Gambut",
-    description: "Fungsi lindung & budidaya ekosistem gambut",
-    color: "#92400e",
-    service:
-      "https://kspservices.big.go.id/satupeta/rest/services/PUBLIK/SUMBER_DAYA_ALAM_DAN_LINGKUNGAN/MapServer",
-    exportLayers: "show:48",
-    source:
-      "Satu Peta BIG / KLH, Peta Fungsi Ekosistem Gambut 1:50.000",
-    legend: [
-      { color: "#38a800", label: "Fungsi Lindung Ekosistem Gambut" },
-      { color: "#ffff73", label: "Fungsi Budidaya Ekosistem Gambut" },
-    ],
-  },
-];
-
-/**
- * Raster tile URL template for MapLibre, pointing at our same-origin proxy
- * (`/api/map-overlay/[key]`). `{bbox-epsg-3857}` is substituted by MapLibre with
- * each tile's Web Mercator extent; the proxy forwards it to the upstream ArcGIS
- * `export` endpoint. Proxying is required because the upstream server sends no
- * CORS headers and an incomplete TLS chain — see the route handler.
- */
-export function overlayTileUrl(key: string): string {
-  return `/api/map-overlay/${key}?bbox={bbox-epsg-3857}`;
-}
-
-export type OverlayState = {
-  /** Per-overlay visibility, keyed by OverlayDef.key. */
-  visible: Record<string, boolean>;
-  /** Shared opacity for all active overlays (0.1–1). */
-  opacity: number;
-};
-
-export const DEFAULT_OVERLAY_STATE: OverlayState = {
-  visible: {},
-  opacity: 0.7,
-};
 
 // ---------------------------------------------------------------------------
 // User-added GIS layers ("Tambah Data GIS Lain") — session-only, not persisted.

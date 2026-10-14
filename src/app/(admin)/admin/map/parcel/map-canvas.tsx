@@ -34,13 +34,9 @@ import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/ser
 import type { MapData, MapMarkerTuple, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
 import { LAND_MARKER_CONDITION_LABELS, labelOf } from "@/lib/land-marker";
 import type { LayerVisibility, LayerZoomTarget } from "./map-control-panel";
-import {
-  MAP_OVERLAYS,
-  overlayTileUrl,
-  geojsonBounds,
-  type OverlayState,
-  type CustomLayer,
-} from "./map-overlays";
+import { geojsonBounds, type CustomLayer } from "./map-overlays";
+import { OVERLAY_BOTTOM_LAYER_ID, type OverlayState } from "@/lib/map-overlays";
+import { MapOverlaySources } from "@/components/shared/map-overlay-picker";
 import {
   HOTSPOT_CONF_COLORS,
   formatWib,
@@ -615,32 +611,15 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
               <Layer
                 id="terrain-hillshade"
                 type="hillshade"
-                beforeId={`overlay-${MAP_OVERLAYS[MAP_OVERLAYS.length - 1].key}-layer`}
+                beforeId={OVERLAY_BOTTOM_LAYER_ID}
                 paint={{ "hillshade-exaggeration": 0.35 }}
               />
             </Source>
           </>
         )}
 
-        {/* Peta lainnya (raster overlay) — below farmer data layers.
-            Rendered in reverse so the first entry in MAP_OVERLAYS ends up on top. */}
-        {[...MAP_OVERLAYS].reverse().map((o) => (
-          <Source
-            key={o.key}
-            id={`overlay-${o.key}`}
-            type="raster"
-            tiles={[overlayTileUrl(o.key)]}
-            tileSize={256}
-            attribution={o.source}
-          >
-            <Layer
-              id={`overlay-${o.key}-layer`}
-              type="raster"
-              layout={vis(!!overlays.visible[o.key])}
-              paint={{ "raster-opacity": overlays.opacity }}
-            />
-          </Source>
-        ))}
+        {/* Peta lainnya (raster overlay, #433) — below farmer data layers. */}
+        <MapOverlaySources overlays={overlays} />
 
         {/* GIS tambahan dari user ("Tambah Data GIS Lain") — di atas overlay referensi,
             di bawah data petani. WMS → raster; vektor → fill+line+circle. */}

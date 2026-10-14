@@ -1,7 +1,7 @@
 import https from "node:https";
 import type { NextRequest } from "next/server";
 import { hasPermission } from "@/lib/rbac";
-import { MAP_OVERLAYS } from "@/app/(admin)/admin/map/parcel/map-overlays";
+import { findProxiedOverlay } from "@/lib/map-overlays";
 
 // Tile proxy for the "Peta Lainnya" reference overlays. Needed because the
 // upstream government ArcGIS servers (Kemenhut geoportal, Satu Peta BIG)
@@ -10,7 +10,9 @@ import { MAP_OVERLAYS } from "@/app/(admin)/admin/map/parcel/map-overlays";
 //
 // This is a deliberate, narrow exception to the "no REST API layer" rule — a
 // binary image endpoint cannot be a Server Action (MapLibre needs a plain GET
-// tile URL). Only whitelisted overlay keys are forwarded (no open proxy).
+// tile URL). Only whitelisted ArcGIS overlay keys are forwarded (no open
+// proxy); the Global Forest Watch overlays send CORS `*` and are loaded by
+// MapLibre directly, so they are not routed through here (#433).
 
 export const runtime = "nodejs";
 
@@ -38,14 +40,19 @@ function fetchTile(url: string): Promise<UpstreamResult> {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
-  // Guard permission yang sama dengan halaman peta (paritas /api/map-hotspot,
-  // dilengkapi saat test #241) — endpoint tile bukan proxy anonim.
-  if (!(await hasPermission("map-parcel", "VIEW"))) {
+  // Guard permission halaman peta yang memakainya (paritas /api/map-hotspot,
+  // dilengkapi saat test #241) — endpoint tile bukan proxy anonim. Peta Lahan
+  // ATAU Peta Supply Chain (#433); dicek berurutan agar pemegang map-parcel
+  // cukup satu query.
+  if (
+    !(await hasPermission("map-parcel", "VIEW")) &&
+    !(await hasPermission("map-supply-chain", "VIEW"))
+  ) {
     return new Response("Forbidden", { status: 403 });
   }
 
   const { key } = await params;
-  const overlay = MAP_OVERLAYS.find((o) => o.key === key);
+  const overlay = findProxiedOverlay(key);
   if (!overlay) return new Response("Unknown overlay", { status: 404 });
 
   const bbox = req.nextUrl.searchParams.get("bbox");

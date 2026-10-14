@@ -13,7 +13,7 @@ Halaman: Peta Rantai Pasok (/admin/map/supply-chain)
 │   ├── Toggle Ringkas (Lembaga → Mill) | Detail (singgah agen/RAMP bertitik + titik lahan)
 │   └── Satu gulir, bagian lipat (diingat per browser `sc-dashboard:map:*`; bawaan Filter terbuka, lainnya terlipat dengan ringkasan di judul):
 │       Filter (bar filter bersama, vertikal + ↺ Reset `ResetFiltersButton`, #427) · Lapisan (garis alir · animasi arah · label · titik lahan · garis lahan → Mill)
-│       · Legenda (warna jalur + contoh tebal 3 tonase + titik/ikon) · Ringkasan (tergambar / tidak tergambar + daftar NAMA Mill/Lembaga/offtaker tanpa titik)
+│       · Peta Lainnya (overlay referensi bersama Peta Lahan: kelompok Kemenhut / BIG + EUDR (GFW), legend/sumber + transparansi; tak diingat — #433) · Legenda (warna jalur + contoh tebal 3 tonase + titik/ikon) · Ringkasan (tergambar / tidak tergambar + daftar NAMA Mill/Lembaga/offtaker tanpa titik)
 ├── Peta
 │   ├── Garis alir melengkung (`arcCoordinates`, bezier ke kiri arah aliran), warna = jalur, tebal ∝ √tonase (`flowLineWidth`)
 │   │   + lapisan dash putih yang diputar rAF (titik bergerak = arah; mati → panah) · hover = garis menyala (feature-state)
@@ -22,7 +22,7 @@ Halaman: Peta Rantai Pasok (/admin/map/supply-chain)
 │   ├── Hover = tooltip nama + tonase; klik node = sorot jaringannya, sisanya diredupkan
 │   └── Popup (auto-pan di kanan panel, bisa digeser): Mill (badge UL, UML ID, Distrik, porsi, status, RSPO, Lembaga·offtaker, jarak rata-rata, Lembaga teratas)
 │       · Lembaga (porsi, % UL · % PKS pasti, offtaker utama, jarak, Mill tujuan) · offtaker (aksi hanya bila `offtakerFilterPatch` menangkap recordnya; pembeli kedua non-RAMP → keterangan) · lahan · garis — footer **Jadikan filter** · **Lihat di Dashboard**
-├── Tumpukan kontrol kanan atas: zoom +/− · Paskan · Lapisan (popover saklar yang sama dengan panel) · Basemap (popover STREET / LIGHT / DARK / SAT / HYBRID)
+├── Tumpukan kontrol kanan atas: zoom +/− · Paskan · Lapisan (popover saklar yang sama dengan panel + Peta Lainnya, bergulir) · Basemap (popover STREET / LIGHT / DARK / SAT / HYBRID)
 └── Strip legenda mendatar bawah tengah (warna jalur · Lembaga · offtaker · 3 ikon Mill; ✕ sembunyikan ↔ chip Legenda; diingat per browser, digeser ke kanan selebar panel saat panel terbuka)
 ```
 
