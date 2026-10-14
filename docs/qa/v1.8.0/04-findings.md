@@ -6,7 +6,8 @@ Severity: **blocker** (rilis ditahan) · **major** (fitur salah, ada jalan lain)
 
 | # | Kasus | Halaman · langkah | Yang terjadi vs harapan | Severity | Env | Issue | Keputusan | Bukti |
 |---|---|---|---|---|---|---|---|---|
-| 1 | TC-… | | | | staging | #… | fix rilis ini / defer | `evidence/…` |
+| — | — | Tidak ada temuan aplikasi pada run lokal & staging 2026-10-14 | — | — | — | — | — | — |
+| (docs) | TC-427-02, TC-427-03 | Teks kasus uji keliru (tautan di sel lahan; kunci diulang = nilai pertama) — aplikasi benar | — | minor | staging | — | teks dikoreksi `bc62ed6` | `runs/2026-10-14-staging.md` |
 
 ## Membuka issue dari temuan
 

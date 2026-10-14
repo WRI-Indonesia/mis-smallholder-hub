@@ -4,8 +4,8 @@
 
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
-| Developer | | | Go / No-go | gate lokal hijau; `02` lengkap; temuan blocker/major diperbaiki |
-| QA | | | Go / No-go | run staging: semua P0 Pass; Fail tersisa hanya minor ber-issue |
+| Developer | Claude | 2026-10-14 | Go | gate lokal hijau (3.094 test, build, lint, typecheck); `02` lengkap (16 kasus #424–#433); 2 wrap-up `/code-review` (8 + 4 temuan diperbaiki, sisanya TD-062…066); tanpa migrasi |
+| QA | Claude (run staging) | 2026-10-14 | Go | run staging `2026-10-14-staging.md` (`000ced9`): smoke P0 13 · kasus 16 · regresi 3 Pass · **0 Fail**; N/A: DONOR (SM-29 + langkah DONOR) & akun ber-override; run lokal TC-433/429 0 Fail; seed menu staging ✓, snapshot BMP staging di-generate ulang |
 | Owner | | | Go / No-go | known issues diterima |
 
 ## Setelah perbaikan temuan — apa yang diulang
