@@ -12,7 +12,9 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { MapData, MapSelectOption, MapGroupOption } from "@/types/map";
-import { MAP_OVERLAYS, type OverlayDef, type OverlayState, type CustomLayer } from "./map-overlays";
+import type { CustomLayer } from "./map-custom-layers";
+import type { OverlayState } from "@/lib/map-overlays";
+import { MapOverlayPicker } from "@/components/shared/map-overlay-picker";
 import {
   HOTSPOT_CONF_COLORS,
   HOTSPOT_CONF_LABELS,
@@ -188,46 +190,6 @@ function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant =
   );
 }
 
-function OverlayRow({
-  def,
-  checked,
-  onToggle,
-}: {
-  def: OverlayDef;
-  checked: boolean;
-  onToggle: (checked: boolean) => void;
-}) {
-  return (
-    <div className="py-1.5">
-      <label className="flex items-start gap-2.5 cursor-pointer">
-        <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} className="mt-0.5" />
-        <span
-          className="mt-0.5 inline-block h-3 w-3 shrink-0 rounded-sm border-2"
-          style={{ backgroundColor: `${def.color}33`, borderColor: def.color }}
-        />
-        <span className="min-w-0">
-          <span className="block text-sm leading-tight">{def.label}</span>
-          <span className="block text-[11px] leading-snug text-muted-foreground">{def.description}</span>
-        </span>
-      </label>
-      {checked && (
-        <div className="ml-[42px] mt-1.5 space-y-1">
-          {def.legend.map((item) => (
-            <div key={item.label} className="flex items-center gap-2">
-              <span
-                className="inline-block h-2.5 w-2.5 shrink-0 rounded-[2px] border border-border"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-[11px] leading-tight text-muted-foreground">{item.label}</span>
-            </div>
-          ))}
-          <p className="text-[10px] leading-snug text-muted-foreground/80">Sumber: {def.source}.</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function MapControlPanel(props: Props) {
   const {
     provinces, districts, farmerGroups,
@@ -246,10 +208,10 @@ export function MapControlPanel(props: Props) {
   } = props;
 
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const overlayCount = Object.values(overlays.visible).filter(Boolean).length;
   const [hotspotOpen, setHotspotOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(true);
   const [minimized, setMinimized] = useState(false);
-  const anyOverlayOn = Object.values(overlays.visible).some(Boolean);
   const hotspotTotal = hotspotCounts.high + hotspotCounts.nominal + hotspotCounts.low;
   // Titik api baru bisa dinyalakan setelah data lahan dimuat (perlu titik
   // Lembaga Petani untuk kalkulasi jarak di laporan PDF). Saat sudah nyala,
@@ -467,40 +429,18 @@ export function MapControlPanel(props: Props) {
                 <Layers className="h-4 w-4" />
                 Peta Lainnya
               </span>
-              <ChevronDown className={cn("h-4 w-4 transition-transform", overlayOpen ? "rotate-180" : "")} />
+              <span className="flex items-center gap-2">
+                {overlayCount > 0 && (
+                  <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">{overlayCount} aktif</span>
+                )}
+                <ChevronDown className={cn("h-4 w-4 transition-transform", overlayOpen ? "rotate-180" : "")} />
+              </span>
             </button>
           }
         />
         <CollapsibleContent>
           <div className="px-4 pb-4">
-            {MAP_OVERLAYS.map((o) => (
-              <OverlayRow
-                key={o.key}
-                def={o}
-                checked={!!overlays.visible[o.key]}
-                onToggle={(v) =>
-                  onOverlaysChange({ ...overlays, visible: { ...overlays.visible, [o.key]: v } })
-                }
-              />
-            ))}
-            {anyOverlayOn && (
-              <div className="mt-3 flex items-center gap-2">
-                <span className="shrink-0 text-xs text-muted-foreground">Transparansi</span>
-                <input
-                  type="range"
-                  min={0.1}
-                  max={1}
-                  step={0.1}
-                  value={overlays.opacity}
-                  onChange={(e) => onOverlaysChange({ ...overlays, opacity: Number(e.target.value) })}
-                  className="h-1 flex-1 cursor-pointer accent-primary"
-                  aria-label="Transparansi overlay"
-                />
-                <span className="w-8 text-right font-mono text-xs tabular-nums text-muted-foreground">
-                  {Math.round(overlays.opacity * 100)}%
-                </span>
-              </div>
-            )}
+            <MapOverlayPicker overlays={overlays} onChange={onOverlaysChange} />
           </div>
         </CollapsibleContent>
       </Collapsible>
