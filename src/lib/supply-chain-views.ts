@@ -81,6 +81,8 @@ export interface TreeOptions {
   byDistrict: boolean;
   /** Tambah tingkat Ke Mill UL / Bukan ke Mill UL di atas Mill (toggle Ke = UL / Non-UL). */
   byUl: boolean;
+  /** `false` = tingkat Offtaker disembunyikan (toggle Offtaker = Sembunyikan); bawaan tampil. */
+  withOfftaker?: boolean;
 }
 
 /**
@@ -135,8 +137,9 @@ export function buildSupplyChainTree(graph: SankeyGraph, groups: ScGroup[], opts
       opts.byUl && dest.id !== UNKNOWN_MILL_ID ? [[ulStep("UL"), p.toUlTon], [ulStep("NON_UL"), p.ton - p.toUlTon]] : [[null, p.ton]];
     for (const [ul, ton] of portions) {
       if (!(ton > 0)) continue;
-      const hulu = [opts.byDistrict ? dist : null, lembaga, off, ul, mill];
-      const hilir = [ul, mill, off, opts.byDistrict ? dist : null, lembaga];
+      const offStep = opts.withOfftaker === false ? null : off;
+      const hulu = [opts.byDistrict ? dist : null, lembaga, offStep, ul, mill];
+      const hilir = [ul, mill, offStep, opts.byDistrict ? dist : null, lembaga];
       add((opts.direction === "HULU" ? hulu : hilir).filter((s): s is Step => !!s), ton, p.channel);
     }
   }

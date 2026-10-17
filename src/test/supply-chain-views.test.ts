@@ -65,6 +65,15 @@ describe("buildSupplyChainTree (tab Tabel Pohon)", () => {
     expect(sumTon(tree)).toBe(treeGraph.totalTon);
   });
 
+  it("withOfftaker false: tingkat Offtaker dilewati, Lembaga langsung ke Mill, tonase tetap", () => {
+    const tree = buildSupplyChainTree(treeGraph, data.groups, { direction: "HULU", byDistrict: false, byUl: false, withOfftaker: false });
+    expect(find(tree, "L:G1")!.children.map((n) => [n.nodeId, n.level, n.ton])).toEqual([["M:M1", "MILL", 40]]);
+    expect(find(tree, "L:G3")!.children.map((n) => n.nodeId)).toEqual(["M:M1", "M:?"]);
+    expect(sumTon(tree)).toBe(treeGraph.totalTon);
+    const hilir = buildSupplyChainTree(treeGraph, data.groups, { direction: "HILIR", byDistrict: false, byUl: false, withOfftaker: false });
+    expect(find(hilir, "M:M1")!.children.map((n) => n.level)).toEqual(["LEMBAGA", "LEMBAGA"]);
+  });
+
   it("toggle Distrik menambah tingkat Distrik di atas Lembaga", () => {
     const tree = buildSupplyChainTree(treeGraph, data.groups, { direction: "HULU", byDistrict: true, byUl: false });
     expect(tree.map((n) => [n.label, n.ton])).toEqual([["Siak", 49], ["Rokan Hulu", 20]]);

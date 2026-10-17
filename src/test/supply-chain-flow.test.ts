@@ -65,6 +65,22 @@ describe("buildSupplyChainSankey", () => {
     expect(g.totalTon).toBe(55);
   });
 
+  it("hideMiddle: tingkat offtaker dilewati — hanya kolom 0 & 3, jalur dua langkah, warna per jalur & total tetap", () => {
+    const records = [
+      rec({ id: "a", groupCode: "G2", offtakerId: "AGN-1", nextOfftakerId: "RMP-1", supplyTon: 30 }),
+      rec({ id: "b", groupCode: "G2", offtakerId: "RMP-1", supplyTon: 20 }),
+      rec({ id: "c", groupCode: "G1", supplyTon: 5 }),
+    ];
+    const g = buildSupplyChainSankey(data, records, { mode: "RINCI", hideMiddle: true });
+    expect(g.nodes.every((n) => n.column === 0 || n.column === 3)).toBe(true);
+    expect(g.paths.every((p) => p.nodes.length === 2)).toBe(true);
+    expect(g.links).toContainEqual({ source: "L:G2", target: "M:M1", channel: "AGEN", value: 30 });
+    expect(g.links).toContainEqual({ source: "L:G2", target: "M:M1", channel: "RAMP", value: 20 });
+    expect(g.links).toContainEqual({ source: "L:G1", target: "M:M1", channel: "LANGSUNG", value: 5 });
+    expect(g.nodes.find((n) => n.id === "M:M1")?.value).toBe(55);
+    expect(g.totalTon).toBe(55);
+  });
+
   it("melewati record tanpa tonase dan memetakan Mill kosong ke node 'tidak diketahui'", () => {
     const g = buildSupplyChainSankey(data, [rec({ supplyTon: null }), rec({ id: "x", millId: null, millStatus: "TIDAK_DIKETAHUI", supplyTon: 4 })]);
     expect(g.skippedRecords).toBe(1);

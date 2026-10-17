@@ -21,8 +21,6 @@ import { fmtTon } from "@/lib/supply-chain-format";
 import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { UlBadge } from "./ul-badge";
 
-/** Node pohon → bentuk node Sankey (helper bersama tab hierarki), supaya klik-filter memakai penangan yang sama dengan diagram. */
-const asSankeyNode = treeNodeAsSankeyNode;
 
 /**
  * Tab Tabel Pohon (owner 2026-10-09): agregasi bertingkat yang bisa dibuka-tutup,
@@ -36,6 +34,7 @@ export function SupplyChainTreeTable({
   direction,
   byDistrict,
   byUl,
+  withOfftaker = true,
   unit,
   onSelectNode,
 }: {
@@ -44,22 +43,27 @@ export function SupplyChainTreeTable({
   direction: TreeDirection;
   byDistrict: boolean;
   byUl: boolean;
+  /** `false` = tingkat Offtaker disembunyikan (toggle Offtaker = Sembunyikan). */
+  withOfftaker?: boolean;
   unit: SankeyUnit;
   onSelectNode: (n: SankeyNode) => void;
 }) {
   const dark = useChartDark();
-  const tree = useMemo(() => buildSupplyChainTree(graph, groups, { direction, byDistrict, byUl }), [graph, groups, direction, byDistrict, byUl]);
+  const tree = useMemo(
+    () => buildSupplyChainTree(graph, groups, { direction, byDistrict, byUl, withOfftaker }),
+    [graph, groups, direction, byDistrict, byUl, withOfftaker],
+  );
   // Susunan tingkat dari pilihan, bukan dari data: satu kedalaman bisa memuat dua tingkat
   // (cabang "Mill tidak diketahui" melompati tingkat UL).
   const levels: TreeLevel[] = (
     direction === "HULU"
-      ? [byDistrict && "DISTRIK", "LEMBAGA", "OFFTAKER", byUl && "UL", "MILL"]
-      : [byUl && "UL", "MILL", "OFFTAKER", byDistrict && "DISTRIK", "LEMBAGA"]
+      ? [byDistrict && "DISTRIK", "LEMBAGA", withOfftaker && "OFFTAKER", byUl && "UL", "MILL"]
+      : [byUl && "UL", "MILL", withOfftaker && "OFFTAKER", byDistrict && "DISTRIK", "LEMBAGA"]
   ).filter((l): l is TreeLevel => !!l);
 
   // Bawaan: tingkat pertama terbuka. Kunci = jalur id dari akar → tetap berlaku saat filter
   // berubah; susunan tingkat berubah (arah / Distrik / UL) → kembali ke bawaan.
-  const sig = `${direction}|${byDistrict}|${byUl}`;
+  const sig = `${direction}|${byDistrict}|${byUl}|${withOfftaker}`;
   const defaultKeys = useMemo(() => new Set(treeBranchKeys(tree, 1)), [tree]);
   const [state, setState] = useState<{ sig: string; keys: Set<string> } | null>(null);
   const expanded = state && state.sig === sig ? state.keys : defaultKeys;
@@ -86,7 +90,7 @@ export function SupplyChainTreeTable({
     for (const n of nodes) {
       const open = expanded.has(n.key);
       const hasKids = n.children.length > 0;
-      const sn = asSankeyNode(n);
+      const sn = treeNodeAsSankeyNode(n);
       const filterable = n.nodeId !== DIRECT_NODE_ID && (isFilterableNode(sn) || isGroupNode(sn));
       // Hitung anak per tingkat: "2 UL / Non-UL · 1 Mill" bila cabang Mill tak diketahui ikut.
       const childCounts = new Map<TreeLevel, number>();

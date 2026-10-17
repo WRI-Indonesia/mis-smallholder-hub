@@ -18,7 +18,18 @@ const ROWS_COLLAPSED = 20;
  * Tak ada garis yang saling silang — untuk pembaca yang bingung dengan pita
  * Sankey (owner 2026-10-09). Node yang bisa difilter tampil sebagai tombol.
  */
-export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: SankeyGraph; unit: SankeyUnit; onSelectNode: (n: SankeyNode) => void }) {
+export function SupplyChainPathList({
+  graph,
+  unit,
+  withOfftaker = true,
+  onSelectNode,
+}: {
+  graph: SankeyGraph;
+  unit: SankeyUnit;
+  /** `false` = kolom Offtaker disembunyikan (toggle Offtaker = Sembunyikan; jalur dua langkah bukan berarti langsung ke Mill). */
+  withOfftaker?: boolean;
+  onSelectNode: (n: SankeyNode) => void;
+}) {
   const dark = useChartDark();
   const [showAll, setShowAll] = useState(false);
   const [sort, setSort] = useState<{ key: PathSortKey; dir: SortDir }>({ key: "TON", dir: "desc" });
@@ -72,14 +83,18 @@ export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: Sank
         {formatNumber(rows.length)} jalur, {sortText} — klik judul kolom untuk mengurutkan (Porsi ikut Tonase). Kolom # = peringkat tonase. Warna batang = jalur pertama TBS dari petani.
       </p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className={cn("w-full text-sm", withOfftaker ? "min-w-[760px]" : "min-w-[560px]")}>
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">
               <th className="py-2 pr-2 font-medium w-8 text-right">#</th>
               {sortHead("ORIGIN", graph.nodes.some((n) => n.id.startsWith("D:")) ? "Distrik" : "Lembaga", "py-2 pr-2")}
               <th className="w-4" />
-              {sortHead("OFFTAKER", "Offtaker", "py-2 pr-2")}
-              <th className="w-4" />
+              {withOfftaker && (
+                <>
+                  {sortHead("OFFTAKER", "Offtaker", "py-2 pr-2")}
+                  <th className="w-4" />
+                </>
+              )}
               {sortHead("DEST", graph.nodes.some((n) => n.id.startsWith("U:")) ? "UL / Non-UL" : "Mill", "py-2 pr-2")}
               {sortHead("TON", "Tonase", "py-2 pr-2 w-[26%]")}
               <th className="py-2 text-right font-medium">Porsi</th>
@@ -96,8 +111,12 @@ export function SupplyChainPathList({ graph, unit, onSelectNode }: { graph: Sank
                   <td className="py-1.5 pr-2 text-right text-xs tabular-nums text-muted-foreground">{rank.get(r.key)}</td>
                   <td className="max-w-[180px] py-1.5 pr-2">{step(first)}</td>
                   <td className="text-muted-foreground"><ArrowRight className="h-3.5 w-3.5" /></td>
-                  <td className="max-w-[240px] py-1.5 pr-2">{step(mid)}</td>
-                  <td className="text-muted-foreground"><ArrowRight className="h-3.5 w-3.5" /></td>
+                  {withOfftaker && (
+                    <>
+                      <td className="max-w-[240px] py-1.5 pr-2">{step(mid)}</td>
+                      <td className="text-muted-foreground"><ArrowRight className="h-3.5 w-3.5" /></td>
+                    </>
+                  )}
                   <td className="max-w-[240px] py-1.5 pr-2">{step(last)}</td>
                   <td className="py-1.5 pr-2" title={CHANNEL_LABEL[r.channel]}>
                     <div className="flex items-center gap-2">

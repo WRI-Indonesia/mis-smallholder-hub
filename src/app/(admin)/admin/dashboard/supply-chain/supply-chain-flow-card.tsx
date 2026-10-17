@@ -31,17 +31,15 @@ const SupplyChainFlowDiagram = dynamic(() => import("./supply-chain-flow-diagram
   loading: () => <div className="flex h-[420px] items-center justify-center text-sm text-muted-foreground">Memuat diagram…</div>,
 });
 // Enam tab tambahan (owner 2026-10-17) juga dimuat saat tabnya dibuka — d3 hanya terbawa bila dipakai.
-const lazyTab = <T extends object>(loader: () => Promise<T>, pick: (m: T) => React.ComponentType<never>) =>
-  dynamic(() => loader().then((m) => pick(m) as React.ComponentType<Record<string, unknown>>), {
-    ssr: false,
-    loading: () => <div className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">Memuat diagram…</div>,
-  });
-const SupplyChainSunburst = lazyTab(() => import("./supply-chain-sunburst"), (m) => m.SupplyChainSunburst);
-const SupplyChainIcicle = lazyTab(() => import("./supply-chain-icicle"), (m) => m.SupplyChainIcicle);
-const SupplyChainTreemap = lazyTab(() => import("./supply-chain-treemap"), (m) => m.SupplyChainTreemap);
-const SupplyChainMatrix = lazyTab(() => import("./supply-chain-matrix"), (m) => m.SupplyChainMatrix);
-const SupplyChainChord = lazyTab(() => import("./supply-chain-chord"), (m) => m.SupplyChainChord);
-const SupplyChainStackedBars = lazyTab(() => import("./supply-chain-stacked-bars"), (m) => m.SupplyChainStackedBars);
+// `dynamic(() => import(...).then((m) => m.X))` mempertahankan tipe prop komponen (review 2026-10-17).
+// Opsi `dynamic` wajib literal objek (aturan next/dynamic) — komponen loading-nya saja yang dibagi.
+const MemuatDiagram = () => <div className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">Memuat diagram…</div>;
+const SupplyChainSunburst = dynamic(() => import("./supply-chain-sunburst").then((m) => m.SupplyChainSunburst), { ssr: false, loading: MemuatDiagram });
+const SupplyChainIcicle = dynamic(() => import("./supply-chain-icicle").then((m) => m.SupplyChainIcicle), { ssr: false, loading: MemuatDiagram });
+const SupplyChainTreemap = dynamic(() => import("./supply-chain-treemap").then((m) => m.SupplyChainTreemap), { ssr: false, loading: MemuatDiagram });
+const SupplyChainMatrix = dynamic(() => import("./supply-chain-matrix").then((m) => m.SupplyChainMatrix), { ssr: false, loading: MemuatDiagram });
+const SupplyChainChord = dynamic(() => import("./supply-chain-chord").then((m) => m.SupplyChainChord), { ssr: false, loading: MemuatDiagram });
+const SupplyChainStackedBars = dynamic(() => import("./supply-chain-stacked-bars").then((m) => m.SupplyChainStackedBars), { ssr: false, loading: MemuatDiagram });
 
 const TABS = ["SANKEY", "ALUR", "JALUR", "POHON", "SUNBURST", "PARTISI", "TREEMAP", "MATRIKS", "CHORD", "BATANG"] as const;
 type FlowTab = (typeof TABS)[number];
@@ -82,6 +80,8 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
   const { records, offtakers } = f;
   const [tab, setTab] = useStoredChoice<FlowTab>("tab", "SANKEY", TABS);
   const [mode, setMode] = useState<SankeyMode>("RINGKAS");
+  // Toggle Offtaker opsi ketiga "Sembunyikan" (owner 2026-10-17): tingkat tengah dilewati → asal langsung ke tujuan di semua tab.
+  const [hideMiddle, setHideMiddle] = useState(false);
   const [top, setTop] = useState<(typeof TOP_OPTIONS)[number]>("12");
   const [unit, setUnit] = useState<SankeyUnit>("TON");
   const [origin, setOrigin] = useState<SankeyOrigin>(DEFAULT_ORIGIN);
@@ -94,17 +94,20 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
     () =>
       isHierarchy
         ? null
-        : buildSupplyChainSankey(view.data, records, { mode, origin, destination, maxPerColumn: mode === "RINGKAS" ? RINGKAS_MILLS : Number(top) }),
-    [isHierarchy, view.data, records, mode, origin, destination, top],
+        : buildSupplyChainSankey(view.data, records, { mode, origin, destination, hideMiddle, maxPerColumn: mode === "RINGKAS" ? RINGKAS_MILLS : Number(top) }),
+    [isHierarchy, view.data, records, mode, origin, destination, hideMiddle, top],
   );
   // Tab hierarki (Tabel Pohon · Sunburst · Partisi · Treemap): per Lembaga & per Mill tanpa pelipatan — tingkat Distrik/UL ditambahkan pohon.
   const treeGraph = useMemo(
-    () => (isHierarchy ? buildSupplyChainSankey(view.data, records, { mode, maxPerColumn: Infinity }) : null),
-    [isHierarchy, view.data, records, mode],
+    () => (isHierarchy ? buildSupplyChainSankey(view.data, records, { mode, hideMiddle, maxPerColumn: Infinity }) : null),
+    [isHierarchy, view.data, records, mode, hideMiddle],
   );
   const tree = useMemo(
-    () => (treeGraph && tab !== "POHON" ? buildSupplyChainTree(treeGraph, view.data.groups, { direction, byDistrict: origin === "DISTRIK", byUl: destination === "UL" }) : null),
-    [treeGraph, tab, view.data.groups, direction, origin, destination],
+    () =>
+      treeGraph && tab !== "POHON"
+        ? buildSupplyChainTree(treeGraph, view.data.groups, { direction, byDistrict: origin === "DISTRIK", byUl: destination === "UL", withOfftaker: !hideMiddle })
+        : null,
+    [treeGraph, tab, view.data.groups, direction, origin, destination, hideMiddle],
   );
 
   // Pilihan tampilan yang menyimpang dari bawaan — memunculkan tombol Tampilan bawaan.
@@ -112,12 +115,14 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
     origin !== DEFAULT_ORIGIN,
     destination !== DEFAULT_DESTINATION,
     mode !== "RINGKAS",
+    hideMiddle,
     unit !== "TON",
     isHierarchy && direction !== "HULU",
     mode === "RINCI" && !isHierarchy && top !== "12",
   ].filter(Boolean).length;
   const resetView = () => {
     setMode("RINGKAS");
+    setHideMiddle(false);
     setTop("12");
     setOrigin(DEFAULT_ORIGIN);
     setDestination(DEFAULT_DESTINATION);
@@ -153,8 +158,8 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
   const offText = mode === "RINGKAS" ? "jenis offtaker (Agen, RAMP, KT/Koperasi)" : "tiap offtaker";
   const reading =
     isHierarchy && direction === "HILIR"
-      ? `TBS yang masuk ke ${destination === "UL" ? "Mill UL dan bukan UL" : "tiap Mill"} ← dari ${offText} mana ← dari ${origin === "DISTRIK" ? "distrik & Lembaga" : "Lembaga"} mana`
-      : `TBS dari tiap ${origin === "DISTRIK" ? "distrik" : "Lembaga"} → lewat ${offText} → sampai ke ${destination === "UL" ? "Mill UL atau bukan" : "tiap Mill"}`;
+      ? `TBS yang masuk ke ${destination === "UL" ? "Mill UL dan bukan UL" : "tiap Mill"}${hideMiddle ? " ← langsung" : ` ← dari ${offText} mana ←`} dari ${origin === "DISTRIK" ? "distrik & Lembaga" : "Lembaga"} mana`
+      : `TBS dari tiap ${origin === "DISTRIK" ? "distrik" : "Lembaga"} → ${hideMiddle ? "langsung (offtaker disembunyikan)" : `lewat ${offText}`} → sampai ke ${destination === "UL" ? "Mill UL atau bukan" : "tiap Mill"}`;
 
   return (
     <CollapsibleCard id="aliran" title="Aliran TBS: Lembaga → Offtaker → Mill">
@@ -218,17 +223,24 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
               { value: "MILL", label: "Mill", hint: "Satu baris/node per Mill (PKS)" },
             ]}
           />
-          <SegmentToggle
+          <SegmentToggle<SankeyMode | "TANPA">
             caption="Offtaker"
-            value={mode}
-            onChange={setMode}
+            value={hideMiddle ? "TANPA" : mode}
+            onChange={(v) => {
+              if (v === "TANPA") setHideMiddle(true);
+              else {
+                setHideMiddle(false);
+                setMode(v);
+              }
+            }}
             label="Rincian offtaker"
             options={[
               { value: "RINGKAS", label: "Per jenis", hint: "Gabungkan per jenis: Agen, RAMP, KT/Koperasi, Agen → RAMP (bawaan)" },
               { value: "RINCI", label: "Satu per satu", hint: "Tiap agen, RAMP, dan KT/koperasi tampil sendiri" },
+              { value: "TANPA", label: "Sembunyikan", hint: "Lewati tingkat offtaker: aliran langsung dari asal ke Mill; warna garis tetap menunjukkan jalurnya" },
             ]}
           />
-          {mode === "RINCI" && !isHierarchy && (
+          {mode === "RINCI" && !hideMiddle && !isHierarchy && (
             <div className="inline-flex items-center gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tampilkan</span>
               <Select value={top} onValueChange={(v) => setTop(v as (typeof TOP_OPTIONS)[number])}>
@@ -263,7 +275,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
         <div className="overflow-x-auto">
           {tab === "SANKEY" && graph && <SupplyChainSankey graph={graph} unit={unit} onSelectNode={selectNode} />}
           {tab === "ALUR" && graph && <SupplyChainFlowDiagram graph={graph} unit={unit} onSelectNode={selectNode} />}
-          {tab === "JALUR" && graph && <SupplyChainPathList graph={graph} unit={unit} onSelectNode={selectNode} />}
+          {tab === "JALUR" && graph && <SupplyChainPathList graph={graph} unit={unit} withOfftaker={!hideMiddle} onSelectNode={selectNode} />}
           {tab === "POHON" && treeGraph && (
             <SupplyChainTreeTable
               graph={treeGraph}
@@ -271,6 +283,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
               direction={direction}
               byDistrict={origin === "DISTRIK"}
               byUl={destination === "UL"}
+              withOfftaker={!hideMiddle}
               unit={unit}
               onSelectNode={selectNode}
             />

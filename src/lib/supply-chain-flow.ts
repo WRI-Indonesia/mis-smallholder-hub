@@ -478,6 +478,8 @@ export interface SankeyOptions {
   destination?: SankeyDestination;
   /** Maks node per kolom 1–3 sebelum sisanya dilipat jadi "… lain". */
   maxPerColumn?: number;
+  /** Sembunyikan tingkat tengah (offtaker): jalur langsung asal → tujuan, warna tetap per jalur (owner 2026-10-17). */
+  hideMiddle?: boolean;
 }
 
 export const sankeyLinkKey = (l: Pick<SankeyLink, "source" | "target" | "channel">) => `${l.source}→${l.target}→${l.channel}`;
@@ -537,7 +539,7 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
     if (collector && ramp) mid = ringkas ? member(viaAgen ? "G:AGEN_RAMP" : "G:KTKOP_RAMP", `${collector}>${ramp}`) : chainNodeId(collector, ramp);
     else if (collector) mid = ringkas ? member(viaAgen ? "G:AGEN" : "G:KTKOP", collector) : `O:${collector}`;
     else if (ramp) mid = ringkas ? member("G:RAMP", ramp) : `O:${ramp}`;
-    if (mid) steps.push({ id: mid, column: 1 });
+    if (mid && !options.hideMiddle) steps.push({ id: mid, column: 1 });
     // Mode UL: tujuan = status "Supply to UL" (definisi yang sama dengan filter UL); Mill kosong tetap terpisah.
     const dest = !r.millId ? UNKNOWN_MILL : byUl ? member(r.toUl ? "U:UL" : "U:NON_UL", r.millId) : `M:${r.millId}`;
     steps.push({ id: dest, column: 3 });
