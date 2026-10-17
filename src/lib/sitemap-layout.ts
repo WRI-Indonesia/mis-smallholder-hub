@@ -49,15 +49,14 @@ export interface SitemapForest {
   crossEdges: SitemapEdge[];
 }
 
-const KIND_RANK: Record<SitemapEdge["kind"], number> = { solid: 0, thick: 1, dotted: 2 };
-
 /**
  * Ubah graf berarah menjadi hutan: akar = node tanpa edge masuk (urutan
- * dokumen); penelusuran DFS mengikuti edge keluar (garis penuh dulu, lalu
- * tebal, lalu putus-putus — garis putus-putus = pindah halaman, jadi baru
- * dipakai bila node belum punya induk lain). Node yang hanya tercapai lewat
- * siklus jadi akar tambahan. Setiap node muncul tepat satu kali; edge yang
- * tersisa dikembalikan sebagai `crossEdges`.
+ * dokumen). **Dua lintasan**: (1) DFS hanya lewat garis penuh/tebal — struktur
+ * "berisi"; (2) node yang belum punya induk disambungkan lewat garis putus-putus
+ * (pindah halaman) dari node yang sudah terpasang, lalu DFS garis penuh dari
+ * sana. Garis putus-putus tidak pernah merebut node dari induk penuhnya
+ * (review 2026-10-17). Node yang hanya tercapai lewat siklus jadi akar
+ * tambahan. Setiap node muncul tepat satu kali; edge sisa = `crossEdges`.
  */
 export function buildSpanningForest(graph: SitemapGraph): SitemapForest {
   const indeg = new Map<string, number>(graph.nodes.map((n) => [n.id, 0]));
@@ -67,27 +66,57 @@ export function buildSpanningForest(graph: SitemapGraph): SitemapForest {
     if (!out.has(e.source)) out.set(e.source, []);
     out.get(e.source)!.push(e);
   }
-  for (const list of out.values()) list.sort((a, b) => KIND_RANK[a.kind] - KIND_RANK[b.kind]);
 
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
-  const placed = new Set<string>();
+  const tnOf = new Map<string, SitemapTreeNode>();
   const usedEdges = new Set<string>();
   const roots: SitemapTreeNode[] = [];
 
-  const visit = (id: string, via?: SitemapEdge): SitemapTreeNode => {
-    placed.add(id);
+  const place = (id: string, via?: SitemapEdge): SitemapTreeNode => {
     const tn: SitemapTreeNode = { node: byId.get(id)!, via, children: [] };
-    for (const e of out.get(id) ?? []) {
-      if (placed.has(e.target)) continue;
-      usedEdges.add(e.id);
-      tn.children.push(visit(e.target, e));
-    }
+    tnOf.set(id, tn);
     return tn;
   };
+  /** Lintasan 1: hanya garis penuh/tebal. */
+  const dfsSolid = (id: string) => {
+    for (const e of out.get(id) ?? []) {
+      if (e.kind === "dotted" || tnOf.has(e.target)) continue;
+      usedEdges.add(e.id);
+      tnOf.get(id)!.children.push(place(e.target, e));
+      dfsSolid(e.target);
+    }
+  };
+  /** Lintasan 2: sambungkan node tanpa induk lewat garis putus-putus, ulangi sampai tak ada perubahan. */
+  const attachDotted = () => {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const n of graph.nodes) {
+        if (!tnOf.has(n.id)) continue;
+        for (const e of out.get(n.id) ?? []) {
+          if (e.kind !== "dotted" || tnOf.has(e.target)) continue;
+          usedEdges.add(e.id);
+          tnOf.get(n.id)!.children.push(place(e.target, e));
+          dfsSolid(e.target);
+          changed = true;
+        }
+      }
+    }
+  };
 
-  for (const n of graph.nodes) if ((indeg.get(n.id) ?? 0) === 0 && !placed.has(n.id)) roots.push(visit(n.id));
+  for (const n of graph.nodes)
+    if ((indeg.get(n.id) ?? 0) === 0 && !tnOf.has(n.id)) {
+      roots.push(place(n.id));
+      dfsSolid(n.id);
+    }
+  attachDotted();
   // Komponen bersiklus tanpa node berderajat-masuk nol.
-  for (const n of graph.nodes) if (!placed.has(n.id)) roots.push(visit(n.id));
+  for (const n of graph.nodes)
+    if (!tnOf.has(n.id)) {
+      roots.push(place(n.id));
+      dfsSolid(n.id);
+      attachDotted();
+    }
 
   return { roots, crossEdges: graph.edges.filter((e) => !usedEdges.has(e.id)) };
 }

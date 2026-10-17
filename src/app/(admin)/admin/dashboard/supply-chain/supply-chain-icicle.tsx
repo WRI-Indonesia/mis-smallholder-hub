@@ -17,7 +17,8 @@ const W = 1000;
  */
 export function SupplyChainIcicle({ tree, total, unit, onSelectNode }: { tree: SupplyTreeNode[]; total: number; unit: SankeyUnit; onSelectNode: (n: SankeyNode) => void }) {
   const dark = useChartDark();
-  const [hover, setHover] = useState<HierarchyRectangularNode<HDatum> | null>(null);
+  // Kunci hover = jalur dari akar (string), bukan objek d3: saat pohon dibangun ulang (klik-filter) sorotan tetap benar atau hilang, tidak basi (review 2026-10-17).
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
   const { cells, height } = useMemo(() => {
     const root = buildHierarchy(tree);
     const leaves = Math.max(1, root.leaves().length);
@@ -25,6 +26,7 @@ export function SupplyChainIcicle({ tree, total, unit, onSelectNode }: { tree: S
     const laid = partition<HDatum>().size([height, W]).padding(1)(root);
     return { cells: laid.descendants().filter((d) => d.depth > 0), height };
   }, [tree]);
+  const hover = hoverKey ? (cells.find((d) => d.data.key === hoverKey) ?? null) : null;
   if (!cells.length) return <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Tidak ada aliran bertonase pada filter ini.</div>;
   const maxDepth = Math.max(1, ...cells.map((d) => d.depth));
   const colW = W / maxDepth;
@@ -40,7 +42,7 @@ export function SupplyChainIcicle({ tree, total, unit, onSelectNode }: { tree: S
           const h = d.x1 - d.x0;
           const filterable = canFilterTreeNode(n);
           return (
-            <g key={d.data.key} transform={`translate(${x}, ${d.x0})`} onMouseEnter={() => setHover(d)} onMouseLeave={() => setHover(null)} onClick={() => filterable && onSelectNode(treeNodeAsSankeyNode(n))} className={filterable ? "cursor-pointer" : undefined}>
+            <g key={d.data.key} transform={`translate(${x}, ${d.x0})`} onMouseEnter={() => setHoverKey(d.data.key)} onMouseLeave={() => setHoverKey(null)} onClick={() => filterable && onSelectNode(treeNodeAsSankeyNode(n))} className={filterable ? "cursor-pointer" : undefined}>
               <rect width={colW - 2} height={Math.max(0, h - 1)} rx={3} fill={c.fill} opacity={related(d) ? 1 : 0.35} className="transition-opacity duration-150" />
               <title>{`${n.label}\n${fmtTon(n.ton)}`}</title>
               {h >= 14 ? (

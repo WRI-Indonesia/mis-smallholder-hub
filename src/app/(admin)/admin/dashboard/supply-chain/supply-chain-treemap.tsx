@@ -19,7 +19,8 @@ const TITLE_H = 18;
  */
 export function SupplyChainTreemap({ tree, total, unit, onSelectNode }: { tree: SupplyTreeNode[]; total: number; unit: SankeyUnit; onSelectNode: (n: SankeyNode) => void }) {
   const dark = useChartDark();
-  const [hover, setHover] = useState<HierarchyRectangularNode<HDatum> | null>(null);
+  // Kunci hover = jalur dari akar (string), bukan objek d3: saat pohon dibangun ulang (klik-filter) sorotan tetap benar atau hilang, tidak basi (review 2026-10-17).
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
   const cells = useMemo(() => {
     const root = buildHierarchy(tree).sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
     const laid = treemap<HDatum>()
@@ -30,6 +31,7 @@ export function SupplyChainTreemap({ tree, total, unit, onSelectNode }: { tree: 
       .paddingTop((d) => (d.depth >= 1 && d.children?.length ? TITLE_H : 0))(root);
     return laid.descendants().filter((d) => d.depth > 0);
   }, [tree]);
+  const hover = hoverKey ? (cells.find((d) => d.data.key === hoverKey) ?? null) : null;
   if (!cells.length) return <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Tidak ada aliran bertonase pada filter ini.</div>;
   const related = (d: HierarchyRectangularNode<HDatum>) => !hover || hover === d || hover.ancestors().includes(d) || d.ancestors().includes(hover);
 
@@ -44,7 +46,7 @@ export function SupplyChainTreemap({ tree, total, unit, onSelectNode }: { tree: 
           const isParent = !!d.children?.length;
           const filterable = canFilterTreeNode(n);
           return (
-            <g key={d.data.key} transform={`translate(${d.x0}, ${d.y0})`} onMouseEnter={() => setHover(d)} onMouseLeave={() => setHover(null)} onClick={(e) => { e.stopPropagation(); if (filterable) onSelectNode(treeNodeAsSankeyNode(n)); }} className={filterable ? "cursor-pointer" : undefined}>
+            <g key={d.data.key} transform={`translate(${d.x0}, ${d.y0})`} onMouseEnter={() => setHoverKey(d.data.key)} onMouseLeave={() => setHoverKey(null)} onClick={(e) => { e.stopPropagation(); if (filterable) onSelectNode(treeNodeAsSankeyNode(n)); }} className={filterable ? "cursor-pointer" : undefined}>
               <rect width={Math.max(0, w)} height={Math.max(0, h)} rx={isParent ? 4 : 2} fill={c.fill} fillOpacity={isParent ? 0.22 : 1} stroke={c.fill} strokeWidth={isParent ? 1 : 0} opacity={related(d) ? 1 : 0.35} className="transition-opacity duration-150" />
               <title>{`${n.label}\n${fmtTon(n.ton)}`}</title>
               {isParent && w > 40 && h > TITLE_H ? (

@@ -10,7 +10,13 @@ type State = { status: "loading" } | { status: "ok"; svg: string } | { status: "
 let vizPromise: Promise<import("@viz-js/viz").Viz> | null = null;
 /** Satu instans WASM Graphviz (±3 MB, dimuat sekali per sesi saat tab dibuka). */
 function getViz() {
-  vizPromise ??= import("@viz-js/viz").then((m) => m.instance());
+  vizPromise ??= import("@viz-js/viz")
+    .then((m) => m.instance())
+    .catch((err: unknown) => {
+      // Jangan simpan kegagalan: pemasangan berikutnya mencoba memuat lagi (review 2026-10-17).
+      vizPromise = null;
+      throw err;
+    });
   return vizPromise;
 }
 

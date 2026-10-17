@@ -19,8 +19,10 @@ const R = 210;
  */
 export function SupplyChainSunburst({ tree, total, unit, onSelectNode }: { tree: SupplyTreeNode[]; total: number; unit: SankeyUnit; onSelectNode: (n: SankeyNode) => void }) {
   const dark = useChartDark();
-  const [hover, setHover] = useState<HierarchyRectangularNode<HDatum> | null>(null);
+  // Kunci hover = jalur dari akar (string), bukan objek d3: saat pohon dibangun ulang (klik-filter) sorotan tetap benar atau hilang, tidak basi (review 2026-10-17).
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
   const arcs = useMemo(() => partition<HDatum>().size([2 * Math.PI, R])(buildHierarchy(tree)).descendants().filter((d) => d.depth > 0), [tree]);
+  const hover = hoverKey ? (arcs.find((d) => d.data.key === hoverKey) ?? null) : null;
   const maxDepth = Math.max(1, ...arcs.map((d) => d.depth));
   const inner = R * 0.22;
   const ring = (R - inner) / maxDepth;
@@ -48,7 +50,7 @@ export function SupplyChainSunburst({ tree, total, unit, onSelectNode }: { tree:
           const label = n.label;
           const filterable = canFilterTreeNode(n);
           return (
-            <g key={d.data.key} onMouseEnter={() => setHover(d)} onMouseLeave={() => setHover(null)} onClick={() => filterable && onSelectNode(treeNodeAsSankeyNode(n))} className={filterable ? "cursor-pointer" : undefined}>
+            <g key={d.data.key} onMouseEnter={() => setHoverKey(d.data.key)} onMouseLeave={() => setHoverKey(null)} onClick={() => filterable && onSelectNode(treeNodeAsSankeyNode(n))} className={filterable ? "cursor-pointer" : undefined}>
               <path d={arcGen(d) ?? ""} fill={c.fill} stroke="var(--card)" strokeWidth={1} opacity={related(d) ? 1 : 0.35} className="transition-opacity duration-150" />
               <title>{`${label}\n${fmtTon(n.ton)}`}</title>
               {room > 46 && angle > 1.6 ? (

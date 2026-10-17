@@ -9,24 +9,18 @@ import { cn } from "@/lib/utils";
 import { SITEMAP_CLASS_STYLE, type SitemapDoc, type SitemapFileKey, type SitemapSection } from "@/lib/sitemap-mermaid";
 import { MermaidDiagram } from "./mermaid-diagram";
 
-/** Semua kanvas/mesin selain Mermaid dimuat saat tab-nya dibuka (pola Peta Data & Skema). */
-function lazy<T extends object>(loader: () => Promise<T>, pick: (m: T) => React.ComponentType<never>) {
-  return dynamic(() => loader().then((m) => pick(m) as React.ComponentType<Record<string, unknown>>), {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-[320px] items-center justify-center rounded-lg border text-sm text-muted-foreground">Menyiapkan kanvas…</div>
-    ),
-  });
-}
-const GraphvizDiagram = lazy(() => import("./graphviz-diagram"), (m) => m.GraphvizDiagram);
-const SitemapFlow = lazy(() => import("./sitemap-flow"), (m) => m.SitemapFlow);
-const SitemapFlowElk = lazy(() => import("./sitemap-flow-elk"), (m) => m.SitemapFlowElk);
-const SitemapColumns = lazy(() => import("./sitemap-columns"), (m) => m.SitemapColumns);
-const SitemapNetwork = lazy(() => import("./sitemap-network"), (m) => m.SitemapNetwork);
-const SitemapTree = lazy(() => import("./sitemap-tree"), (m) => m.SitemapTree);
-const SitemapMindmap = lazy(() => import("./sitemap-mindmap"), (m) => m.SitemapMindmap);
-const SitemapSunburst = lazy(() => import("./sitemap-sunburst"), (m) => m.SitemapSunburst);
-const SitemapOutline = lazy(() => import("./sitemap-outline"), (m) => m.SitemapOutline);
+/** Semua kanvas/mesin selain Mermaid dimuat saat tab-nya dibuka (pola Peta Data & Skema); `dynamic(... .then((m) => m.X))` mempertahankan tipe prop. */
+// Opsi `dynamic` wajib literal objek (aturan next/dynamic) — komponen loading-nya saja yang dibagi.
+const MenyiapkanKanvas = () => <div className="flex h-[320px] items-center justify-center rounded-lg border text-sm text-muted-foreground">Menyiapkan kanvas…</div>;
+const GraphvizDiagram = dynamic(() => import("./graphviz-diagram").then((m) => m.GraphvizDiagram), { ssr: false, loading: MenyiapkanKanvas });
+const SitemapFlow = dynamic(() => import("./sitemap-flow").then((m) => m.SitemapFlow), { ssr: false, loading: MenyiapkanKanvas });
+const SitemapFlowElk = dynamic(() => import("./sitemap-flow-elk").then((m) => m.SitemapFlowElk), { ssr: false, loading: MenyiapkanKanvas });
+const SitemapColumns = dynamic(() => import("./sitemap-columns").then((m) => m.SitemapColumns), { ssr: false, loading: MenyiapkanKanvas });
+const SitemapNetwork = dynamic(() => import("./sitemap-network").then((m) => m.SitemapNetwork), { ssr: false, loading: MenyiapkanKanvas });
+const SitemapTree = dynamic(() => import("./sitemap-tree").then((m) => m.SitemapTree), { ssr: false, loading: MenyiapkanKanvas });
+const SitemapMindmap = dynamic(() => import("./sitemap-mindmap").then((m) => m.SitemapMindmap), { ssr: false, loading: MenyiapkanKanvas });
+const SitemapSunburst = dynamic(() => import("./sitemap-sunburst").then((m) => m.SitemapSunburst), { ssr: false, loading: MenyiapkanKanvas });
+const SitemapOutline = dynamic(() => import("./sitemap-outline").then((m) => m.SitemapOutline), { ssr: false, loading: MenyiapkanKanvas });
 
 /**
  * Dua belas tampilan atas sumber yang sama (owner 2026-10-17, tanya bertahap:

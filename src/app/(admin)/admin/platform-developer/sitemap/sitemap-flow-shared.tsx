@@ -6,6 +6,7 @@ import {
   Handle,
   MarkerType,
   Position,
+  getBezierPath,
   type Edge,
   type EdgeProps,
   type Node,
@@ -137,10 +138,32 @@ function midpoint(points: Point[]): Point {
   return points[points.length - 1];
 }
 
-export function SitemapFlowEdge({ id, data, label, markerEnd, style, sourceX, sourceY, targetX, targetY }: EdgeProps<SitemapFlowEdgeType>) {
-  const points = data?.points && data.points.length >= 2 ? data.points : [{ x: sourceX, y: sourceY }, { x: targetX, y: targetY }];
-  const path = data?.curve === "ortho" ? orthoPath(points) : (basisLine(points) ?? "");
-  const mid = data?.labelX !== undefined && data?.labelY !== undefined ? { x: data.labelX, y: data.labelY } : midpoint(points);
+export function SitemapFlowEdge({
+  id,
+  data,
+  label,
+  markerEnd,
+  style,
+  sourceX,
+  sourceY,
+  sourcePosition,
+  targetX,
+  targetY,
+  targetPosition,
+}: EdgeProps<SitemapFlowEdgeType>) {
+  let path: string;
+  let mid: Point;
+  if (data?.points && data.points.length >= 2) {
+    const points = data.points;
+    path = data.curve === "ortho" ? orthoPath(points) : (basisLine(points) ?? "");
+    mid = data.labelX !== undefined && data.labelY !== undefined ? { x: data.labelX, y: data.labelY } : midpoint(points);
+  } else {
+    // Tanpa titik rute (tab Kolom): kurva bezier React Flow yang keluar/masuk sesuai sisi handle —
+    // garis lurus dua titik akan menembus node untuk edge mundur/lompat kolom (review 2026-10-17).
+    const [d, lx, ly] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
+    path = d;
+    mid = { x: lx, y: ly };
+  }
   return (
     <>
       <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} />

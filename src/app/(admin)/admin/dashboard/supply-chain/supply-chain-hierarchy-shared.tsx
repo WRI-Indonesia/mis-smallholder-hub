@@ -31,18 +31,36 @@ export function buildHierarchy(tree: SupplyTreeNode[]): HierarchyNode<HDatum> {
   return hierarchy(root).sum((d) => (d.children.length ? 0 : (d.n?.ton ?? 0)));
 }
 
+type Fill = { fill: string; text: string };
+/** Palet per tingkat (konstan modul — `levelFill` dipanggil per sel tiap render). */
+const LEVEL_FILL_LIGHT: Record<TreeLevel, Fill> = {
+  DISTRIK: { fill: "#166534", text: "#ffffff" },
+  LEMBAGA: { fill: "#4ade80", text: "#052e16" },
+  OFFTAKER: { fill: "#fbbf24", text: "#451a03" },
+  UL: { fill: "#64748b", text: "#ffffff" },
+  MILL: { fill: "#cbd5e1", text: "#0f172a" },
+};
+const LEVEL_FILL_DARK: Record<TreeLevel, Fill> = {
+  DISTRIK: { fill: "#15803d", text: "#ffffff" },
+  LEMBAGA: { fill: "#22c55e", text: "#052e16" },
+  OFFTAKER: { fill: "#d97706", text: "#451a03" },
+  UL: { fill: "#475569", text: "#ffffff" },
+  MILL: { fill: "#64748b", text: "#f8fafc" },
+};
+const UL_FILL: Record<"light" | "dark", Record<"UL" | "MILL", Fill>> = {
+  light: { UL: { fill: "#1d4ed8", text: "#ffffff" }, MILL: { fill: "#93c5fd", text: "#1e3a8a" } },
+  dark: { UL: { fill: "#2563eb", text: "#ffffff" }, MILL: { fill: "#3b82f6", text: "#f8fafc" } },
+};
+const DIRECT_FILL: Record<"light" | "dark", Fill> = { light: { fill: "#fde68a", text: "#451a03" }, dark: { fill: "#78350f", text: "#fef3c7" } };
+const UNKNOWN_FILL: Record<"light" | "dark", Fill> = { light: { fill: "#e2e8f0", text: "#334155" }, dark: { fill: "#334155", text: "#e2e8f0" } };
+
 /** Warna per tingkat: asal hijau, offtaker amber, tujuan biru (UL) / abu (bukan UL / tak diketahui). */
-export function levelFill(n: SupplyTreeNode, dark: boolean): { fill: string; text: string } {
-  const L: Record<TreeLevel, { fill: string; text: string }> = {
-    DISTRIK: { fill: dark ? "#15803d" : "#166534", text: "#ffffff" },
-    LEMBAGA: { fill: dark ? "#22c55e" : "#4ade80", text: "#052e16" },
-    OFFTAKER: { fill: dark ? "#d97706" : "#fbbf24", text: "#451a03" },
-    UL: { fill: n.isUl ? (dark ? "#2563eb" : "#1d4ed8") : dark ? "#475569" : "#64748b", text: "#ffffff" },
-    MILL: { fill: n.isUl ? (dark ? "#3b82f6" : "#93c5fd") : dark ? "#64748b" : "#cbd5e1", text: n.isUl && !dark ? "#1e3a8a" : dark ? "#f8fafc" : "#0f172a" },
-  };
-  if (n.nodeId === DIRECT_NODE_ID) return { fill: dark ? "#78350f" : "#fde68a", text: dark ? "#fef3c7" : "#451a03" };
-  if (n.nodeId === "M:?") return { fill: dark ? "#334155" : "#e2e8f0", text: dark ? "#e2e8f0" : "#334155" };
-  return L[n.level];
+export function levelFill(n: SupplyTreeNode, dark: boolean): Fill {
+  const theme = dark ? "dark" : "light";
+  if (n.nodeId === DIRECT_NODE_ID) return DIRECT_FILL[theme];
+  if (n.nodeId === "M:?") return UNKNOWN_FILL[theme];
+  if (n.isUl && (n.level === "UL" || n.level === "MILL")) return UL_FILL[theme][n.level];
+  return (dark ? LEVEL_FILL_DARK : LEVEL_FILL_LIGHT)[n.level];
 }
 
 export const canFilterTreeNode = (n: SupplyTreeNode) => {
@@ -103,7 +121,7 @@ export function NodeInfoPanel({
             {segs.map((s) => (
               <li key={s.channel} className="flex items-center gap-1">
                 <span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(s.channel, dark) }} />
-                {CHANNEL_LABEL[s.channel]} {formatValue(s.ton, unit === "PCT" ? total : 0, unit === "PCT" ? "PCT" : "TON")}
+                {CHANNEL_LABEL[s.channel]} {formatValue(s.ton, total, unit)}
               </li>
             ))}
           </ul>

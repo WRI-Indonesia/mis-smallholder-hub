@@ -27,7 +27,7 @@ describe("buildSpanningForest", () => {
     }
   });
 
-  it("menjadikan node tanpa edge masuk sebagai akar urut dokumen, dan mendahulukan garis penuh", () => {
+  it("menjadikan node tanpa edge masuk sebagai akar urut dokumen; garis putus-putus tidak merebut node dari induk penuhnya", () => {
     const g: SitemapGraph = {
       nodes: ["a", "b", "c", "d"].map((id) => ({ id, label: id, lines: [id], shape: "rect", classes: [] })),
       edges: [
@@ -38,10 +38,26 @@ describe("buildSpanningForest", () => {
     };
     const f = buildSpanningForest(g);
     expect(f.roots.map((r) => r.node.id)).toEqual(["a", "b"]);
-    // `a` dikunjungi dulu dan mengambil `c` lewat satu-satunya edge keluarnya;
-    // edge penuh dari `b` jadi rujukan silang.
-    expect(f.roots[0].children.map((c) => c.node.id)).toEqual(["c"]);
-    expect(f.crossEdges.map((e) => e.id)).toEqual(["e2"]);
+    // Walau `a` dikunjungi dulu, `c` menunggu induk penuhnya (`b`); garis putus-putus `a → c` jadi rujukan silang.
+    expect(f.roots[0].children).toEqual([]);
+    expect(f.roots[1].children.map((c) => c.node.id)).toEqual(["c"]);
+    expect(f.roots[1].children[0].children.map((c) => c.node.id)).toEqual(["d"]);
+    expect(f.crossEdges.map((e) => e.id)).toEqual(["e1"]);
+  });
+
+  it("node yang hanya tercapai lewat garis putus-putus tetap tersambung (bukan akar baru)", () => {
+    const g: SitemapGraph = {
+      nodes: ["menu", "pageA", "btn", "pageB"].map((id) => ({ id, label: id, lines: [id], shape: "rect", classes: [] })),
+      edges: [
+        { id: "e1", source: "menu", target: "pageA", kind: "solid" },
+        { id: "e2", source: "pageA", target: "btn", kind: "solid" },
+        { id: "e3", source: "btn", target: "pageB", kind: "dotted", label: "Lihat" },
+      ],
+    };
+    const f = buildSpanningForest(g);
+    expect(f.roots.map((r) => r.node.id)).toEqual(["menu"]);
+    expect(f.roots[0].children[0].children[0].children.map((c) => c.node.id)).toEqual(["pageB"]);
+    expect(f.crossEdges).toEqual([]);
   });
 
   it("menangani siklus tanpa node berderajat-masuk nol", () => {
