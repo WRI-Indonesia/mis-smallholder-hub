@@ -21,7 +21,7 @@ Blocked = bagian peran OPERATOR/DONOR (akun tak tersedia di sesi lokal maupun st
 
 ## Keputusan
 
-**Go / No-go:** **Go dengan catatan** 2026-10-17 — Developer & QA (Claude), Owner (Sofyan); lihat [05-signoff.md](05-signoff.md). Catatan: bagian peran OPERATOR/DONOR Blocked (akun tak tersedia). Syarat tag: bump + merge staging + PR `main` **Senin 2026-10-19**, seed menu `platform-developer-sitemap` prod (dry-run → `--apply`), run prod `--only P0` ≤ 1 jam setelah deploy.
+**Go / No-go:** **Go dengan catatan** 2026-10-17 — Developer & QA (Claude), Owner (Sofyan); lihat [05-signoff.md](05-signoff.md). Catatan: bagian peran OPERATOR/DONOR Blocked (akun tak tersedia). Syarat tag: bump + merge staging + PR `main` **hari ini 2026-10-17** (owner: "kalau sudah aman semua boleh rilis hari ini"; semula Senin), seed menu `platform-developer-sitemap` prod (dry-run → `--apply`), run prod `--only P0` ≤ 1 jam setelah deploy.
 
 ## Known issues yang dibawa
 

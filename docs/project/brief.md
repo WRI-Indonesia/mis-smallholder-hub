@@ -26,7 +26,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Status keseluruhan | 🟢 On Track — **v1.7.0 live di produksi** 2026-10-12 (enam rilis dalam 13 hari, semua lewat gate lokal + QA staging); Roadmap 2026–2027 **20,0%** (→ 25,7% saat PLATFORM-08/09 ✅ di rilis berikutnya) (dari 8,6% saat reset) |
 | Basis review       | Audit `/audit` 2026-10-12 (roadmap Phase Status, status issue GitHub, `metrics.md`, run QA v1.7.0 staging/prod) |
 | Test lokal         | ✅ **2.937 test** saat rilis v1.7.0 (dari 2.461 di v1.3.0) · lint 0 error · typecheck ✅ · build ✅ |
-| Fokus berikutnya   | **v1.7.0** MINOR dirilis 2026-10-12 (semula PATCH v1.6.1: #409 · #386 · #384 · #387 · batch TD #412 · Ketersediaan Data › Produksi #416/#417); berikutnya **v1.8.0** batch Dashboard BMP umur tanaman · Reset filter · Daftar Issue (#425–#430, tanpa migrasi), **v1.8.0** dirilis 2026-10-14; **v1.9.0** Peta Fitur + tampilan Aliran TBS (10-17 → 10-19), lalu **v1.10.0** Supply Chain versi DB (10-26 → 11-08) |
+| Fokus berikutnya   | **v1.7.0** MINOR dirilis 2026-10-12 (semula PATCH v1.6.1: #409 · #386 · #384 · #387 · batch TD #412 · Ketersediaan Data › Produksi #416/#417); berikutnya **v1.8.0** batch Dashboard BMP umur tanaman · Reset filter · Daftar Issue (#425–#430, tanpa migrasi), **v1.8.0** dirilis 2026-10-14; **v1.9.0** Peta Fitur + tampilan Aliran TBS dirilis 2026-10-17, lalu **v1.10.0** Supply Chain versi DB (10-18 → 11-08) |
 
 ### Ringkasan Eksekutif
 
