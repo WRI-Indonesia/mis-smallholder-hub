@@ -14,6 +14,9 @@
 | Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
 |---|---|---:|---:|---:|---:|---:|
 | 2026-10-14-lokal.md | Kasus uji | 7 | 0 | 0 | 1 | 0 |
+| 2026-10-14-prod.md | Smoke | 12 | 0 | 2 | 0 | 0 |
+| 2026-10-14-prod.md | Kasus uji | 2 | 0 | 0 | 1 | 0 |
+| 2026-10-14-prod.md | Regresi | 1 | 0 | 2 | 0 | 0 |
 | 2026-10-14-staging.md | Smoke | 13 | 0 | 0 | 1 | 0 |
 | 2026-10-14-staging.md | Kasus uji | 16 | 0 | 0 | 0 | 0 |
 | 2026-10-14-staging.md | Regresi | 3 | 0 | 0 | 0 | 0 |

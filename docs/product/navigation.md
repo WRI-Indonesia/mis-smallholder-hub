@@ -13,6 +13,7 @@
 | Yang dicari | Dokumen |
 |---|---|
 | Detail per halaman (objek, kolom, tombol, pesan, guard) | [pages/](pages/README.md) — satu file per halaman |
+| Peta fitur visual untuk Miro / naskah video (Page → Section → Content, Mermaid) | [sitemap/](sitemap/README.md) — satu file per menu |
 | Status delivery per fase (**kanonis**) | [../project/roadmap.md](../project/roadmap.md) · sprint berjalan: [../project/sprint.md](../project/sprint.md) |
 | Stack, struktur folder, request flow | [../standards/architecture.md](../standards/architecture.md) |
 | Aturan hak akses & scope data | [role-flows.md](role-flows.md) · [access-context.md](access-context.md) · [../standards/rbac.md](../standards/rbac.md) |
@@ -55,14 +56,14 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 ## Struktur Menu Sidebar
 
 <!-- GENERATED:menu-summary — npm run build:docs; jangan sunting tangan -->
-**10 menu top-level · 41 sub menu · 4 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
+**10 menu top-level · 42 sub menu · 4 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
 
 - **Dashboard** (`dashboard`, order 0) — 6 sub menu + Fire Alert (level 3)
 - **Report** (`report`, order 1) — 7 sub menu
 - **Map** (`map`, order 2) — 3 sub menu
 - **Master Data** (`master-data`, order 3) — 7 sub menu
 - **Data Analyst** (`data-analyst`, order 4) — 4 sub menu + Semua Lembaga, Per Lembaga, Produksi (level 3)
-- **Platform Developer** (`platform-developer`, order 5) — 4 sub menu
+- **Platform Developer** (`platform-developer`, order 5) — 5 sub menu
 - **Tools** (`tools`, order 6) — 2 sub menu
 - **Bantuan** (`help`, order 9) — tanpa sub menu
 - **Bulk Upload** (`bulk-upload`, order 10) — 4 sub menu
@@ -141,6 +142,7 @@ Grup tooling internal (2026-10-07); route & key tetap di segmen lama. Katalog: [
 | ✅ [Peta Data & Skema](pages/data-analyst/data-map.md) | `data-analyst-data-map` | DA-07 | Lineage menu → entitas + skema dari artefak `*.generated.ts` |
 | ✅ [Rencana Pengembangan](pages/data-analyst/sprint.md) | `data-analyst-sprint` | #378 · #389 (kanban) · per rilis 2026-09-30 | Rencana pengembangan **per rilis** dari `docs/project/sprint.md` (di-bundle saat build, pola Metrik Rilis; dulu Sprint Mingguan): strip ringkasan (umur dokumen, rilis yang dikejar, keputusan menunggu) + tab Rilis (pemilih rilis belum tuntas + combobox Riwayat, progres poin S/M/L, papan kanban 4 kolom) + tab Analisa (kartu ringkasan, beban & kapasitas per rilis, fokus per kategori, keputusan menunggu owner, carry-over) + tab Semua Issue (satu baris per issue dari tabel Rilis + Backlog, combobox rilis, filter status, cari, urutkan) |
 | ✅ [Daftar Issue](pages/platform-developer/issues.md) | `platform-developer-issues` | #429 | Semua issue GitHub (open + closed) **langsung dari GitHub API** (cache 30 menit, beda dengan Rencana Pengembangan yang membaca `sprint.md`): filter cari/label/rentang aktivitas/status di URL + tab List · Kalender (dibuat/ditutup per tanggal) · Tren mingguan (batang dibuat vs ditutup + garis masih terbuka) · Kanban 5 kolom dari label `status:*` (disinkronkan `/pagi`) + Unduh Excel |
+| ✅ [Peta Fitur](pages/platform-developer/sitemap.md) | `platform-developer-sitemap` | — (owner 2026-10-17) | Seluruh fitur sebagai flowchart Menu → Sub menu → Halaman → Bagian → Isi dari `docs/product/sitemap/*.md` (di-bundle saat build; sumber yang sama untuk board Miro & video tutorial): pemilih 11 berkas + tab **Mermaid** (render pustaka `mermaid`) · **React Flow** (parser subset + dagre) + legenda, daftar isi, tabel route per halaman |
 
 ### 📈 Report — `/admin/report`
 

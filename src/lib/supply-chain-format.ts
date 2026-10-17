@@ -9,6 +9,14 @@ import { formatNumber, formatPct } from "@/lib/format";
 /** Tonase bulat bersatuan "t" (mis. "12.631 t"). */
 export const fmtTon = (n: number) => `${formatNumber(Math.round(n))} t`;
 
+/**
+ * Nilai menurut toggle **Angka** kartu Aliran TBS: tonase, atau persen dari total
+ * filter aktif ("0%" bila total 0). Satu definisi untuk semua tab (review 2026-10-17:
+ * sempat tersalin di empat komponen).
+ */
+export const fmtTonOrPct = (v: number, total: number, unit: "TON" | "PCT") =>
+  unit === "PCT" ? `${total > 0 ? formatPct((v / total) * 100) : "0"}%` : fmtTon(v);
+
 /** Persen 1 desimal dari bagian terhadap total; "—" bila total 0. */
 export const pctOf = (part: number, total: number) => (total > 0 ? `${formatPct(Math.round((part / total) * 1000) / 10)}%` : "—");
 
