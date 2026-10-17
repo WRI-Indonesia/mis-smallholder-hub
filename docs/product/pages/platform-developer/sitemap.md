@@ -28,8 +28,8 @@ Halaman: Peta Fitur (/admin/platform-developer/sitemap)
 │   └── Hierarki — Pohon (d3 tidy tree, lipat) · Peta pikiran (markmap, lipat) · Sunburst (d3 partition) · Daftar (`<details>` + cari)
 ├── Legenda warna — Menu · Sub menu · Halaman · Bagian · Isi · Dialog · Percabangan · Data/berkas · Layanan luar · putus-putus = prototipe/direncanakan
 ├── Ringkasan berkas (baris `> **Ringkasan:**`)
-├── Daftar isi (≥ xl, sticky) — satu tautan per bagian ber-diagram
-└── Kartu per bagian ## (satu diagram per kartu)
+├── Daftar isi (≥ xl, sticky) — satu tautan per bagian berisi (diagram, tabel, atau catatan)
+└── Kartu per bagian ## (satu diagram per kartu; bagian tanpa diagram — mis. "Urutan demo yang disarankan" — tampil sebagai kartu teks, review 2026-10-17)
     ├── Mermaid / Mermaid ELK / Sketsa: SVG dirender di klien (`mermaid.render`, securityLevel strict, tema ikut gelap/terang) · galat → pesan + sumber blok
     ├── Graphviz: SVG dari WASM `dot` atas DOT `toDot()` (bentuk & palet legend.md)
     ├── React Flow / React Flow ELK / Kolom: kanvas bersama `SitemapCanvas` (node bentuk & warna palet, edge kustom `SitemapFlowEdge` menggambar titik rute mesin tata letak — spline basis untuk dagre, siku membulat untuk ELK — label di posisi yang disisakan mesin; Controls + MiniMap > 14 node)
@@ -47,7 +47,7 @@ Halaman: Peta Fitur (/admin/platform-developer/sitemap)
 | Client | `sitemap-view-client.tsx` (pemilih, 12 tab berkelompok, daftar isi, kartu) · `mermaid-diagram.tsx` (render Mermaid, varian `elk`/`sketch`, `import("mermaid")` dinamis) · `graphviz-diagram.tsx` · `sitemap-flow-shared.tsx` + `sitemap-canvas.tsx` (node/edge/kanvas bersama React Flow) · `sitemap-flow.tsx` (dagre) · `sitemap-flow-elk.tsx` (elkjs) · `sitemap-columns.tsx` · `sitemap-network.tsx` (cytoscape) · `sitemap-tree.tsx` (d3-hierarchy) · `sitemap-mindmap.tsx` (markmap) · `sitemap-sunburst.tsx` · `sitemap-outline.tsx` — semua selain Mermaid dimuat dinamis tanpa SSR |
 | Tipe | Server Component (guard + data statis dari bundel) → Client Components |
 | Guard | `requirePermission("platform-developer-sitemap")` |
-| Server action / data | Tidak ada — `SITEMAP_DOCS` dari `src/lib/sitemap-data.ts`; helper tata letak murni `src/lib/sitemap-layout.ts` (`estimateNodeSize`, `buildSpanningForest`, `toDot`, `columnLayout`) |
+| Server action / data | Tidak ada — `SITEMAP_DOCS` dari `src/lib/sitemap-data.ts`; helper tata letak murni `src/lib/sitemap-layout.ts` (`estimateNodeSize`, `buildSpanningForest`, `toDot`, `columnLayout`); label irisan sunburst `src/lib/sunburst-label.ts` (dipakai bersama Dashboard Rantai Pasok); nama jenis node UI `SITEMAP_CLASS_LABEL` |
 | Dependensi | `mermaid` (hanya halaman ini; ELK & rough.js untuk varian ELK/Sketsa sudah dibundel di dalamnya), `@dagrejs/dagre`, `@xyflow/react` (sudah ada), `elkjs` (React Flow ELK; versi disamakan dengan yang dipakai mermaid), `@viz-js/viz` (Graphviz WASM ±3 MB, dimuat saat tab dibuka), `cytoscape` + `cytoscape-fcose` (Jaringan), `d3-hierarchy` + `d3-shape` (Pohon · Sunburst · kurva edge), `markmap-view` + `markmap-common` (Peta pikiran) — 2026-10-17 |
 | Loading | `loading.tsx` |
 
@@ -61,7 +61,7 @@ Halaman: Peta Fitur (/admin/platform-developer/sitemap)
 | Tab tampilan | Tombol ber-`role=tab`, 3 kelompok | URL `?view=<key>`: `mermaid-elk` · `sketch` · `graphviz` · `flow` · `flow-elk` · `columns` · `network` · `tree` · `mindmap` · `sunburst` · `outline` (Mermaid = tanpa parameter); kalimat ciri tampilan aktif di bawahnya |
 | Legenda warna | Konten | Kotak warna per class dari `SITEMAP_CLASS_STYLE` |
 | Daftar isi | Nav | Anchor `#<slug>` ke kartu; hanya layar ≥ xl |
-| Kartu bagian | Card | Judul = heading `##`; isi diagram + tabel + catatan |
+| Kartu bagian | Card | Judul = heading `##`; isi diagram (bila ada) + tabel + catatan; bagian tanpa diagram = kartu teks |
 | Diagram Mermaid | Konten | `dangerouslySetInnerHTML` atas SVG keluaran pustaka `mermaid` dari teks repo sendiri (bukan input pengguna); saat memuat "Merender diagram…" |
 | Kanvas React Flow (dagre · ELK · Kolom) | Konten | Tinggi 320–820 px mengikuti jumlah node; node tidak bisa digeser/dihubungkan; `colorMode` ikut tema; ELK ditata asinkron ("Menata diagram (ELK)…") |
 | Diagram Graphviz | Konten | `dangerouslySetInnerHTML` atas SVG keluaran WASM dari DOT teks repo sendiri; "Merender Graphviz…" saat memuat |
