@@ -11,7 +11,11 @@
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v1.9.0`)
 
-_(belum ada run)_
+| Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
+|---|---|---:|---:|---:|---:|---:|
+| 2026-10-17-lokal.md | Kasus uji | 10 | 0 | 1 | 0 | 0 |
+
+Blocked = TC-437-01 bagian OPERATOR/DONOR (akun lain tak tersedia di lokal) — wajib di run staging.
 
 ## Keputusan
 
