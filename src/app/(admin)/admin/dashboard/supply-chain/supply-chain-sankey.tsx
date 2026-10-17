@@ -66,6 +66,39 @@ type Hover = { kind: "node"; node: LaidOutNode } | { kind: "link"; link: LaidOut
 /** Satuan label node: tonase atau persen dari total aliran pada filter aktif. */
 export type SankeyUnit = "TON" | "PCT";
 
+/** Rincian pita gabungan per jalur (offtaker disembunyikan) — dipakai tooltip Sankey, panel Diagram Alur, judul baris Jalur. */
+export function channelBreakdownEntries(byChannel: Partial<Record<SupplyChannel, number>>): { channel: SupplyChannel; ton: number }[] {
+  return CHANNEL_ORDER.map((c) => ({ channel: c, ton: byChannel[c] ?? 0 })).filter((e) => e.ton > 0);
+}
+
+export function ChannelBreakdown({
+  byChannel,
+  total,
+  dark,
+  className,
+}: {
+  byChannel: Partial<Record<SupplyChannel, number>>;
+  total: number;
+  dark: boolean;
+  className?: string;
+}) {
+  return (
+    <ul className={cn("space-y-0.5 text-muted-foreground", className)}>
+      {channelBreakdownEntries(byChannel).map(({ channel, ton }) => (
+        <li key={channel} className="flex items-center justify-between gap-3 tabular-nums">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(channel, dark) }} />
+            {CHANNEL_LABEL[channel]}
+          </span>
+          <span>
+            {fmtTon(ton)} · {formatPct(total > 0 ? (ton / total) * 100 : 0)}%
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function SupplyChainSankey({
   graph,
   unit = "TON",
@@ -236,7 +269,7 @@ export function SupplyChainSankey({
                     style={outerLabel ? undefined : { paintOrder: "stroke", stroke: "var(--card)", strokeWidth: 3, strokeLinejoin: "round" }}
                   >
                     {clip(n.label, n.column === 0 ? originMax : MAX_LABEL)}
-                    {n.isUl && n.id.startsWith("M:") && <tspan className="fill-primary font-semibold"> UL</tspan>}
+                    {n.isUl && <tspan className="fill-primary font-semibold"> UL</tspan>}
                     <tspan className="fill-muted-foreground"> {fmtValue(n.value)}</tspan>
                   </text>
                 </g>
@@ -264,16 +297,7 @@ export function SupplyChainSankey({
                 <span className="font-medium">{fmtTon(hover.link.value)}</span>
                 <span className="text-muted-foreground"> · {formatPct((hover.link.value / total) * 100)}% dari total</span>
               </div>
-              {hover.link.byChannel && (
-                <ul className="mt-1 space-y-0.5 border-t pt-1 text-muted-foreground">
-                  {CHANNEL_ORDER.filter((c) => (hover.link.byChannel?.[c] ?? 0) > 0).map((c) => (
-                    <li key={c} className="flex items-center justify-between gap-3 tabular-nums">
-                      <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(c, dark) }} />{CHANNEL_LABEL[c]}</span>
-                      <span>{fmtTon(hover.link.byChannel![c]!)} · {formatPct((hover.link.byChannel![c]! / hover.link.value) * 100)}%</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {hover.link.byChannel && <ChannelBreakdown byChannel={hover.link.byChannel} total={hover.link.value} dark={dark} className="mt-1 border-t pt-1" />}
             </>
           ) : (
             <>

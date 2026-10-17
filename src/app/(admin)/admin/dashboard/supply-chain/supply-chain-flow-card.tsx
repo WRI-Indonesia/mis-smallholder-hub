@@ -121,7 +121,8 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
     mode !== "RINGKAS",
     hideMiddle,
     unit !== "TON",
-    hasDirection && direction !== "HULU",
+    // Arah dihitung di tab mana pun (juga Chord, yang mengabaikannya) agar Tampilan bawaan tak menyembunyikannya — review 2026-10-17.
+    direction !== "HULU",
     mode === "RINCI" && !isHierarchy && top !== "12",
   ].filter(Boolean).length;
   const resetView = () => {
@@ -207,6 +208,11 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
               ]}
             />
           )}
+          {!hasDirection && direction === "HILIR" && (
+            <span className="text-[11px] text-muted-foreground" title="Pilihan Arah tetap diingat dan berlaku lagi saat pindah tab">
+              Arah Hilir → Hulu tidak berlaku di Chord
+            </span>
+          )}
           <SegmentToggle
             caption="Dari"
             value={origin}
@@ -277,7 +283,8 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
         <p className="text-xs text-muted-foreground">Menampilkan {reading}.</p>
 
         {/* Chip filter aktif + Reset juga di sini (owner 2026-10-17): bar filter di puncak halaman jauh dari kartu ini saat digulir. */}
-        {f.hasFilter && (
+        {/* Hanya filter entitas: Tahun tak punya chip, jadi strip berisi Reset saja akan membingungkan (review 2026-10-17). */}
+        {f.hasEntityFilter && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5">
             <SupplyChainFilterChips f={f} view={view} />
             <ResetFiltersButton active={f.hasFilter} onReset={f.reset} size="sm" title="Lepas semua filter halaman (sama dengan Reset di bar filter atas)" />

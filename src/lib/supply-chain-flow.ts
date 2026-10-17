@@ -337,6 +337,13 @@ export interface MillVolumeRow {
 }
 
 /** Mill pemasok program UL (badge UL & ikon biru). */
+/**
+ * Tujuan ber-UL untuk **pengurutan** kolom tujuan (UL selalu di atas, owner 2026-10-17):
+ * Mill pembeli UL atau node gabungan "Ke Mill UL". `SankeyNode.isUl` sendiri tetap
+ * bermakna "Mill ini pembeli program UL" (badge & tooltip) — review 2026-10-17.
+ */
+export const isUlDestination = (n: Pick<SankeyNode, "id" | "isUl">) => n.isUl || n.id === "U:UL";
+
 export function isUlMill(m: Pick<ScMill, "buyerPrograms">): boolean {
   return m.buyerPrograms.includes("UL");
 }
@@ -584,7 +591,7 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
       n = { id, column, label: `${column === 1 ? "Offtaker" : "Mill"} lain`, sub: `${foldedCount.get(id)} entitas`, value: 0, folded: foldedCount.get(id) ?? 0, isUl: false, millStatus: null, groupCode: null };
     } else if (id.startsWith("U:")) {
       const n0 = groupMembers.get(id)?.size ?? 0;
-      n = { id, column, label: UL_FILTER_LABEL[id.slice(2) as UlFilter], sub: `${n0} Mill`, value: 0, folded: n0, isUl: id === "U:UL", millStatus: null, groupCode: null };
+      n = { id, column, label: UL_FILTER_LABEL[id.slice(2) as UlFilter], sub: `${n0} Mill`, value: 0, folded: n0, isUl: false, millStatus: null, groupCode: null };
     } else if (id.startsWith("D:")) {
       const n0 = groupMembers.get(id)?.size ?? 0;
       n = { id, column, label: id.slice(2), sub: `${n0} Lembaga`, value: 0, folded: n0, isUl: false, millStatus: null, groupCode: null };
@@ -742,7 +749,7 @@ export function layoutSankey(
   // Kolom tujuan: Mill UL / "Ke Mill UL" selalu di atas — fokus dashboard ke Mill UL (owner 2026-10-17);
   // barycenter hanya mengurutkan di dalam kelompok UL / bukan UL.
   const tail = (n: SankeyNode) => (n.id.startsWith("X:") || n.id === UNKNOWN_MILL ? 1 : 0);
-  const ulRank = (n: SankeyNode) => (n.column === 3 && !tail(n) ? (n.isUl ? 0 : 1) : 0);
+  const ulRank = (n: SankeyNode) => (n.column === 3 && !tail(n) ? (isUlDestination(n) ? 0 : 1) : 0);
   for (const c of nonEmptyCols) {
     byCol[c].sort((a, b) => tail(a) - tail(b) || ulRank(a) - ulRank(b) || b.value - a.value || a.label.localeCompare(b.label));
     place(c);

@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatNumber, formatPct } from "@/lib/format";
-import { CHANNEL_LABEL, type SankeyGraph, type SankeyNode } from "@/lib/supply-chain-flow";
+import { CHANNEL_LABEL, sankeyLinkKey, type SankeyGraph, type SankeyNode } from "@/lib/supply-chain-flow";
 import { DIRECT_LABEL, buildPathRows, sortPathRows, type PathSortKey, type SortDir } from "@/lib/supply-chain-views";
 import { fmtTon } from "@/lib/supply-chain-format";
-import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { channelBreakdownEntries, channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { SortHead } from "./sort-head";
 
 const ROWS_COLLAPSED = 20;
@@ -56,7 +56,7 @@ export function SupplyChainPathList({
     const text = (
       <>
         <span className="truncate">{n.label}</span>
-        {n.isUl && n.id.startsWith("M:") && <span className="ml-1 font-semibold text-primary">UL</span>}
+        {n.isUl && <span className="ml-1 font-semibold text-primary">UL</span>}
       </>
     );
     return clickable ? (
@@ -81,6 +81,10 @@ export function SupplyChainPathList({
       ? sort.dir === "desc" ? "diurut dari tonase terbesar" : "diurut dari tonase terkecil"
       : `diurut menurut ${{ ORIGIN: "asal", OFFTAKER: "offtaker", DEST: "tujuan" }[sort.key]} ${sort.dir === "asc" ? "A–Z" : "Z–A"}`;
 
+  // Pita gabungan (offtaker disembunyikan): satu jalur = satu pita; rincian jalur ada di byChannel.
+  const linkByKey = new Map(graph.links.map((l) => [sankeyLinkKey(l), l]));
+  // Hilir → Hulu: panah ikut arah baca supaya tidak terbaca "Mill → Lembaga" (review 2026-10-17).
+  const Arrow = mirror ? ArrowLeft : ArrowRight;
   const originHead = graph.nodes.some((n) => n.id.startsWith("D:")) ? "Distrik" : "Lembaga";
   const destHead = graph.nodes.some((n) => n.id.startsWith("U:")) ? "UL / Non-UL" : "Mill";
 
@@ -109,27 +113,39 @@ export function SupplyChainPathList({
           </thead>
           <tbody>
             {visible.map((r) => {
-              // Hilir → Hulu: tujuan di kiri, asal di kanan (tanda panah tetap menunjuk urutan baca).
+              // Hilir → Hulu: tujuan di kiri, asal di kanan; panah menunjuk ke kiri (arah aliran TBS).
               const first = mirror ? r.steps[r.steps.length - 1] : r.steps[0];
               const last = mirror ? r.steps[0] : r.steps[r.steps.length - 1];
               const mid = r.steps.length === 3 ? r.steps[1] : undefined;
               const color = channelColor(r.channel, dark);
+              const parts = linkByKey.get(r.key)?.byChannel;
+              const segments = parts ? channelBreakdownEntries(parts) : [{ channel: r.channel, ton: r.ton }];
+              const title = segments.map((sg) => `${CHANNEL_LABEL[sg.channel]}: ${fmtTon(sg.ton)}`).join(" · ");
               return (
                 <tr key={r.key} className="border-b last:border-0 hover:bg-muted/40">
                   <td className="py-1.5 pr-2 text-right text-xs tabular-nums text-muted-foreground">{rank.get(r.key)}</td>
                   <td className="max-w-[180px] py-1.5 pr-2">{step(first)}</td>
-                  <td className="text-muted-foreground"><ArrowRight className="h-3.5 w-3.5" /></td>
+                  <td className="text-muted-foreground"><Arrow className="h-3.5 w-3.5" /></td>
                   {withOfftaker && (
                     <>
                       <td className="max-w-[240px] py-1.5 pr-2">{step(mid)}</td>
-                      <td className="text-muted-foreground"><ArrowRight className="h-3.5 w-3.5" /></td>
+                      <td className="text-muted-foreground"><Arrow className="h-3.5 w-3.5" /></td>
                     </>
                   )}
                   <td className="max-w-[240px] py-1.5 pr-2">{step(last)}</td>
-                  <td className="py-1.5 pr-2" title={CHANNEL_LABEL[r.channel]}>
+                  <td className="py-1.5 pr-2" title={title}>
                     <div className="flex items-center gap-2">
                       <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full rounded-full" style={{ width: `${(r.ton / max) * 100}%`, background: color }} />
+                        {segments.length > 1 ? (
+                          // Pita gabungan: batang dibagi per jalur agar tonase non-dominan tidak hilang.
+                          <div className="flex h-full overflow-hidden rounded-full" style={{ width: `${(r.ton / max) * 100}%` }}>
+                            {segments.map((sg) => (
+                              <div key={sg.channel} className="h-full" style={{ width: `${(sg.ton / r.ton) * 100}%`, background: channelColor(sg.channel, dark) }} />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="h-full rounded-full" style={{ width: `${(r.ton / max) * 100}%`, background: color }} />
+                        )}
                       </div>
                       <span className={cn("w-20 text-right tabular-nums", unit === "PCT" && "text-muted-foreground")}>{fmtTon(r.ton)}</span>
                     </div>

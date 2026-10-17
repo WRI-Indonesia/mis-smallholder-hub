@@ -1,6 +1,7 @@
 import {
   CHANNEL_ORDER,
   UL_FILTER_LABEL,
+  isUlDestination,
   type ScGroup,
   type SankeyGraph,
   type SankeyNode,
@@ -275,6 +276,17 @@ export interface OriginDestMatrix {
 
 export const matrixKey = (rowId: string, colId: string) => `${rowId}|${colId}`;
 
+/** Tukar baris ↔ kolom (Arah Hilir → Hulu di Matriks & Batang): baris = tujuan, kolom = asal. */
+export function transposeOriginDestMatrix(m: OriginDestMatrix): OriginDestMatrix {
+  const cells = new Map<string, number>();
+  for (const r of m.rows)
+    for (const c of m.cols) {
+      const v = m.cells.get(matrixKey(r.id, c.id));
+      if (v !== undefined) cells.set(matrixKey(c.id, r.id), v);
+    }
+  return { rows: m.cols, cols: m.rows, cells, rowTotal: m.colTotal, colTotal: m.rowTotal, total: m.total, max: m.max };
+}
+
 /**
  * Matriks Asal × Tujuan dari jalur Sankey (tingkat offtaker dilipat): dasar
  * tab Matriks (tabel panas), Chord (pita asal ↔ tujuan), dan Batang bertumpuk.
@@ -299,7 +311,7 @@ export function buildOriginDestMatrix(graph: SankeyGraph): OriginDestMatrix {
   }
   const tail = (id: string) => (id === UNKNOWN_MILL_ID ? 1 : 0);
   // Tujuan UL selalu di depan (fokus ke Mill UL, owner 2026-10-17), lalu tonase; Mill tak diketahui terakhir.
-  const ulRank = (n: SankeyNode) => (tail(n.id) ? 0 : n.isUl ? 0 : 1);
+  const ulRank = (n: SankeyNode) => (tail(n.id) ? 0 : isUlDestination(n) ? 0 : 1);
   const rows = [...rowTotal.keys()].map((id) => byId.get(id)!).sort((a, b) => rowTotal.get(b.id)! - rowTotal.get(a.id)! || a.label.localeCompare(b.label));
   const cols = [...colTotal.keys()]
     .map((id) => byId.get(id)!)

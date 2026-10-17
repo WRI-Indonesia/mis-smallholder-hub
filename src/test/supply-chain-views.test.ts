@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSupplyChainSankey, type ScRecord, type SupplyChainData } from "@/lib/supply-chain-flow";
-import { DIRECT_NODE_ID, buildOriginDestMatrix, buildPathRows, buildSupplyChainTree, bezierPointAtX, dodgeLabels, matrixKey, sortPathRows, spreadEdgeEnds, treeBranchKeys, treeNodeAsSankeyNode, type SupplyTreeNode } from "@/lib/supply-chain-views";
+import { DIRECT_NODE_ID, transposeOriginDestMatrix, buildOriginDestMatrix, buildPathRows, buildSupplyChainTree, bezierPointAtX, dodgeLabels, matrixKey, sortPathRows, spreadEdgeEnds, treeBranchKeys, treeNodeAsSankeyNode, type SupplyTreeNode } from "@/lib/supply-chain-views";
 
 const rec = (over: Partial<ScRecord>): ScRecord => ({
   id: "r", year: 2025, level: "LAHAN", groupCode: "G1", surveyId: null, offtakerId: null, nextOfftakerId: null,
@@ -177,6 +177,24 @@ describe("buildOriginDestMatrix (tab Matriks · Chord · Batang bertumpuk)", () 
     expect(m.rows.every((r) => r.id.startsWith("D:"))).toBe(true);
     expect(m.cols.map((c) => c.id)).toEqual(["U:UL", "U:NON_UL", "M:?"]);
     expect(m.total).toBe(g.totalTon);
+  });
+
+  it("transposeOriginDestMatrix: baris ↔ kolom dan total tertukar, sel tetap; dua kali = semula", () => {
+    const m = buildOriginDestMatrix(treeGraph);
+    const t = transposeOriginDestMatrix(m);
+    expect(t.rows.map((r) => r.id)).toEqual(m.cols.map((c) => c.id));
+    expect(t.cols.map((c) => c.id)).toEqual(m.rows.map((r) => r.id));
+    expect(t.cells.get(matrixKey("M:M1", "L:G1"))).toBe(40);
+    expect(t.rowTotal.get("M:M1")).toBe(m.colTotal.get("M:M1"));
+    expect([t.total, t.max]).toEqual([m.total, m.max]);
+    const back = transposeOriginDestMatrix(t);
+    expect([...back.cells.entries()].sort()).toEqual([...m.cells.entries()].sort());
+  });
+
+  it("node gabungan Ke Mill UL tidak ditandai isUl (badge/tooltip khusus Mill), tetapi tetap diurutkan di depan", () => {
+    const g = buildSupplyChainSankey(data, records, { maxPerColumn: Infinity, destination: "UL" });
+    expect(g.nodes.find((n) => n.id === "U:UL")?.isUl).toBe(false);
+    expect(buildOriginDestMatrix(g).cols[0].id).toBe("U:UL");
   });
 
   it("treeNodeAsSankeyNode memetakan tingkat ke kolom Sankey", () => {

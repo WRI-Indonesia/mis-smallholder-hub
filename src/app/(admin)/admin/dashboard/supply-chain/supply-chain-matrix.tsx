@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { formatPct } from "@/lib/format";
 import type { SankeyGraph, SankeyNode } from "@/lib/supply-chain-flow";
-import { buildOriginDestMatrix, matrixKey } from "@/lib/supply-chain-views";
+import { buildOriginDestMatrix, matrixKey, transposeOriginDestMatrix } from "@/lib/supply-chain-views";
 import { fmtTon } from "@/lib/supply-chain-format";
 import { isFilterableNode, isGroupNode, type SankeyUnit } from "./supply-chain-sankey";
 import { UlBadge } from "./ul-badge";
@@ -28,11 +28,9 @@ export function SupplyChainMatrix({
 }) {
   const m = useMemo(() => buildOriginDestMatrix(graph), [graph]);
   const mirror = direction === "HILIR";
-  const rows = mirror ? m.cols : m.rows;
-  const cols = mirror ? m.rows : m.cols;
-  const rowTotal = mirror ? m.colTotal : m.rowTotal;
-  const colTotal = mirror ? m.rowTotal : m.colTotal;
-  const cell = (r: SankeyNode, c: SankeyNode) => m.cells.get(mirror ? matrixKey(c.id, r.id) : matrixKey(r.id, c.id)) ?? 0;
+  const t = useMemo(() => (mirror ? transposeOriginDestMatrix(m) : m), [m, mirror]);
+  const { rows, cols, rowTotal, colTotal } = t;
+  const cell = (r: SankeyNode, c: SankeyNode) => t.cells.get(matrixKey(r.id, c.id)) ?? 0;
   if (!m.rows.length) return <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Tidak ada aliran bertonase pada filter ini.</div>;
   const show = (v: number) => (unit === "PCT" ? `${m.total > 0 ? formatPct((v / m.total) * 100) : "0"}%` : fmtTon(v));
   const head = (n: SankeyNode) => {
@@ -40,7 +38,7 @@ export function SupplyChainMatrix({
     const inner = (
       <span className="inline-flex items-center gap-1">
         {n.label}
-        {n.isUl && n.column === 3 && n.id.startsWith("M:") && <UlBadge />}
+        {n.isUl && <UlBadge />}
       </span>
     );
     return clickable ? (

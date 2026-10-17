@@ -21,10 +21,10 @@ import { Pause, Play, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatPct } from "@/lib/format";
-import { CHANNEL_LABEL, CHANNEL_ORDER, SANKEY_COLUMNS, layoutSankey, sankeyLinkKey, type SankeyGraph, type SankeyNode, type SupplyChannel } from "@/lib/supply-chain-flow";
+import { CHANNEL_LABEL, SANKEY_COLUMNS, layoutSankey, sankeyLinkKey, type SankeyGraph, type SankeyNode, type SupplyChannel } from "@/lib/supply-chain-flow";
 import { bezierPointAtX, dodgeLabels, spreadEdgeEnds } from "@/lib/supply-chain-views";
 import { fmtTon } from "@/lib/supply-chain-format";
-import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
+import { ChannelBreakdown, channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 
 /**
  * Tab Diagram Alur (owner 2026-10-09): graf yang sama dengan Sankey, digambar
@@ -78,7 +78,7 @@ function FlowNode({ data }: NodeProps) {
       <Handle type="target" position={d.mirror ? Position.Right : Position.Left} className="!h-1 !w-1 !min-h-0 !min-w-0 !border-0 !bg-transparent" isConnectable={false} />
       <div className="flex items-baseline gap-1 text-xs leading-tight">
         <span className="truncate font-medium">{n.label}</span>
-        {n.isUl && n.id.startsWith("M:") && <span className="shrink-0 font-semibold text-primary">UL</span>}
+        {n.isUl && <span className="shrink-0 font-semibold text-primary">UL</span>}
       </div>
       <div className="mt-0.5 flex items-baseline justify-between gap-2 text-[11px] leading-tight text-muted-foreground">
         <span className="truncate">{n.sub}</span>
@@ -346,6 +346,9 @@ export function SupplyChainFlowDiagram({
       </p>
       <div ref={wrapRef} className="overflow-hidden rounded-lg border border-border/60" style={{ height }}>
         <ReactFlow
+          // Posisi handle (kiri/kanan) berubah saat Arah dibalik; React Flow tak mengukur ulang
+          // handle bila ukuran node tetap → pasang ulang kanvas per arah (review 2026-10-17).
+          key={mirror ? "hilir" : "hulu"}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
@@ -413,16 +416,7 @@ export function SupplyChainFlowDiagram({
                     <span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(hovered.channel, dark) }} />
                     {hovered.byChannel ? `Gabungan — jalur terbesar ${CHANNEL_LABEL[hovered.channel]}` : CHANNEL_LABEL[hovered.channel]}
                   </div>
-                  {hovered.byChannel && (
-                    <ul className="mt-1 space-y-0.5 text-muted-foreground">
-                      {CHANNEL_ORDER.filter((c) => (hovered.byChannel?.[c] ?? 0) > 0).map((c) => (
-                        <li key={c} className="flex items-center justify-between gap-3 tabular-nums">
-                          <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(c, dark) }} />{CHANNEL_LABEL[c]}</span>
-                          <span>{fmtTon(hovered.byChannel![c]!)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  {hovered.byChannel && <ChannelBreakdown byChannel={hovered.byChannel} total={hovered.value} dark={dark} className="mt-1" />}
                   <div className="mt-1 tabular-nums">
                     <span className="font-medium">{fmtTon(hovered.value)}</span>
                     <span className="text-muted-foreground"> · {formatPct(total > 0 ? (hovered.value / total) * 100 : 0)}% dari total</span>
