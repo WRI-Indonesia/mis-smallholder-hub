@@ -141,7 +141,18 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 9 | **#433** Layer hutan & deforestasi (Kemenhut + EUDR/GFW) di Peta Supply Chain & Peta Lahan | Fitur | M | `MAP_OVERLAYS` jadi modul bersama di `src/lib/`; 7 overlay baru (Kemenhut: Penutupan Lahan 2025, Deforestasi 2023–2024 & 2024–2025, PIPPIB 2026 · GFW: JRC Forest Cover 2020, Tree Cover Loss ≥ 2021, Integrated Alerts) dalam 2 kelompok lipat + legenda/sumber; Peta Supply Chain dapat bagian Peta Lainnya; proxy `api/map-overlay` menerima `map-supply-chain` VIEW; spike parameter tahun Tree Cover Loss (422 di jalur `dynamic`); Bantuan p-17 + Peta Lahan + `ui-ux-map.md`. Analisis per lahan = #434 (status:decision, di luar rilis) | ✅ Selesai 2026-10-14 — kode di `mvp` (`3cec246`, `22a6be3`, `fff04c3`), 2× `/code-review` (8 + 4 temuan diperbaiki), browser lokal ✓, TC-433-01..04, QA lokal 0 Fail; ditutup + retro. QA staging lewat paket v1.8.0; analisis per lahan = #434 | ✅ Diputuskan 2026-10-14: Paket EUDR + Kemenhut, visual saja, tampil di kedua peta, masuk v1.8.0; fase roadmap GIS-02 (owner 2026-10-14) |
 | 10 | **Rilis v1.8.0** | Rilis | M | Semua butir di atas, **tanpa migrasi**: `mvp → staging` → seed menu `platform-developer-issues` staging (dry-run → `--apply`, #430) → QA `docs/qa/v1.8.0/` → bump → PR `staging → main` → seed menu prod → **generate ulang snapshot BMP prod** (#428) → tag. Di commit bump: naikkan **PLATFORM-08 & PLATFORM-09 ke ✅** di `roadmap.md` (keputusan owner 2026-10-12, audit `/audit`) bersama baris `metrics.md` (Roadmap % 20,0% → 25,7% + fase lain yang berubah) dan sesuaikan assertion `phases[0]` di `src/test/roadmap.test.ts` ✅ 2026-10-14: staging `c0d5963` → `000ced9` (wrap-up kedua); seed menu staging ✓ (1 menu + 6 izin); QA run staging smoke P0 13 · kasus 16 · regresi 3 Pass · 0 Fail; sign-off Go (dev · QA · owner); bump: PLATFORM-08/09 ✅ + GIS-02 🟠 → Roadmap 28,6% | ✅ Selesai | Go rilis; ✅ 2026-10-14 owner: sign-off **Go**, GIS-02 → 🟠 |
 
-#### Rilis v1.9.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
+#### Rilis v1.9.0 · 2026-10-17 → 2026-10-19 — Peta Fitur & tampilan Aliran TBS diperluas
+
+**Renumbering 2026-10-17 (owner):** Peta Fitur (#437) dan perluasan prototipe Aliran TBS yang sudah siap di `mvp` dirilis lebih dulu sebagai **v1.9.0** MINOR (berisi fitur baru — preseden v1.7.0), target Senin 2026-10-19; Supply Chain versi DB bergeser ke **v1.10.0**, penyangga akhir tahun ke **v1.11.0** (isi tiap rilis tidak berubah).
+
+| # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
+| - | ----- | -------- | ---- | ------ | ------ | ------------------ |
+| 1 | **#437** Platform Developer › Peta Fitur (sitemap Mermaid + 12 tampilan) | Fitur | M | `docs/product/sitemap/` 13 MD + 98 diagram; menu `platform-developer-sitemap` (ikon `Signpost`, VIEW SUPERADMIN·ADMIN·MANAGEMENT), tutorial `p-20-peta-fitur`; 12 tampilan dalam 3 kelompok tab (Teks · Interaktif · Hierarki), React Flow dagre diperbaiki; test `sitemap-mermaid` + `sitemap-layout`; board Miro setelah review MD owner | ✅ Kode di `mvp` (`b417f25`, `7e4c052`, 2026-10-17) | ✅ Diputuskan 2026-10-17: lokasi docs/product/sitemap, 1 berkas per menu, tanpa overlay role, Miro setelah review MD; semua 10 tab tambahan, tab berkelompok, bawaan Mermaid |
+| 2 | **#381** Prototipe Aliran TBS: +6 tab, Arah di semua tab, Sembunyikan offtaker, UL di atas, chip filter | Fitur | M | Kartu Aliran TBS 4 → 10 tab (Sunburst · Partisi · Treemap · Matriks · Chord · Batang); toggle Arah berlaku di semua tab kecuali Chord; Offtaker › Sembunyikan melebur pita pasangan asal–tujuan; Ke Mill UL / Mill UL selalu teratas; chip filter + Reset di kartu. Masih prototipe CSV — versi DB tetap v1.10.0 | ✅ Kode di `mvp` (`3d925e2`, `184a451`, `d70187a`, 2026-10-17) | ✅ Diputuskan 2026-10-17: semua 6 tab, klik = filter global (bukan zoom); Arah di semua tab; pita dilebur, warna = jalur terbesar |
+| 3 | Perbaikan `/code-review` Peta Fitur & Aliran TBS | Kerapian | S | 10 temuan `bedef14..3d925e2` (hover basi setelah klik-filter, hutan rentang dua lintasan, edge Kolom bezier, cache Graphviz, `dynamic()` bertipe, dll.) + review `b52b38a..d70187a` | ✅ Selesai 2026-10-17 (`b52b38a`) | — |
+| 4 | **Rilis v1.9.0** | Rilis | M | `/scope` → `/wrapup` (kasus uji, QA lokal) → bump → merge staging (uji `npm ci` 11 dependensi klien baru, RAM staging #363) + seed menu `platform-developer-sitemap` staging & prod (dry-run → `--apply`) → PR `main` → tag, Release, retro #437 | 🔲 Todo | ✅ Diputuskan 2026-10-17: v1.9.0 (MINOR), target 2026-10-19 |
+
+#### Rilis v1.10.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
@@ -155,10 +166,9 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 8 | **#422** Perluas blok GENERATED docs | Kerapian | M | Blok turunan kode via `build:docs` + dijaga `docs-generated.test.ts`: menu → tutorial Bantuan, struktur skema, indeks per model (S+S+M), lalu izin bawaan role × menu (M); satu commit per blok, selisih dengan teks manual = temuan drift | 🔲 Todo | ✅ Diputuskan 2026-10-17: blok izin bawaan role tampil berlabel "bawaan seed, bukan isi DB prod" (#263) |
 | 9 | **#424** Penanda "Meragukan" per record produksi (pengganti label Estimasi) | Fitur | M | Kolom terstruktur di `ProductionRecord` + migrasi + backfill 6.215 record dari backup lokal + form/bulk upload + filter Master Data Produksi + penanda di Kalender Ketersediaan (menggantikan E yang dibuang di v1.8.0) | 🔲 Todo | ✅ Diputuskan 2026-10-17: `isDoubtful Boolean` + `doubtfulReason String?`; backfill 6.215 record = true + alasan "Estimasi" |
 | 10 | **#436** Kartu Lahan: jumlah petani ber-STDB | Fitur | M | Baris "Petani ber-STDB" + % dari total petani di kartu Lahan Dashboard Utama; dihitung saat snapshot (`RawFarmer` + agregat per Lembaga `totalFarmersWithStdb`, default 0 untuk snapshot lama), PDF snapshot, test agregasi/normalisasi, Bantuan dashboard, regenerate snapshot prod | 🔲 Todo | ✅ Diputuskan 2026-10-17: D1 nomor STDB terisi · D2 tanpa pipeline · D3 kartu Lahan di bawah Total luas · D4 % dari total petani; tanpa fase roadmap (preseden #429) |
-| 11 | **#437** Platform Developer › Peta Fitur (sitemap Mermaid + sub menu Mermaid · React Flow) | Fitur | M | `docs/product/sitemap/` 13 MD + 98 diagram; menu `platform-developer-sitemap` (ikon `Signpost`, VIEW SUPERADMIN·ADMIN·MANAGEMENT), tutorial `p-20-peta-fitur`, test `sitemap-mermaid`; sisa seed menu + board Miro setelah review MD owner | ✅ Kode di `mvp` (`b417f25`, 2026-10-17) | ✅ Diputuskan 2026-10-17: lokasi docs/product/sitemap, 1 berkas per menu, tanpa overlay role, Miro setelah review MD |
-| 12 | **Rilis v1.9.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin termasuk `platform-developer-sitemap` + UML ke staging & prod + regenerate snapshot prod) | 🔲 Todo | Go rilis |
+| 11 | **Rilis v1.10.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod + regenerate snapshot prod) | 🔲 Todo | Go rilis |
 
-#### Rilis v1.10.0 · 2026-11-09 → 2026-12-20 — Penyangga akhir tahun: tuntaskan fase K4 2026 & siapkan 2027
+#### Rilis v1.11.0 · 2026-11-09 → 2026-12-20 — Penyangga akhir tahun: tuntaskan fase K4 2026 & siapkan 2027
 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
@@ -168,10 +178,10 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 4 | **#317** Tumpang tindih lahan — Fase 4 layer Peta Lahan | Fitur | M | Layer tumpang tindih di Peta Lahan → #317 & fase DA-09 tuntas | 🔲 Todo | — |
 | 5 | Concept note **GIS-02 Deforestation** | Fitur | S | Sumber data tutupan hutan + lisensi, tahun *cut-off*, ambang luas, butuh GeoServer (GIS-04) atau tidak → issue induk | 🔲 Todo | Sumber data & cut-off |
 | 6 | Concept note **MD-12 Certification** | Fitur | S | Skema (RSPO/ISPO), unit sertifikasi Lembaga vs petani, siklus audit & temuan, dokumen S3 → issue induk | 🔲 Todo | Cakupan skema |
-| 7 | **#415 B** Ketersediaan Data: kalender cakupan Pelatihan | Fitur | M | Anak B epic #415: kalender per paket × tahun, pola sama dengan Produksi (#416); issue anak dibuat saat mulai, bentuk disetujui owner | 🔲 Todo | ✅ Diputuskan 2026-10-13: masuk v1.10.0 agar DA-08 tetap Now |
-| 8 | **Rilis v1.10.0** | Rilis | M | Semua butir di atas + limpahan v1.7.0–v1.9.0 yang digeser ke sini | 🔲 Todo | Go rilis |
+| 7 | **#415 B** Ketersediaan Data: kalender cakupan Pelatihan | Fitur | M | Anak B epic #415: kalender per paket × tahun, pola sama dengan Produksi (#416); issue anak dibuat saat mulai, bentuk disetujui owner | 🔲 Todo | ✅ Diputuskan 2026-10-13: masuk v1.10.0 agar DA-08 tetap Now (dinomori ulang v1.11.0) |
+| 8 | **Rilis v1.11.0** | Rilis | M | Semua butir di atas + limpahan v1.7.0–v1.10.0 yang digeser ke sini | 🔲 Todo | Go rilis |
 
-#### Backlog terurut (setelah v1.10.0)
+#### Backlog terurut (setelah v1.11.0)
 
 | # | Issue | Status | Catatan |
 | - | ----- | ------ | ------- |
