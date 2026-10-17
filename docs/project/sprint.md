@@ -196,6 +196,7 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 3 | **#356** Bobot cakupan modul ke Index | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
 | 3 | **#358** DA-03 peta kesiapan data per Lembaga | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
 | 3 | **#258** Peta aplikasi (sitemap) di Bantuan | 🔲 Todo | — |
+| 3 | **#439** Peta Fitur: board Miro dari `docs/product/sitemap` (lanjutan #437) | 🔲 Todo | Menunggu review MD owner; satu frame per diagram lewat MCP Miro. Dibuka 2026-10-17 saat #437 ditutup (dirilis v1.9.0); tanpa fase roadmap |
 | 3 | **#413** Test cermin → modul asli + judul perf + test hot-path import (TS-7/9/11, TD-050) | 🔲 Todo | Dari audit `/audit` 2026-10-10 |
 | 3 | **#414** `ActionResult`: pisahkan `error` (string) dan `fieldErrors` (TD-010) | 🔲 Todo | Kontrak lintas ±10 form — satu PR berlingkup jelas |
 | 3 | **#203** Detail Lahan: riwayat revisi lahan | 🔲 Todo | — |
