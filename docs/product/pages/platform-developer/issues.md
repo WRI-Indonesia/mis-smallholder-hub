@@ -34,7 +34,7 @@ Halaman: Daftar Issue (/admin/platform-developer/issues)
 │   · Aktivitas ?dari= ?sampai= — issue DIBUAT ATAU DITUTUP di rentang (inklusif, WIB)
 │   · Status ?status=open|closed|not_planned|duplicate (chip + jumlah, dihitung tanpa filter status)
 │   · ↺ Reset (ResetFiltersButton #427; tab/bulan/tanggal kalender tidak di-reset)
-│   · Unduh Excel (issue tersaring, urutan = urutan List) — hanya bila `platform-developer-issues:EXPORT` (`canExport` dari page; seed EXPORT SUPERADMIN/ADMIN/MANAGEMENT, owner 2026-10-13)
+│   · Unduh Excel (issue tersaring, urutan = urutan List) — hanya bila `platform-developer-issues:EXPORT` (`canExport` dari page; seed EXPORT **SUPERADMIN saja** — EXPORT ADMIN/MANAGEMENT (owner 2026-10-13) dicabut di prod sesudah v1.8.0, seed disamakan 2026-10-17 (owner))
 └── Tabs (?tab=kalender|tren|kanban; bawaan List)
     ├── List — No. (tautan GitHub) · Judul · Label (≥ lg) · Dibuat · Ditutup · Status; urut No./Dibuat/Ditutup
     ├── Kalender — kiri ±1/3 kalender, kanan ±2/3 detail (owner 2026-10-13, dipilih atas popup / di bawah kalender; layar < lg tersusun):

@@ -166,14 +166,29 @@ describe("spesifikasi peran (rbac.md §Inventaris Role) ditegakkan seed", () => 
     expect(punya("DONOR", "report", ["PRINT"]).length).toBeGreaterThan(0);
   });
 
-  it("Daftar Issue (#429): tombol Unduh Excel dijaga EXPORT — hanya peran yang bisa membuka menunya", () => {
-    // rbac.md §Keluaran: tombol unduh = izin EXPORT (owner 2026-10-13, sebelumnya
-    // tombol tampil hanya dengan VIEW).
-    for (const role of ["ADMIN", "MANAGEMENT", "SUPERADMIN"]) {
-      expect(punya(role, "platform-developer-issues", ["EXPORT"]), role).toEqual(["platform-developer-issues"]);
+  it("Daftar Issue (#429): tombol Unduh Excel dijaga EXPORT — hanya SUPERADMIN (prod sebagai acuan, owner 2026-10-17)", () => {
+    // rbac.md §Keluaran: tombol unduh = izin EXPORT (owner 2026-10-13). EXPORT ADMIN &
+    // MANAGEMENT dicabut di prod lewat UI sesudah v1.8.0; seed disamakan 2026-10-17.
+    expect(punya("SUPERADMIN", "platform-developer-issues", ["EXPORT"])).toEqual(["platform-developer-issues"]);
+    for (const role of ["ADMIN", "MANAGEMENT"]) {
+      expect(punya(role, "platform-developer-issues", ["VIEW"]), role).toEqual(["platform-developer-issues"]);
+      expect(punya(role, "platform-developer-issues", ["EXPORT"]), role).toEqual([]);
     }
     for (const role of ["OPERATOR", "DONOR"]) {
       expect(punya(role, "platform-developer-issues", ["VIEW", "EXPORT"]), role).toEqual([]);
+    }
+  });
+
+  it("Dashboard Rantai Pasok: VIEW lewat induk Dashboard; ekspor/cetak hanya SUPERADMIN; DONOR tanpa akses (prod sebagai acuan, owner 2026-10-17)", () => {
+    // Izin baris anak dashboard-supply-chain dicabut di prod sesudah v1.8.0; VIEW
+    // ADMIN/MANAGEMENT/OPERATOR tetap ada karena diwarisi dari induk `dashboard`.
+    for (const role of ["ADMIN", "MANAGEMENT", "OPERATOR"]) {
+      expect(punya(role, "dashboard-supply-chain", ["VIEW"]), role).toEqual(["dashboard-supply-chain"]);
+      expect(punya(role, "dashboard-supply-chain", ["EXPORT", "PRINT"]), role).toEqual([]);
+    }
+    expect(punya("DONOR", "dashboard-supply-chain", ["VIEW", "PRINT"])).toEqual([]);
+    for (const aksi of ["EXPORT", "PRINT"]) {
+      expect(punya("SUPERADMIN", "dashboard-supply-chain", [aksi]), aksi).toEqual(["dashboard-supply-chain"]);
     }
   });
 

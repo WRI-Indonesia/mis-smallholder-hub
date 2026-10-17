@@ -33,7 +33,7 @@ Halaman: Dashboard Rantai Pasok (/admin/dashboard/supply-chain)
 
 | Aspek | Nilai |
 |---|---|
-| Menu key / izin | `dashboard-supply-chain` · VIEW (izin peran = Monev BMP) |
+| Menu key / izin | `dashboard-supply-chain` · VIEW diwarisi dari induk `dashboard` (ADMIN · MANAGEMENT · OPERATOR); EXPORT/PRINT (Unduh Excel, cetak) **hanya SUPERADMIN**; DONOR tanpa akses — izin baris anak dicabut di prod sesudah v1.8.0, seed disamakan 2026-10-17 (owner) |
 | Server Action | `getSupplyChainDashboardView` (`src/server/actions/supply-chain-prototype.ts`) — `hasPermission` VIEW, scope `getAccessContext` per kode Lembaga, Lembaga `isActive` |
 | Sumber data | `src/lib/supply-chain-tables.ts` (CSV lokal → S3) · agregasi murni `src/lib/supply-chain-flow.ts` · tab Jalur & Tabel Pohon `src/lib/supply-chain-views.ts` (dari graf Sankey yang sama; `buildOriginDestMatrix` untuk Matriks · Chord · Batang, `treeNodeAsSankeyNode` untuk klik-filter tab hierarki) · jarak/Lembaga/Sorotan `src/lib/supply-chain-insights.ts` (haversine `lib/geo.ts`, koordinat dari CSV — tanpa DB; titik singgah = `recordWaypointOfftakers`, sama dengan garis Peta) · formatter `src/lib/supply-chain-format.ts` · Excel `src/lib/supply-chain-xlsx.ts` (`exportMultiSheetToExcel`, client-side, tombol hanya bila izin EXPORT) |
 | Bantuan | `src/content/help/tutorial/p-16-dashboard-rantai-pasok.md` |
