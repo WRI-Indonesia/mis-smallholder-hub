@@ -41,6 +41,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [product/crud-flows.md](./product/crud-flows.md) | Farmer CRUD example + bulk upload flow |
 | [product/role-flows.md](./product/role-flows.md) | Alur per role (SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR) |
 | [product/pages/README.md](./product/pages/README.md) | Katalog Menu → Sub Menu → Page → Object (satu file per menu utama) |
+| [product/sitemap/README.md](./product/sitemap/README.md) | Peta fitur untuk Miro: flowchart Mermaid Menu → Page → Section → Content, satu file per menu (bahan video tutorial) |
 
 ## 🧪 QA/QC (`qa/`) — pengujian manual per rilis
 

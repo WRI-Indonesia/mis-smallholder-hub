@@ -7,8 +7,8 @@
 | Menu key | `platform-developer` |
 | URL | `/admin/platform-developer` (redirect ke anak pertama yang boleh diakses, TD-051; bawaan Metrik Rilis) |
 | Icon | `Code2` |
-| Sub menu | 4 — Metrik Rilis (`dashboard-metrics`), Peta Data & Skema (`data-analyst-data-map`), Rencana Pengembangan (`data-analyst-sprint`), Daftar Issue (`platform-developer-issues`) — urut sesuai kolom `order` di `menu.csv` (1–4) |
-| Akses bawaan | Induk: VIEW SUPERADMIN. Keempat anak: VIEW SUPERADMIN · ADMIN · MANAGEMENT (`role-permissions.csv`) |
+| Sub menu | 5 — Metrik Rilis (`dashboard-metrics`), Peta Data & Skema (`data-analyst-data-map`), Rencana Pengembangan (`data-analyst-sprint`), Daftar Issue (`platform-developer-issues`), Peta Fitur (`platform-developer-sitemap`) — urut sesuai kolom `order` di `menu.csv` (1–5) |
+| Akses bawaan | Induk: VIEW SUPERADMIN. Kelima anak: VIEW SUPERADMIN · ADMIN · MANAGEMENT (`role-permissions.csv`) |
 
 Grup tooling internal tim pengembang: tentang aplikasinya sendiri (progres rilis, rencana kerja, struktur data), bukan tentang data petani. Dibentuk 2026-10-07 (`9b9afde`, owner) dengan memindahkan ketiga menu dari **Data Analyst**.
 
@@ -22,11 +22,13 @@ Menu: Platform Developer (/admin/platform-developer → /admin/dashboard/metrics
 │   └── Page: Peta Data & Skema (/admin/data-analyst/data-map)
 ├── Sub Menu: Rencana Pengembangan (data-analyst-sprint)
 │   └── Page: Rencana Pengembangan (/admin/data-analyst/sprint)
-└── Sub Menu: Daftar Issue (platform-developer-issues)
-    └── Page: Daftar Issue (/admin/platform-developer/issues)
+├── Sub Menu: Daftar Issue (platform-developer-issues)
+│   └── Page: Daftar Issue (/admin/platform-developer/issues)
+└── Sub Menu: Peta Fitur (platform-developer-sitemap)
+    └── Page: Peta Fitur (/admin/platform-developer/sitemap)
 ```
 
-> **Key, route, dan dokumen lama dipertahankan.** Pemindahan hanya mengubah `parent_key` dan `order` di `menu.csv`. Menu key, route (`/admin/dashboard/metrics`, `/admin/data-analyst/*`), dan baris RolePermission tidak diubah agar tautan yang sudah beredar tidak putus. Karena itu ketiga dokumen halamannya tetap di [data-analyst/](../data-analyst/README.md): Peta Data dan Rencana Pengembangan mengikuti segmen route-nya, Metrik Rilis peninggalan penempatan sebelum 2026-10-07. Menu yang lahir di grup ini (Daftar Issue, #429) memakai segmen `platform-developer` dan dokumennya ada di folder ini.
+> **Key, route, dan dokumen lama dipertahankan.** Pemindahan hanya mengubah `parent_key` dan `order` di `menu.csv`. Menu key, route (`/admin/dashboard/metrics`, `/admin/data-analyst/*`), dan baris RolePermission tidak diubah agar tautan yang sudah beredar tidak putus. Karena itu ketiga dokumen halamannya tetap di [data-analyst/](../data-analyst/README.md): Peta Data dan Rencana Pengembangan mengikuti segmen route-nya, Metrik Rilis peninggalan penempatan sebelum 2026-10-07. Menu yang lahir di grup ini (Daftar Issue #429, Peta Fitur 2026-10-17) memakai segmen `platform-developer` dan dokumennya ada di folder ini.
 
 ## Daftar sub menu
 
@@ -36,6 +38,7 @@ Menu: Platform Developer (/admin/platform-developer → /admin/dashboard/metrics
 | 2 | Peta Data & Skema | `data-analyst-data-map` | `/admin/data-analyst/data-map` | [data-map.md](../data-analyst/data-map.md) |
 | 3 | Rencana Pengembangan | `data-analyst-sprint` | `/admin/data-analyst/sprint` | [sprint.md](../data-analyst/sprint.md) |
 | 4 | Daftar Issue | `platform-developer-issues` | `/admin/platform-developer/issues` | [issues.md](issues.md) |
+| 5 | Peta Fitur | `platform-developer-sitemap` | `/admin/platform-developer/sitemap` | [sitemap.md](sitemap.md) |
 
 ## Catatan route induk
 

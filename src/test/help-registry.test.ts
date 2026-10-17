@@ -105,7 +105,7 @@ describe("registrasi materi Bantuan ↔ CHAPTER_SOURCES (help-content.ts)", () =
 
   it("51 tutorial · 5 referensi · 14 konsep (angka di katalog docs/product/pages/help/README.md)", () => {
     const files = contentFiles();
-    expect(files.filter((f) => f.startsWith("tutorial/")).length).toBe(51);
+    expect(files.filter((f) => f.startsWith("tutorial/")).length).toBe(52);
     expect(files.filter((f) => f.startsWith("referensi/")).length).toBe(5);
     expect(files.filter((f) => /^\d-/.test(f)).length).toBe(14);
   });
@@ -167,7 +167,7 @@ describe("cakupan tutorial per menu daun aktif (#257)", () => {
     }
   });
 
-  it("angka cakupan = 44/44 (metrics.md & versioning.md §Metrik Nilai Rilis)", () => {
-    expect([leaves.length - Object.keys(TANPA_TUTORIAL).length, leaves.length]).toEqual([44, 44]);
+  it("angka cakupan = 45/45 (metrics.md & versioning.md §Metrik Nilai Rilis)", () => {
+    expect([leaves.length - Object.keys(TANPA_TUTORIAL).length, leaves.length]).toEqual([45, 45]);
   });
 });

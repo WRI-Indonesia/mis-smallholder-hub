@@ -54,3 +54,4 @@ master-data-bmp-monev,master-data,Monev BMP,/admin/master-data/bmp-monev,Clipboa
 master-data-program-target,master-data,Target Program,/admin/master-data/program-target,Target,7,TRUE,TRUE
 dashboard-bmp-monev,dashboard,Monev BMP,/admin/dashboard/bmp-monev,ClipboardCheck,4,TRUE,TRUE
 dashboard-supply-chain,dashboard,Dashboard Rantai Pasok,/admin/dashboard/supply-chain,Network,6,TRUE,TRUE
+platform-developer-sitemap,platform-developer,Peta Fitur,/admin/platform-developer/sitemap,Signpost,5,TRUE,TRUE

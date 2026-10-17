@@ -94,6 +94,7 @@ import pKetersediaanProduksi from "@/content/help/tutorial/p-18-ketersediaan-pro
 import pTumpangTindihLahan from "@/content/help/tutorial/p-14-tumpang-tindih-lahan.md";
 import pSprintMingguan from "@/content/help/tutorial/p-15-sprint-mingguan.md";
 import pDaftarIssue from "@/content/help/tutorial/p-19-daftar-issue.md";
+import pPetaFitur from "@/content/help/tutorial/p-20-peta-fitur.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
 import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
 import aMengaturIzinPeran from "@/content/help/tutorial/a-3-mengatur-izin-peran.md";
@@ -247,6 +248,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "sprint-mingguan", source: pSprintMingguan },
       { id: "daftar-issue", source: pDaftarIssue },
       { id: "peta-data-skema", source: pPetaDataSkema },
+      { id: "peta-fitur", source: pPetaFitur },
     ],
   },
   {
