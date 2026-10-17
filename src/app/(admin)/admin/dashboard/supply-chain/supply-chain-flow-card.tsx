@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { ListOrdered, ListTree, RotateCcw, Spline, Workflow } from "lucide-react";
+import { ChartBarBig, Donut, Grid3x3, LayoutGrid, ListOrdered, ListTree, Orbit, RotateCcw, Rows3, Spline, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,7 +16,7 @@ import {
   type SankeyOrigin,
   type SupplyChainView,
 } from "@/lib/supply-chain-flow";
-import type { TreeDirection } from "@/lib/supply-chain-views";
+import { buildSupplyChainTree, type TreeDirection } from "@/lib/supply-chain-views";
 import { CollapsibleCard, useStoredChoice } from "./collapsible-card";
 import { SegmentToggle } from "./segment-toggle";
 import { SupplyChainSankey, isGroupNode, type SankeyUnit } from "./supply-chain-sankey";
@@ -30,14 +30,34 @@ const SupplyChainFlowDiagram = dynamic(() => import("./supply-chain-flow-diagram
   ssr: false,
   loading: () => <div className="flex h-[420px] items-center justify-center text-sm text-muted-foreground">Memuat diagram…</div>,
 });
+// Enam tab tambahan (owner 2026-10-17) juga dimuat saat tabnya dibuka — d3 hanya terbawa bila dipakai.
+const lazyTab = <T extends object>(loader: () => Promise<T>, pick: (m: T) => React.ComponentType<never>) =>
+  dynamic(() => loader().then((m) => pick(m) as React.ComponentType<Record<string, unknown>>), {
+    ssr: false,
+    loading: () => <div className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">Memuat diagram…</div>,
+  });
+const SupplyChainSunburst = lazyTab(() => import("./supply-chain-sunburst"), (m) => m.SupplyChainSunburst);
+const SupplyChainIcicle = lazyTab(() => import("./supply-chain-icicle"), (m) => m.SupplyChainIcicle);
+const SupplyChainTreemap = lazyTab(() => import("./supply-chain-treemap"), (m) => m.SupplyChainTreemap);
+const SupplyChainMatrix = lazyTab(() => import("./supply-chain-matrix"), (m) => m.SupplyChainMatrix);
+const SupplyChainChord = lazyTab(() => import("./supply-chain-chord"), (m) => m.SupplyChainChord);
+const SupplyChainStackedBars = lazyTab(() => import("./supply-chain-stacked-bars"), (m) => m.SupplyChainStackedBars);
 
-const TABS = ["SANKEY", "ALUR", "JALUR", "POHON"] as const;
+const TABS = ["SANKEY", "ALUR", "JALUR", "POHON", "SUNBURST", "PARTISI", "TREEMAP", "MATRIKS", "CHORD", "BATANG"] as const;
 type FlowTab = (typeof TABS)[number];
+/** Tab yang membaca pohon bertingkat (ikut toggle Arah) — graf tanpa pelipatan seperti Tabel Pohon. */
+const HIERARCHY_TABS: readonly FlowTab[] = ["POHON", "SUNBURST", "PARTISI", "TREEMAP"];
 const TAB_META: Record<FlowTab, { label: string; icon: typeof Spline; hint: string }> = {
   SANKEY: { label: "Sankey", icon: Spline, hint: "Pita setebal tonase. Arahkan kursor untuk menyalakan jalurnya; klik node untuk memfilter." },
   ALUR: { label: "Diagram Alur", icon: Workflow, hint: "Kotak & garis beranimasi — klik kotak untuk menyorot jalurnya." },
   JALUR: { label: "Jalur", icon: ListOrdered, hint: "Satu baris per jalur utuh — tanpa garis yang bersilangan; klik judul kolom untuk mengurutkan." },
   POHON: { label: "Tabel Pohon", icon: ListTree, hint: "Agregasi bertingkat yang bisa dibuka-tutup, dari hulu ke hilir atau sebaliknya." },
+  SUNBURST: { label: "Sunburst", icon: Donut, hint: "Cincin konsentris: pusat = total, tiap cincin keluar = satu tingkat sesuai Arah; lebar irisan = tonase. Klik irisan untuk memfilter." },
+  PARTISI: { label: "Partisi", icon: Rows3, hint: "Sunburst versi persegi: kolom kiri → kanan = tingkat, tinggi kotak = tonase — labelnya lebih mudah dibaca." },
+  TREEMAP: { label: "Treemap", icon: LayoutGrid, hint: "Kotak bersarang, luas = tonase — paling jelas untuk membandingkan porsi." },
+  MATRIKS: { label: "Matriks", icon: Grid3x3, hint: "Tabel panas Asal × Tujuan; warna sel makin pekat makin besar tonasenya. Tanpa garis." },
+  CHORD: { label: "Chord", icon: Orbit, hint: "Pita melingkar asal (hijau) ↔ tujuan (biru); arahkan kursor ke busur untuk rinciannya." },
+  BATANG: { label: "Batang", icon: ChartBarBig, hint: "Satu batang per asal, segmen = tujuan; Angka % menjadikannya batang 100%." },
 };
 
 const TOP_OPTIONS = ["8", "12", "20", "999"] as const;
@@ -48,7 +68,9 @@ const DEFAULT_DESTINATION: SankeyDestination = "UL";
 const RINGKAS_MILLS = 15;
 
 /**
- * Kartu Aliran TBS (owner 2026-10-09): empat tab tampilan atas data yang sama.
+ * Kartu Aliran TBS (owner 2026-10-09): empat tab tampilan atas data yang sama;
+ * owner 2026-10-17 menambah enam — Sunburst · Partisi · Treemap (pohon ber-Arah)
+ * dan Matriks · Chord · Batang (matriks Asal × Tujuan) — klik = filter yang sama.
  * Toolbar tampilan (Arah · Dari · Ke · Offtaker · Angka) tetap **lepasan** di
  * bawah tab — sempat dicoba popover "Tampilan", owner 2026-10-10: pengguna
  * sering tak menyadarinya. Bawaan paling ringkas (Distrik · Per jenis ·
@@ -66,18 +88,23 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
   const [destination, setDestination] = useState<SankeyDestination>(DEFAULT_DESTINATION);
   const [direction, setDirection] = useState<TreeDirection>("HULU");
 
+  const isHierarchy = HIERARCHY_TABS.includes(tab);
   // Tiap graf hanya dibangun untuk tab yang memakainya.
   const graph = useMemo(
     () =>
-      tab === "POHON"
+      isHierarchy
         ? null
         : buildSupplyChainSankey(view.data, records, { mode, origin, destination, maxPerColumn: mode === "RINGKAS" ? RINGKAS_MILLS : Number(top) }),
-    [tab, view.data, records, mode, origin, destination, top],
+    [isHierarchy, view.data, records, mode, origin, destination, top],
   );
-  // Tabel pohon: per Lembaga & per Mill tanpa pelipatan — tingkat Distrik/UL ditambahkan pohon.
+  // Tab hierarki (Tabel Pohon · Sunburst · Partisi · Treemap): per Lembaga & per Mill tanpa pelipatan — tingkat Distrik/UL ditambahkan pohon.
   const treeGraph = useMemo(
-    () => (tab === "POHON" ? buildSupplyChainSankey(view.data, records, { mode, maxPerColumn: Infinity }) : null),
-    [tab, view.data, records, mode],
+    () => (isHierarchy ? buildSupplyChainSankey(view.data, records, { mode, maxPerColumn: Infinity }) : null),
+    [isHierarchy, view.data, records, mode],
+  );
+  const tree = useMemo(
+    () => (treeGraph && tab !== "POHON" ? buildSupplyChainTree(treeGraph, view.data.groups, { direction, byDistrict: origin === "DISTRIK", byUl: destination === "UL" }) : null),
+    [treeGraph, tab, view.data.groups, direction, origin, destination],
   );
 
   // Pilihan tampilan yang menyimpang dari bawaan — memunculkan tombol Tampilan bawaan.
@@ -86,8 +113,8 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
     destination !== DEFAULT_DESTINATION,
     mode !== "RINGKAS",
     unit !== "TON",
-    tab === "POHON" && direction !== "HULU",
-    mode === "RINCI" && tab !== "POHON" && top !== "12",
+    isHierarchy && direction !== "HULU",
+    mode === "RINCI" && !isHierarchy && top !== "12",
   ].filter(Boolean).length;
   const resetView = () => {
     setMode("RINGKAS");
@@ -125,7 +152,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
   // Kalimat baca: apa yang sedang ditampilkan, dalam bahasa biasa.
   const offText = mode === "RINGKAS" ? "jenis offtaker (Agen, RAMP, KT/Koperasi)" : "tiap offtaker";
   const reading =
-    tab === "POHON" && direction === "HILIR"
+    isHierarchy && direction === "HILIR"
       ? `TBS yang masuk ke ${destination === "UL" ? "Mill UL dan bukan UL" : "tiap Mill"} ← dari ${offText} mana ← dari ${origin === "DISTRIK" ? "distrik & Lembaga" : "Lembaga"} mana`
       : `TBS dari tiap ${origin === "DISTRIK" ? "distrik" : "Lembaga"} → lewat ${offText} → sampai ke ${destination === "UL" ? "Mill UL atau bukan" : "tiap Mill"}`;
 
@@ -159,7 +186,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
 
         {/* Toolbar lepasan (owner 2026-10-10: popover sering tak disadari) — satu strip ringkas, bawaan di kiri tiap toggle. */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
-          {tab === "POHON" && (
+          {isHierarchy && (
             <SegmentToggle
               caption="Arah"
               value={direction}
@@ -201,7 +228,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
               { value: "RINCI", label: "Satu per satu", hint: "Tiap agen, RAMP, dan KT/koperasi tampil sendiri" },
             ]}
           />
-          {mode === "RINCI" && tab !== "POHON" && (
+          {mode === "RINCI" && !isHierarchy && (
             <div className="inline-flex items-center gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tampilkan</span>
               <Select value={top} onValueChange={(v) => setTop(v as (typeof TOP_OPTIONS)[number])}>
@@ -248,6 +275,12 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
               onSelectNode={selectNode}
             />
           )}
+          {tab === "SUNBURST" && tree && treeGraph && <SupplyChainSunburst tree={tree} total={treeGraph.totalTon} unit={unit} onSelectNode={selectNode} />}
+          {tab === "PARTISI" && tree && treeGraph && <SupplyChainIcicle tree={tree} total={treeGraph.totalTon} unit={unit} onSelectNode={selectNode} />}
+          {tab === "TREEMAP" && tree && treeGraph && <SupplyChainTreemap tree={tree} total={treeGraph.totalTon} unit={unit} onSelectNode={selectNode} />}
+          {tab === "MATRIKS" && graph && <SupplyChainMatrix graph={graph} unit={unit} onSelectNode={selectNode} />}
+          {tab === "CHORD" && graph && <SupplyChainChord graph={graph} unit={unit} onSelectNode={selectNode} />}
+          {tab === "BATANG" && graph && <SupplyChainStackedBars graph={graph} unit={unit} onSelectNode={selectNode} />}
         </div>
       </div>
     </CollapsibleCard>

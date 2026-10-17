@@ -29,11 +29,17 @@ Dashboard ini masih **prototipe** untuk bahan diskusi. Datanya berasal dari **fo
 + Klik nama Mill atau Lembaga di Sorotan untuk menjadikannya filter. Tautan **+N lagi** membuka tabel **Volume per Lembaga** (juga bila kartunya sedang terlipat) dengan semua baris tampil, diurut menurut temuan itu. Jarak dihitung dari koordinat Lembaga, offtaker, dan Mill sebagai **garis lurus**, bukan jarak tempuh jalan; Lembaga atau Mill tanpa koordinat tidak ikut dihitung.
 5. Baca kartu **Jalur TBS & Kepastian Mill**: dua batang 100%. Batang **Jalur** = porsi lewat Agen, langsung ke RAMP, lewat KT/Koperasi, dan langsung ke Mill; warnanya dipakai juga di diagram dan peta. Batang **Kepastian Mill** = PKS disebut di survei, dipetakan dari nama PT, belum pasti, dan tidak diketahui. Klik segmen **Mill tidak diketahui** untuk memfilternya.
 + Setiap kartu (Sorotan, Jalur TBS, Aliran TBS, Volume per Mill, Volume per Lembaga) bisa dilipat dengan mengeklik judulnya. Posisi lipat dan tab terakhir diingat di browser Anda.
-6. Di kartu **Aliran TBS** (Lembaga → Offtaker → Mill), pilih tab yang paling mudah Anda baca. Keempatnya memakai data dan angka yang sama:
+6. Di kartu **Aliran TBS** (Lembaga → Offtaker → Mill), pilih tab yang paling mudah Anda baca. Kesepuluh tab memakai data dan angka yang sama:
    - **Sankey**: pita setebal tonase. Arahkan kursor ke Lembaga atau Mill untuk menyalakan seluruh jalurnya.
    - **Diagram Alur**: kotak per Lembaga, offtaker, dan Mill yang dihubungkan garis beranimasi; tebal garis sebanding tonase. **Klik kotak** untuk menyorot jalurnya. Angka di garis yang menyala = tonase yang lewat kotak itu. Tombol **Jadikan filter** ada di panel kanan bawah.
    - **Jalur**: satu baris per jalur utuh (Lembaga → offtaker → Mill), bawaannya urut dari tonase terbesar. Tidak ada garis yang bersilangan. Klik judul kolom (Lembaga, Offtaker, Mill, Tonase) untuk mengurutkan; kolom **#** tetap menunjukkan peringkat tonase.
    - **Tabel Pohon**: angka bertingkat yang bisa dibuka-tutup. Pilih **Arah** di toolbar: **Hulu → Hilir** (Lembaga › Offtaker › Mill) atau **Hilir → Hulu** (Mill › Offtaker › Lembaga). Kolom **% induk** = porsi terhadap baris di atasnya.
+   - **Sunburst**: cincin konsentris — pusat = total, tiap cincin keluar = satu tingkat sesuai **Arah** (Distrik › Lembaga › Offtaker › UL › Mill, atau sebaliknya); lebar irisan = tonase. Arahkan kursor ke irisan untuk membaca angka dan porsinya di panel kanan; klik irisan = filter.
+   - **Partisi**: sunburst versi persegi — kolom kiri → kanan = tingkat, tinggi kotak = tonase; labelnya lebih mudah dibaca.
+   - **Treemap**: kotak bersarang, luas = tonase — paling jelas untuk membandingkan porsi; bingkai berjudul = tingkat teratas.
+   - **Matriks**: tabel panas Asal (baris) × Tujuan (kolom); warna sel makin pekat makin besar tonasenya. Klik nama baris/kolom = filter. Tanpa garis sama sekali — paling nyaman di layar sempit.
+   - **Chord**: pita melingkar dari asal (hijau) ke tujuan (biru), tebal pita = tonase; arahkan kursor ke busur untuk daftar mitra aliran terbesarnya.
+   - **Batang**: satu batang per asal, segmen berwarna = tujuan; pilih **Angka %** untuk batang 100% agar porsinya mudah dibandingkan. Klik nama asal atau segmen = filter.
 + Agen, RAMP, dan KT/koperasi berada di satu bagian **Offtaker**; TBS yang lewat agen lalu RAMP tampil sebagai satu node rantai "Agen → RAMP". Di Tabel Pohon, ikon corong di ujung baris (muncul saat kursor di atas baris) menjadikan baris itu filter.
 7. Atur pengelompokan lewat toolbar di bawah tab. Bawaannya paling ringkas: Distrik → per jenis offtaker → UL / Non-UL, dalam ton; di tiap toggle pilihan bawaan ada di kiri. Arahkan kursor ke tiap tombol untuk melihat penjelasannya:
    - **Dari**: digabung per **Distrik** (bawaan) atau per Lembaga.
@@ -55,7 +61,7 @@ Dashboard ini masih **prototipe** untuk bahan diskusi. Datanya berasal dari **fo
 
 **Diagram kosong setelah memilih filter.** Kombinasi filter tidak punya aliran bertonase, misalnya agen yang tidak memasok Mill terpilih. Hapus chip filter (✕) di bawah kotak filter. Untuk melepas semuanya sekaligus, klik **↺ Reset** di ujung baris filter.
 
-**Sankey sulit dibaca karena pitanya saling menimpa.** Pakai tab **Jalur** atau **Tabel Pohon**: angkanya sama, tanpa garis yang bersilangan.
+**Sankey sulit dibaca karena pitanya saling menimpa.** Pakai tab **Jalur**, **Tabel Pohon**, **Matriks**, atau **Batang**: angkanya sama, tanpa garis yang bersilangan; **Sunburst**/**Partisi**/**Treemap** menampilkan porsi tanpa garis pula.
 
 **Kartu tidak tampil.** Kartunya terlipat. Klik judul kartu untuk membukanya.
 

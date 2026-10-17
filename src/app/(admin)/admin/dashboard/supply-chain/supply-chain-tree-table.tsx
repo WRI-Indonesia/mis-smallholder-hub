@@ -12,6 +12,7 @@ import {
   buildSupplyChainTree,
   channelSegments,
   treeBranchKeys,
+  treeNodeAsSankeyNode,
   type SupplyTreeNode,
   type TreeDirection,
   type TreeLevel,
@@ -20,12 +21,8 @@ import { fmtTon } from "@/lib/supply-chain-format";
 import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { UlBadge } from "./ul-badge";
 
-const LEVEL_COLUMN: Record<TreeLevel, 0 | 1 | 3> = { DISTRIK: 0, LEMBAGA: 0, OFFTAKER: 1, UL: 3, MILL: 3 };
-
-/** Node pohon → bentuk node Sankey, supaya klik-filter memakai penangan yang sama dengan diagram. */
-const asSankeyNode = (n: SupplyTreeNode): SankeyNode => ({
-  id: n.nodeId, column: LEVEL_COLUMN[n.level], label: n.label, sub: n.sub, value: n.ton, folded: 0, isUl: n.isUl, millStatus: null, groupCode: n.groupCode,
-});
+/** Node pohon → bentuk node Sankey (helper bersama tab hierarki), supaya klik-filter memakai penangan yang sama dengan diagram. */
+const asSankeyNode = treeNodeAsSankeyNode;
 
 /**
  * Tab Tabel Pohon (owner 2026-10-09): agregasi bertingkat yang bisa dibuka-tutup,

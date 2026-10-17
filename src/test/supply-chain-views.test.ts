@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSupplyChainSankey, type ScRecord, type SupplyChainData } from "@/lib/supply-chain-flow";
-import { DIRECT_NODE_ID, buildPathRows, buildSupplyChainTree, bezierPointAtX, dodgeLabels, sortPathRows, spreadEdgeEnds, treeBranchKeys, type SupplyTreeNode } from "@/lib/supply-chain-views";
+import { DIRECT_NODE_ID, buildOriginDestMatrix, buildPathRows, buildSupplyChainTree, bezierPointAtX, dodgeLabels, matrixKey, sortPathRows, spreadEdgeEnds, treeBranchKeys, treeNodeAsSankeyNode, type SupplyTreeNode } from "@/lib/supply-chain-views";
 
 const rec = (over: Partial<ScRecord>): ScRecord => ({
   id: "r", year: 2025, level: "LAHAN", groupCode: "G1", surveyId: null, offtakerId: null, nextOfftakerId: null,
@@ -135,5 +135,39 @@ describe("tata letak Diagram Alur", () => {
     expect(out.get("b")!.y - out.get("a")!.y).toBe(20);
     expect((out.get("a")!.y + out.get("b")!.y) / 2).toBeCloseTo(51);
     expect(out.get("c")).toEqual({ x: 400, y: 50 });
+  });
+});
+
+describe("buildOriginDestMatrix (tab Matriks · Chord · Batang bertumpuk)", () => {
+  it("menjumlah tonase per pasangan asal × tujuan; total = total graf; Mill tidak diketahui di kolom terakhir", () => {
+    const m = buildOriginDestMatrix(treeGraph);
+    expect(m.total).toBe(treeGraph.totalTon);
+    expect(m.rows.map((r) => r.id)).toEqual(["L:G1", "L:G2", "L:G3"]);
+    expect(m.cols.map((c) => c.id)).toEqual(["M:M1", "M:M2", "M:?"]);
+    expect(m.cells.get(matrixKey("L:G1", "M:M1"))).toBe(40);
+    expect(m.cells.get(matrixKey("L:G3", "M:M1"))).toBe(5);
+    expect(m.cells.get(matrixKey("L:G3", "M:?"))).toBe(4);
+    expect(m.cells.has(matrixKey("L:G1", "M:M2"))).toBe(false);
+    expect(m.rowTotal.get("L:G3")).toBe(9);
+    expect(m.colTotal.get("M:M1")).toBe(45);
+    expect(m.max).toBe(40);
+    // Jumlah sel per baris = total baris; per kolom = total kolom.
+    for (const r of m.rows) expect(m.cols.reduce((a, c) => a + (m.cells.get(matrixKey(r.id, c.id)) ?? 0), 0)).toBe(m.rowTotal.get(r.id));
+  });
+
+  it("mengikuti toggle Dari Distrik / Ke UL lewat graf yang diberikan", () => {
+    const g = buildSupplyChainSankey(data, records, { maxPerColumn: Infinity, origin: "DISTRIK", destination: "UL" });
+    const m = buildOriginDestMatrix(g);
+    expect(m.rows.every((r) => r.id.startsWith("D:"))).toBe(true);
+    expect(m.cols.map((c) => c.id)).toEqual(["U:UL", "U:NON_UL", "M:?"]);
+    expect(m.total).toBe(g.totalTon);
+  });
+
+  it("treeNodeAsSankeyNode memetakan tingkat ke kolom Sankey", () => {
+    const tree = buildSupplyChainTree(treeGraph, data.groups, { direction: "HULU", byDistrict: true, byUl: true });
+    const d = tree[0];
+    expect(treeNodeAsSankeyNode(d)).toMatchObject({ id: d.nodeId, column: 0, value: d.ton });
+    const mill = find(find(find(find(d.children, "L:G1")!.children, "G:AGEN")!.children, "U:UL")!.children, "M:M1")!;
+    expect(treeNodeAsSankeyNode(mill)).toMatchObject({ column: 3, isUl: true });
   });
 });
