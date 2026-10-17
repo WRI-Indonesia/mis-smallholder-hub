@@ -3,6 +3,7 @@ import {
   buildFlowSegments,
   buildSupplyChainSankey,
   layoutSankey,
+  mirrorSankeyLayout,
   UNKNOWN_MILL_FILTER,
   matchesSupplyChainFilter,
   millDistrict,
@@ -10,6 +11,7 @@ import {
   millVolumes,
   parseChainNodeId,
   recordCollectorId,
+  sankeyLinkKey,
   recordRampId,
   summarizeSupplyChain,
   supplyChainFilterOptions,
@@ -65,7 +67,7 @@ describe("buildSupplyChainSankey", () => {
     expect(g.totalTon).toBe(55);
   });
 
-  it("hideMiddle: tingkat offtaker dilewati — hanya kolom 0 & 3, jalur dua langkah, warna per jalur & total tetap", () => {
+  it("hideMiddle: tingkat offtaker dilewati dan pita pasangan yang sama dilebur — warna = jalur terbesar, rincian di byChannel, kunci jalur cocok", () => {
     const records = [
       rec({ id: "a", groupCode: "G2", offtakerId: "AGN-1", nextOfftakerId: "RMP-1", supplyTon: 30 }),
       rec({ id: "b", groupCode: "G2", offtakerId: "RMP-1", supplyTon: 20 }),
@@ -74,9 +76,12 @@ describe("buildSupplyChainSankey", () => {
     const g = buildSupplyChainSankey(data, records, { mode: "RINCI", hideMiddle: true });
     expect(g.nodes.every((n) => n.column === 0 || n.column === 3)).toBe(true);
     expect(g.paths.every((p) => p.nodes.length === 2)).toBe(true);
-    expect(g.links).toContainEqual({ source: "L:G2", target: "M:M1", channel: "AGEN", value: 30 });
-    expect(g.links).toContainEqual({ source: "L:G2", target: "M:M1", channel: "RAMP", value: 20 });
-    expect(g.links).toContainEqual({ source: "L:G1", target: "M:M1", channel: "LANGSUNG", value: 5 });
+    expect(g.links).toHaveLength(2);
+    const merged = g.links.find((l) => l.source === "L:G2")!;
+    expect(merged).toMatchObject({ target: "M:M1", channel: "AGEN", value: 50, byChannel: { AGEN: 30, RAMP: 20 } });
+    expect(g.links.find((l) => l.source === "L:G1")).toMatchObject({ channel: "LANGSUNG", value: 5, byChannel: { LANGSUNG: 5 } });
+    const path = g.paths.find((p) => p.nodes[0] === "L:G2")!;
+    expect(path).toMatchObject({ channel: "AGEN", ton: 50, links: [sankeyLinkKey(merged)] });
     expect(g.nodes.find((n) => n.id === "M:M1")?.value).toBe(55);
     expect(g.totalTon).toBe(55);
   });
@@ -183,6 +188,38 @@ describe("layoutSankey", () => {
     // Lebar pita = tonase × skala yang sama.
     const link = layout.links.find((l) => l.source === "L:G2")!;
     expect(link.width).toBeCloseTo(h("L:G2"), 5);
+  });
+
+  it("mirrorSankeyLayout: x dicerminkan, pita keluar dari sisi kiri sumber ke sisi kanan target, id & y tetap", () => {
+    const records = [rec({ id: "a", groupCode: "G2", offtakerId: "AGN-1", supplyTon: 30 }), rec({ id: "b", groupCode: "G1", supplyTon: 10 })];
+    const base = layoutSankey(buildSupplyChainSankey(data, records), { width: 600, height: 300 });
+    const m = mirrorSankeyLayout(base);
+    for (const n of base.nodes) {
+      const mn = m.nodes.find((x) => x.id === n.id)!;
+      expect(mn.x0).toBeCloseTo(600 - n.x1);
+      expect(mn.x1).toBeCloseTo(600 - n.x0);
+      expect([mn.y0, mn.y1]).toEqual([n.y0, n.y1]);
+    }
+    const origin = m.nodes.find((n) => n.id === "L:G2")!;
+    const dest = m.nodes.find((n) => n.id === "M:M1")!;
+    expect(origin.x0).toBeGreaterThan(dest.x0);
+    const l = m.links.find((x) => x.source === "L:G2")!;
+    const s = m.nodes.find((n) => n.id === l.source)!;
+    expect(l.path.startsWith(`M${s.x0},${l.sy}`)).toBe(true);
+    expect(l.sy).toBe(base.links.find((x) => x.source === "L:G2")!.sy);
+  });
+
+  it("kolom tujuan: Ke Mill UL / Mill UL selalu di atas walau tonasenya lebih kecil; Mill tak diketahui tetap paling bawah", () => {
+    const records = [
+      rec({ id: "a", groupCode: "G1", millId: "M2", supplyTon: 50, toUl: false }),
+      rec({ id: "b", groupCode: "G1", millId: "M1", supplyTon: 5, toUl: true }),
+      rec({ id: "c", groupCode: "G2", millId: null, millStatus: "TIDAK_DIKETAHUI", supplyTon: 3 }),
+    ];
+    const ul = layoutSankey(buildSupplyChainSankey(data, records, { destination: "UL" }), { width: 600, height: 300 });
+    const dest = ul.nodes.filter((n) => n.column === 3).sort((a, b) => a.y0 - b.y0).map((n) => n.id);
+    expect(dest).toEqual(["U:UL", "U:NON_UL", "M:?"]);
+    const mill = layoutSankey(buildSupplyChainSankey(data, records, { destination: "MILL" }), { width: 600, height: 300 });
+    expect(mill.nodes.filter((n) => n.column === 3).sort((a, b) => a.y0 - b.y0).map((n) => n.id)).toEqual(["M:M1", "M:M2", "M:?"]);
   });
 
   it("kosong bila graf kosong", () => {

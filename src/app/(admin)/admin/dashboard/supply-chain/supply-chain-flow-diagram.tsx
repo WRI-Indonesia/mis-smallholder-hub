@@ -21,7 +21,7 @@ import { Pause, Play, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatPct } from "@/lib/format";
-import { CHANNEL_LABEL, SANKEY_COLUMNS, layoutSankey, sankeyLinkKey, type SankeyGraph, type SankeyNode, type SupplyChannel } from "@/lib/supply-chain-flow";
+import { CHANNEL_LABEL, CHANNEL_ORDER, SANKEY_COLUMNS, layoutSankey, sankeyLinkKey, type SankeyGraph, type SankeyNode, type SupplyChannel } from "@/lib/supply-chain-flow";
 import { bezierPointAtX, dodgeLabels, spreadEdgeEnds } from "@/lib/supply-chain-views";
 import { fmtTon } from "@/lib/supply-chain-format";
 import { channelColor, isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
@@ -51,6 +51,8 @@ type FlowNodeData = {
   dimmed: boolean;
   active: boolean;
   clickable: boolean;
+  /** Hilir → Hulu: kolom dibalik, garis masuk dari kanan & keluar ke kiri. */
+  mirror: boolean;
 };
 
 function FlowNode({ data }: NodeProps) {
@@ -73,16 +75,16 @@ function FlowNode({ data }: NodeProps) {
         d.clickable && "cursor-pointer",
       )}
     >
-      <Handle type="target" position={Position.Left} className="!h-1 !w-1 !min-h-0 !min-w-0 !border-0 !bg-transparent" isConnectable={false} />
+      <Handle type="target" position={d.mirror ? Position.Right : Position.Left} className="!h-1 !w-1 !min-h-0 !min-w-0 !border-0 !bg-transparent" isConnectable={false} />
       <div className="flex items-baseline gap-1 text-xs leading-tight">
         <span className="truncate font-medium">{n.label}</span>
-        {n.isUl && <span className="shrink-0 font-semibold text-primary">UL</span>}
+        {n.isUl && n.id.startsWith("M:") && <span className="shrink-0 font-semibold text-primary">UL</span>}
       </div>
       <div className="mt-0.5 flex items-baseline justify-between gap-2 text-[11px] leading-tight text-muted-foreground">
         <span className="truncate">{n.sub}</span>
         <span className="shrink-0 font-medium tabular-nums text-foreground">{d.valueText}</span>
       </div>
-      <Handle type="source" position={Position.Right} className="!h-1 !w-1 !min-h-0 !min-w-0 !border-0 !bg-transparent" isConnectable={false} />
+      <Handle type="source" position={d.mirror ? Position.Left : Position.Right} className="!h-1 !w-1 !min-h-0 !min-w-0 !border-0 !bg-transparent" isConnectable={false} />
     </div>
   );
 }
@@ -143,8 +145,20 @@ function HeaderNode({ data }: NodeProps) {
 const nodeTypes = { sc: FlowNode, hdr: HeaderNode };
 const edgeTypes = { sc: FlowEdge };
 
-export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: SankeyGraph; unit: SankeyUnit; onSelectNode: (n: SankeyNode) => void }) {
+export function SupplyChainFlowDiagram({
+  graph,
+  unit,
+  direction = "HULU",
+  onSelectNode,
+}: {
+  graph: SankeyGraph;
+  unit: SankeyUnit;
+  /** Hilir → Hulu = kolom dibalik: Mill di kiri, asal di kanan (owner 2026-10-17). */
+  direction?: "HULU" | "HILIR";
+  onSelectNode: (n: SankeyNode) => void;
+}) {
   const dark = useChartDark();
+  const mirror = direction === "HILIR";
   const [selected, setSelected] = useState<string | null>(null);
   // Node terpilih hilang dari graf (difilter keluar) → lepas sorotan, supaya tidak menyala
   // lagi diam-diam saat filter dilepas (set-state-during-render, bukan efek).
@@ -184,7 +198,7 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
   // Urutan node per kolom = urutan barycenter Sankey (persilangan minimum); posisi kotak seragam.
   const placed = useMemo(() => {
     const layout = layoutSankey(graph, { width: 1000, height: 1000 });
-    const cols = [...new Set(layout.nodes.map((n) => n.column))].sort((a, b) => a - b);
+    const cols = [...new Set(layout.nodes.map((n) => n.column))].sort((a, b) => (mirror ? b - a : a - b));
     const byCol = cols.map((c) => layout.nodes.filter((n) => n.column === c).sort((a, b) => a.y0 - b.y0));
     const tallest = Math.max(...byCol.map((c) => c.length));
     const span = tallest * (NODE_H + ROW_GAP) - ROW_GAP;
@@ -196,7 +210,7 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
       nodes.forEach((n, ri) => pos.set(n.id, { x: ci * (NODE_W + COL_GAP), y: nodes.length === tallest ? ri * (NODE_H + ROW_GAP) : slot * ri + (slot - NODE_H) / 2 }));
     });
     return { pos, cols, tallest };
-  }, [graph]);
+  }, [graph, mirror]);
 
   const sel = selected ? graph.nodes.find((n) => n.id === selected) ?? null : null;
   const lit = useMemo(() => {
@@ -247,10 +261,11 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
           dimmed: !!lit && !lit.nodes.has(n.id),
           active: selected === n.id,
           clickable: true,
+          mirror,
         } satisfies FlowNodeData,
       })),
     ],
-    [graph.nodes, placed, fmtValue, lit, selected, columnTitle],
+    [graph.nodes, placed, fmtValue, lit, selected, columnTitle, mirror],
   );
 
   const maxLink = Math.max(1, ...graph.links.map((l) => l.value));
@@ -269,16 +284,21 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
       const s = placed.pos.get(l.source);
       const t = placed.pos.get(l.target);
       if (!s || !t) continue;
-      const sx = s.x + NODE_W;
+      // Dicerminkan (Hilir → Hulu): garis keluar dari sisi kiri sumber ke sisi kanan target —
+      // hitung dalam koordinat x yang dibalik tanda agar rumus "kiri → kanan" tetap berlaku.
+      const sgn = mirror ? -1 : 1;
+      const sx = sgn * (mirror ? s.x : s.x + NODE_W);
+      const tx = sgn * (mirror ? t.x + NODE_W : t.x);
       const sy = s.y + NODE_H / 2 + (ends.sourceOffset.get(k) ?? 0);
       const ty = t.y + NODE_H / 2 + (ends.targetOffset.get(k) ?? 0);
       // Garis yang melompati kolom tengah (Lembaga langsung ke Mill): label di celah
       // pertama, bukan di titik tengah kurva yang jatuh di atas kotak offtaker.
-      const skips = t.x - sx > COL_GAP + NODE_W;
-      items.push({ key: k, ...(skips ? bezierPointAtX(sx, sy, t.x, ty, sx + COL_GAP / 2) : { x: (sx + t.x) / 2, y: (sy + ty) / 2 }) });
+      const skips = tx - sx > COL_GAP + NODE_W;
+      const pt = skips ? bezierPointAtX(sx, sy, tx, ty, sx + COL_GAP / 2) : { x: (sx + tx) / 2, y: (sy + ty) / 2 };
+      items.push({ key: k, x: sgn * pt.x, y: pt.y });
     }
     return dodgeLabels(items, 22);
-  }, [graph.links, lit, hoverEdge, placed, ends]);
+  }, [graph.links, lit, hoverEdge, placed, ends, mirror]);
 
   const edges: Edge[] = useMemo(
     () =>
@@ -391,8 +411,18 @@ export function SupplyChainFlowDiagram({ graph, unit, onSelectNode }: { graph: S
                   </div>
                   <div className="mt-0.5 flex items-center gap-1.5 text-muted-foreground">
                     <span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(hovered.channel, dark) }} />
-                    {CHANNEL_LABEL[hovered.channel]}
+                    {hovered.byChannel ? `Gabungan — jalur terbesar ${CHANNEL_LABEL[hovered.channel]}` : CHANNEL_LABEL[hovered.channel]}
                   </div>
+                  {hovered.byChannel && (
+                    <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                      {CHANNEL_ORDER.filter((c) => (hovered.byChannel?.[c] ?? 0) > 0).map((c) => (
+                        <li key={c} className="flex items-center justify-between gap-3 tabular-nums">
+                          <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(c, dark) }} />{CHANNEL_LABEL[c]}</span>
+                          <span>{fmtTon(hovered.byChannel![c]!)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <div className="mt-1 tabular-nums">
                     <span className="font-medium">{fmtTon(hovered.value)}</span>
                     <span className="text-muted-foreground"> · {formatPct(total > 0 ? (hovered.value / total) * 100 : 0)}% dari total</span>

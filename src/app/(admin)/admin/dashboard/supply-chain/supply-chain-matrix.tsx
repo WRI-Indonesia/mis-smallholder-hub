@@ -14,8 +14,25 @@ import { UlBadge } from "./ul-badge";
  * makin besar tonasenya. Tanpa garis sama sekali — paling ramah layar sempit.
  * Klik judul baris/kolom = filter (penangan yang sama dengan tab lain).
  */
-export function SupplyChainMatrix({ graph, unit, onSelectNode }: { graph: SankeyGraph; unit: SankeyUnit; onSelectNode: (n: SankeyNode) => void }) {
+export function SupplyChainMatrix({
+  graph,
+  unit,
+  direction = "HULU",
+  onSelectNode,
+}: {
+  graph: SankeyGraph;
+  unit: SankeyUnit;
+  /** Hilir → Hulu = ditransposisi: baris = tujuan, kolom = asal (owner 2026-10-17). */
+  direction?: "HULU" | "HILIR";
+  onSelectNode: (n: SankeyNode) => void;
+}) {
   const m = useMemo(() => buildOriginDestMatrix(graph), [graph]);
+  const mirror = direction === "HILIR";
+  const rows = mirror ? m.cols : m.rows;
+  const cols = mirror ? m.rows : m.cols;
+  const rowTotal = mirror ? m.colTotal : m.rowTotal;
+  const colTotal = mirror ? m.rowTotal : m.colTotal;
+  const cell = (r: SankeyNode, c: SankeyNode) => m.cells.get(mirror ? matrixKey(c.id, r.id) : matrixKey(r.id, c.id)) ?? 0;
   if (!m.rows.length) return <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Tidak ada aliran bertonase pada filter ini.</div>;
   const show = (v: number) => (unit === "PCT" ? `${m.total > 0 ? formatPct((v / m.total) * 100) : "0"}%` : fmtTon(v));
   const head = (n: SankeyNode) => {
@@ -40,8 +57,8 @@ export function SupplyChainMatrix({ graph, unit, onSelectNode }: { graph: Sankey
       <table className="w-full border-separate border-spacing-0 text-sm">
         <thead>
           <tr>
-            <th className="sticky left-0 z-10 bg-card py-1.5 pr-3 text-left text-xs font-medium text-muted-foreground">Asal ↓ · Tujuan →</th>
-            {m.cols.map((c) => (
+            <th className="sticky left-0 z-10 bg-card py-1.5 pr-3 text-left text-xs font-medium text-muted-foreground">{mirror ? "Tujuan ↓ · Asal →" : "Asal ↓ · Tujuan →"}</th>
+            {cols.map((c) => (
               <th key={c.id} className="min-w-[96px] px-2 py-1.5 text-left align-bottom text-xs">
                 {head(c)}
               </th>
@@ -50,32 +67,32 @@ export function SupplyChainMatrix({ graph, unit, onSelectNode }: { graph: Sankey
           </tr>
         </thead>
         <tbody>
-          {m.rows.map((r) => (
+          {rows.map((r) => (
             <tr key={r.id}>
               <th className="sticky left-0 z-10 bg-card py-1 pr-3 text-left text-xs">{head(r)}</th>
-              {m.cols.map((c) => {
-                const v = m.cells.get(matrixKey(r.id, c.id)) ?? 0;
+              {cols.map((c) => {
+                const v = cell(r, c);
                 const a = m.max > 0 ? v / m.max : 0;
                 return (
                   <td
                     key={c.id}
                     className={cn("px-2 py-1 text-right tabular-nums", v === 0 && "text-muted-foreground/50")}
                     style={v > 0 ? { background: `color-mix(in oklab, var(--primary) ${Math.round(8 + a * 72)}%, transparent)`, color: a > 0.55 ? "var(--primary-foreground)" : undefined } : undefined}
-                    title={v > 0 ? `${r.label} → ${c.label}: ${fmtTon(v)} (${m.total > 0 ? formatPct((v / m.total) * 100) : "0"}% dari total · ${formatPct((v / (m.rowTotal.get(r.id) || 1)) * 100)}% dari ${r.label})` : undefined}
+                    title={v > 0 ? `${mirror ? c.label : r.label} → ${mirror ? r.label : c.label}: ${fmtTon(v)} (${m.total > 0 ? formatPct((v / m.total) * 100) : "0"}% dari total · ${formatPct((v / (rowTotal.get(r.id) || 1)) * 100)}% dari ${r.label})` : undefined}
                   >
                     {v > 0 ? show(v) : "·"}
                   </td>
                 );
               })}
-              <td className="px-2 py-1 text-right font-medium tabular-nums">{show(m.rowTotal.get(r.id) ?? 0)}</td>
+              <td className="px-2 py-1 text-right font-medium tabular-nums">{show(rowTotal.get(r.id) ?? 0)}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr className="border-t">
             <th className="sticky left-0 z-10 bg-card py-1.5 pr-3 text-left text-xs font-medium text-muted-foreground">Total</th>
-            {m.cols.map((c) => (
-              <td key={c.id} className="px-2 py-1.5 text-right font-medium tabular-nums">{show(m.colTotal.get(c.id) ?? 0)}</td>
+            {cols.map((c) => (
+              <td key={c.id} className="px-2 py-1.5 text-right font-medium tabular-nums">{show(colTotal.get(c.id) ?? 0)}</td>
             ))}
             <td className="px-2 py-1.5 text-right font-semibold tabular-nums">{show(m.total)}</td>
           </tr>

@@ -22,14 +22,18 @@ export function SupplyChainPathList({
   graph,
   unit,
   withOfftaker = true,
+  direction = "HULU",
   onSelectNode,
 }: {
   graph: SankeyGraph;
   unit: SankeyUnit;
   /** `false` = kolom Offtaker disembunyikan (toggle Offtaker = Sembunyikan; jalur dua langkah bukan berarti langsung ke Mill). */
   withOfftaker?: boolean;
+  /** Hilir → Hulu = urutan kolom dibalik: Tujuan → Offtaker → Asal (owner 2026-10-17). */
+  direction?: "HULU" | "HILIR";
   onSelectNode: (n: SankeyNode) => void;
 }) {
+  const mirror = direction === "HILIR";
   const dark = useChartDark();
   const [showAll, setShowAll] = useState(false);
   const [sort, setSort] = useState<{ key: PathSortKey; dir: SortDir }>({ key: "TON", dir: "desc" });
@@ -52,7 +56,7 @@ export function SupplyChainPathList({
     const text = (
       <>
         <span className="truncate">{n.label}</span>
-        {n.isUl && <span className="ml-1 font-semibold text-primary">UL</span>}
+        {n.isUl && n.id.startsWith("M:") && <span className="ml-1 font-semibold text-primary">UL</span>}
       </>
     );
     return clickable ? (
@@ -77,6 +81,9 @@ export function SupplyChainPathList({
       ? sort.dir === "desc" ? "diurut dari tonase terbesar" : "diurut dari tonase terkecil"
       : `diurut menurut ${{ ORIGIN: "asal", OFFTAKER: "offtaker", DEST: "tujuan" }[sort.key]} ${sort.dir === "asc" ? "A–Z" : "Z–A"}`;
 
+  const originHead = graph.nodes.some((n) => n.id.startsWith("D:")) ? "Distrik" : "Lembaga";
+  const destHead = graph.nodes.some((n) => n.id.startsWith("U:")) ? "UL / Non-UL" : "Mill";
+
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
@@ -87,7 +94,7 @@ export function SupplyChainPathList({
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">
               <th className="py-2 pr-2 font-medium w-8 text-right">#</th>
-              {sortHead("ORIGIN", graph.nodes.some((n) => n.id.startsWith("D:")) ? "Distrik" : "Lembaga", "py-2 pr-2")}
+              {sortHead(mirror ? "DEST" : "ORIGIN", mirror ? destHead : originHead, "py-2 pr-2")}
               <th className="w-4" />
               {withOfftaker && (
                 <>
@@ -95,15 +102,16 @@ export function SupplyChainPathList({
                   <th className="w-4" />
                 </>
               )}
-              {sortHead("DEST", graph.nodes.some((n) => n.id.startsWith("U:")) ? "UL / Non-UL" : "Mill", "py-2 pr-2")}
+              {sortHead(mirror ? "ORIGIN" : "DEST", mirror ? originHead : destHead, "py-2 pr-2")}
               {sortHead("TON", "Tonase", "py-2 pr-2 w-[26%]")}
               <th className="py-2 text-right font-medium">Porsi</th>
             </tr>
           </thead>
           <tbody>
             {visible.map((r) => {
-              const first = r.steps[0];
-              const last = r.steps[r.steps.length - 1];
+              // Hilir → Hulu: tujuan di kiri, asal di kanan (tanda panah tetap menunjuk urutan baca).
+              const first = mirror ? r.steps[r.steps.length - 1] : r.steps[0];
+              const last = mirror ? r.steps[0] : r.steps[r.steps.length - 1];
               const mid = r.steps.length === 3 ? r.steps[1] : undefined;
               const color = channelColor(r.channel, dark);
               return (

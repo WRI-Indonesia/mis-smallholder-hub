@@ -10,6 +10,7 @@ import {
   CHANNEL_LABEL,
   CHANNEL_ORDER,
   SANKEY_COLUMNS,
+  mirrorSankeyLayout,
   layoutSankey,
   sankeyLinkKey,
   type LaidOutLink,
@@ -68,12 +69,19 @@ export type SankeyUnit = "TON" | "PCT";
 export function SupplyChainSankey({
   graph,
   unit = "TON",
+  direction = "HULU",
   onSelectNode,
 }: {
   graph: SankeyGraph;
   unit?: SankeyUnit;
+  /** Hilir → Hulu = dicerminkan: Mill di kiri, asal di kanan (owner 2026-10-17). */
+  direction?: "HULU" | "HILIR";
   onSelectNode?: (node: SankeyNode) => void;
 }) {
+  const mirror = direction === "HILIR";
+  // Margin label: asal pendek (kiri) vs nama Mill panjang (kanan) — ditukar saat dicerminkan.
+  const leftMargin = mirror ? RIGHT_MARGIN : LEFT_MARGIN;
+  const rightMargin = mirror ? LEFT_MARGIN : RIGHT_MARGIN;
   const dark = useChartDark();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(900);
@@ -90,9 +98,17 @@ export function SupplyChainSankey({
 
   const maxRows = Math.max(1, ...[0, 1, 2, 3].map((c) => graph.nodes.filter((n) => n.column === c).length));
   const height = Math.min(Math.max(maxRows * 28, 320), 1100);
-  const innerW = Math.max(width - LEFT_MARGIN - RIGHT_MARGIN, 200);
-  const layout = useMemo(() => layoutSankey(graph, { width: innerW, height, nodeWidth: 14, nodePadding: 10 }), [graph, innerW, height]);
+  const innerW = Math.max(width - leftMargin - rightMargin, 200);
+  const layout = useMemo(() => {
+    const base = layoutSankey(graph, { width: innerW, height, nodeWidth: 14, nodePadding: 10 });
+    return mirror ? mirrorSankeyLayout(base) : base;
+  }, [graph, innerW, height, mirror]);
   const colHeaders = [0, 1, 2, 3].map((c) => ({ c, node: layout.nodes.find((n) => n.column === c) })).filter((h) => h.node);
+  // Sisi label & judul kolom mengikuti POSISI (kolom paling kiri/kanan), bukan nomor kolom — berlaku untuk kedua arah.
+  const minX = Math.min(...layout.nodes.map((n) => n.x0));
+  const maxX = Math.max(...layout.nodes.map((n) => n.x0));
+  const atLeft = (x0: number) => x0 === minX;
+  const atRight = (x0: number) => x0 === maxX && maxX !== minX;
 
   // Sorotan jalur penuh: semua pita & node pada jalur yang melewati node/pita yang disorot.
   const lit = useMemo(() => {
@@ -144,11 +160,11 @@ export function SupplyChainSankey({
             key={c}
             className="absolute whitespace-nowrap"
             style={
-              c === 0
-                ? { left: LEFT_MARGIN + node!.x1, transform: "translateX(-100%)" }
-                : c === 3
-                  ? { left: LEFT_MARGIN + node!.x0 }
-                  : { left: LEFT_MARGIN + node!.x0, transform: "translateX(-40%)" }
+              atLeft(node!.x0)
+                ? { left: leftMargin + node!.x1, transform: "translateX(-100%)" }
+                : atRight(node!.x0)
+                  ? { left: leftMargin + node!.x0 }
+                  : { left: leftMargin + node!.x0, transform: "translateX(-40%)" }
             }
           >
             {c === 0 && node!.id.startsWith("D:") ? "Distrik" : c === 3 && layout.nodes.some((n) => n.id.startsWith("U:")) ? "Mill UL / Non-UL" : SANKEY_COLUMNS[c]}
@@ -156,7 +172,7 @@ export function SupplyChainSankey({
         ))}
       </div>
       <svg width={width} height={height + 12} className="block overflow-visible" role="img" aria-label="Diagram Sankey aliran TBS Lembaga ke offtaker dan Mill">
-        <g transform={`translate(${LEFT_MARGIN},6)`}>
+        <g transform={`translate(${leftMargin},6)`}>
           <g>
             {layout.links.map((l) => {
               const k = sankeyLinkKey(l);
@@ -181,9 +197,9 @@ export function SupplyChainSankey({
               const h = Math.max(n.y1 - n.y0, 1);
               const clickable = !!onSelectNode && (isFilterableNode(n) || isGroupNode(n));
               const on = !lit || lit.nodes.has(n.id);
-              const labelLeft = n.column === 0;
+              const labelLeft = atLeft(n.x0);
               const originMax = n.id.startsWith("D:") ? 18 : 14;
-              const outerLabel = n.column === 0 || n.column === 3;
+              const outerLabel = atLeft(n.x0) || atRight(n.x0);
               return (
                 <g
                   key={n.id}
@@ -220,7 +236,7 @@ export function SupplyChainSankey({
                     style={outerLabel ? undefined : { paintOrder: "stroke", stroke: "var(--card)", strokeWidth: 3, strokeLinejoin: "round" }}
                   >
                     {clip(n.label, n.column === 0 ? originMax : MAX_LABEL)}
-                    {n.isUl && <tspan className="fill-primary font-semibold"> UL</tspan>}
+                    {n.isUl && n.id.startsWith("M:") && <tspan className="fill-primary font-semibold"> UL</tspan>}
                     <tspan className="fill-muted-foreground"> {fmtValue(n.value)}</tspan>
                   </text>
                 </g>
@@ -242,12 +258,22 @@ export function SupplyChainSankey({
               </div>
               <div className="mt-0.5 flex items-center gap-1.5 text-muted-foreground">
                 <span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(hover.link.channel, dark) }} />
-                {CHANNEL_LABEL[hover.link.channel]}
+                {hover.link.byChannel ? `Gabungan — jalur terbesar ${CHANNEL_LABEL[hover.link.channel]}` : CHANNEL_LABEL[hover.link.channel]}
               </div>
               <div className="mt-1 tabular-nums">
                 <span className="font-medium">{fmtTon(hover.link.value)}</span>
                 <span className="text-muted-foreground"> · {formatPct((hover.link.value / total) * 100)}% dari total</span>
               </div>
+              {hover.link.byChannel && (
+                <ul className="mt-1 space-y-0.5 border-t pt-1 text-muted-foreground">
+                  {CHANNEL_ORDER.filter((c) => (hover.link.byChannel?.[c] ?? 0) > 0).map((c) => (
+                    <li key={c} className="flex items-center justify-between gap-3 tabular-nums">
+                      <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(c, dark) }} />{CHANNEL_LABEL[c]}</span>
+                      <span>{fmtTon(hover.link.byChannel![c]!)} · {formatPct((hover.link.byChannel![c]! / hover.link.value) * 100)}%</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </>
           ) : (
             <>

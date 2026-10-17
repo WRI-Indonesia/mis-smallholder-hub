@@ -164,6 +164,13 @@ describe("buildOriginDestMatrix (tab Matriks · Chord · Batang bertumpuk)", () 
     for (const r of m.rows) expect(m.cols.reduce((a, c) => a + (m.cells.get(matrixKey(r.id, c.id)) ?? 0), 0)).toBe(m.rowTotal.get(r.id));
   });
 
+  it("kolom tujuan: UL di depan walau tonasenya lebih kecil (fokus ke Mill UL)", () => {
+    const g = buildSupplyChainSankey(data, [rec({ id: "a", groupCode: "G1", millId: "M2", supplyTon: 50, toUl: false }), rec({ id: "b", groupCode: "G1", millId: "M1", supplyTon: 5, toUl: true })], { maxPerColumn: Infinity, destination: "UL" });
+    expect(buildOriginDestMatrix(g).cols.map((c) => c.id)).toEqual(["U:UL", "U:NON_UL"]);
+    const tree = buildSupplyChainTree(g, data.groups, { direction: "HILIR", byDistrict: false, byUl: true });
+    expect(tree.map((n) => n.nodeId)).toEqual(["U:UL", "U:NON_UL"]);
+  });
+
   it("mengikuti toggle Dari Distrik / Ke UL lewat graf yang diberikan", () => {
     const g = buildSupplyChainSankey(data, records, { maxPerColumn: Infinity, origin: "DISTRIK", destination: "UL" });
     const m = buildOriginDestMatrix(g);

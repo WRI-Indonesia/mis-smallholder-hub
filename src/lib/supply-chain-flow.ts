@@ -432,8 +432,11 @@ export interface SankeyNode {
 export interface SankeyLink {
   source: string;
   target: string;
+  /** Jalur; pada pita gabungan (offtaker disembunyikan) = jalur bertonase terbesar. */
   channel: SupplyChannel;
   value: number;
+  /** Rincian per jalur — hanya pada pita gabungan (`hideMiddle`), untuk tooltip. */
+  byChannel?: Partial<Record<SupplyChannel, number>>;
 }
 
 export interface SankeyPath {
@@ -478,7 +481,11 @@ export interface SankeyOptions {
   destination?: SankeyDestination;
   /** Maks node per kolom 1–3 sebelum sisanya dilipat jadi "… lain". */
   maxPerColumn?: number;
-  /** Sembunyikan tingkat tengah (offtaker): jalur langsung asal → tujuan, warna tetap per jalur (owner 2026-10-17). */
+  /**
+   * Sembunyikan tingkat tengah (offtaker): jalur langsung asal → tujuan dan pita
+   * antar pasangan yang sama **dilebur** jadi satu (owner 2026-10-17: "TBS-nya
+   * dilebur"); warna = jalur bertonase terbesar, rincian per jalur di `byChannel`.
+   */
   hideMiddle?: boolean;
 }
 
@@ -577,7 +584,7 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
       n = { id, column, label: `${column === 1 ? "Offtaker" : "Mill"} lain`, sub: `${foldedCount.get(id)} entitas`, value: 0, folded: foldedCount.get(id) ?? 0, isUl: false, millStatus: null, groupCode: null };
     } else if (id.startsWith("U:")) {
       const n0 = groupMembers.get(id)?.size ?? 0;
-      n = { id, column, label: UL_FILTER_LABEL[id.slice(2) as UlFilter], sub: `${n0} Mill`, value: 0, folded: n0, isUl: false, millStatus: null, groupCode: null };
+      n = { id, column, label: UL_FILTER_LABEL[id.slice(2) as UlFilter], sub: `${n0} Mill`, value: 0, folded: n0, isUl: id === "U:UL", millStatus: null, groupCode: null };
     } else if (id.startsWith("D:")) {
       const n0 = groupMembers.get(id)?.size ?? 0;
       n = { id, column, label: id.slice(2), sub: `${n0} Lembaga`, value: 0, folded: n0, isUl: false, millStatus: null, groupCode: null };
@@ -620,18 +627,37 @@ export function buildSupplyChainSankey(data: SupplyChainData, records: ScRecord[
       }
     }
     const linkKeys: string[] = [];
+    // Pita gabungan: kunci sementara satu jalur agar semua jalur pasangan yang sama melebur; jalur asli dicatat di byChannel.
+    const keyChannel: SupplyChannel = options.hideMiddle ? "LANGSUNG" : p.channel;
     for (let i = 0; i < steps.length - 1; i++) {
-      const k = sankeyLinkKey({ source: steps[i].id, target: steps[i + 1].id, channel: p.channel });
-      const l = links.get(k) ?? { source: steps[i].id, target: steps[i + 1].id, channel: p.channel, value: 0 };
+      const k = sankeyLinkKey({ source: steps[i].id, target: steps[i + 1].id, channel: keyChannel });
+      const l = links.get(k) ?? { source: steps[i].id, target: steps[i + 1].id, channel: keyChannel, value: 0, ...(options.hideMiddle ? { byChannel: {} } : {}) };
       l.value += p.ton;
+      if (l.byChannel) l.byChannel[p.channel] = (l.byChannel[p.channel] ?? 0) + p.ton;
       links.set(k, l);
       linkKeys.push(k);
     }
     const pk = linkKeys.join("|");
-    const path = pathIndex.get(pk) ?? { nodes: steps.map((x) => x.id), links: linkKeys, channel: p.channel, ton: 0, toUlTon: 0 };
+    const path = pathIndex.get(pk) ?? { nodes: steps.map((x) => x.id), links: linkKeys, channel: keyChannel, ton: 0, toUlTon: 0 };
     path.ton += p.ton;
     if (p.record.toUl) path.toUlTon += p.ton;
     pathIndex.set(pk, path);
+  }
+  if (options.hideMiddle) {
+    // Warna pita gabungan = jalur bertonase terbesar; kunci pita & jalur ditulis ulang agar sorotan tetap cocok.
+    const renamed = new Map<string, SankeyLink>();
+    for (const [k, l] of links) {
+      const by = l.byChannel ?? {};
+      l.channel = CHANNEL_ORDER.reduce((best, c) => ((by[c] ?? 0) > (by[best] ?? 0) ? c : best), CHANNEL_ORDER[0]);
+      renamed.set(k, l);
+    }
+    links.clear();
+    for (const l of renamed.values()) links.set(sankeyLinkKey(l), l);
+    for (const path of pathIndex.values()) {
+      const merged = path.links.map((k) => renamed.get(k)!);
+      path.channel = merged[merged.length - 1].channel;
+      path.links = merged.map((l) => sankeyLinkKey(l));
+    }
   }
   // Nilai node = max(masuk, keluar) — kolom 0 hanya keluar, kolom 3 hanya masuk.
   const inSum = new Map<string, number>();
@@ -713,9 +739,12 @@ export function layoutSankey(
   };
 
   // Awal: urut tonase, node "lain" & Mill tak diketahui selalu paling bawah.
+  // Kolom tujuan: Mill UL / "Ke Mill UL" selalu di atas — fokus dashboard ke Mill UL (owner 2026-10-17);
+  // barycenter hanya mengurutkan di dalam kelompok UL / bukan UL.
   const tail = (n: SankeyNode) => (n.id.startsWith("X:") || n.id === UNKNOWN_MILL ? 1 : 0);
+  const ulRank = (n: SankeyNode) => (n.column === 3 && !tail(n) ? (n.isUl ? 0 : 1) : 0);
   for (const c of nonEmptyCols) {
-    byCol[c].sort((a, b) => tail(a) - tail(b) || b.value - a.value || a.label.localeCompare(b.label));
+    byCol[c].sort((a, b) => tail(a) - tail(b) || ulRank(a) - ulRank(b) || b.value - a.value || a.label.localeCompare(b.label));
     place(c);
   }
 
@@ -738,7 +767,7 @@ export function layoutSankey(
       const acc = weight.get(n.id);
       return acc && acc.w > 0 ? acc.sum / acc.w : center(n.id);
     };
-    byCol[col].sort((a, b) => tail(a) - tail(b) || key(a) - key(b));
+    byCol[col].sort((a, b) => tail(a) - tail(b) || ulRank(a) - ulRank(b) || key(a) - key(b));
     place(col);
   };
   for (let iter = 0; iter < 4; iter++) {
@@ -779,6 +808,28 @@ export function layoutSankey(
 // ---------------------------------------------------------------------------
 // Peta — segmen garis antar titik yang diketahui
 // ---------------------------------------------------------------------------
+
+/**
+ * Cerminkan tata letak Sankey secara horizontal (toggle Arah = Hilir → Hulu,
+ * owner 2026-10-17): Mill di kiri, asal di kanan. Id/kolom node tidak berubah
+ * — klik-filter & sorotan jalur tetap memakai penangan yang sama; hanya
+ * koordinat x dan lintasan pita yang dihitung ulang (pita keluar dari sisi kiri
+ * sumber, masuk ke sisi kanan target).
+ */
+export function mirrorSankeyLayout(layout: SankeyLayout): SankeyLayout {
+  const W = layout.width;
+  const nodes = layout.nodes.map((n) => ({ ...n, x0: W - n.x1, x1: W - n.x0 }));
+  const pos = new Map(nodes.map((n) => [n.id, n]));
+  const links = layout.links.map((l) => {
+    const s = pos.get(l.source)!;
+    const t = pos.get(l.target)!;
+    const x0 = s.x0;
+    const x1 = t.x1;
+    const xm = (x0 + x1) / 2;
+    return { ...l, path: `M${x0},${l.sy}C${xm},${l.sy} ${xm},${l.ty} ${x1},${l.ty}` };
+  });
+  return { ...layout, nodes, links };
+}
 
 export interface FlowPoint {
   key: string;

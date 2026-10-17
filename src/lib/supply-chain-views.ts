@@ -144,12 +144,14 @@ export function buildSupplyChainTree(graph: SankeyGraph, groups: ScGroup[], opts
     }
   }
 
-  // Urut tonase; "Mill tidak diketahui" & "Langsung ke Mill" selalu paling bawah di tingkatnya.
+  // Urut tonase; "Mill tidak diketahui" & "Langsung ke Mill" selalu paling bawah di tingkatnya;
+  // tingkat UL/Mill: yang UL selalu di atas (fokus ke Mill UL, owner 2026-10-17).
   const tail = (n: SupplyTreeNode) => (n.nodeId === UNKNOWN_MILL_ID || n.nodeId === DIRECT_NODE_ID ? 1 : 0);
+  const ulRank = (n: SupplyTreeNode) => ((n.level === "UL" || n.level === "MILL") && !tail(n) ? (n.isUl ? 0 : 1) : 0);
   const finish = (m: Map<string, Building>): SupplyTreeNode[] =>
     [...m.values()]
       .map(({ index, ...n }) => ({ ...n, children: finish(index) }))
-      .sort((a, b) => tail(a) - tail(b) || b.ton - a.ton || a.label.localeCompare(b.label));
+      .sort((a, b) => tail(a) - tail(b) || ulRank(a) - ulRank(b) || b.ton - a.ton || a.label.localeCompare(b.label));
   return finish(roots);
 }
 
@@ -296,9 +298,11 @@ export function buildOriginDestMatrix(graph: SankeyGraph): OriginDestMatrix {
     total += p.ton;
   }
   const tail = (id: string) => (id === UNKNOWN_MILL_ID ? 1 : 0);
+  // Tujuan UL selalu di depan (fokus ke Mill UL, owner 2026-10-17), lalu tonase; Mill tak diketahui terakhir.
+  const ulRank = (n: SankeyNode) => (tail(n.id) ? 0 : n.isUl ? 0 : 1);
   const rows = [...rowTotal.keys()].map((id) => byId.get(id)!).sort((a, b) => rowTotal.get(b.id)! - rowTotal.get(a.id)! || a.label.localeCompare(b.label));
   const cols = [...colTotal.keys()]
     .map((id) => byId.get(id)!)
-    .sort((a, b) => tail(a.id) - tail(b.id) || colTotal.get(b.id)! - colTotal.get(a.id)! || a.label.localeCompare(b.label));
+    .sort((a, b) => tail(a.id) - tail(b.id) || ulRank(a) - ulRank(b) || colTotal.get(b.id)! - colTotal.get(a.id)! || a.label.localeCompare(b.label));
   return { rows, cols, cells, rowTotal, colTotal, total, max: Math.max(0, ...cells.values()) };
 }

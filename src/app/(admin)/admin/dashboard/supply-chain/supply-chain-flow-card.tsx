@@ -22,7 +22,8 @@ import { SegmentToggle } from "./segment-toggle";
 import { SupplyChainSankey, isGroupNode, type SankeyUnit } from "./supply-chain-sankey";
 import { SupplyChainPathList } from "./supply-chain-path-list";
 import { SupplyChainTreeTable } from "./supply-chain-tree-table";
-import { notifyFilter } from "./supply-chain-filter-chips";
+import { SupplyChainFilterChips, notifyFilter } from "./supply-chain-filter-chips";
+import { ResetFiltersButton } from "@/components/shared/reset-filters-button";
 import type { SupplyChainFilterState } from "./use-supply-chain-filters";
 
 // React Flow hanya dimuat saat tab Diagram Alur dibuka.
@@ -89,6 +90,8 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
   const [direction, setDirection] = useState<TreeDirection>("HULU");
 
   const isHierarchy = HIERARCHY_TABS.includes(tab);
+  // Arah berlaku di semua tab kecuali Chord (lingkaran tak punya kiri/kanan) — owner 2026-10-17.
+  const hasDirection = tab !== "CHORD";
   // Tiap graf hanya dibangun untuk tab yang memakainya.
   const graph = useMemo(
     () =>
@@ -99,8 +102,9 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
   );
   // Tab hierarki (Tabel Pohon · Sunburst · Partisi · Treemap): per Lembaga & per Mill tanpa pelipatan — tingkat Distrik/UL ditambahkan pohon.
   const treeGraph = useMemo(
-    () => (isHierarchy ? buildSupplyChainSankey(view.data, records, { mode, hideMiddle, maxPerColumn: Infinity }) : null),
-    [isHierarchy, view.data, records, mode, hideMiddle],
+    // Tanpa hideMiddle: tingkat offtaker dilewati oleh pohon (withOfftaker) agar komposisi per jalur tetap utuh.
+    () => (isHierarchy ? buildSupplyChainSankey(view.data, records, { mode, maxPerColumn: Infinity }) : null),
+    [isHierarchy, view.data, records, mode],
   );
   const tree = useMemo(
     () =>
@@ -117,7 +121,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
     mode !== "RINGKAS",
     hideMiddle,
     unit !== "TON",
-    isHierarchy && direction !== "HULU",
+    hasDirection && direction !== "HULU",
     mode === "RINCI" && !isHierarchy && top !== "12",
   ].filter(Boolean).length;
   const resetView = () => {
@@ -157,9 +161,9 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
   // Kalimat baca: apa yang sedang ditampilkan, dalam bahasa biasa.
   const offText = mode === "RINGKAS" ? "jenis offtaker (Agen, RAMP, KT/Koperasi)" : "tiap offtaker";
   const reading =
-    isHierarchy && direction === "HILIR"
+    hasDirection && direction === "HILIR"
       ? `TBS yang masuk ke ${destination === "UL" ? "Mill UL dan bukan UL" : "tiap Mill"}${hideMiddle ? " ← langsung" : ` ← dari ${offText} mana ←`} dari ${origin === "DISTRIK" ? "distrik & Lembaga" : "Lembaga"} mana`
-      : `TBS dari tiap ${origin === "DISTRIK" ? "distrik" : "Lembaga"} → ${hideMiddle ? "langsung (offtaker disembunyikan)" : `lewat ${offText}`} → sampai ke ${destination === "UL" ? "Mill UL atau bukan" : "tiap Mill"}`;
+      : `TBS dari tiap ${origin === "DISTRIK" ? "distrik" : "Lembaga"} → ${hideMiddle ? "langsung (offtaker disembunyikan; pita pasangan yang sama dilebur, warna = jalur terbesar)" : `lewat ${offText}`} → sampai ke ${destination === "UL" ? "Mill UL atau bukan" : "tiap Mill"}`;
 
   return (
     <CollapsibleCard id="aliran" title="Aliran TBS: Lembaga → Offtaker → Mill">
@@ -191,15 +195,15 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
 
         {/* Toolbar lepasan (owner 2026-10-10: popover sering tak disadari) — satu strip ringkas, bawaan di kiri tiap toggle. */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
-          {isHierarchy && (
+          {hasDirection && (
             <SegmentToggle
               caption="Arah"
               value={direction}
               onChange={setDirection}
               label="Arah agregasi"
               options={[
-                { value: "HULU", label: "Hulu → Hilir", hint: "Mulai dari Lembaga, buka sampai Mill tujuannya (bawaan)" },
-                { value: "HILIR", label: "Hilir → Hulu", hint: "Mulai dari Mill, buka sampai Lembaga pemasoknya" },
+                { value: "HULU", label: "Hulu → Hilir", hint: "Mulai dari Lembaga ke Mill tujuannya — asal di kiri (bawaan)" },
+                { value: "HILIR", label: "Hilir → Hulu", hint: "Mulai dari Mill ke Lembaga pemasoknya — Mill di kiri; di tabel: tujuan jadi baris/kolom pertama" },
               ]}
             />
           )}
@@ -272,10 +276,18 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
 
         <p className="text-xs text-muted-foreground">Menampilkan {reading}.</p>
 
+        {/* Chip filter aktif + Reset juga di sini (owner 2026-10-17): bar filter di puncak halaman jauh dari kartu ini saat digulir. */}
+        {f.hasFilter && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5">
+            <SupplyChainFilterChips f={f} view={view} />
+            <ResetFiltersButton active={f.hasFilter} onReset={f.reset} size="sm" title="Lepas semua filter halaman (sama dengan Reset di bar filter atas)" />
+          </div>
+        )}
+
         <div className="overflow-x-auto">
-          {tab === "SANKEY" && graph && <SupplyChainSankey graph={graph} unit={unit} onSelectNode={selectNode} />}
-          {tab === "ALUR" && graph && <SupplyChainFlowDiagram graph={graph} unit={unit} onSelectNode={selectNode} />}
-          {tab === "JALUR" && graph && <SupplyChainPathList graph={graph} unit={unit} withOfftaker={!hideMiddle} onSelectNode={selectNode} />}
+          {tab === "SANKEY" && graph && <SupplyChainSankey graph={graph} unit={unit} direction={direction} onSelectNode={selectNode} />}
+          {tab === "ALUR" && graph && <SupplyChainFlowDiagram graph={graph} unit={unit} direction={direction} onSelectNode={selectNode} />}
+          {tab === "JALUR" && graph && <SupplyChainPathList graph={graph} unit={unit} withOfftaker={!hideMiddle} direction={direction} onSelectNode={selectNode} />}
           {tab === "POHON" && treeGraph && (
             <SupplyChainTreeTable
               graph={treeGraph}
@@ -291,9 +303,9 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
           {tab === "SUNBURST" && tree && treeGraph && <SupplyChainSunburst tree={tree} total={treeGraph.totalTon} unit={unit} onSelectNode={selectNode} />}
           {tab === "PARTISI" && tree && treeGraph && <SupplyChainIcicle tree={tree} total={treeGraph.totalTon} unit={unit} onSelectNode={selectNode} />}
           {tab === "TREEMAP" && tree && treeGraph && <SupplyChainTreemap tree={tree} total={treeGraph.totalTon} unit={unit} onSelectNode={selectNode} />}
-          {tab === "MATRIKS" && graph && <SupplyChainMatrix graph={graph} unit={unit} onSelectNode={selectNode} />}
+          {tab === "MATRIKS" && graph && <SupplyChainMatrix graph={graph} unit={unit} direction={direction} onSelectNode={selectNode} />}
           {tab === "CHORD" && graph && <SupplyChainChord graph={graph} unit={unit} onSelectNode={selectNode} />}
-          {tab === "BATANG" && graph && <SupplyChainStackedBars graph={graph} unit={unit} onSelectNode={selectNode} />}
+          {tab === "BATANG" && graph && <SupplyChainStackedBars graph={graph} unit={unit} direction={direction} onSelectNode={selectNode} />}
         </div>
       </div>
     </CollapsibleCard>

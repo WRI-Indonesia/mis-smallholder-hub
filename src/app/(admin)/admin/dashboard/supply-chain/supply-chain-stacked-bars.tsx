@@ -18,21 +18,38 @@ const ROWS_COLLAPSED = 15;
  * (Angka Ton) atau 100% (Angka %). Mudah dibaca berurutan; klik nama asal atau
  * segmen = filter.
  */
-export function SupplyChainStackedBars({ graph, unit, onSelectNode }: { graph: SankeyGraph; unit: SankeyUnit; onSelectNode: (n: SankeyNode) => void }) {
+export function SupplyChainStackedBars({
+  graph,
+  unit,
+  direction = "HULU",
+  onSelectNode,
+}: {
+  graph: SankeyGraph;
+  unit: SankeyUnit;
+  /** Hilir → Hulu = satu batang per tujuan, segmen = asal (owner 2026-10-17). */
+  direction?: "HULU" | "HILIR";
+  onSelectNode: (n: SankeyNode) => void;
+}) {
   const dark = useChartDark();
   const [showAll, setShowAll] = useState(false);
   const [hover, setHover] = useState<string | null>(null);
   const m = useMemo(() => buildOriginDestMatrix(graph), [graph]);
+  const mirror = direction === "HILIR";
+  const barRows = mirror ? m.cols : m.rows;
+  const segCols = mirror ? m.rows : m.cols;
+  const barTotal = mirror ? m.colTotal : m.rowTotal;
+  const segTotal = mirror ? m.rowTotal : m.colTotal;
+  const cell = (r: SankeyNode, c: SankeyNode) => m.cells.get(mirror ? matrixKey(c.id, r.id) : matrixKey(r.id, c.id)) ?? 0;
   if (!m.rows.length) return <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Tidak ada aliran bertonase pada filter ini.</div>;
   const colColor = (j: number, id: string) => (id === "M:?" ? (dark ? "#475569" : "#94a3b8") : CATEGORICAL[j % CATEGORICAL.length][dark ? "dark" : "light"]);
-  const maxRow = Math.max(1, ...m.rows.map((r) => m.rowTotal.get(r.id) ?? 0));
-  const rows = showAll ? m.rows : m.rows.slice(0, ROWS_COLLAPSED);
+  const maxRow = Math.max(1, ...barRows.map((r) => barTotal.get(r.id) ?? 0));
+  const rows = showAll ? barRows : barRows.slice(0, ROWS_COLLAPSED);
   const clickable = (n: SankeyNode) => isFilterableNode(n) || isGroupNode(n);
 
   return (
     <div className="space-y-3">
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="Legenda tujuan">
-        {m.cols.map((c, j) => (
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label={mirror ? "Legenda asal" : "Legenda tujuan"}>
+        {segCols.map((c, j) => (
           <li key={c.id} className={cn("flex items-center gap-1.5", hover && hover !== c.id && "opacity-50")} onMouseEnter={() => setHover(c.id)} onMouseLeave={() => setHover(null)}>
             <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: colColor(j, c.id) }} />
             {clickable(c) ? (
@@ -41,13 +58,13 @@ export function SupplyChainStackedBars({ graph, unit, onSelectNode }: { graph: S
               <span>{c.label}</span>
             )}
             {c.isUl && c.id.startsWith("M:") && <UlBadge />}
-            <span className="text-muted-foreground tabular-nums">{unit === "PCT" ? `${formatPct(((m.colTotal.get(c.id) ?? 0) / m.total) * 100)}%` : fmtTon(m.colTotal.get(c.id) ?? 0)}</span>
+            <span className="text-muted-foreground tabular-nums">{unit === "PCT" ? `${formatPct(((segTotal.get(c.id) ?? 0) / m.total) * 100)}%` : fmtTon(segTotal.get(c.id) ?? 0)}</span>
           </li>
         ))}
       </ul>
       <div className="space-y-1.5">
         {rows.map((r) => {
-          const total = m.rowTotal.get(r.id) ?? 0;
+          const total = barTotal.get(r.id) ?? 0;
           const width = unit === "PCT" ? 100 : (total / maxRow) * 100;
           return (
             <div key={r.id} className="grid grid-cols-[minmax(120px,220px)_minmax(0,1fr)_84px] items-center gap-3 text-sm">
@@ -60,8 +77,8 @@ export function SupplyChainStackedBars({ graph, unit, onSelectNode }: { graph: S
                 {r.sub ? <span className="ml-1 text-muted-foreground">{r.sub}</span> : null}
               </div>
               <div className="flex h-5 overflow-hidden rounded-sm bg-muted/40" style={{ width: `${width}%` }}>
-                {m.cols.map((c, j) => {
-                  const v = m.cells.get(matrixKey(r.id, c.id)) ?? 0;
+                {segCols.map((c, j) => {
+                  const v = cell(r, c);
                   if (v <= 0) return null;
                   return (
                     <button
@@ -69,8 +86,8 @@ export function SupplyChainStackedBars({ graph, unit, onSelectNode }: { graph: S
                       type="button"
                       className={cn("h-full transition-opacity", hover && hover !== c.id && "opacity-35")}
                       style={{ width: `${(v / total) * 100}%`, background: colColor(j, c.id) }}
-                      title={`${r.label} → ${c.label}: ${fmtTon(v)} (${formatPct((v / total) * 100)}% dari ${r.label} · ${m.total > 0 ? formatPct((v / m.total) * 100) : "0"}% dari total)`}
-                      aria-label={`${r.label} ke ${c.label}: ${fmtTon(v)}`}
+                      title={`${mirror ? c.label : r.label} → ${mirror ? r.label : c.label}: ${fmtTon(v)} (${formatPct((v / total) * 100)}% dari ${r.label} · ${m.total > 0 ? formatPct((v / m.total) * 100) : "0"}% dari total)`}
+                      aria-label={`${mirror ? c.label : r.label} ke ${mirror ? r.label : c.label}: ${fmtTon(v)}`}
                       onMouseEnter={() => setHover(c.id)}
                       onMouseLeave={() => setHover(null)}
                       onClick={() => clickable(c) && onSelectNode(c)}
@@ -83,9 +100,9 @@ export function SupplyChainStackedBars({ graph, unit, onSelectNode }: { graph: S
           );
         })}
       </div>
-      {m.rows.length > ROWS_COLLAPSED ? (
+      {barRows.length > ROWS_COLLAPSED ? (
         <button type="button" className="text-xs text-primary hover:underline" onClick={() => setShowAll((v) => !v)}>
-          {showAll ? "Tampilkan lebih sedikit" : `Tampilkan semua ${m.rows.length} asal`}
+          {showAll ? "Tampilkan lebih sedikit" : `Tampilkan semua ${barRows.length} ${mirror ? "tujuan" : "asal"}`}
         </button>
       ) : null}
     </div>
