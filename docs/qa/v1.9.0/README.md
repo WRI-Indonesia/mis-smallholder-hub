@@ -14,8 +14,10 @@
 | Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
 |---|---|---:|---:|---:|---:|---:|
 | 2026-10-17-lokal.md | Kasus uji | 10 | 0 | 1 | 0 | 0 |
+| 2026-10-17-staging.md | Smoke | 2 | 0 | 11 | 0 | 0 |
+| 2026-10-17-staging.md | Kasus uji | 10 | 0 | 1 | 0 | 0 |
 
-Blocked = TC-437-01 bagian OPERATOR/DONOR (akun lain tak tersedia di lokal) — wajib di run staging.
+Blocked = bagian peran OPERATOR/DONOR (akun tak tersedia di sesi lokal maupun staging 2026-10-17); bagian SUPERADMIN lulus. Rilis hanya menambah 1 menu ber-VIEW 3 peran (dijaga `menu-access.test.ts`).
 
 ## Keputusan
 
