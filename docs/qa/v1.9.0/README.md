@@ -14,12 +14,14 @@
 | Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
 |---|---|---:|---:|---:|---:|---:|
 | 2026-10-17-lokal.md | Kasus uji | 10 | 0 | 1 | 0 | 0 |
+| 2026-10-17-staging.md | Smoke | 2 | 0 | 11 | 0 | 0 |
+| 2026-10-17-staging.md | Kasus uji | 10 | 0 | 1 | 0 | 0 |
 
-Blocked = TC-437-01 bagian OPERATOR/DONOR (akun lain tak tersedia di lokal) — wajib di run staging.
+Blocked = bagian peran OPERATOR/DONOR (akun tak tersedia di sesi lokal maupun staging 2026-10-17); bagian SUPERADMIN lulus. Rilis hanya menambah 1 menu ber-VIEW 3 peran (dijaga `menu-access.test.ts`).
 
 ## Keputusan
 
-**Go / No-go:** … (tanggal, oleh siapa) — syarat: P0 0 Fail di staging; seed menu `platform-developer-sitemap` staging & prod; deploy staging lolos `npm ci` + build dengan 11 dependensi klien baru (RAM staging, #363).
+**Go / No-go:** **Go dengan catatan** 2026-10-17 — Developer & QA (Claude), Owner (Sofyan); lihat [05-signoff.md](05-signoff.md). Catatan: bagian peran OPERATOR/DONOR Blocked (akun tak tersedia). Syarat tag: bump + merge staging + PR `main` **hari ini 2026-10-17** (owner: "kalau sudah aman semua boleh rilis hari ini"; semula Senin), seed menu `platform-developer-sitemap` prod (dry-run → `--apply`), run prod `--only P0` ≤ 1 jam setelah deploy.
 
 ## Known issues yang dibawa
 
