@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSupplyChainSankey, type ScRecord, type SupplyChainData } from "@/lib/supply-chain-flow";
-import { DIRECT_NODE_ID, transposeOriginDestMatrix, buildOriginDestMatrix, buildPathRows, buildSupplyChainTree, bezierPointAtX, dodgeLabels, matrixKey, sortPathRows, spreadEdgeEnds, treeBranchKeys, treeNodeAsSankeyNode, type SupplyTreeNode } from "@/lib/supply-chain-views";
+import { ALIRAN_RINGKAS_MILLS, DIRECT_NODE_ID, aliranMaxPerColumn, transposeOriginDestMatrix, buildOriginDestMatrix, buildPathRows, buildSupplyChainTree, bezierPointAtX, dodgeLabels, matrixKey, sortPathRows, spreadEdgeEnds, treeBranchKeys, treeNodeAsSankeyNode, type SupplyTreeNode } from "@/lib/supply-chain-views";
 
 const rec = (over: Partial<ScRecord>): ScRecord => ({
   id: "r", year: 2025, level: "LAHAN", groupCode: "G1", surveyId: null, offtakerId: null, nextOfftakerId: null,
@@ -203,5 +203,14 @@ describe("buildOriginDestMatrix (tab Matriks · Chord · Batang bertumpuk)", () 
     expect(treeNodeAsSankeyNode(d)).toMatchObject({ id: d.nodeId, column: 0, value: d.ton });
     const mill = find(find(find(find(d.children, "L:G1")!.children, "G:AGEN")!.children, "U:UL")!.children, "M:M1")!;
     expect(treeNodeAsSankeyNode(mill)).toMatchObject({ column: 3, isUl: true });
+  });
+});
+
+describe("aliranMaxPerColumn (toolbar Aliran TBS)", () => {
+  it("pilihan Tampilkan hanya berlaku pada Satu per satu yang tidak disembunyikan", () => {
+    expect(aliranMaxPerColumn("RINCI", false, 8)).toBe(8);
+    expect(aliranMaxPerColumn("RINGKAS", false, 8)).toBe(ALIRAN_RINGKAS_MILLS);
+    // Bug review 2026-10-17: Satu per satu → Tampilkan 8 → Sembunyikan masih memotong Mill ke 8.
+    expect(aliranMaxPerColumn("RINCI", true, 8)).toBe(ALIRAN_RINGKAS_MILLS);
   });
 });

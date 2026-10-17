@@ -4,6 +4,7 @@ import {
   isUlDestination,
   type ScGroup,
   type SankeyGraph,
+  type SankeyMode,
   type SankeyNode,
   type SupplyChannel,
   type UlFilter,
@@ -243,6 +244,19 @@ export function bezierPointAtX(sx: number, sy: number, tx: number, ty: number, x
 // Chord · Batang bertumpuk memakai matriks Asal × Tujuan di bawah ini — semua
 // dari `SankeyGraph` yang sama sehingga angkanya identik dengan tab lama.
 // ---------------------------------------------------------------------------
+
+/** Mill maksimal di kolom tujuan saat Offtaker = Per jenis atau Sembunyikan (kolom tengah ≤ 5 node, ada ruang untuk Mill). */
+export const ALIRAN_RINGKAS_MILLS = 15;
+
+/**
+ * Batas node per kolom kartu Aliran TBS. Pilihan **Tampilkan** (N teratas) hanya
+ * terlihat — dan hanya boleh berlaku — saat Offtaker = Satu per satu; saat Per
+ * jenis atau Sembunyikan, kontrolnya tersembunyi sehingga nilainya tak boleh
+ * diam-diam memotong Mill (review 2026-10-17).
+ */
+export function aliranMaxPerColumn(mode: SankeyMode, hideMiddle: boolean, top: number): number {
+  return mode === "RINCI" && !hideMiddle ? top : ALIRAN_RINGKAS_MILLS;
+}
 
 /** Kolom Sankey tiap tingkat pohon — agar klik-filter memakai penangan yang sama dengan diagram. */
 export const TREE_LEVEL_COLUMN: Record<TreeLevel, 0 | 1 | 3> = { DISTRIK: 0, LEMBAGA: 0, OFFTAKER: 1, UL: 3, MILL: 3 };

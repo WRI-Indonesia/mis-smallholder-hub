@@ -31,8 +31,9 @@ export function SitemapNetwork({ graph, dark }: { graph: SitemapGraph; dark: boo
   const ref = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   // Siap dikunci ke graf asalnya: graf baru → otomatis "menata" tanpa setState di badan efek.
-  const [readyFor, setReadyFor] = useState<SitemapGraph | null>(null);
-  const ready = readyFor === graph;
+  const [readyFor, setReadyFor] = useState<{ graph: SitemapGraph; dark: boolean } | null>(null);
+  // Ganti tema membangun ulang kanvas — overlay "Menata jaringan…" harus tampil lagi (review 2026-10-17).
+  const ready = readyFor?.graph === graph && readyFor.dark === dark;
 
   useEffect(() => {
     let cancelled = false;
@@ -134,7 +135,7 @@ export function SitemapNetwork({ graph, dark }: { graph: SitemapGraph; dark: boo
         } as never,
       });
       cyRef.current = cy;
-      setReadyFor(graph);
+      setReadyFor({ graph, dark });
     })();
     return () => {
       cancelled = true;

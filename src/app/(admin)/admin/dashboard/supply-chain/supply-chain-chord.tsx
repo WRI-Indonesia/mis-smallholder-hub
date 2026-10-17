@@ -6,7 +6,7 @@ import { arc as d3Arc } from "d3-shape";
 import { formatPct } from "@/lib/format";
 import type { SankeyGraph, SankeyNode } from "@/lib/supply-chain-flow";
 import { buildOriginDestMatrix, matrixKey } from "@/lib/supply-chain-views";
-import { fmtTon } from "@/lib/supply-chain-format";
+import { fmtTon, fmtTonOrPct } from "@/lib/supply-chain-format";
 import { isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 
 const R = 230;
@@ -43,7 +43,7 @@ export function SupplyChainChord({ graph, unit, onSelectNode }: { graph: SankeyG
   const arcGen = d3Arc<ChordGroup>().innerRadius(inner).outerRadius(R);
   const ribbonGen = ribbonArrow<Chord, Chord["source"]>().radius(inner - 2).padAngle(0.01).headRadius(10);
   const lit = (c: Chord) => !hasHover || c.source.index === hover || c.target.index === hover;
-  const show = (v: number) => (unit === "PCT" ? `${m.total > 0 ? formatPct((v / m.total) * 100) : "0"}%` : fmtTon(v));
+  const show = (v: number) => fmtTonOrPct(v, m.total, unit);
   const hovered = hasHover ? nodes[hover] : null;
   const hoveredTotal = hovered ? (hover < m.rows.length ? m.rowTotal.get(hovered.id) : m.colTotal.get(hovered.id)) ?? 0 : 0;
 

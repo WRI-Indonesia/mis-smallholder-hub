@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatPct } from "@/lib/format";
 import type { SankeyGraph, SankeyNode } from "@/lib/supply-chain-flow";
 import { buildOriginDestMatrix, matrixKey, transposeOriginDestMatrix } from "@/lib/supply-chain-views";
-import { fmtTon } from "@/lib/supply-chain-format";
+import { fmtTon, fmtTonOrPct } from "@/lib/supply-chain-format";
 import { isFilterableNode, isGroupNode, type SankeyUnit } from "./supply-chain-sankey";
 import { UlBadge } from "./ul-badge";
 
@@ -32,7 +32,7 @@ export function SupplyChainMatrix({
   const { rows, cols, rowTotal, colTotal } = t;
   const cell = (r: SankeyNode, c: SankeyNode) => t.cells.get(matrixKey(r.id, c.id)) ?? 0;
   if (!m.rows.length) return <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Tidak ada aliran bertonase pada filter ini.</div>;
-  const show = (v: number) => (unit === "PCT" ? `${m.total > 0 ? formatPct((v / m.total) * 100) : "0"}%` : fmtTon(v));
+  const show = (v: number) => fmtTonOrPct(v, m.total, unit);
   const head = (n: SankeyNode) => {
     const clickable = isFilterableNode(n) || isGroupNode(n);
     const inner = (

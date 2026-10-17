@@ -2,24 +2,11 @@
 
 import { useMemo } from "react";
 import type { Node } from "@xyflow/react";
-import type { SitemapGraph } from "@/lib/sitemap-mermaid";
+import { SITEMAP_CLASS_LABEL, type SitemapGraph } from "@/lib/sitemap-mermaid";
 import { columnLayout } from "@/lib/sitemap-layout";
 import { SitemapCanvas } from "./sitemap-canvas";
 import { toFlowEdge, toFlowNode, type SitemapFlowEdgeType } from "./sitemap-flow-shared";
 
-/** Nama kolom (sama dengan legenda). */
-const COLUMN_LABEL: Record<string, string> = {
-  menu: "Menu",
-  sub: "Sub menu",
-  page: "Halaman",
-  section: "Bagian",
-  content: "Isi",
-  dialog: "Dialog",
-  decision: "Percabangan",
-  data: "Data/berkas",
-  external: "Layanan luar",
-  planned: "Direncanakan",
-};
 
 function layout(graph: SitemapGraph): { nodes: Node[]; edges: SitemapFlowEdgeType[] } {
   const lay = columnLayout(graph);
@@ -30,7 +17,7 @@ function layout(graph: SitemapGraph): { nodes: Node[]; edges: SitemapFlowEdgeTyp
     position: { x: c.x, y: 0 },
     width: c.width,
     height: 28,
-    data: { label: COLUMN_LABEL[c.cls] ?? c.cls, cls: c.cls },
+    data: { label: SITEMAP_CLASS_LABEL[c.cls] ?? c.cls, cls: c.cls },
     draggable: false,
     selectable: false,
   }));

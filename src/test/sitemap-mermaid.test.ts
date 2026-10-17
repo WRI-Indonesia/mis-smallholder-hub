@@ -122,3 +122,14 @@ describe("docs/product/sitemap — isi", () => {
     expect(nav.table?.rows.map((r) => r[1])).toContain("/admin/tools/snapshot");
   });
 });
+
+describe("bagian tanpa diagram", () => {
+  it("tiap berkas menyimpan 'Urutan demo yang disarankan' sebagai bagian tanpa mermaid dengan catatan — ditampilkan halaman sebagai kartu teks", () => {
+    for (const d of docs) {
+      const demo = d.sections.find((s) => s.heading === "Urutan demo yang disarankan");
+      expect(demo, d.key).toBeDefined();
+      expect(demo!.mermaid, d.key).toBeNull();
+      expect(demo!.notes.length, d.key).toBeGreaterThan(0);
+    }
+  });
+});

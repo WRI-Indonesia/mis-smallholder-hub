@@ -118,6 +118,20 @@ export const SITEMAP_CLASS_STYLE: Record<
 
 export const SITEMAP_KNOWN_CLASSES = Object.keys(SITEMAP_CLASS_STYLE);
 
+/** Nama jenis node untuk UI (Bahasa Indonesia, sama dengan legenda) — kunci class tetap bahasa Inggris. */
+export const SITEMAP_CLASS_LABEL: Record<string, string> = {
+  menu: "Menu",
+  sub: "Sub menu",
+  page: "Halaman",
+  section: "Bagian",
+  content: "Isi",
+  dialog: "Dialog",
+  decision: "Percabangan",
+  data: "Data/berkas",
+  external: "Layanan luar",
+  planned: "Direncanakan",
+};
+
 /** Bentuk bawaan bila node tak ber-class: menentukan warna dari bentuk saja. */
 export const SHAPE_DEFAULT_CLASS: Record<SitemapShape, string> = {
   stadium: "menu",

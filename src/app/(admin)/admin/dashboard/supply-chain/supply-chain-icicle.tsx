@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { partition, type HierarchyRectangularNode } from "d3-hierarchy";
 import type { SankeyNode } from "@/lib/supply-chain-flow";
 import { treeNodeAsSankeyNode, type SupplyTreeNode } from "@/lib/supply-chain-views";
-import { fmtTon } from "@/lib/supply-chain-format";
+import { fmtTon, fmtTonOrPct } from "@/lib/supply-chain-format";
 import { useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { NodeInfoPanel, buildHierarchy, canFilterTreeNode, levelFill, type HDatum } from "./supply-chain-hierarchy-shared";
 
@@ -44,11 +44,11 @@ export function SupplyChainIcicle({ tree, total, unit, onSelectNode }: { tree: S
           return (
             <g key={d.data.key} transform={`translate(${x}, ${d.x0})`} onMouseEnter={() => setHoverKey(d.data.key)} onMouseLeave={() => setHoverKey(null)} onClick={() => filterable && onSelectNode(treeNodeAsSankeyNode(n))} className={filterable ? "cursor-pointer" : undefined}>
               <rect width={colW - 2} height={Math.max(0, h - 1)} rx={3} fill={c.fill} opacity={related(d) ? 1 : 0.35} className="transition-opacity duration-150" />
-              <title>{`${n.label}\n${fmtTon(n.ton)}`}</title>
+              <title>{`${n.label}\n${fmtTon(n.ton)} · ${fmtTonOrPct(n.ton, total, "PCT")} dari total`}</title>
               {h >= 14 ? (
                 <text x={6} y={h / 2} dominantBaseline="middle" fontSize={11} fill={c.text} className="pointer-events-none">
                   {n.label.length > colW / 6.5 ? `${n.label.slice(0, Math.floor(colW / 6.5) - 1)}…` : n.label}
-                  {h >= 30 ? <tspan x={6} dy={13} fontSize={10} opacity={0.85}>{fmtTon(n.ton)}</tspan> : null}
+                  {h >= 30 ? <tspan x={6} dy={13} fontSize={10} opacity={0.85}>{fmtTonOrPct(n.ton, total, unit)}</tspan> : null}
                 </text>
               ) : null}
             </g>

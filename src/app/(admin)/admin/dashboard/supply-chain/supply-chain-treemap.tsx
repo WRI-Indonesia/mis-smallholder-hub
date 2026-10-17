@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { treemap, treemapSquarify, type HierarchyRectangularNode } from "d3-hierarchy";
 import type { SankeyNode } from "@/lib/supply-chain-flow";
 import { treeNodeAsSankeyNode, type SupplyTreeNode } from "@/lib/supply-chain-views";
-import { fmtTon } from "@/lib/supply-chain-format";
+import { fmtTon, fmtTonOrPct } from "@/lib/supply-chain-format";
 import { useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { NodeInfoPanel, buildHierarchy, canFilterTreeNode, levelFill, type HDatum } from "./supply-chain-hierarchy-shared";
 
@@ -48,7 +48,7 @@ export function SupplyChainTreemap({ tree, total, unit, onSelectNode }: { tree: 
           return (
             <g key={d.data.key} transform={`translate(${d.x0}, ${d.y0})`} onMouseEnter={() => setHoverKey(d.data.key)} onMouseLeave={() => setHoverKey(null)} onClick={(e) => { e.stopPropagation(); if (filterable) onSelectNode(treeNodeAsSankeyNode(n)); }} className={filterable ? "cursor-pointer" : undefined}>
               <rect width={Math.max(0, w)} height={Math.max(0, h)} rx={isParent ? 4 : 2} fill={c.fill} fillOpacity={isParent ? 0.22 : 1} stroke={c.fill} strokeWidth={isParent ? 1 : 0} opacity={related(d) ? 1 : 0.35} className="transition-opacity duration-150" />
-              <title>{`${n.label}\n${fmtTon(n.ton)}`}</title>
+              <title>{`${n.label}\n${fmtTon(n.ton)} · ${fmtTonOrPct(n.ton, total, "PCT")} dari total`}</title>
               {isParent && w > 40 && h > TITLE_H ? (
                 <text x={5} y={TITLE_H / 2 + 1} dominantBaseline="middle" fontSize={10} fontWeight={600} fill={dark ? "#f8fafc" : "#0f172a"} className="pointer-events-none">
                   {n.label.length > w / 6 ? `${n.label.slice(0, Math.max(1, Math.floor(w / 6) - 1))}…` : n.label}
@@ -56,7 +56,7 @@ export function SupplyChainTreemap({ tree, total, unit, onSelectNode }: { tree: 
               ) : !isParent && w > 34 && h > 16 ? (
                 <text x={4} y={h / 2} dominantBaseline="middle" fontSize={10} fill={c.text} className="pointer-events-none">
                   {n.label.length > w / 6 ? `${n.label.slice(0, Math.max(1, Math.floor(w / 6) - 1))}…` : n.label}
-                  {h > 32 ? <tspan x={4} dy={12} fontSize={9} opacity={0.85}>{fmtTon(n.ton)}</tspan> : null}
+                  {h > 32 ? <tspan x={4} dy={12} fontSize={9} opacity={0.85}>{fmtTonOrPct(n.ton, total, unit)}</tspan> : null}
                 </text>
               ) : null}
             </g>

@@ -74,7 +74,8 @@ export function SitemapViewClient({ docs }: { docs: SitemapDoc[] }) {
   const viewParam = get("view");
   const view: SitemapViewKey = SITEMAP_VIEWS.some((v) => v.key === viewParam) ? (viewParam as SitemapViewKey) : DEFAULT_VIEW;
   const viewDef = SITEMAP_VIEWS.find((v) => v.key === view)!;
-  const diagramSections = doc.sections.filter((s) => s.mermaid !== null);
+  // Bagian tanpa diagram (mis. "Urutan demo yang disarankan") tetap tampil sebagai kartu teks — review 2026-10-17.
+  const diagramSections = doc.sections.filter((s) => s.mermaid !== null || s.table !== null || s.notes.length > 0);
 
   return (
     <div className="space-y-4">
@@ -199,7 +200,7 @@ function SectionCard({ section, view, dark }: { section: SitemapSection; view: S
         <CardTitle className="text-base">{section.heading}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Diagram section={section} view={view} dark={dark} />
+        {section.mermaid !== null ? <Diagram section={section} view={view} dark={dark} /> : null}
 
         {section.table ? (
           <div className="overflow-x-auto">

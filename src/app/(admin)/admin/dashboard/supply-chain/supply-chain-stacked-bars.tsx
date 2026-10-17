@@ -6,7 +6,7 @@ import { CATEGORICAL } from "@/lib/chart-palette";
 import { formatPct } from "@/lib/format";
 import type { SankeyGraph, SankeyNode } from "@/lib/supply-chain-flow";
 import { buildOriginDestMatrix, matrixKey, transposeOriginDestMatrix } from "@/lib/supply-chain-views";
-import { fmtTon } from "@/lib/supply-chain-format";
+import { fmtTon, fmtTonOrPct } from "@/lib/supply-chain-format";
 import { isFilterableNode, isGroupNode, useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { UlBadge } from "./ul-badge";
 
@@ -77,7 +77,7 @@ export function SupplyChainStackedBars({
   const maxRow = Math.max(1, ...t.rows.map((r) => t.rowTotal.get(r.id) ?? 0));
   const rows = showAll ? t.rows : t.rows.slice(0, ROWS_COLLAPSED);
   const clickable = (n: SankeyNode) => isFilterableNode(n) || isGroupNode(n);
-  const pct = (v: number) => `${m.total > 0 ? formatPct((v / m.total) * 100) : "0"}%`;
+  const pct = (v: number) => fmtTonOrPct(v, m.total, "PCT");
 
   return (
     <div className="space-y-3">
@@ -93,7 +93,7 @@ export function SupplyChainStackedBars({
               <span>{sg.label}</span>
             )}
             {sg.node?.isUl && <UlBadge />}
-            <span className="text-muted-foreground tabular-nums">{unit === "PCT" ? pct(sg.total) : fmtTon(sg.total)}</span>
+            <span className="text-muted-foreground tabular-nums">{fmtTonOrPct(sg.total, m.total, unit)}</span>
           </li>
         ))}
       </ul>
@@ -135,7 +135,7 @@ export function SupplyChainStackedBars({
                   );
                 })}
               </div>
-              <div className="text-right text-xs tabular-nums">{unit === "PCT" ? pct(total) : fmtTon(total)}</div>
+              <div className="text-right text-xs tabular-nums">{fmtTonOrPct(total, m.total, unit)}</div>
             </div>
           );
         })}

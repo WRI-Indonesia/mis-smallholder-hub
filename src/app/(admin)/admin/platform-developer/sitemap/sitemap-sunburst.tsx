@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { hierarchy, partition, type HierarchyRectangularNode } from "d3-hierarchy";
 import { arc as d3Arc } from "d3-shape";
-import { SITEMAP_CLASS_STYLE, primaryClass, type SitemapGraph } from "@/lib/sitemap-mermaid";
+import { SITEMAP_CLASS_LABEL, SITEMAP_CLASS_STYLE, primaryClass, type SitemapGraph } from "@/lib/sitemap-mermaid";
+import { sunburstLabel } from "@/lib/sunburst-label";
 import { buildSpanningForest, type SitemapTreeNode } from "@/lib/sitemap-layout";
 
 type Datum = { id: string; tn: SitemapTreeNode | null; children: Datum[] };
@@ -48,14 +49,8 @@ export function SitemapSunburst({ graph, title }: { graph: SitemapGraph; title: 
           const tn = d.data.tn!;
           const cls = primaryClass(tn.node);
           const s = SITEMAP_CLASS_STYLE[cls] ?? SITEMAP_CLASS_STYLE.content;
-          const angle = d.x1 - d.x0;
-          const mid = (d.x0 + d.x1) / 2;
           const rMid = ((d.depth - 1) * ring + d.depth * ring) / 2 + ring * 0.6;
-          const deg = (mid * 180) / Math.PI - 90;
-          const flip = deg > 90 ? 180 : 0;
-          const showLabel = angle * rMid > 70;
-          const label = tn.node.lines[0];
-          const maxChars = Math.max(4, Math.floor((angle * rMid) / 6));
+          const lbl = sunburstLabel(d.x0, d.x1, rMid, tn.node.lines[0], { minRoom: 70, charWidth: 6, flatMax: 28 });
           return (
             <g key={d.data.id} onMouseEnter={() => setHover(d)} onMouseLeave={() => setHover(null)}>
               <path
@@ -67,30 +62,13 @@ export function SitemapSunburst({ graph, title }: { graph: SitemapGraph; title: 
                 opacity={hover && hover.data.id !== d.data.id && !hover.ancestors().includes(d) && !d.ancestors().includes(hover) ? 0.45 : 1}
               />
               <title>{tn.node.lines.join("\n")}</title>
-              {showLabel && angle > 1.6 ? (
-                // Irisan sangat lebar (hampir atau seluruh lingkaran): label mendatar di tengah cincin, bukan diputar.
-                <text
-                  x={rMid * Math.cos(mid - Math.PI / 2)}
-                  y={rMid * Math.sin(mid - Math.PI / 2)}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={10}
-                  fontWeight={600}
-                  fill={s.color}
-                  className="pointer-events-none"
-                >
-                  {label.length > 28 ? `${label.slice(0, 27)}…` : label}
+              {lbl?.kind === "flat" ? (
+                <text x={lbl.x} y={lbl.y} textAnchor="middle" dominantBaseline="middle" fontSize={10} fontWeight={600} fill={s.color} className="pointer-events-none">
+                  {lbl.text}
                 </text>
-              ) : showLabel ? (
-                <text
-                  transform={`rotate(${deg}) translate(${rMid},0) rotate(${flip})`}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={9}
-                  fill={s.color}
-                  className="pointer-events-none"
-                >
-                  {label.length > maxChars ? `${label.slice(0, maxChars - 1)}…` : label}
+              ) : lbl ? (
+                <text transform={lbl.transform} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill={s.color} className="pointer-events-none">
+                  {lbl.text}
                 </text>
               ) : null}
             </g>
@@ -106,7 +84,7 @@ export function SitemapSunburst({ graph, title }: { graph: SitemapGraph; title: 
           <>
             <div className="mb-1 flex items-center gap-2">
               <span className="inline-block h-3 w-3 rounded-sm border" style={{ background: SITEMAP_CLASS_STYLE[centerCls].fill, borderColor: SITEMAP_CLASS_STYLE[centerCls].stroke }} />
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">{centerCls}</span>
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">{SITEMAP_CLASS_LABEL[centerCls] ?? centerCls}</span>
             </div>
             <div className="whitespace-pre-wrap font-medium">{center.lines.join("\n")}</div>
             {hover?.children?.length ? <p className="mt-1 text-xs text-muted-foreground">{hover.children.length} anak · {hover.value} daun</p> : null}

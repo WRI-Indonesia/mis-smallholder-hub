@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { formatPct } from "@/lib/format";
 import { CHANNEL_LABEL, type SankeyNode } from "@/lib/supply-chain-flow";
 import { DIRECT_NODE_ID, TREE_LEVEL_LABEL, channelSegments, treeNodeAsSankeyNode, type SupplyTreeNode, type TreeLevel } from "@/lib/supply-chain-views";
-import { fmtTon } from "@/lib/supply-chain-format";
+import { fmtTon, fmtTonOrPct } from "@/lib/supply-chain-format";
 import { channelColor, isFilterableNode, isGroupNode, type SankeyUnit } from "./supply-chain-sankey";
 import { UlBadge } from "./ul-badge";
 
@@ -69,10 +69,6 @@ export const canFilterTreeNode = (n: SupplyTreeNode) => {
   return isFilterableNode(sn) || isGroupNode(sn);
 };
 
-export function formatValue(ton: number, total: number, unit: SankeyUnit) {
-  return unit === "PCT" ? `${total > 0 ? formatPct((ton / total) * 100) : "0"}%` : fmtTon(ton);
-}
-
 /** Panel kanan: isi node yang disorot (atau petunjuk) + tombol Filter. */
 export function NodeInfoPanel({
   node,
@@ -121,7 +117,7 @@ export function NodeInfoPanel({
             {segs.map((s) => (
               <li key={s.channel} className="flex items-center gap-1">
                 <span className="inline-block h-2 w-3 rounded-sm" style={{ background: channelColor(s.channel, dark) }} />
-                {CHANNEL_LABEL[s.channel]} {formatValue(s.ton, total, unit)}
+                {CHANNEL_LABEL[s.channel]} {fmtTonOrPct(s.ton, total, unit)}
               </li>
             ))}
           </ul>

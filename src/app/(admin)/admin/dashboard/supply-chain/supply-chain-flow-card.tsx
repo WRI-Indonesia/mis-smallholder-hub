@@ -16,7 +16,7 @@ import {
   type SankeyOrigin,
   type SupplyChainView,
 } from "@/lib/supply-chain-flow";
-import { buildSupplyChainTree, type TreeDirection } from "@/lib/supply-chain-views";
+import { aliranMaxPerColumn, buildSupplyChainTree, type TreeDirection } from "@/lib/supply-chain-views";
 import { CollapsibleCard, useStoredChoice } from "./collapsible-card";
 import { SegmentToggle } from "./segment-toggle";
 import { SupplyChainSankey, isGroupNode, type SankeyUnit } from "./supply-chain-sankey";
@@ -63,8 +63,6 @@ const TOP_OPTIONS = ["8", "12", "20", "999"] as const;
 /** Bawaan tampilan (owner 2026-10-10): paling ringkas — Distrik · Per jenis · UL/Non-UL · Ton; di tiap toggle pilihan bawaan di kiri. */
 const DEFAULT_ORIGIN: SankeyOrigin = "DISTRIK";
 const DEFAULT_DESTINATION: SankeyDestination = "UL";
-/** Mode Ringkas hanya melipat kolom Mill — kolom tengah sudah ≤ 5 node, jadi ada ruang untuk lebih banyak Mill. */
-const RINGKAS_MILLS = 15;
 
 /**
  * Kartu Aliran TBS (owner 2026-10-09): empat tab tampilan atas data yang sama;
@@ -97,7 +95,7 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
     () =>
       isHierarchy
         ? null
-        : buildSupplyChainSankey(view.data, records, { mode, origin, destination, hideMiddle, maxPerColumn: mode === "RINGKAS" ? RINGKAS_MILLS : Number(top) }),
+        : buildSupplyChainSankey(view.data, records, { mode, origin, destination, hideMiddle, maxPerColumn: aliranMaxPerColumn(mode, hideMiddle, Number(top)) }),
     [isHierarchy, view.data, records, mode, origin, destination, hideMiddle, top],
   );
   // Tab hierarki (Tabel Pohon · Sunburst · Partisi · Treemap): per Lembaga & per Mill tanpa pelipatan — tingkat Distrik/UL ditambahkan pohon.
@@ -118,12 +116,13 @@ export function SupplyChainFlowCard({ view, f }: { view: SupplyChainView; f: Sup
   const changed = [
     origin !== DEFAULT_ORIGIN,
     destination !== DEFAULT_DESTINATION,
-    mode !== "RINGKAS",
+    // Saat Sembunyikan, pilihan Per jenis / Satu per satu & Tampilkan tak berpengaruh — tidak dihitung.
+    mode !== "RINGKAS" && !hideMiddle,
     hideMiddle,
     unit !== "TON",
     // Arah dihitung di tab mana pun (juga Chord, yang mengabaikannya) agar Tampilan bawaan tak menyembunyikannya — review 2026-10-17.
     direction !== "HULU",
-    mode === "RINCI" && !isHierarchy && top !== "12",
+    mode === "RINCI" && !hideMiddle && !isHierarchy && top !== "12",
   ].filter(Boolean).length;
   const resetView = () => {
     setMode("RINGKAS");

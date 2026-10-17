@@ -5,7 +5,8 @@ import { partition, type HierarchyRectangularNode } from "d3-hierarchy";
 import { arc as d3Arc } from "d3-shape";
 import type { SankeyNode } from "@/lib/supply-chain-flow";
 import { treeNodeAsSankeyNode, type SupplyTreeNode } from "@/lib/supply-chain-views";
-import { fmtTon } from "@/lib/supply-chain-format";
+import { fmtTon, fmtTonOrPct } from "@/lib/supply-chain-format";
+import { sunburstLabel } from "@/lib/sunburst-label";
 import { useChartDark, type SankeyUnit } from "./supply-chain-sankey";
 import { NodeInfoPanel, buildHierarchy, canFilterTreeNode, levelFill, type HDatum } from "./supply-chain-hierarchy-shared";
 
@@ -40,26 +41,19 @@ export function SupplyChainSunburst({ tree, total, unit, onSelectNode }: { tree:
         {arcs.map((d) => {
           const n = d.data.n!;
           const c = levelFill(n, dark);
-          const angle = d.x1 - d.x0;
-          const rMid = (r0(d) + r1(d)) / 2;
-          const mid = (d.x0 + d.x1) / 2;
-          const deg = (mid * 180) / Math.PI - 90;
-          const flip = deg > 90 ? 180 : 0;
-          const room = angle * rMid;
-          const maxChars = Math.floor(room / 5.5);
-          const label = n.label;
+          const lbl = sunburstLabel(d.x0, d.x1, (r0(d) + r1(d)) / 2, n.label);
           const filterable = canFilterTreeNode(n);
           return (
             <g key={d.data.key} onMouseEnter={() => setHoverKey(d.data.key)} onMouseLeave={() => setHoverKey(null)} onClick={() => filterable && onSelectNode(treeNodeAsSankeyNode(n))} className={filterable ? "cursor-pointer" : undefined}>
               <path d={arcGen(d) ?? ""} fill={c.fill} stroke="var(--card)" strokeWidth={1} opacity={related(d) ? 1 : 0.35} className="transition-opacity duration-150" />
-              <title>{`${label}\n${fmtTon(n.ton)}`}</title>
-              {room > 46 && angle > 1.6 ? (
-                <text x={rMid * Math.cos(mid - Math.PI / 2)} y={rMid * Math.sin(mid - Math.PI / 2)} textAnchor="middle" dominantBaseline="middle" fontSize={10} fontWeight={600} fill={c.text} className="pointer-events-none">
-                  {label.length > 26 ? `${label.slice(0, 25)}…` : label}
+              <title>{`${n.label}\n${fmtTon(n.ton)} · ${fmtTonOrPct(n.ton, total, "PCT")} dari total`}</title>
+              {lbl?.kind === "flat" ? (
+                <text x={lbl.x} y={lbl.y} textAnchor="middle" dominantBaseline="middle" fontSize={10} fontWeight={600} fill={c.text} className="pointer-events-none">
+                  {lbl.text}
                 </text>
-              ) : room > 46 ? (
-                <text transform={`rotate(${deg}) translate(${rMid},0) rotate(${flip})`} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill={c.text} className="pointer-events-none">
-                  {label.length > maxChars ? `${label.slice(0, Math.max(1, maxChars - 1))}…` : label}
+              ) : lbl ? (
+                <text transform={lbl.transform} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill={c.text} className="pointer-events-none">
+                  {lbl.text}
                 </text>
               ) : null}
             </g>

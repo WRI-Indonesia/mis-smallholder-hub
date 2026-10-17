@@ -75,7 +75,7 @@ export function SitemapMindmap({ graph, title }: { graph: SitemapGraph; title: s
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card" style={{ height: canvasHeight(graph.nodes.length) }}>
-      <svg ref={ref} className="h-full w-full text-foreground" style={{ color: "var(--foreground)", ["--markmap-font" as string]: "500 13px/18px inherit" } as React.CSSProperties} />
+      <svg ref={ref} className="h-full w-full text-foreground" style={{ color: "var(--foreground)", ["--markmap-font" as string]: "500 13px/18px var(--font-sans)" } as React.CSSProperties} />
     </div>
   );
 }

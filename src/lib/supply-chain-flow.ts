@@ -336,7 +336,6 @@ export interface MillVolumeRow {
   offtakerCount: number;
 }
 
-/** Mill pemasok program UL (badge UL & ikon biru). */
 /**
  * Tujuan ber-UL untuk **pengurutan** kolom tujuan (UL selalu di atas, owner 2026-10-17):
  * Mill pembeli UL atau node gabungan "Ke Mill UL". `SankeyNode.isUl` sendiri tetap
@@ -344,6 +343,7 @@ export interface MillVolumeRow {
  */
 export const isUlDestination = (n: Pick<SankeyNode, "id" | "isUl">) => n.isUl || n.id === "U:UL";
 
+/** Mill pemasok program UL (badge UL & ikon biru). */
 export function isUlMill(m: Pick<ScMill, "buyerPrograms">): boolean {
   return m.buyerPrograms.includes("UL");
 }
