@@ -72,3 +72,26 @@ Harapan:
 - (2) tombol **aktif**; PDF 1 halaman berisi identitas, *Petani ini belum memiliki lahan.*, pelatihan, produksi — tanpa peta/lampiran, tanpa galat
 - (3) dialog menyebut ±N halaman (M lahan); *Ringkasan saja* → PDF tanpa lampiran, cepat; *Lengkap* → toast "Menyiapkan Profil Petani — M lahan…", hanya baris itu berputar, PDF berisi M lampiran bernomor = kolom No tabel
 
+### TC-437-01 · Menu Peta Fitur hanya untuk SUPERADMIN, ADMIN, MANAGEMENT [P0] [regresi] (4 mnt)
+Asal: rilis v1.9.0 (#437 Peta Fitur, dirilis 2026-10-17) — menu baru ber-izin VIEW 3 peran; bagian OPERATOR/DONOR Blocked di v1.9.0 (akun tak tersedia).
+Prasyarat: tiga akun (SUPERADMIN/ADMIN, OPERATOR, DONOR).
+Langkah:
+1. Login SUPERADMIN → sidebar **Platform Developer** → **Peta Fitur**.
+2. Login OPERATOR, lalu DONOR → cari "Peta Fitur" di **Cari menu…**; buka langsung `/admin/platform-developer/sitemap`.
+Harapan:
+- Langkah 1: menu tampil (ikon rambu, urutan terakhir di grup) dan halaman terbuka dengan 11 tombol berkas + tab tampilan berkelompok **Teks · Interaktif · Hierarki**; bawaan **Mermaid**.
+- Langkah 2: menu tidak tampil; URL langsung dialihkan (tanpa akses), bukan halaman kosong atau galat.
+Baseline dev: `menu-access.test.ts`; DB lokal `mis-dev` 2026-10-17 (menu + 3 izin VIEW).
+
+### TC-381-01 · Sepuluh tab tampil dan klik = filter [P0] [regresi] (6 mnt)
+Asal: rilis v1.9.0 (#381 prototipe Aliran TBS, review wrap-up 2026-10-17: sorotan basi setelah klik-filter).
+Prasyarat: login ADMIN/MANAGEMENT/SUPERADMIN; Dashboard › Dashboard Rantai Pasok, tahun survei terbaru, tanpa filter.
+Langkah:
+1. Di kartu **Aliran TBS**, klik bergiliran: Sankey · Diagram Alur · Jalur · Tabel Pohon · Sunburst · Partisi · Treemap · Matriks · Chord · Batang.
+2. Di tab **Sunburst**, klik irisan Distrik terbesar.
+3. Lepas filter lewat chip di kartu.
+Harapan:
+- Tiap tab menampilkan data (bukan "Tidak ada aliran bertonase"), satu kalimat ciri tab tampil di kanan atas.
+- Langkah 2: toast "Filter: <Distrik>", chip Distrik muncul di bawah bar filter atas **dan** di kartu, semua kartu ikut tersaring; diagram tidak tinggal redup.
+- Langkah 3: data kembali penuh.
+Baseline dev: smoke lokal 2026-10-17 (10 tab, 0 galat konsol); `supply-chain-views.test.ts`.

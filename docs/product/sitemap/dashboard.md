@@ -363,7 +363,7 @@ flowchart LR
   db_supply_path_c["Grafik: batang 100% Jalur (= legenda warna) · batang 100% Kepastian Mill (disebut · dipetakan · belum pasti · tak diketahui)<br/>Aksi: klik segmen = filter"]:::content
 
   db_supply_flow("Kartu lipat: Aliran TBS"):::section
-  db_supply_flow_c["Tab: Sankey · Diagram Alur (garis beranimasi) · Jalur (baris per jalur) · Tabel Pohon (Hulu→Hilir / Hilir→Hulu)<br/>Filter (toolbar): Arah Hulu→Hilir / Hilir→Hulu · Dari Distrik / Lembaga · Ke UL/Non-UL / Mill · Offtaker Per jenis / Satu per satu (+ N teratas) · Angka Ton / %<br/>Tombol: Tampilan bawaan<br/>Teks: Menampilkan …<br/>Aksi: hover/klik = sorot jalur penuh · klik node / ikon corong = filter (toast) atau turun ke rincian"]:::content
+  db_supply_flow_c["Tab: Sankey · Diagram Alur (garis beranimasi) · Jalur (baris per jalur) · Tabel Pohon · Sunburst · Partisi · Treemap · Matriks (Asal × Tujuan) · Chord · Batang<br/>Filter (toolbar): Arah Hulu→Hilir / Hilir→Hulu (semua tab kecuali Chord) · Dari Distrik / Lembaga · Ke UL/Non-UL / Mill · Offtaker Per jenis / Satu per satu (+ N teratas) / Sembunyikan (pita dilebur) · Angka Ton / %<br/>Tombol: Tampilan bawaan · Reset (strip chip filter di kartu)<br/>Teks: Menampilkan … · Ke Mill UL selalu teratas<br/>Aksi: hover/klik = sorot jalur penuh · klik node / irisan / ikon corong = filter (toast) atau turun ke rincian"]:::content
 
   db_supply_mill("Kartu lipat: Volume per Mill"):::section
   db_supply_mill_c["Kolom: Mill · Tonase · Jarak (rata-rata garis lurus, tertimbang tonase) · ikon peta per baris<br/>Aksi: urut kolom · baris Mill terfilter disorot · top 10 + tampilkan semua"]:::content

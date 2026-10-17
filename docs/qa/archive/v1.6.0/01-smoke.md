@@ -1,6 +1,6 @@
 # 01 · Smoke test per menu
 
-> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../../README.md) · Paket: [README.md](README.md)
 
 Checklist **tetap** (tumbuh saat menu bertambah). Dijalankan tiap run — staging penuh, prod cukup `[P0]`. Peran non-SUPERADMIN **wajib**: bug scope tidak terlihat dari SUPERADMIN. **Konsol browser** diperiksa di tiap halaman (kolom sendiri di lembar run), bukan satu baris di akhir.
 

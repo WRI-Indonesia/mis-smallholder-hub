@@ -26,7 +26,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Status keseluruhan | 🟢 On Track — **v1.7.0 live di produksi** 2026-10-12 (enam rilis dalam 13 hari, semua lewat gate lokal + QA staging); Roadmap 2026–2027 **20,0%** (→ 25,7% saat PLATFORM-08/09 ✅ di rilis berikutnya) (dari 8,6% saat reset) |
 | Basis review       | Audit `/audit` 2026-10-12 (roadmap Phase Status, status issue GitHub, `metrics.md`, run QA v1.7.0 staging/prod) |
 | Test lokal         | ✅ **2.937 test** saat rilis v1.7.0 (dari 2.461 di v1.3.0) · lint 0 error · typecheck ✅ · build ✅ |
-| Fokus berikutnya   | **v1.7.0** MINOR dirilis 2026-10-12 (semula PATCH v1.6.1: #409 · #386 · #384 · #387 · batch TD #412 · Ketersediaan Data › Produksi #416/#417); berikutnya **v1.8.0** batch Dashboard BMP umur tanaman · Reset filter · Daftar Issue (#425–#430, tanpa migrasi), **v1.8.0** dirilis 2026-10-14; **v1.9.0** Peta Fitur + tampilan Aliran TBS dirilis 2026-10-17, lalu **v1.10.0** Supply Chain versi DB (10-18 → 11-08) |
+| Fokus berikutnya   | **v1.10.0** Supply Chain versi DB (10-18 → 11-08: #380 model + master Mill/Offtaker → import survei → #381 peta → #382 analisa; + #424 · #436 · #366 · #422). Terakhir dirilis: **v1.9.0** 2026-10-17 (Peta Fitur #437 + tampilan Aliran TBS), **v1.8.0** 2026-10-14, **v1.7.0** 2026-10-12 |
 
 ### Ringkasan Eksekutif
 
@@ -67,7 +67,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | **Rantai Pasok (prototipe)** 🔵 | Dashboard (4 tampilan aliran, Sorotan, volume per Mill/Lembaga, jarak, Excel) + Peta dari CSV survei 2025 di S3 privat — untuk diskusi, bukan versi final. | Bahan keputusan sebelum SC-01..03 (versi DB, v1.7.0 10-26 → 11-08). Lisensi UML sudah diputuskan (CC BY 4.0). |
 | **Keamanan akses** 🟢 | Satu celah kelas BUG-007 ditemukan audit dan ditutup hotfix v1.5.1 hari yang sama; dua celah laten (#409, #386) dan guard Peta BMP (#384) dirilis di v1.7.0 (2026-10-12). | Tidak ada temuan P1 terbuka; audit mingguan `/audit` menjadi rutin. |
 | **Kualitas data prod** 🟢 | DQ-01: tanggal lahir, Detail Lahan Siak, Monev BMP Kampar, tahun tanam & alamat belasan Lembaga sudah masuk prod lewat skrip idempoten (dry-run → persetujuan → tulis). | Dashboard & laporan makin mewakili kondisi lapangan; sisa: APKASDU (ID lahan lama ≠ poligon baru), 82 UL Parcel Code ganda (#395). |
-| Delivery confidence | Test 2.937 → 3.077 (siklus v1.8.0, per wrap-up 2026-10-13); TD aktif 27 (10 TD cepat #412 selesai di v1.7.0; register diverifikasi audit 2026-10-12; +4 TD-062…065 dari wrap-up v1.8.0 2026-10-13). | Debt terkendali; tidak ada fase Blocked. |
+| Delivery confidence | Test 3.094 → 3.139 (rilis v1.9.0 + penyamaan izin, 2026-10-17); TD aktif 30 (+TD-067…068 dari wrap-up v1.9.0); QA v1.9.0 lokal · staging · prod P0 0 Fail; RVS 5881. | Debt terkendali; tidak ada fase Blocked. |
 
 ### Keputusan yang Dibutuhkan
 

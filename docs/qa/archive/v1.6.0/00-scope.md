@@ -1,6 +1,6 @@
 # 00 · Lingkup rilis v1.6.0
 
-> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../../README.md) · Paket: [README.md](README.md)
 
 Sumber: `git log 59f703e..ffd70ac` (dari `chore(release): v1.5.0` di `mvp`), `/scope` & wrap-up 2026-10-10, `docs/project/changelog/2026-10.md`.
 
