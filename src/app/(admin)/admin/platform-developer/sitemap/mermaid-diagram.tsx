@@ -12,7 +12,14 @@ type State = { status: "loading" } | { status: "ok"; svg: string } | { status: "
  * SVG hasil render berasal dari teks `docs/product/sitemap/*.md` milik repo
  * sendiri (bukan input pengguna) dan dirender dengan `securityLevel: "strict"`.
  */
-export function MermaidDiagram({ source }: { source: string }) {
+export type MermaidVariant = "default" | "elk" | "sketch";
+
+/**
+ * Varian render atas teks yang sama: `elk` = tata letak Eclipse Layout Kernel
+ * yang dibundel mermaid (garis ortogonal, lebih rapi untuk graf lebar);
+ * `sketch` = `look: handDrawn` (gaya coretan tangan rough.js) untuk video.
+ */
+export function MermaidDiagram({ source, variant = "default" }: { source: string; variant?: MermaidVariant }) {
   const reactId = useId().replace(/[^a-zA-Z0-9]/g, "");
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === "dark";
@@ -29,6 +36,9 @@ export function MermaidDiagram({ source }: { source: string }) {
           securityLevel: "strict",
           theme: dark ? "dark" : "base",
           fontFamily: "inherit",
+          layout: variant === "elk" ? "elk" : "dagre",
+          look: variant === "sketch" ? "handDrawn" : "classic",
+          elk: { mergeEdges: false, nodePlacementStrategy: "BRANDES_KOEPF" },
           flowchart: { htmlLabels: true, wrappingWidth: 420, curve: "basis" },
         });
         const { svg } = await mermaid.render(`sitemap-${reactId}`, source);
@@ -40,7 +50,7 @@ export function MermaidDiagram({ source }: { source: string }) {
     return () => {
       cancelled = true;
     };
-  }, [source, dark, reactId]);
+  }, [source, dark, reactId, variant]);
 
   if (state.status === "loading")
     return (

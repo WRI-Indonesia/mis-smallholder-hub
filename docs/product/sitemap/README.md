@@ -9,7 +9,7 @@
 - **Board Miro** — tiap blok Mermaid = satu frame; bentuk & warna box mengikuti [legend.md](legend.md), sehingga semua frame konsisten tanpa harus membaca katalog.
 - **Video tutorial** — satu berkas ≈ satu episode; bagian *Urutan demo yang disarankan* di tiap berkas adalah kerangka naskahnya.
 - **Orientasi cepat** — melihat seluruh halaman dan isinya tanpa membuka 80-an berkas katalog.
-- **Halaman aplikasi** — menu **Platform Developer → Peta Fitur** menampilkan berkas-berkas ini langsung di aplikasi dengan dua tab (Mermaid · React Flow); berkas di-bundle saat build, jadi perubahan tampil setelah rilis. Katalog: [../pages/platform-developer/sitemap.md](../pages/platform-developer/sitemap.md).
+- **Halaman aplikasi** — menu **Platform Developer → Peta Fitur** menampilkan berkas-berkas ini langsung di aplikasi dengan dua belas tampilan dalam tiga kelompok tab (Teks: Mermaid · Mermaid ELK · Sketsa · Graphviz; Interaktif: React Flow · React Flow ELK · Kolom · Jaringan; Hierarki: Pohon · Peta pikiran · Sunburst · Daftar); berkas di-bundle saat build, jadi perubahan tampil setelah rilis. Katalog: [../pages/platform-developer/sitemap.md](../pages/platform-developer/sitemap.md).
 
 ## Berkas
 
@@ -50,7 +50,7 @@ Urutan di bawah = urutan episode yang disarankan: gambaran besar dulu, lalu alur
 | Bahasa label | Bahasa Indonesia sesuai UI; nama menu top-level mengikuti sidebar |
 | Cakupan non-menu | Login & Profil, halaman publik, layout bersama — semua di [overview.md](overview.md) |
 | Board Miro | Dibuat setelah MD direview |
-| Halaman aplikasi | Sub menu Platform Developer › Peta Fitur, **dua tab** Mermaid & React Flow atas sumber yang sama (owner, 2026-10-17) |
+| Halaman aplikasi | Sub menu Platform Developer › Peta Fitur, **dua belas tampilan** (3 kelompok tab) atas sumber yang sama; semula dua tab Mermaid & React Flow (owner, 2026-10-17) |
 
 ## Merawat
 

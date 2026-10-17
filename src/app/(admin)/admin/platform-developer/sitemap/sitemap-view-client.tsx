@@ -4,24 +4,53 @@ import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import { cn } from "@/lib/utils";
 import { SITEMAP_CLASS_STYLE, type SitemapDoc, type SitemapFileKey, type SitemapSection } from "@/lib/sitemap-mermaid";
 import { MermaidDiagram } from "./mermaid-diagram";
 
-/** Kanvas React Flow hanya dimuat saat tab-nya dibuka (pola Peta Data & Skema). */
-const SitemapFlow = dynamic(() => import("./sitemap-flow").then((m) => m.SitemapFlow), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-[320px] items-center justify-center rounded-lg border text-sm text-muted-foreground">
-      Menyiapkan kanvas…
-    </div>
-  ),
-});
+/** Semua kanvas/mesin selain Mermaid dimuat saat tab-nya dibuka (pola Peta Data & Skema). */
+function lazy<T extends object>(loader: () => Promise<T>, pick: (m: T) => React.ComponentType<never>) {
+  return dynamic(() => loader().then((m) => pick(m) as React.ComponentType<Record<string, unknown>>), {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[320px] items-center justify-center rounded-lg border text-sm text-muted-foreground">Menyiapkan kanvas…</div>
+    ),
+  });
+}
+const GraphvizDiagram = lazy(() => import("./graphviz-diagram"), (m) => m.GraphvizDiagram);
+const SitemapFlow = lazy(() => import("./sitemap-flow"), (m) => m.SitemapFlow);
+const SitemapFlowElk = lazy(() => import("./sitemap-flow-elk"), (m) => m.SitemapFlowElk);
+const SitemapColumns = lazy(() => import("./sitemap-columns"), (m) => m.SitemapColumns);
+const SitemapNetwork = lazy(() => import("./sitemap-network"), (m) => m.SitemapNetwork);
+const SitemapTree = lazy(() => import("./sitemap-tree"), (m) => m.SitemapTree);
+const SitemapMindmap = lazy(() => import("./sitemap-mindmap"), (m) => m.SitemapMindmap);
+const SitemapSunburst = lazy(() => import("./sitemap-sunburst"), (m) => m.SitemapSunburst);
+const SitemapOutline = lazy(() => import("./sitemap-outline"), (m) => m.SitemapOutline);
 
-const VIEWS = ["mermaid", "flow"] as const;
-type View = (typeof VIEWS)[number];
+/**
+ * Dua belas tampilan atas sumber yang sama (owner 2026-10-17, tanya bertahap:
+ * "semua 1–10" + perbaiki React Flow dagre; pemilih tab berkelompok; bawaan
+ * Mermaid). Kunci `view` dipakai di URL (`?view=`); `flow` dipertahankan
+ * untuk tautan lama.
+ */
+export const SITEMAP_VIEWS = [
+  { key: "mermaid", group: "Teks", label: "Mermaid", description: "Teks blok dirender apa adanya — identik dengan GitHub dan Miro." },
+  { key: "mermaid-elk", group: "Teks", label: "Mermaid ELK", description: "Teks yang sama dengan tata letak ELK: garis ortogonal, lebih rapi untuk graf lebar." },
+  { key: "sketch", group: "Teks", label: "Sketsa", description: "Mermaid gaya coretan tangan (rough.js) — enak untuk tangkapan layar video." },
+  { key: "graphviz", group: "Teks", label: "Graphviz", description: "Mesin dot Graphviz (WASM): spline melingkari node, pembanding klasik." },
+  { key: "flow", group: "Interaktif", label: "React Flow", description: "Kanvas interaktif, tata letak dagre; rute garis mengikuti titik dagre, label diberi ruang." },
+  { key: "flow-elk", group: "Interaktif", label: "React Flow ELK", description: "Kanvas interaktif dengan ELK: garis siku terpisah jarak, tidak menembus node." },
+  { key: "columns", group: "Interaktif", label: "Kolom", description: "Kolom tetap per jenis (Menu · Sub menu · Halaman · Bagian · Isi …); tingkat terbaca dari posisi." },
+  { key: "network", group: "Interaktif", label: "Jaringan", description: "Gaya pegas fCoSE (cytoscape): menonjolkan kerapatan hubungan, bukan urutan." },
+  { key: "tree", group: "Hierarki", label: "Pohon", description: "Tidy tree kiri → kanan, satu baris per simpul, bisa dilipat; rujukan silang oranye." },
+  { key: "mindmap", group: "Hierarki", label: "Peta pikiran", description: "Mind map (markmap) yang bisa dilipat per cabang; warna cabang = jenis node." },
+  { key: "sunburst", group: "Hierarki", label: "Sunburst", description: "Cincin konsentris: tiap cincin satu tingkat, lebar irisan = jumlah daun." },
+  { key: "outline", group: "Hierarki", label: "Daftar", description: "Daftar bertingkat yang bisa dilipat dan dicari — tanpa grafik, ramah ponsel." },
+] as const;
+export type SitemapViewKey = (typeof SITEMAP_VIEWS)[number]["key"];
+const VIEW_GROUPS = ["Teks", "Interaktif", "Hierarki"] as const;
+const DEFAULT_VIEW: SitemapViewKey = "mermaid";
 
 const LEGEND: { cls: string; label: string }[] = [
   { cls: "menu", label: "Menu" },
@@ -37,10 +66,9 @@ const LEGEND: { cls: string; label: string }[] = [
 
 /**
  * Peta Fitur (owner 2026-10-17): berkas `docs/product/sitemap/*.md` ditampilkan
- * per menu dengan dua mesin gambar atas sumber yang sama — tab **Mermaid**
- * (render teks blok apa adanya, identik dengan GitHub/Miro) dan tab
- * **React Flow** (graf hasil parser subset, bisa digeser & di-zoom). Pilihan
- * berkas & tab ada di URL (`?menu=`, `?view=`) supaya bisa dibagikan.
+ * per menu dengan dua belas tampilan atas sumber yang sama — empat berbasis
+ * teks/SVG, empat kanvas interaktif, empat hierarki. Pilihan berkas & tampilan
+ * ada di URL (`?menu=`, `?view=`) supaya bisa dibagikan.
  */
 export function SitemapViewClient({ docs }: { docs: SitemapDoc[] }) {
   const { get, setMany } = useUrlFilters();
@@ -50,7 +78,8 @@ export function SitemapViewClient({ docs }: { docs: SitemapDoc[] }) {
   const menuParam = get("menu");
   const doc = docs.find((d) => d.key === menuParam) ?? docs[0];
   const viewParam = get("view");
-  const view: View = (VIEWS as readonly string[]).includes(viewParam ?? "") ? (viewParam as View) : "mermaid";
+  const view: SitemapViewKey = SITEMAP_VIEWS.some((v) => v.key === viewParam) ? (viewParam as SitemapViewKey) : DEFAULT_VIEW;
+  const viewDef = SITEMAP_VIEWS.find((v) => v.key === view)!;
   const diagramSections = doc.sections.filter((s) => s.mermaid !== null);
 
   return (
@@ -68,28 +97,52 @@ export function SitemapViewClient({ docs }: { docs: SitemapDoc[] }) {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs value={view} onValueChange={(v) => setMany({ view: v === "mermaid" ? null : v })}>
-          <TabsList>
-            <TabsTrigger value="mermaid">Mermaid</TabsTrigger>
-            <TabsTrigger value="flow">React Flow</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <ul className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground" aria-label="Legenda warna">
-          {LEGEND.map((l) => {
-            const s = SITEMAP_CLASS_STYLE[l.cls];
-            return (
-              <li key={l.cls} className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded-sm border" style={{ background: s.fill, borderColor: s.stroke }} aria-hidden />
-                {l.label}
-              </li>
-            );
-          })}
-          <li className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded-sm border border-dashed border-muted-foreground" aria-hidden />
-            prototipe / direncanakan
-          </li>
-        </ul>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-2" role="tablist" aria-label="Tampilan diagram">
+          {VIEW_GROUPS.map((group) => (
+            <div key={group} className="flex items-center gap-1.5">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{group}</span>
+              <div className="flex flex-wrap items-center gap-0.5 rounded-md border bg-muted/40 p-0.5">
+                {SITEMAP_VIEWS.filter((v) => v.group === group).map((v) => (
+                  <button
+                    key={v.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={v.key === view}
+                    title={v.description}
+                    onClick={() => setMany({ view: v.key === DEFAULT_VIEW ? null : v.key })}
+                    className={cn(
+                      "rounded px-2 py-1 text-xs transition-colors",
+                      v.key === view ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{viewDef.label}:</span> {viewDef.description}
+          </p>
+          <ul className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground" aria-label="Legenda warna">
+            {LEGEND.map((l) => {
+              const s = SITEMAP_CLASS_STYLE[l.cls];
+              return (
+                <li key={l.cls} className="flex items-center gap-1.5">
+                  <span className="inline-block h-3 w-3 rounded-sm border" style={{ background: s.fill, borderColor: s.stroke }} aria-hidden />
+                  {l.label}
+                </li>
+              );
+            })}
+            <li className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded-sm border border-dashed border-muted-foreground" aria-hidden />
+              prototipe / direncanakan
+            </li>
+          </ul>
+        </div>
       </div>
 
       <p className="text-sm text-muted-foreground">{doc.summary}</p>
@@ -117,20 +170,42 @@ export function SitemapViewClient({ docs }: { docs: SitemapDoc[] }) {
   );
 }
 
-function SectionCard({ section, view, dark }: { section: SitemapSection; view: View; dark: boolean }) {
+function Diagram({ section, view, dark }: { section: SitemapSection; view: SitemapViewKey; dark: boolean }) {
+  if (view === "mermaid") return <MermaidDiagram source={section.mermaid!} />;
+  if (view === "mermaid-elk") return <MermaidDiagram source={section.mermaid!} variant="elk" />;
+  if (view === "sketch") return <MermaidDiagram source={section.mermaid!} variant="sketch" />;
+  const graph = section.graph;
+  if (!graph) return <p className="text-sm text-destructive">Diagram ini belum bisa dibaca parser graf — lihat tab Mermaid.</p>;
+  switch (view) {
+    case "graphviz":
+      return <GraphvizDiagram graph={graph} />;
+    case "flow":
+      return <SitemapFlow graph={graph} dark={dark} />;
+    case "flow-elk":
+      return <SitemapFlowElk graph={graph} dark={dark} />;
+    case "columns":
+      return <SitemapColumns graph={graph} dark={dark} />;
+    case "network":
+      return <SitemapNetwork graph={graph} dark={dark} />;
+    case "tree":
+      return <SitemapTree graph={graph} title={section.heading} />;
+    case "mindmap":
+      return <SitemapMindmap graph={graph} title={section.heading} />;
+    case "sunburst":
+      return <SitemapSunburst graph={graph} title={section.heading} />;
+    case "outline":
+      return <SitemapOutline graph={graph} />;
+  }
+}
+
+function SectionCard({ section, view, dark }: { section: SitemapSection; view: SitemapViewKey; dark: boolean }) {
   return (
     <Card id={section.slug} className="scroll-mt-20">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">{section.heading}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {view === "mermaid" ? (
-          <MermaidDiagram source={section.mermaid!} />
-        ) : section.graph ? (
-          <SitemapFlow graph={section.graph} dark={dark} />
-        ) : (
-          <p className="text-sm text-destructive">Diagram ini belum bisa dibaca parser React Flow — lihat tab Mermaid.</p>
-        )}
+        <Diagram section={section} view={view} dark={dark} />
 
         {section.table ? (
           <div className="overflow-x-auto">

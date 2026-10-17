@@ -22,7 +22,7 @@ export default async function SitemapPage() {
         </div>
         <p className="text-muted-foreground">
           Seluruh menu, halaman, bagian, dan isinya sebagai diagram alur — satu berkas per menu dari dokumentasi
-          produk, ditampilkan dengan dua mesin gambar atas sumber yang sama.
+          produk, ditampilkan dengan dua belas tampilan (teks, kanvas interaktif, hierarki) atas sumber yang sama.
         </p>
       </div>
       <SitemapViewClient docs={SITEMAP_DOCS} />

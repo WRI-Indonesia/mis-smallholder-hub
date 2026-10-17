@@ -311,19 +311,19 @@ flowchart LR
   pd_sitemap_page["Peta Fitur"]:::page
 
   pd_sitemap_hdr("Header"):::section
-  pd_sitemap_hdr_c["Judul: Peta Fitur<br/>Tombol: Panduan (?) → Bantuan<br/>Teks: sumber = dokumentasi produk, dua mesin gambar"]:::content
+  pd_sitemap_hdr_c["Judul: Peta Fitur<br/>Tombol: Panduan (?) → Bantuan<br/>Teks: sumber = dokumentasi produk, dua belas tampilan"]:::content
 
   pd_sitemap_pick("Pemilih berkas"):::section
   pd_sitemap_pick_c["Tombol: Ikhtisar Sistem · Master Data · Bulk Upload · Dashboard · Map · Report<br/>Tombol: Data Analyst · Tools · Settings · Platform Developer · Bantuan<br/>Teks: ringkasan berkas terpilih"]:::content
 
-  pd_sitemap_view("Tab tampilan + legenda"):::section
-  pd_sitemap_view_c["Tab: Mermaid (bawaan) · React Flow<br/>Legenda: Menu · Sub menu · Halaman · Bagian · Isi · Dialog · Percabangan · Data/berkas · Layanan luar · putus-putus = prototipe/direncanakan"]:::content
+  pd_sitemap_view("Tab tampilan berkelompok + legenda"):::section
+  pd_sitemap_view_c["Tab Teks: Mermaid (bawaan) · Mermaid ELK · Sketsa · Graphviz<br/>Tab Interaktif: React Flow · React Flow ELK · Kolom · Jaringan<br/>Tab Hierarki: Pohon · Peta pikiran · Sunburst · Daftar<br/>Teks: satu kalimat ciri tampilan aktif<br/>Legenda: Menu · Sub menu · Halaman · Bagian · Isi · Dialog · Percabangan · Data/berkas · Layanan luar · putus-putus = prototipe/direncanakan"]:::content
 
   pd_sitemap_toc("Daftar isi"):::section
   pd_sitemap_toc_c["Tautan: satu per bagian ber-diagram (layar lebar, menempel saat digulir)"]:::content
 
   pd_sitemap_card("Kartu per bagian"):::section
-  pd_sitemap_card_c["Judul: nama bagian (Pohon navigasi · nama halaman · Alur lintas menu)<br/>Diagram: SVG Mermaid atau kanvas React Flow (geser · zoom · peta mini)<br/>Tabel: Halaman · Route · Katalog<br/>Teks: catatan & urutan demo"]:::content
+  pd_sitemap_card_c["Judul: nama bagian (Pohon navigasi · nama halaman · Alur lintas menu)<br/>Diagram: SVG (Mermaid · Graphviz) · kanvas interaktif (geser · zoom · peta mini) · hierarki (lipat · cari)<br/>Tabel: Halaman · Route · Katalog<br/>Teks: catatan & urutan demo"]:::content
 
   pd_sitemap_src[("docs/product/sitemap/*.md (11 berkas, di-bundle saat build)")]:::data
 
