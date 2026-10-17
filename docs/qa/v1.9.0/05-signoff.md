@@ -13,3 +13,5 @@
 Bukan seluruh suite: run ulang (`new-run.mjs --label ulang --only <ID,ID,…>`) memuat **kasus yang Fail** + **smoke P0 halaman yang tersentuh perbaikan** + `regression.md`. Seluruh suite diulang hanya bila perbaikan menyentuh lapisan bersama (RBAC, DataTable, PDF builder, migrasi).
 
 Prasyarat tag `v1.9.0`: ketiga baris **Go**; migrasi prod applied + checksum disegarkan; run prod (`--only P0`) diisi ≤ 1 jam setelah deploy.
+
+**Status 2026-10-17:** ketiga baris Go ✓ · tanpa migrasi ✓ (`migrations:release-gap`) · PR #438 di-merge (`b84e205`, atas instruksi owner) · Deploy Main hijau 14:48 → 14:53 WIB · seed menu prod ✓ · run prod `runs/2026-10-17-prod.md` (< 1 jam sesudah deploy): kasus 3 Pass · smoke 2 Pass · 8 Blocked · **0 Fail** · `rbac:compare` prod **selisih 15** (izin `dashboard-supply-chain` + EXPORT Daftar Issue dicabut di prod sesudah v1.8.0, bukan dari rilis ini — menunggu konfirmasi owner) · tag `v1.9.0`: menunggu persetujuan.
