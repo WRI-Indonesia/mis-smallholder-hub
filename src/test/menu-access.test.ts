@@ -92,6 +92,8 @@ const DINYATAKAN: Record<string, string[]> = {
   "data-analyst-sprint": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
   // Daftar Issue GitHub (#429) — audiens sama dengan saudaranya (owner 2026-10-13).
   "platform-developer-issues": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
+  // Peta Fitur (docs/product/sitemap, owner 2026-10-17) — audiens sama dengan saudaranya.
+  "platform-developer-sitemap": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
   // Administrasi sistem.
   "settings-roles": ["SUPERADMIN"],
   "settings-menu": ["SUPERADMIN"],

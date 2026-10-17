@@ -538,6 +538,13 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "platform-developer-sitemap",
+    "route": "(admin)/admin/platform-developer/sitemap",
+    "models": {},
+    "modules": [],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "report-farmer",
     "route": "(admin)/admin/report/farmer",
     "models": {

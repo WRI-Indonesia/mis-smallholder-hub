@@ -1,8 +1,10 @@
 import {
   CHANNEL_ORDER,
   UL_FILTER_LABEL,
+  isUlDestination,
   type ScGroup,
   type SankeyGraph,
+  type SankeyMode,
   type SankeyNode,
   type SupplyChannel,
   type UlFilter,
@@ -81,6 +83,8 @@ export interface TreeOptions {
   byDistrict: boolean;
   /** Tambah tingkat Ke Mill UL / Bukan ke Mill UL di atas Mill (toggle Ke = UL / Non-UL). */
   byUl: boolean;
+  /** `false` = tingkat Offtaker disembunyikan (toggle Offtaker = Sembunyikan); bawaan tampil. */
+  withOfftaker?: boolean;
 }
 
 /**
@@ -135,18 +139,21 @@ export function buildSupplyChainTree(graph: SankeyGraph, groups: ScGroup[], opts
       opts.byUl && dest.id !== UNKNOWN_MILL_ID ? [[ulStep("UL"), p.toUlTon], [ulStep("NON_UL"), p.ton - p.toUlTon]] : [[null, p.ton]];
     for (const [ul, ton] of portions) {
       if (!(ton > 0)) continue;
-      const hulu = [opts.byDistrict ? dist : null, lembaga, off, ul, mill];
-      const hilir = [ul, mill, off, opts.byDistrict ? dist : null, lembaga];
+      const offStep = opts.withOfftaker === false ? null : off;
+      const hulu = [opts.byDistrict ? dist : null, lembaga, offStep, ul, mill];
+      const hilir = [ul, mill, offStep, opts.byDistrict ? dist : null, lembaga];
       add((opts.direction === "HULU" ? hulu : hilir).filter((s): s is Step => !!s), ton, p.channel);
     }
   }
 
-  // Urut tonase; "Mill tidak diketahui" & "Langsung ke Mill" selalu paling bawah di tingkatnya.
+  // Urut tonase; "Mill tidak diketahui" & "Langsung ke Mill" selalu paling bawah di tingkatnya;
+  // tingkat UL/Mill: yang UL selalu di atas (fokus ke Mill UL, owner 2026-10-17).
   const tail = (n: SupplyTreeNode) => (n.nodeId === UNKNOWN_MILL_ID || n.nodeId === DIRECT_NODE_ID ? 1 : 0);
+  const ulRank = (n: SupplyTreeNode) => ((n.level === "UL" || n.level === "MILL") && !tail(n) ? (n.isUl ? 0 : 1) : 0);
   const finish = (m: Map<string, Building>): SupplyTreeNode[] =>
     [...m.values()]
       .map(({ index, ...n }) => ({ ...n, children: finish(index) }))
-      .sort((a, b) => tail(a) - tail(b) || b.ton - a.ton || a.label.localeCompare(b.label));
+      .sort((a, b) => tail(a) - tail(b) || ulRank(a) - ulRank(b) || b.ton - a.ton || a.label.localeCompare(b.label));
   return finish(roots);
 }
 
@@ -229,4 +236,99 @@ export function bezierPointAtX(sx: number, sy: number, tx: number, ty: number, x
   }
   const t = (lo + hi) / 2;
   return { x, y: (1 - t) ** 3 * sy + 3 * (1 - t) ** 2 * t * sy + 3 * (1 - t) * t ** 2 * ty + t ** 3 * ty };
+}
+
+// ---------------------------------------------------------------------------
+// Tambahan tab (owner 2026-10-17: "tambahkan tab sunburst, boleh tab lain"):
+// Sunburst · Partisi · Treemap memakai pohon `buildSupplyChainTree`; Matriks ·
+// Chord · Batang bertumpuk memakai matriks Asal × Tujuan di bawah ini — semua
+// dari `SankeyGraph` yang sama sehingga angkanya identik dengan tab lama.
+// ---------------------------------------------------------------------------
+
+/** Mill maksimal di kolom tujuan saat Offtaker = Per jenis atau Sembunyikan (kolom tengah ≤ 5 node, ada ruang untuk Mill). */
+export const ALIRAN_RINGKAS_MILLS = 15;
+
+/**
+ * Batas node per kolom kartu Aliran TBS. Pilihan **Tampilkan** (N teratas) hanya
+ * terlihat — dan hanya boleh berlaku — saat Offtaker = Satu per satu; saat Per
+ * jenis atau Sembunyikan, kontrolnya tersembunyi sehingga nilainya tak boleh
+ * diam-diam memotong Mill (review 2026-10-17).
+ */
+export function aliranMaxPerColumn(mode: SankeyMode, hideMiddle: boolean, top: number): number {
+  return mode === "RINCI" && !hideMiddle ? top : ALIRAN_RINGKAS_MILLS;
+}
+
+/** Kolom Sankey tiap tingkat pohon — agar klik-filter memakai penangan yang sama dengan diagram. */
+export const TREE_LEVEL_COLUMN: Record<TreeLevel, 0 | 1 | 3> = { DISTRIK: 0, LEMBAGA: 0, OFFTAKER: 1, UL: 3, MILL: 3 };
+
+/** Node pohon → bentuk node Sankey (klik-filter, isFilterableNode/isGroupNode). */
+export const treeNodeAsSankeyNode = (n: SupplyTreeNode): SankeyNode => ({
+  id: n.nodeId,
+  column: TREE_LEVEL_COLUMN[n.level],
+  label: n.label,
+  sub: n.sub,
+  value: n.ton,
+  folded: 0,
+  isUl: n.isUl,
+  millStatus: null,
+  groupCode: n.groupCode,
+});
+
+export interface OriginDestMatrix {
+  /** Asal (kolom 0 Sankey), urut tonase turun. */
+  rows: SankeyNode[];
+  /** Tujuan (kolom 3 Sankey), urut tonase turun; "Mill tidak diketahui" selalu terakhir. */
+  cols: SankeyNode[];
+  /** Tonase per sel, kunci `matrixKey(rowId, colId)`; sel tanpa aliran tidak ada. */
+  cells: Map<string, number>;
+  rowTotal: Map<string, number>;
+  colTotal: Map<string, number>;
+  total: number;
+  /** Sel terbesar — skala warna/lebar. */
+  max: number;
+}
+
+export const matrixKey = (rowId: string, colId: string) => `${rowId}|${colId}`;
+
+/** Tukar baris ↔ kolom (Arah Hilir → Hulu di Matriks & Batang): baris = tujuan, kolom = asal. */
+export function transposeOriginDestMatrix(m: OriginDestMatrix): OriginDestMatrix {
+  const cells = new Map<string, number>();
+  for (const r of m.rows)
+    for (const c of m.cols) {
+      const v = m.cells.get(matrixKey(r.id, c.id));
+      if (v !== undefined) cells.set(matrixKey(c.id, r.id), v);
+    }
+  return { rows: m.cols, cols: m.rows, cells, rowTotal: m.colTotal, colTotal: m.rowTotal, total: m.total, max: m.max };
+}
+
+/**
+ * Matriks Asal × Tujuan dari jalur Sankey (tingkat offtaker dilipat): dasar
+ * tab Matriks (tabel panas), Chord (pita asal ↔ tujuan), dan Batang bertumpuk.
+ * Mengikuti toggle Dari/Ke lewat graf yang diberikan (node `D:`/`L:` × `U:`/`M:`).
+ */
+export function buildOriginDestMatrix(graph: SankeyGraph): OriginDestMatrix {
+  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+  const cells = new Map<string, number>();
+  const rowTotal = new Map<string, number>();
+  const colTotal = new Map<string, number>();
+  let total = 0;
+  for (const p of graph.paths) {
+    if (!(p.ton > 0)) continue;
+    const r = p.nodes[0];
+    const c = p.nodes[p.nodes.length - 1];
+    if (!byId.has(r) || !byId.has(c)) continue;
+    const k = matrixKey(r, c);
+    cells.set(k, (cells.get(k) ?? 0) + p.ton);
+    rowTotal.set(r, (rowTotal.get(r) ?? 0) + p.ton);
+    colTotal.set(c, (colTotal.get(c) ?? 0) + p.ton);
+    total += p.ton;
+  }
+  const tail = (id: string) => (id === UNKNOWN_MILL_ID ? 1 : 0);
+  // Tujuan UL selalu di depan (fokus ke Mill UL, owner 2026-10-17), lalu tonase; Mill tak diketahui terakhir.
+  const ulRank = (n: SankeyNode) => (tail(n.id) ? 0 : isUlDestination(n) ? 0 : 1);
+  const rows = [...rowTotal.keys()].map((id) => byId.get(id)!).sort((a, b) => rowTotal.get(b.id)! - rowTotal.get(a.id)! || a.label.localeCompare(b.label));
+  const cols = [...colTotal.keys()]
+    .map((id) => byId.get(id)!)
+    .sort((a, b) => tail(a.id) - tail(b.id) || ulRank(a) - ulRank(b) || colTotal.get(b.id)! - colTotal.get(a.id)! || a.label.localeCompare(b.label));
+  return { rows, cols, cells, rowTotal, colTotal, total, max: Math.max(0, ...cells.values()) };
 }

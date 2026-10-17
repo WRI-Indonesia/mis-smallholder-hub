@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSupplyChainSankey, type ScRecord, type SupplyChainData } from "@/lib/supply-chain-flow";
-import { DIRECT_NODE_ID, buildPathRows, buildSupplyChainTree, bezierPointAtX, dodgeLabels, sortPathRows, spreadEdgeEnds, treeBranchKeys, type SupplyTreeNode } from "@/lib/supply-chain-views";
+import { ALIRAN_RINGKAS_MILLS, DIRECT_NODE_ID, aliranMaxPerColumn, transposeOriginDestMatrix, buildOriginDestMatrix, buildPathRows, buildSupplyChainTree, bezierPointAtX, dodgeLabels, matrixKey, sortPathRows, spreadEdgeEnds, treeBranchKeys, treeNodeAsSankeyNode, type SupplyTreeNode } from "@/lib/supply-chain-views";
 
 const rec = (over: Partial<ScRecord>): ScRecord => ({
   id: "r", year: 2025, level: "LAHAN", groupCode: "G1", surveyId: null, offtakerId: null, nextOfftakerId: null,
@@ -63,6 +63,15 @@ describe("buildSupplyChainTree (tab Tabel Pohon)", () => {
     // "Mill tidak diketahui" selalu paling bawah di tingkatnya.
     expect(g3.children[0].children.map((n) => n.nodeId)).toEqual(["M:M1", "M:?"]);
     expect(sumTon(tree)).toBe(treeGraph.totalTon);
+  });
+
+  it("withOfftaker false: tingkat Offtaker dilewati, Lembaga langsung ke Mill, tonase tetap", () => {
+    const tree = buildSupplyChainTree(treeGraph, data.groups, { direction: "HULU", byDistrict: false, byUl: false, withOfftaker: false });
+    expect(find(tree, "L:G1")!.children.map((n) => [n.nodeId, n.level, n.ton])).toEqual([["M:M1", "MILL", 40]]);
+    expect(find(tree, "L:G3")!.children.map((n) => n.nodeId)).toEqual(["M:M1", "M:?"]);
+    expect(sumTon(tree)).toBe(treeGraph.totalTon);
+    const hilir = buildSupplyChainTree(treeGraph, data.groups, { direction: "HILIR", byDistrict: false, byUl: false, withOfftaker: false });
+    expect(find(hilir, "M:M1")!.children.map((n) => n.level)).toEqual(["LEMBAGA", "LEMBAGA"]);
   });
 
   it("toggle Distrik menambah tingkat Distrik di atas Lembaga", () => {
@@ -135,5 +144,73 @@ describe("tata letak Diagram Alur", () => {
     expect(out.get("b")!.y - out.get("a")!.y).toBe(20);
     expect((out.get("a")!.y + out.get("b")!.y) / 2).toBeCloseTo(51);
     expect(out.get("c")).toEqual({ x: 400, y: 50 });
+  });
+});
+
+describe("buildOriginDestMatrix (tab Matriks · Chord · Batang bertumpuk)", () => {
+  it("menjumlah tonase per pasangan asal × tujuan; total = total graf; Mill tidak diketahui di kolom terakhir", () => {
+    const m = buildOriginDestMatrix(treeGraph);
+    expect(m.total).toBe(treeGraph.totalTon);
+    expect(m.rows.map((r) => r.id)).toEqual(["L:G1", "L:G2", "L:G3"]);
+    expect(m.cols.map((c) => c.id)).toEqual(["M:M1", "M:M2", "M:?"]);
+    expect(m.cells.get(matrixKey("L:G1", "M:M1"))).toBe(40);
+    expect(m.cells.get(matrixKey("L:G3", "M:M1"))).toBe(5);
+    expect(m.cells.get(matrixKey("L:G3", "M:?"))).toBe(4);
+    expect(m.cells.has(matrixKey("L:G1", "M:M2"))).toBe(false);
+    expect(m.rowTotal.get("L:G3")).toBe(9);
+    expect(m.colTotal.get("M:M1")).toBe(45);
+    expect(m.max).toBe(40);
+    // Jumlah sel per baris = total baris; per kolom = total kolom.
+    for (const r of m.rows) expect(m.cols.reduce((a, c) => a + (m.cells.get(matrixKey(r.id, c.id)) ?? 0), 0)).toBe(m.rowTotal.get(r.id));
+  });
+
+  it("kolom tujuan: UL di depan walau tonasenya lebih kecil (fokus ke Mill UL)", () => {
+    const g = buildSupplyChainSankey(data, [rec({ id: "a", groupCode: "G1", millId: "M2", supplyTon: 50, toUl: false }), rec({ id: "b", groupCode: "G1", millId: "M1", supplyTon: 5, toUl: true })], { maxPerColumn: Infinity, destination: "UL" });
+    expect(buildOriginDestMatrix(g).cols.map((c) => c.id)).toEqual(["U:UL", "U:NON_UL"]);
+    const tree = buildSupplyChainTree(g, data.groups, { direction: "HILIR", byDistrict: false, byUl: true });
+    expect(tree.map((n) => n.nodeId)).toEqual(["U:UL", "U:NON_UL"]);
+  });
+
+  it("mengikuti toggle Dari Distrik / Ke UL lewat graf yang diberikan", () => {
+    const g = buildSupplyChainSankey(data, records, { maxPerColumn: Infinity, origin: "DISTRIK", destination: "UL" });
+    const m = buildOriginDestMatrix(g);
+    expect(m.rows.every((r) => r.id.startsWith("D:"))).toBe(true);
+    expect(m.cols.map((c) => c.id)).toEqual(["U:UL", "U:NON_UL", "M:?"]);
+    expect(m.total).toBe(g.totalTon);
+  });
+
+  it("transposeOriginDestMatrix: baris ↔ kolom dan total tertukar, sel tetap; dua kali = semula", () => {
+    const m = buildOriginDestMatrix(treeGraph);
+    const t = transposeOriginDestMatrix(m);
+    expect(t.rows.map((r) => r.id)).toEqual(m.cols.map((c) => c.id));
+    expect(t.cols.map((c) => c.id)).toEqual(m.rows.map((r) => r.id));
+    expect(t.cells.get(matrixKey("M:M1", "L:G1"))).toBe(40);
+    expect(t.rowTotal.get("M:M1")).toBe(m.colTotal.get("M:M1"));
+    expect([t.total, t.max]).toEqual([m.total, m.max]);
+    const back = transposeOriginDestMatrix(t);
+    expect([...back.cells.entries()].sort()).toEqual([...m.cells.entries()].sort());
+  });
+
+  it("node gabungan Ke Mill UL tidak ditandai isUl (badge/tooltip khusus Mill), tetapi tetap diurutkan di depan", () => {
+    const g = buildSupplyChainSankey(data, records, { maxPerColumn: Infinity, destination: "UL" });
+    expect(g.nodes.find((n) => n.id === "U:UL")?.isUl).toBe(false);
+    expect(buildOriginDestMatrix(g).cols[0].id).toBe("U:UL");
+  });
+
+  it("treeNodeAsSankeyNode memetakan tingkat ke kolom Sankey", () => {
+    const tree = buildSupplyChainTree(treeGraph, data.groups, { direction: "HULU", byDistrict: true, byUl: true });
+    const d = tree[0];
+    expect(treeNodeAsSankeyNode(d)).toMatchObject({ id: d.nodeId, column: 0, value: d.ton });
+    const mill = find(find(find(find(d.children, "L:G1")!.children, "G:AGEN")!.children, "U:UL")!.children, "M:M1")!;
+    expect(treeNodeAsSankeyNode(mill)).toMatchObject({ column: 3, isUl: true });
+  });
+});
+
+describe("aliranMaxPerColumn (toolbar Aliran TBS)", () => {
+  it("pilihan Tampilkan hanya berlaku pada Satu per satu yang tidak disembunyikan", () => {
+    expect(aliranMaxPerColumn("RINCI", false, 8)).toBe(8);
+    expect(aliranMaxPerColumn("RINGKAS", false, 8)).toBe(ALIRAN_RINGKAS_MILLS);
+    // Bug review 2026-10-17: Satu per satu → Tampilkan 8 → Sembunyikan masih memotong Mill ke 8.
+    expect(aliranMaxPerColumn("RINCI", true, 8)).toBe(ALIRAN_RINGKAS_MILLS);
   });
 });

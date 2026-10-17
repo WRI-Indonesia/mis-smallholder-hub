@@ -70,6 +70,7 @@ ADMIN,data-analyst-parcel-overlap,VIEW
 ADMIN,data-analyst-sprint,VIEW
 ADMIN,platform-developer-issues,EXPORT
 ADMIN,platform-developer-issues,VIEW
+ADMIN,platform-developer-sitemap,VIEW
 ADMIN,help,EXPORT
 ADMIN,help,PRINT
 ADMIN,help,VIEW
@@ -211,6 +212,7 @@ MANAGEMENT,data-analyst-parcel-overlap,VIEW
 MANAGEMENT,data-analyst-sprint,VIEW
 MANAGEMENT,platform-developer-issues,EXPORT
 MANAGEMENT,platform-developer-issues,VIEW
+MANAGEMENT,platform-developer-sitemap,VIEW
 MANAGEMENT,help,EXPORT
 MANAGEMENT,help,PRINT
 MANAGEMENT,help,VIEW
@@ -389,6 +391,7 @@ SUPERADMIN,data-analyst-parcel-overlap,VIEW
 SUPERADMIN,data-analyst-sprint,VIEW
 SUPERADMIN,platform-developer-issues,EXPORT
 SUPERADMIN,platform-developer-issues,VIEW
+SUPERADMIN,platform-developer-sitemap,VIEW
 SUPERADMIN,data-analyst,VIEW
 SUPERADMIN,platform-developer,VIEW
 SUPERADMIN,help,EXPORT
