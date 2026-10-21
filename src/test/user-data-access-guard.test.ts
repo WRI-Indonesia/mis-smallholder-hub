@@ -96,3 +96,21 @@ for (const [label, model, field, assign, remove] of PAIRS) {
     });
   });
 }
+
+describe("validasi Zod (#440 F2) — input mentah ditolak sebelum DB", () => {
+  const BAD: [unknown, unknown][] = [["", "t-1"], ["u-1", ""], [123, "t-1"], ["u-1", null], [undefined, undefined]];
+  for (const [label, model, , assign, remove] of PAIRS) {
+    it(`${label}: id kosong/bukan string → { success:false } string, tanpa query/tulis`, async () => {
+      for (const [u, t] of BAD) {
+        for (const fn of [assign, remove]) {
+          const res = await (fn as (u: unknown, t: unknown) => Promise<Res>)(u, t);
+          expect(res).toEqual({ success: false, error: "Data hak akses tidak valid" });
+        }
+      }
+      expect(getAccessContext).not.toHaveBeenCalled();
+      expect(db.user.findUnique).not.toHaveBeenCalled();
+      expect(db[model].create).not.toHaveBeenCalled();
+      expect(db[model].deleteMany).not.toHaveBeenCalled();
+    });
+  }
+});

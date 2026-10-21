@@ -27,6 +27,7 @@ import {
 } from "@/lib/report-production";
 import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-farmer-subgroup";
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
+import { buildTrainingReport } from "@/lib/report-training";
 import { landParcelLegalWhere, parseLandParcelReportFilters } from "@/lib/report-land-parcel-where";
 import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-farmer-subgroup-detail";
 import { PARCEL_NKT_MARKER_SELECT, parcelNktPatok } from "@/lib/land-parcel-satellite-format";
@@ -251,119 +252,8 @@ export async function getTrainingReport(filters: TrainingReportFilters): Promise
     orderBy: { name: "asc" },
   });
 
-  // Calculate package participation maps with date
-  const farmerPackageDateMap = new Map<string, Map<string, string>>(); // farmerId -> Map<packageCode, dateString>
-  activities.forEach((act) => {
-    act.participants.forEach((p) => {
-      if (!farmerPackageDateMap.has(p.farmerId)) {
-        farmerPackageDateMap.set(p.farmerId, new Map());
-      }
-      const pMap = farmerPackageDateMap.get(p.farmerId)!;
-      if (!pMap.has(act.package.code)) {
-        pMap.set(act.package.code, act.trainingDate.toISOString());
-      }
-    });
-  });
-
-  const farmerMap = new Map(farmers.map((f) => [f.id, f]));
-
-  // Formatted activity rows for Tab 1
-  const activityRows = activities.map((act) => {
-    const activityParticipants = act.participants.map((p) => {
-      const f = farmerMap.get(p.farmerId);
-      return {
-        farmerId: p.farmerId,
-        farmerIdCode: f?.farmerId ?? "—",
-        name: f?.name ?? "—",
-        preTestScore: p.preTestScore,
-        postTestScore: p.postTestScore,
-      };
-    });
-
-    return {
-      id: act.id,
-      packageName: act.package.name,
-      packageCode: act.package.code,
-      trainingDate: act.trainingDate.toISOString(),
-      location: act.location,
-      totalParticipants: act.participants.length,
-      participants: activityParticipants,
-    };
-  });
-
-  // Formatted farmer rows for Tab 2
-  const farmerRows = farmers.map((f) => {
-    const dates = farmerPackageDateMap.get(f.id);
-    return {
-      id: f.id,
-      farmerId: f.farmerId,
-      name: f.name,
-      gender: f.gender,
-      paket1Date: dates?.get("PAKET_1_BMP_PC_RSPO_NKT") ?? null,
-      paket2MKDate: dates?.get("PAKET_2_MK") ?? null,
-      paket2K3Date: dates?.get("PAKET_2_K3") ?? null,
-      paket34Date: dates?.get("PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV") ?? null,
-    };
-  });
-
-  // Unique participant counts across ALL training activities (excluding OTHER)
-  const uniqueParticipantsSet = new Set<string>();
-  activities.forEach((act) => {
-    act.participants.forEach((p) => {
-      uniqueParticipantsSet.add(p.farmerId);
-    });
-  });
-
-  // Package coverage (unique farmers completed specific packages)
-  let totalUnikPaket1 = 0;
-  let totalUnikPaket2MK = 0;
-  let totalUnikPaket2K3 = 0;
-  let totalUnikPaket34 = 0;
-
-  farmers.forEach((f) => {
-    const dates = farmerPackageDateMap.get(f.id);
-    if (dates?.has("PAKET_1_BMP_PC_RSPO_NKT")) {
-      totalUnikPaket1++;
-    }
-    if (dates?.has("PAKET_2_MK")) {
-      totalUnikPaket2MK++;
-    }
-    if (dates?.has("PAKET_2_K3")) {
-      totalUnikPaket2K3++;
-    }
-    if (dates?.has("PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV")) {
-      totalUnikPaket34++;
-    }
-  });
-
-  const totalPetani = farmers.length;
-  const totalKegiatan = activities.length;
-  const totalPeserta = activities.reduce((sum, act) => sum + act.participants.length, 0);
-  const totalPesertaUnik = uniqueParticipantsSet.size;
-
-  const pctPaket1 = totalPetani > 0 ? parseFloat(((totalUnikPaket1 / totalPetani) * 100).toFixed(2)) : 0;
-  const pctPaket2MK = totalPetani > 0 ? parseFloat(((totalUnikPaket2MK / totalPetani) * 100).toFixed(2)) : 0;
-  const pctPaket2K3 = totalPetani > 0 ? parseFloat(((totalUnikPaket2K3 / totalPetani) * 100).toFixed(2)) : 0;
-  const pctPaket34 = totalPetani > 0 ? parseFloat(((totalUnikPaket34 / totalPetani) * 100).toFixed(2)) : 0;
-
-  return {
-    summary: {
-      totalPetani,
-      totalKegiatan,
-      totalPeserta,
-      totalPesertaUnik,
-      totalUnikPaket1,
-      pctPaket1,
-      totalUnikPaket2MK,
-      pctPaket2MK,
-      totalUnikPaket2K3,
-      pctPaket2K3,
-      totalUnikPaket34,
-      pctPaket34,
-    },
-    activities: activityRows,
-    farmers: farmerRows,
-  };
+  // Agregasi murni (tanggal paket terawal, baris kegiatan, peserta unik, cakupan & persen) — lib teruji.
+  return buildTrainingReport(activities, farmers);
 }
 
 export async function getDistrictsForProductionReport() {

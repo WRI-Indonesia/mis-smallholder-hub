@@ -89,3 +89,30 @@ describe("setRolePermissions — tulis", () => {
     expect(db.rolePermission.createMany).not.toHaveBeenCalled();
   });
 });
+
+describe("setRolePermissions — validasi Zod (#440 F2)", () => {
+  const BAD: unknown[] = [
+    "bukan-array",
+    [{ role: "HACKER", menuKey: "a", permission: "VIEW", granted: true }],
+    [{ role: "OPERATOR", menuKey: "", permission: "VIEW", granted: true }],
+    [{ role: "OPERATOR", menuKey: "a", permission: "SUDO", granted: true }],
+    [{ role: "OPERATOR", menuKey: "a", permission: "VIEW", granted: "ya" }],
+    [{ role: "OPERATOR", menuKey: "a", permission: "VIEW", granted: true }, null],
+  ];
+  it("payload tak valid (satu entri pun) → { success:false } string, tanpa transaksi", async () => {
+    for (const updates of BAD) {
+      const res = await setRolePermissions(updates as never);
+      expect(res).toEqual({ success: false, error: "Data hak akses tidak valid" });
+    }
+    expect(db.$transaction).not.toHaveBeenCalled();
+    expect(db.rolePermission.createMany).not.toHaveBeenCalled();
+    expect(db.rolePermission.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("field asing dibuang Zod — hanya role/menuKey/permission/granted yang sampai ke tulis", async () => {
+    await setRolePermissions([{ role: "DONOR", menuKey: "c", permission: "VIEW", granted: true, isActive: false, createdBy: "x" } as never]);
+    expect(db.rolePermission.createMany.mock.calls[0][0]).toEqual({
+      data: [{ role: "DONOR", menuKey: "c", permission: "VIEW", createdBy: "admin-1" }],
+    });
+  });
+});

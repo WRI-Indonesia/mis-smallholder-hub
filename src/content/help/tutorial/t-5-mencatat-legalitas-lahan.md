@@ -25,7 +25,7 @@ Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Tambah** butuh izin ta
 + Tiap grup punya tombol Tambah sendiri; grup yang kosong hanya menampilkan satu kalimat, bukan tabel kosong.
 4. Isi formulir lalu klik **Tambah**. Untuk surat, hanya **Jenis** yang wajib; untuk STDB, **Tahap** yang wajib — nomor baru wajib bila tahapnya *Terbit*.
 + **Surat** — Jenis yang tidak ada di daftar pilih *Lainnya*. Nilai seperti "surat di bank" atau "lahan sudah dijual" bukan jenis; tulis di **Catatan Penguasaan**. **Luas Tertera** adalah angka di surat — boleh berbeda dari luas poligon; baris surat menampilkan selisihnya dan menandai bila ≥ 0,5 Ha.
-+ **STDB** — terbit per **petani** dan boleh menutup beberapa lahan. Bila nomor yang Anda ketik sudah terdaftar untuk petani yang sama, lahan ini cukup *ditautkan* ke STDB itu (tidak dibuat dua kali). Keterangan **Juga mencakup:** di baris STDB memperlihatkan persil lain yang tercakup.
++ **STDB** — terbit per **petani** dan boleh menutup beberapa lahan. Bila nomor yang Anda ketik sudah terdaftar untuk petani yang sama, lahan ini cukup *ditautkan* ke STDB itu (tidak dibuat dua kali). Keterangan **Juga mencakup:** di baris STDB memperlihatkan persil lain yang tercakup (bisa diklik bila lahan itu masuk cakupan akses Anda; di luar cakupan hanya tampil ID-nya).
 
 ## Tahapan STDB
 

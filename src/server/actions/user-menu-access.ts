@@ -6,6 +6,11 @@ import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
 import { userAdminScopeError } from "@/lib/user-admin-guard";
 import type { PermissionLevel } from "@prisma/client";
+import {
+  userMenuOverrideSchema,
+  removeUserMenuOverrideSchema,
+  USER_ACCESS_INVALID_INPUT,
+} from "@/validations/user-access.schema";
 
 // ─── Query active menu items ──────────────────────────────────────────────────
 export async function getMenuItemsForSelect() {
@@ -83,6 +88,9 @@ export async function setUserMenuOverride(
     return { success: false, error: "Tidak memiliki izin" };
   }
 
+  const parsed = userMenuOverrideSchema.safeParse({ userId, menuKey, permission, granted });
+  if (!parsed.success) return { success: false, error: USER_ACCESS_INVALID_INPUT };
+
   const scopeError = userAdminScopeError(await getAccessContext());
   if (scopeError) return { success: false, error: scopeError };
 
@@ -138,6 +146,9 @@ export async function removeUserMenuOverride(
   if (!(await hasPermission("settings-users", "EDIT"))) {
     return { success: false, error: "Tidak memiliki izin" };
   }
+
+  const parsed = removeUserMenuOverrideSchema.safeParse({ userId, menuKey, permission });
+  if (!parsed.success) return { success: false, error: USER_ACCESS_INVALID_INPUT };
 
   const removeScopeError = userAdminScopeError(await getAccessContext());
   if (removeScopeError) return { success: false, error: removeScopeError };

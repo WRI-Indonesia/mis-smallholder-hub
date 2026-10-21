@@ -11,6 +11,7 @@ import {
   getAccessContext,
   farmerAccessFilter,
   farmerRelationAccessFilter,
+  type AccessContext,
 } from "@/lib/access-context";
 import { getFarmerOptions } from "@/lib/select-options";
 import { summarizeProduction } from "@/lib/map-data";
@@ -428,6 +429,15 @@ export async function toggleLandParcelActive(id: string) {
   return { success: true };
 }
 
+/** Petani pemilik revisi lahan berada dalam scope user? (cermin `sharedCodeParcels`). */
+function farmerInScope(farmer: { farmerGroupId: string; farmerGroup: { districtId: string } }, access: AccessContext): boolean {
+  return (
+    access.mode === "ALL" ||
+    (access.mode === "BY_FARMER_GROUP" && access.ids.includes(farmer.farmerGroupId)) ||
+    (access.mode === "BY_DISTRICT" && access.ids.includes(farmer.farmerGroup.districtId))
+  );
+}
+
 /**
  * Satelit lahan (#296) untuk halaman Detail Lahan: dokumen kepemilikan, STDB,
  * UL Parcel Code, program. Menempel ke `parcelUid` (identitas stabil antar
@@ -463,7 +473,19 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
             stage: true, stageChangedAt: true, stageNote: true, submittedTo: true,
             preparedAt: true, submittedAt: true, issuedAt: true,
             // Lahan lain yang ditutup STDB yang sama (aktif) — ditampilkan sebagai konteks.
-            parcelLinks: { where: { isActive: true, parcelUid: { not: uid } }, select: { parcel: { select: { parcelId: true, revisions: { where: { isActive: true }, select: { id: true }, take: 1 } } } } },
+            // PENGECUALIAN SCOPE tercatat (docs/product/access-context.md): ID Lahan tampil
+            // apa pun scope, tautan (`id`) hanya dalam scope — lihat `otherParcels` di bawah.
+            parcelLinks: {
+              where: { isActive: true, parcelUid: { not: uid } },
+              select: {
+                parcel: {
+                  select: {
+                    parcelId: true,
+                    revisions: { where: { isActive: true }, select: { id: true, farmer: { select: { farmerGroupId: true, farmerGroup: { select: { districtId: true } } } } }, take: 1 },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -529,9 +551,14 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
       issuedYear: l.stdb.issuedYear,
       notes: l.stdb.notes,
       // Hanya lahan yang masih punya revisi aktif — identitas tidak ikut nonaktif saat lahan dihapus.
+      // `id` (tautan detail) hanya bila lahan itu dalam scope user, selain itu null (#440 F2,
+      // pola `sharedCodeParcels`) — ID Lahan tetap tampil agar STDB bersama bisa dicek silang.
       otherParcels: l.stdb.parcelLinks
         .filter((p) => p.parcel.revisions.length > 0)
-        .map((p) => ({ parcelId: p.parcel.parcelId, id: p.parcel.revisions[0].id })),
+        .map((p) => {
+          const rev = p.parcel.revisions[0];
+          return { parcelId: p.parcel.parcelId, id: farmerInScope(rev.farmer, access) ? rev.id : null };
+        }),
     })),
     externalIds: externalIds.map((e) => ({ ...e, otherParcels: sharedCodeParcels(e, sharers, access) })),
     programs,

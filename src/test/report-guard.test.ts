@@ -211,6 +211,42 @@ describe("soft delete — setiap kueri data membawa isActive: true", () => {
   });
 });
 
+describe("pemetaan hasil kueri → hasil report (audit #440 F2)", () => {
+  it("getTrainingReport: kegiatan & petani dari DB diteruskan ke buildTrainingReport (tanggal paket, peserta '—', persen)", async () => {
+    db.trainingActivity.findMany.mockResolvedValue([
+      {
+        id: "A1", trainingDate: new Date("2026-02-01T00:00:00.000Z"), location: "Balai", package: { code: "PAKET_1_BMP_PC_RSPO_NKT", name: "Paket 1" },
+        participants: [{ farmerId: "F1", preTestScore: 50, postTestScore: 90 }, { farmerId: "F-lama", preTestScore: null, postTestScore: null }],
+      },
+    ]);
+    db.farmer.findMany.mockResolvedValue([
+      { id: "F1", farmerId: "P1", name: "Petani 1", gender: "M" },
+      { id: "F2", farmerId: "P2", name: "Petani 2", gender: "F" },
+    ]);
+    const out = await report.getTrainingReport({ districtId: "D1", farmerGroupId: "G1" });
+    expect(out.summary).toMatchObject({ totalPetani: 2, totalKegiatan: 1, totalPeserta: 2, totalPesertaUnik: 2, totalUnikPaket1: 1, pctPaket1: 50 });
+    expect(out.activities[0].participants.map((p) => p.farmerIdCode)).toEqual(["P1", "—"]);
+    expect(out.farmers.map((f) => f.paket1Date)).toEqual(["2026-02-01T00:00:00.000Z", null]);
+  });
+
+  it("getProductionReport: record → matriks petani×lahan (lahan null = baris 'none'), di luar periode dibuang, total per kolom", async () => {
+    db.productionRecord.findMany.mockResolvedValue([
+      { period: "2025-01", yieldKg: 100, farmer: { id: "F1", farmerId: "P1", name: "Budi" }, parcel: { id: "LP1", parcelId: "L.0001", area: 1.5 } },
+      { period: "2025-01", yieldKg: 50.5, farmer: { id: "F1", farmerId: "P1", name: "Budi" }, parcel: { id: "LP1", parcelId: "L.0001", area: 1.5 } },
+      { period: "2025-03", yieldKg: 20, farmer: { id: "F2", farmerId: "P2", name: "Ani" }, parcel: null },
+      { period: "2025-07", yieldKg: 999, farmer: { id: "F2", farmerId: "P2", name: "Ani" }, parcel: null },
+    ]);
+    const out = await report.getProductionReport(PROD);
+    expect(out.periods).toEqual(["2025-01", "2025-02", "2025-03"]);
+    expect(out.rows).toEqual([
+      { key: "F2::none", farmerId: "F2", farmerCode: "P2", name: "Ani", parcelId: null, parcelCode: null, parcelArea: null, values: { "2025-03": 20 }, total: 20 },
+      { key: "F1::LP1", farmerId: "F1", farmerCode: "P1", name: "Budi", parcelId: "LP1", parcelCode: "L.0001", parcelArea: 1.5, values: { "2025-01": 150.5 }, total: 150.5 },
+    ]);
+    expect(out.columnTotals).toEqual({ "2025-01": 150.5, "2025-02": 0, "2025-03": 20 });
+    expect(out.summary).toEqual({ totalPetani: 2, totalLahan: 2, totalProduksi: 170.5, totalBulan: 3 });
+  });
+});
+
 describe("Report Kelompok Tani & Detail — scope lewat AND (semantik)", () => {
   it("getKelompokTaniReport BY_DISTRICT: filter distrik lain tak menembus scope → tanpa lahan", async () => {
     getAccessContext.mockResolvedValue(BY_DISTRICT);

@@ -82,69 +82,6 @@ describe("Training Activity Schema - Update Validation", () => {
   });
 });
 
-describe("Training Activity Query Filter Resolution", () => {
-  type AccessContext =
-    | { mode: "ALL" }
-    | { mode: "BY_FARMER_GROUP"; ids: string[] }
-    | { mode: "BY_DISTRICT"; ids: string[] };
-
-  function buildTrainingWhereClause(
-    access: AccessContext,
-    search?: string,
-    farmerGroupId?: string
-  ) {
-    const accessFilter =
-      access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-      access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-      {};
-
-    // #127: list memuat record aktif & nonaktif (filter Status di UI) — tidak lagi hard-filter isActive.
-    return {
-      ...accessFilter,
-      ...(farmerGroupId ? { farmerGroupId } : {}),
-      ...(search
-        ? {
-            OR: [
-              { location: { contains: search, mode: "insensitive" as const } },
-              { package: { name: { contains: search, mode: "insensitive" as const } } },
-              { farmerGroup: { name: { contains: search, mode: "insensitive" as const } } },
-            ],
-          }
-        : {}),
-    };
-  }
-
-  it("builds correct filter for mode ALL", () => {
-    const where = buildTrainingWhereClause({ mode: "ALL" });
-    expect((where as Record<string, unknown>).isActive).toBeUndefined();
-    expect(where.farmerGroupId).toBeUndefined();
-    expect((where as Record<string, unknown>).farmerGroup).toBeUndefined();
-  });
-
-  it("builds correct filter for mode BY_FARMER_GROUP", () => {
-    const where = buildTrainingWhereClause({ mode: "BY_FARMER_GROUP", ids: ["fg-1", "fg-2"] });
-    expect(where.farmerGroupId).toEqual({ in: ["fg-1", "fg-2"] });
-    expect((where as Record<string, unknown>).farmerGroup).toBeUndefined();
-  });
-
-  it("builds correct filter for mode BY_DISTRICT", () => {
-    const where = buildTrainingWhereClause({ mode: "BY_DISTRICT", ids: ["dist-1", "dist-2"] });
-    expect((where as Record<string, unknown>).farmerGroup).toEqual({ districtId: { in: ["dist-1", "dist-2"] } });
-    expect(where.farmerGroupId).toBeUndefined();
-  });
-
-  it("applies search query and farmerGroupId together with access filters", () => {
-    const where = buildTrainingWhereClause(
-      { mode: "BY_DISTRICT", ids: ["dist-1"] },
-      "Riau",
-      "fg-3"
-    );
-    expect(where.farmerGroupId).toBe("fg-3");
-    expect((where as Record<string, unknown>).farmerGroup).toEqual({ districtId: { in: ["dist-1"] } });
-    expect(where.OR).toHaveLength(3);
-  });
-});
-
 describe("Training Activity Evidence Rules", () => {
   it("validates that trainingActivitySchema accepts optional evidenceKey and evidenceName", () => {
     const data = {

@@ -75,6 +75,8 @@ describe("parseReleasePlan — file sprint.md nyata", () => {
     // Hanya baris SELESAI (tanggal penyelesaian = masa lalu menurut definisinya) —
     // tenggat masa depan di baris Todo tidak boleh membuat test merah begitu harinya
     // tiba (review 4505de9). Batas "hari ini" memakai WIB, sama dengan halaman.
+    // Tanggal diambil dari sel Status saja: kolom Keputusan baris ✅ boleh memuat
+    // tanggal target ("target 2026-10-19") yang bukan tanggal penyelesaian (audit #440).
     const focus = sprintMd.indexOf("### Rencana Rilis");
     const section = sprintMd.slice(focus, sprintMd.indexOf("\n### ", focus + 1));
     const dates = section
@@ -82,7 +84,7 @@ describe("parseReleasePlan — file sprint.md nyata", () => {
       .filter((l) => l.startsWith("|"))
       .map(splitRow)
       .filter((cells) => cells.length === 7 && cells[5].startsWith("✅"))
-      .flatMap((cells) => cells.join(" ").match(/\d{4}-\d{2}-\d{2}/g) ?? [])
+      .flatMap((cells) => cells[5].match(/\d{4}-\d{2}-\d{2}/g) ?? [])
       .filter((d) => d <= TODAY_WIB);
     const latest = dates.sort().at(-1);
     expect(latest && plan.updatedAt >= latest ? "ok" : `Terakhir diperbarui ${plan.updatedAt} < ${latest}`).toBe("ok");

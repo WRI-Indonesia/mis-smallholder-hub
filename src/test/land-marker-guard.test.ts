@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { MARKER_SNAP_M, planMarkersFromVertices } from "@/lib/land-marker";
 
 /**
  * Guard, scope, dan aturan tulis action patok (#329/#331) — tanpa DB, pola mock
@@ -377,5 +378,316 @@ describe("updateLandMarker & createMarkersFromPolygon — Zod, scope, poligon (a
     expect(q.fetchSimplifiedVertices).not.toHaveBeenCalled();
     expect(db.$transaction).not.toHaveBeenCalled();
     expect(db.landMarker.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("getLandParcelMarkers — scope lahan & patok bersama (audit #440 F2)", () => {
+  /** Lahan lain yang memakai patok yang sama — revisi aktif membawa Lembaga & distrik. */
+  const other = (parcelId: string, rev: { id: string; group: string; district: string } | null) => ({
+    parcel: {
+      parcelId,
+      farmer: { name: `Petani ${parcelId}`, farmerGroup: { name: "Lembaga Lain" } },
+      revisions: rev ? [{ id: rev.id, farmer: { farmerGroupId: rev.group, farmerGroup: { districtId: rev.district } } }] : [],
+    },
+  });
+  const LINK = {
+    id: "link-1", sequenceNo: 1, sourceRevision: 0,
+    marker: {
+      id: "m-1", code: "HJP-PTK-000001", longitude: POINT.lon, latitude: POINT.lat, source: "POLYGON_VERTEX", condition: "PRESENT", type: null,
+      installedAt: null, installedBy: null, photoKey: "land-marker/m-1/foto.jpg", photoName: "foto.jpg", notes: null, modifiedAt: new Date("2026-10-01"),
+      parcels: [
+        other("HJP.0002.A", { id: "lp-2", group: "kt-1", district: "1401" }),
+        other("ASP.0003.A", { id: "lp-3", group: "kt-2", district: "1402" }),
+        other("HJP.0004.A", null), // tak punya revisi aktif
+      ],
+    },
+  };
+  const sharedIds = async () => ((await actions.getLandParcelMarkers("lp-1"))?.markers[0].sharedWith ?? []).map((s) => s.landParcelId);
+
+  it("lahan di luar scope (findFirst null) → null, tautan patok tidak dikueri", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-lain"] });
+    db.landParcel.findFirst.mockResolvedValue(null);
+    expect(await actions.getLandParcelMarkers("lp-1")).toBeNull();
+    expect(db.landParcel.findFirst.mock.calls[0][0].where).toEqual({ id: "lp-1", isActive: true, farmer: { farmerGroupId: { in: ["kt-lain"] } } });
+    expect(db.landParcelMarker.findMany).not.toHaveBeenCalled();
+  });
+
+  it("ALL: patok dipetakan lengkap (foto bertanda tangan, petunjuk poligon berubah) + sharedWith punya landParcelId bila ada revisi aktif", async () => {
+    db.landParcelMarker.findMany.mockResolvedValue([LINK]);
+    const out = await actions.getLandParcelMarkers("lp-1");
+    expect(db.landParcelMarker.findMany.mock.calls[0][0].where).toEqual({ parcelUid: "uid-1", isActive: true });
+    expect(db.landParcelMarker.findMany.mock.calls[0][0].select.marker.select.parcels.where).toEqual({ isActive: true, parcelUid: { not: "uid-1" } });
+    expect(out).toMatchObject({ parcelUid: "uid-1", revision: 1, hasGeometry: true, polygonChangedSince: true });
+    expect(out?.markers[0]).toMatchObject({ linkId: "link-1", id: "m-1", code: "HJP-PTK-000001", sequenceNo: 1, photoUrl: "https://signed" });
+    expect(out?.markers[0].sharedWith).toEqual([
+      { parcelId: "HJP.0002.A", landParcelId: "lp-2", farmerName: "Petani HJP.0002.A", groupName: "Lembaga Lain" },
+      { parcelId: "ASP.0003.A", landParcelId: "lp-3", farmerName: "Petani ASP.0003.A", groupName: "Lembaga Lain" },
+      { parcelId: "HJP.0004.A", landParcelId: null, farmerName: "Petani HJP.0004.A", groupName: "Lembaga Lain" },
+    ]);
+  });
+
+  it("BY_FARMER_GROUP: lahan tetangga di Lembaga lain → landParcelId null (nama tetap tampil, tautan tidak)", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-1"] });
+    db.landParcelMarker.findMany.mockResolvedValue([LINK]);
+    expect(await sharedIds()).toEqual(["lp-2", null, null]);
+  });
+
+  it("BY_DISTRICT: hanya lahan tetangga di distrik scope yang bertautan", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["1402"] });
+    db.landParcelMarker.findMany.mockResolvedValue([LINK]);
+    expect(await sharedIds()).toEqual([null, "lp-3", null]);
+  });
+
+  it("tanpa foto → photoUrl null; sourceRevision = revisi lahan → polygonChangedSince false; lahan tanpa poligon → hasGeometry false", async () => {
+    db.landParcel.findFirst.mockResolvedValue({ ...PARCEL, geometry: null });
+    db.landParcelMarker.findMany.mockResolvedValue([{ ...LINK, sourceRevision: 1, marker: { ...LINK.marker, photoKey: null, parcels: [] } }]);
+    const out = await actions.getLandParcelMarkers("lp-1");
+    expect(out).toMatchObject({ hasGeometry: false, polygonChangedSince: false });
+    expect(out?.markers[0]).toMatchObject({ photoUrl: null, sharedWith: [] });
+  });
+});
+
+describe("createMarkersFromPolygon — isi transaksi (audit #440 F2)", () => {
+  const VERTS = [{ lon: 101.19, lat: 0.52 }, { lon: 101.191, lat: 0.52 }, { lon: 101.191, lat: 0.521 }, { lon: 101.19, lat: 0.521 }];
+  // Vertex pertama sudah tertaut ke lahan ini; vertex kedua berimpit patok tetangga yang nonaktif.
+  const NEARBY = [
+    { id: "m-linked", lon: VERTS[0].lon, lat: VERTS[0].lat, parcelIds: ["HJP.0001.A"], linkedToThisParcel: true, isActive: true },
+    { id: "m-nb", lon: VERTS[1].lon, lat: VERTS[1].lat, parcelIds: ["HJP.0002.A"], linkedToThisParcel: false, isActive: false },
+  ];
+  const plan = () => planMarkersFromVertices([VERTS], NEARBY, MARKER_SNAP_M);
+
+  beforeEach(() => {
+    q.fetchSimplifiedVertices.mockResolvedValue([VERTS]);
+    q.fetchNearbyMarkers.mockResolvedValue(NEARBY);
+    db.landParcelMarker.aggregate.mockResolvedValue({ _max: { sequenceNo: 4 } });
+  });
+
+  it("rencana dihitung ulang di server: vertex tertaut → skipped, berimpit → dihidupkan & ditautkan, sisanya dibuat dengan kode beruntun", async () => {
+    const res = await actions.createMarkersFromPolygon({ landParcelId: "lp-1", keepSequenceNos: [1, 2, 3, 4] });
+    expect(res).toEqual({ success: true, data: { created: 2, linked: 1, skipped: 1 } });
+    expect(q.fetchNearbyMarkers).toHaveBeenCalledWith("lp-1", "uid-1");
+    // Kode hanya dialokasikan untuk vertex BARU, sekali, berawalan singkatan Lembaga.
+    expect(q.allocateMarkerCodes).toHaveBeenCalledExactlyOnceWith(db, "HJP", 2);
+    const fresh = plan().filter((c) => !c.existingMarkerId);
+    expect(db.landMarker.create.mock.calls.map((c) => c[0].data)).toEqual([
+      { code: "HJP-PTK-000001", longitude: fresh[0].lon, latitude: fresh[0].lat, source: "POLYGON_VERTEX", createdBy: "user-1" },
+      { code: "HJP-PTK-000002", longitude: fresh[1].lon, latitude: fresh[1].lat, source: "POLYGON_VERTEX", createdBy: "user-1" },
+    ]);
+    expect(db.landMarker.update).toHaveBeenCalledExactlyOnceWith({ where: { id: "m-nb" }, data: { isActive: true, modifiedBy: "user-1" } });
+    // Nomor urut lanjut dari maksimum tautan aktif (4) — urut rencana, yang di-skip tidak memakan nomor.
+    const upserts = db.landParcelMarker.upsert.mock.calls.map((c) => c[0]);
+    expect(upserts.map((u) => u.create.sequenceNo)).toEqual([5, 6, 7]);
+    for (const u of upserts) {
+      expect(u.where.parcelUid_markerId.parcelUid).toBe("uid-1");
+      expect(u.create).toMatchObject({ parcelUid: "uid-1", createdBy: "user-1", sourceRevision: 1 });
+      expect(u.update).toMatchObject({ isActive: true, modifiedBy: "user-1", sourceRevision: 1 });
+    }
+    const linkedOrder = plan().filter((c) => !c.alreadyLinked).map((c) => c.existingMarkerId ?? "baru");
+    expect(upserts.map((u) => (u.create.markerId === "m-nb" ? "m-nb" : "baru"))).toEqual(linkedOrder);
+    expect((db.$transaction.mock.calls[0][1] as { timeout: number }).timeout).toBeGreaterThanOrEqual(20_000);
+  });
+
+  it("hanya vertex yang dicentang diproses; centang vertex tertaut saja → skipped tanpa tulis", async () => {
+    const linkedSeq = plan().find((c) => c.alreadyLinked)!.sequenceNo;
+    const res = await actions.createMarkersFromPolygon({ landParcelId: "lp-1", keepSequenceNos: [linkedSeq] });
+    expect(res).toEqual({ success: true, data: { created: 0, linked: 0, skipped: 1 } });
+    expect(q.allocateMarkerCodes).toHaveBeenCalledWith(db, "HJP", 0);
+    expect(db.landMarker.create).not.toHaveBeenCalled();
+    expect(db.landParcelMarker.upsert).not.toHaveBeenCalled();
+  });
+
+  it("galat di transaksi: P2002 → pesan bentrok nomor; galat lain → pesan umum (bukan teks Prisma)", async () => {
+    db.$transaction.mockRejectedValueOnce(Object.assign(new Error("unique"), { code: "P2002" }));
+    const clash = await actions.createMarkersFromPolygon({ landParcelId: "lp-1", keepSequenceNos: [1] });
+    expect(clash).toMatchObject({ success: false, error: expect.stringMatching(/bentrok/) });
+
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    db.$transaction.mockRejectedValueOnce(new Error("koneksi putus"));
+    expect(await actions.createMarkersFromPolygon({ landParcelId: "lp-1", keepSequenceNos: [1] })).toEqual({ success: false, error: "Gagal menyimpan patok dari poligon" });
+    spy.mockRestore();
+  });
+});
+
+describe("updateLandMarker — isi pembaruan: digeser / sumber / modifiedBy (audit #440 F2)", () => {
+  const UPDATE = { landParcelId: "lp-1", markerId: "m-1", longitude: POINT.lon, latitude: POINT.lat, condition: "DAMAGED", type: "CONCRETE", notes: "miring" };
+  const link = (source = "POLYGON_VERTEX") => ({ id: "link-1", marker: { longitude: POINT.lon, latitude: POINT.lat, source } });
+
+  it("patok tak tertaut aktif ke lahan ini → 'tidak ditemukan pada lahan ini', tanpa update", async () => {
+    const res = await actions.updateLandMarker(UPDATE);
+    expect(res).toEqual({ success: false, error: "Patok tidak ditemukan pada lahan ini" });
+    expect(db.landParcelMarker.findFirst.mock.calls[0][0].where).toEqual({ parcelUid: "uid-1", markerId: "m-1", isActive: true });
+    expect(db.landMarker.update).not.toHaveBeenCalled();
+  });
+
+  it("koordinat sama (hanya kondisi berubah) → koordinat & sumber dibiarkan, guard jarak dilewati, modifiedBy diisi", async () => {
+    db.landParcelMarker.findFirst.mockResolvedValue(link());
+    const res = await actions.updateLandMarker(UPDATE);
+    expect(res).toEqual({ success: true, data: { id: "m-1" } });
+    expect(q.distancesToParcelBoundary).not.toHaveBeenCalled();
+    const { where, data } = db.landMarker.update.mock.calls[0][0];
+    expect(where).toEqual({ id: "m-1" });
+    expect(data).toEqual({ source: "POLYGON_VERTEX", condition: "DAMAGED", type: "CONCRETE", installedAt: null, installedBy: null, notes: "miring", modifiedBy: "user-1" });
+  });
+
+  it("selisih pembulatan form (< 20 cm) → tidak dianggap digeser", async () => {
+    db.landParcelMarker.findFirst.mockResolvedValue(link());
+    await actions.updateLandMarker({ ...UPDATE, longitude: POINT.lon + 0.000001 }); // ±11 cm
+    expect(db.landMarker.update.mock.calls[0][0].data).not.toHaveProperty("longitude");
+    expect(q.distancesToParcelBoundary).not.toHaveBeenCalled();
+  });
+
+  it("digeser (±11 m) dari vertex poligon → koordinat baru disimpan, sumber jadi GPS, guard jarak dijalankan", async () => {
+    db.landParcelMarker.findFirst.mockResolvedValue(link());
+    const lon = POINT.lon + 0.0001;
+    await actions.updateLandMarker({ ...UPDATE, longitude: lon });
+    expect(q.distancesToParcelBoundary).toHaveBeenCalledWith("lp-1", [{ lon, lat: POINT.lat }, { lon: POINT.lat, lat: lon }]);
+    expect(db.landMarker.update.mock.calls[0][0].data).toMatchObject({ longitude: lon, latitude: POINT.lat, source: "GPS", modifiedBy: "user-1" });
+  });
+
+  it("digeser dari patok MANUAL → sumber tetap MANUAL", async () => {
+    db.landParcelMarker.findFirst.mockResolvedValue(link("MANUAL"));
+    await actions.updateLandMarker({ ...UPDATE, longitude: POINT.lon + 0.0001 });
+    expect(db.landMarker.update.mock.calls[0][0].data.source).toBe("MANUAL");
+  });
+
+  it("digeser > 100 m dari batas lahan → fieldError longitude, tanpa update; lahan tanpa poligon → guard dilewati", async () => {
+    db.landParcelMarker.findFirst.mockResolvedValue(link());
+    q.distancesToParcelBoundary.mockImplementation(async (_id: string, pts: unknown[]) => pts.map(() => 250));
+    const far = await actions.updateLandMarker({ ...UPDATE, longitude: POINT.lon + 0.0001 });
+    expect(far).toMatchObject({ success: false, error: { longitude: [expect.stringMatching(/250 m/)] } });
+    expect(db.landMarker.update).not.toHaveBeenCalled();
+
+    db.landParcel.findFirst.mockResolvedValue({ ...PARCEL, geometry: null });
+    q.distancesToParcelBoundary.mockClear();
+    const noGeom = await actions.updateLandMarker({ ...UPDATE, longitude: POINT.lon + 0.0001 });
+    expect(noGeom.success).toBe(true);
+    expect(q.distancesToParcelBoundary).not.toHaveBeenCalled();
+  });
+
+  it("update gagal P2002 → pesan bentrok yang bisa ditindaklanjuti", async () => {
+    db.landParcelMarker.findFirst.mockResolvedValue(link());
+    db.landMarker.update.mockRejectedValueOnce(Object.assign(new Error("unique"), { code: "P2002" }));
+    expect(await actions.updateLandMarker(UPDATE)).toMatchObject({ success: false, error: expect.stringMatching(/bentrok/) });
+  });
+});
+
+describe("unlinkLandMarker — scope (audit #440 F2)", () => {
+  it("lahan di luar scope → 'di luar akses', tautan tak dicek, tanpa transaksi", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-lain"] });
+    db.landParcel.findFirst.mockResolvedValue(null);
+    const res = await actions.unlinkLandMarker("lp-1", "m-1");
+    expect(res).toMatchObject({ success: false, error: expect.stringMatching(/di luar akses/) });
+    expect(db.landParcel.findFirst.mock.calls[0][0].where).toEqual({ id: "lp-1", isActive: true, farmer: { farmerGroupId: { in: ["kt-lain"] } } });
+    expect(db.landParcelMarker.findFirst).not.toHaveBeenCalled();
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("patok tak tertaut ke lahan ini → 'tidak ditemukan', tanpa transaksi", async () => {
+    expect(await actions.unlinkLandMarker("lp-1", "m-lain")).toEqual({ success: false, error: "Patok tidak ditemukan pada lahan ini" });
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("renumberLandMarkers — validasi urutan & dua tahap (audit #440 F2)", () => {
+  const LINKS = [{ id: "l-a", markerId: "m-a" }, { id: "l-b", markerId: "m-b" }, { id: "l-c", markerId: "m-c" }];
+  const ORDER_ERR = "Daftar urutan harus memuat semua patok lahan ini, masing-masing sekali";
+  beforeEach(() => db.landParcelMarker.findMany.mockResolvedValue(LINKS));
+
+  it("Zod gagal (order kosong / tanpa lahan) → 'Input tidak valid' tanpa kueri", async () => {
+    expect(await actions.renumberLandMarkers({ landParcelId: "lp-1", order: [] })).toEqual({ success: false, error: "Input tidak valid" });
+    expect(await actions.renumberLandMarkers({ landParcelId: "", order: ["m-a"] })).toEqual({ success: false, error: "Input tidak valid" });
+    expect(db.landParcel.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("lahan di luar scope → 'di luar akses', tautan tak dibaca", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-lain"] });
+    db.landParcel.findFirst.mockResolvedValue(null);
+    const res = await actions.renumberLandMarkers({ landParcelId: "lp-1", order: ["m-a", "m-b", "m-c"] });
+    expect(res).toMatchObject({ success: false, error: expect.stringMatching(/di luar akses/) });
+    expect(db.landParcel.findFirst.mock.calls[0][0].where).toMatchObject({ farmer: { farmerGroupId: { in: ["kt-lain"] } } });
+    expect(db.landParcelMarker.findMany).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["kurang satu patok", ["m-a", "m-b"]],
+    ["patok lahan lain", ["m-a", "m-b", "m-x"]],
+    ["patok ganda (panjang sama)", ["m-a", "m-a", "m-b"]],
+    ["kelebihan", ["m-a", "m-b", "m-c", "m-c"]],
+  ])("daftar tidak lengkap/unik (%s) → ditolak tanpa transaksi", async (_label, order) => {
+    expect(await actions.renumberLandMarkers({ landParcelId: "lp-1", order })).toEqual({ success: false, error: ORDER_ERR });
+    expect(db.landParcelMarker.findMany.mock.calls[0][0].where).toEqual({ parcelUid: "uid-1", isActive: true });
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("valid → tahap 1 parkir di nomor negatif, tahap 2 nomor 1..n sesuai urutan baru + modifiedBy", async () => {
+    const res = await actions.renumberLandMarkers({ landParcelId: "lp-1", order: ["m-c", "m-a", "m-b"] });
+    expect(res).toEqual({ success: true });
+    expect(db.landParcelMarker.update.mock.calls.map((c) => c[0])).toEqual([
+      { where: { id: "l-c" }, data: { sequenceNo: -1 } },
+      { where: { id: "l-a" }, data: { sequenceNo: -2 } },
+      { where: { id: "l-b" }, data: { sequenceNo: -3 } },
+      { where: { id: "l-c" }, data: { sequenceNo: 1, modifiedBy: "user-1" } },
+      { where: { id: "l-a" }, data: { sequenceNo: 2, modifiedBy: "user-1" } },
+      { where: { id: "l-b" }, data: { sequenceNo: 3, modifiedBy: "user-1" } },
+    ]);
+    expect((db.$transaction.mock.calls[0][1] as { timeout: number }).timeout).toBeGreaterThanOrEqual(20_000);
+  });
+
+  it("transaksi gagal P2002 → pesan bentrok, bukan teks Prisma", async () => {
+    db.$transaction.mockRejectedValueOnce(Object.assign(new Error("unique"), { code: "P2002" }));
+    expect(await actions.renumberLandMarkers({ landParcelId: "lp-1", order: ["m-a", "m-b", "m-c"] })).toMatchObject({ success: false, error: expect.stringMatching(/bentrok/) });
+  });
+});
+
+describe("getFarmerGroupMarkerExportRows — id & scope Lembaga (audit #440 F2)", () => {
+  it("id kosong / bukan string → 'Lembaga tidak valid' tanpa kueri", async () => {
+    expect(await actions.getFarmerGroupMarkerExportRows("")).toEqual({ success: false, error: "Lembaga tidak valid" });
+    expect(await actions.getFarmerGroupMarkerExportRows(123 as never)).toEqual({ success: false, error: "Lembaga tidak valid" });
+    expect(getAccessContext).not.toHaveBeenCalled();
+    expect(db.farmerGroup.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("Lembaga di luar scope (findFirst null) → sukses 0 baris, label null, lahan tidak dikueri", async () => {
+    db.farmerGroup.findFirst.mockResolvedValue(null);
+    expect(await actions.getFarmerGroupMarkerExportRows("kt-lain")).toEqual({ success: true, data: { rows: [], label: null } });
+    expect(db.farmerGroup.findFirst.mock.calls[0][0].where).toMatchObject({ id: "kt-lain", isActive: true });
+    expect(db.farmerGroup.findFirst.mock.calls[0][0].where).toHaveProperty("AND");
+    expect(db.landParcel.findMany).not.toHaveBeenCalled();
+  });
+
+  it("Lembaga dalam scope → satu baris per patok per lahan, sharedWith = lahan lain; label = kode Lembaga (kosong → nama)", async () => {
+    db.landParcel.findMany.mockResolvedValue([
+      {
+        parcelId: "HJP.0001.A", parcelUid: "uid-1", subGroupLv2: "KT Maju", blok: "B1",
+        farmer: { farmerId: "HJP.0001", name: "Ani", farmerGroup: { name: "HJP" } },
+        identity: {
+          markers: [{
+            sequenceNo: 1,
+            marker: {
+              id: "m-1", code: "HJP-PTK-000001", longitude: POINT.lon, latitude: POINT.lat, condition: "PRESENT", type: "CONCRETE",
+              installedAt: new Date("2026-09-01T00:00:00.000Z"), installedBy: "Tim", source: "GPS", notes: null,
+              parcels: [{ parcelUid: "uid-1", parcel: { parcelId: "HJP.0001.A" } }, { parcelUid: "uid-2", parcel: { parcelId: "HJP.0002.A" } }],
+            },
+          }],
+        },
+      },
+    ]);
+    const res = await actions.getFarmerGroupMarkerExportRows("kt-1");
+    expect(db.landParcel.findMany.mock.calls[0][0].where).toEqual({ isActive: true, farmer: { isActive: true, farmerGroupId: "kt-1" } });
+    expect(res).toEqual({
+      success: true,
+      data: {
+        label: "ISH-1401-03",
+        rows: [{
+          markerId: "m-1", code: "HJP-PTK-000001", parcelId: "HJP.0001.A", farmerCode: "HJP.0001", farmerName: "Ani", groupName: "HJP",
+          subGroupLv2: "KT Maju", blok: "B1", sequenceNo: 1, latitude: POINT.lat, longitude: POINT.lon, condition: "PRESENT", type: "CONCRETE",
+          installedAt: "2026-09-01", installedBy: "Tim", source: "GPS", sharedWith: ["HJP.0002.A"], notes: null,
+        }],
+      },
+    });
+
+    db.farmerGroup.findFirst.mockResolvedValue({ code: "  ", name: "HJP Nama" });
+    db.landParcel.findMany.mockResolvedValue([]);
+    expect(await actions.getFarmerGroupMarkerExportRows("kt-1")).toEqual({ success: true, data: { rows: [], label: "HJP Nama" } });
   });
 });

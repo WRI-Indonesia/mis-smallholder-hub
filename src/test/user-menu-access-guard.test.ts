@@ -107,3 +107,29 @@ describe("setUserMenuOverride / removeUserMenuOverride", () => {
     expect(await actions.removeUserMenuOverride("u-1", "x", "VIEW")).toEqual({ success: true });
   });
 });
+
+describe("validasi Zod (#440 F2) — input mentah ditolak sebelum DB", () => {
+  const set = actions.setUserMenuOverride as (...a: unknown[]) => Promise<{ success: boolean; error?: string }>;
+  const remove = actions.removeUserMenuOverride as (...a: unknown[]) => Promise<{ success: boolean; error?: string }>;
+
+  it("set: userId/menuKey kosong, level asing, granted bukan boolean → { success:false } string, tanpa query/upsert", async () => {
+    for (const args of [
+      ["", "m", "VIEW", true],
+      ["u-1", "", "VIEW", true],
+      ["u-1", "m", "SUDO", true],
+      ["u-1", "m", "VIEW", "true"],
+      [42, "m", "VIEW", true],
+    ]) {
+      expect(await set(...args)).toEqual({ success: false, error: "Data hak akses tidak valid" });
+    }
+    expect(db.user.findUnique).not.toHaveBeenCalled();
+    expect(db.userPermissionOverride.upsert).not.toHaveBeenCalled();
+  });
+
+  it("remove: input tak valid → { success:false } (bukan sukses diam-diam), tanpa update", async () => {
+    for (const args of [["", "m", "VIEW"], ["u-1", null, "VIEW"], ["u-1", "m", "view"]]) {
+      expect(await remove(...args)).toEqual({ success: false, error: "Data hak akses tidak valid" });
+    }
+    expect(db.userPermissionOverride.update).not.toHaveBeenCalled();
+  });
+});

@@ -124,56 +124,6 @@ describe("LandParcel Schema - Update Validation", () => {
   });
 });
 
-describe("LandParcel Query Filter Resolution", () => {
-  type AccessContext =
-    | { mode: "ALL" }
-    | { mode: "BY_FARMER_GROUP"; ids: string[] }
-    | { mode: "BY_DISTRICT"; ids: string[] };
-
-  function buildLandParcelWhereClause(
-    access: AccessContext,
-    search?: string,
-    farmerId?: string
-  ) {
-    const accessFilter =
-      access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } :
-      access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
-      {};
-
-    // #127: list memuat record aktif & nonaktif (filter Status di UI) — tidak lagi hard-filter isActive.
-    return {
-      ...accessFilter,
-      ...(farmerId ? { farmerId } : {}),
-      ...(search
-        ? {
-            OR: [
-              { parcelId: { contains: search, mode: "insensitive" as const } },
-              { farmer: { name: { contains: search, mode: "insensitive" as const } } },
-              { farmer: { farmerId: { contains: search, mode: "insensitive" as const } } },
-            ],
-          }
-        : {}),
-    };
-  }
-
-  it("builds correct filter for mode ALL", () => {
-    const where = buildLandParcelWhereClause({ mode: "ALL" });
-    expect((where as Record<string, unknown>).isActive).toBeUndefined();
-    expect(where.farmerId).toBeUndefined();
-    expect((where as Record<string, unknown>).farmer).toBeUndefined();
-  });
-
-  it("builds correct filter for mode BY_FARMER_GROUP", () => {
-    const where = buildLandParcelWhereClause({ mode: "BY_FARMER_GROUP", ids: ["fg-1", "fg-2"] });
-    expect((where as Record<string, unknown>).farmer).toEqual({ farmerGroupId: { in: ["fg-1", "fg-2"] } });
-  });
-
-  it("builds correct filter for mode BY_DISTRICT", () => {
-    const where = buildLandParcelWhereClause({ mode: "BY_DISTRICT", ids: ["dist-1", "dist-2"] });
-    expect((where as Record<string, unknown>).farmer).toEqual({ farmerGroup: { districtId: { in: ["dist-1", "dist-2"] } } });
-  });
-});
-
 describe("LandParcel Bulk Upload Row Validation Logic", () => {
   interface FarmerMapping {
     id: string;

@@ -179,6 +179,45 @@ describe("scope — baca & target mutasi lewat farmerRelationAccessFilter", () =
     });
   });
 
+  it("STDB bersama (#440 F2): ID Lahan lain tampil apa pun scope, tautan `id` hanya dalam scope", async () => {
+    const link = (parcelId: string, revId: string, farmerGroupId: string, districtId: string) => ({
+      parcel: { parcelId, revisions: [{ id: revId, farmer: { farmerGroupId, farmerGroup: { districtId } } }] },
+    });
+    db.landParcelStdb.findMany.mockResolvedValue([
+      {
+        stdb: {
+          id: "stdb-1", number: "STDB/01", holderName: null, statedArea: null, issuedYear: null, notes: null,
+          stage: "TERBIT", stageChangedAt: null, stageNote: null, submittedTo: null, preparedAt: null, submittedAt: null, issuedAt: null,
+          parcelLinks: [
+            link("HJP.0002.A", "lp-2", "kt-1", "1401"), // Lembaga sendiri
+            link("KBM.0100.A", "lp-3", "kt-9", "1402"), // Lembaga lain, distrik lain
+            { parcel: { parcelId: "HJP.0003.A", revisions: [] } }, // tanpa revisi aktif → dilewati
+          ],
+        },
+      },
+    ]);
+
+    getAccessContext.mockResolvedValue(BY_GROUP);
+    const res = await actions.getLandParcelSatellites("lp-1");
+    expect(res?.stdbs[0].otherParcels).toEqual([
+      { parcelId: "HJP.0002.A", id: "lp-2" },
+      { parcelId: "KBM.0100.A", id: null },
+    ]);
+    // Kueri STDB tetap lewat baris lahan yang diminta (scope) dan memuat farmer untuk uji scope.
+    expect(db.landParcel.findFirst.mock.calls[0][0].where).toMatchObject({ id: "lp-1", farmer: { farmerGroupId: { in: ["kt-1"] } } });
+    const links = db.landParcelStdb.findMany.mock.calls[0][0].select.stdb.select.parcelLinks;
+    expect(links.select.parcel.select.revisions.select.farmer).toBeDefined();
+
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["1402"] });
+    expect((await actions.getLandParcelSatellites("lp-1"))?.stdbs[0].otherParcels).toEqual([
+      { parcelId: "HJP.0002.A", id: null },
+      { parcelId: "KBM.0100.A", id: "lp-3" },
+    ]);
+
+    getAccessContext.mockResolvedValue({ mode: "ALL" });
+    expect((await actions.getLandParcelSatellites("lp-1"))?.stdbs[0].otherParcels.map((p) => p.id)).toEqual(["lp-2", "lp-3"]);
+  });
+
   it("getLandParcelNeighbors meneruskan access ke fetchParcelNeighbors (nama di luar scope dibuang di sana)", async () => {
     getAccessContext.mockResolvedValue(BY_DISTRICT);
     await actions.getLandParcelNeighbors("lp-1");
@@ -238,6 +277,28 @@ describe("tulis — Zod, duplikat, revisi, audit, soft delete", () => {
     expect(res.error).toEqual({ parcelId: ["ID Lahan sudah terdaftar untuk petani ini"] });
     expect(db.landParcel.findFirst.mock.calls[0][0].where).toEqual({ farmerId: "f-1", parcelId: "HJP.0001.A", isActive: true });
     expect(db.landParcel.create).not.toHaveBeenCalled();
+  });
+
+  it("updateLandParcel: input tak valid (Zod) → fieldErrors, tanpa query/tulis", async () => {
+    const res = await actions.updateLandParcel({ id: "lp-1", ...parcelInput({ parcelId: "", area: -1 }) });
+    expect(res.success).toBe(false);
+    expect(res.error).toHaveProperty("parcelId");
+    expect(getAccessContext).not.toHaveBeenCalled();
+    expect(db.landParcel.findFirst).not.toHaveBeenCalled();
+    expect(db.landParcel.update).not.toHaveBeenCalled();
+  });
+
+  it("updateLandParcel: ganti ke ID Lahan yang sudah aktif untuk petani yang sama → ditolak, identitas tak dipindah", async () => {
+    db.landParcel.findFirst.mockImplementation(async ({ where }: { where: { id?: unknown } }) =>
+      typeof where.id === "string" ? EXISTING : { id: "lp-lain" },
+    );
+    const res = await actions.updateLandParcel({ id: "lp-1", ...parcelInput({ parcelId: "HJP.0002.A" }) });
+    expect(res).toEqual({ success: false, error: { parcelId: ["ID Lahan sudah terdaftar untuk petani ini"] } });
+    expect(db.landParcel.findFirst.mock.calls[1][0].where).toEqual({
+      id: { not: "lp-1" }, farmerId: "f-1", parcelId: "HJP.0002.A", isActive: true,
+    });
+    expect(db.landParcelIdentity.update).not.toHaveBeenCalled();
+    expect(db.landParcel.update).not.toHaveBeenCalled();
   });
 
   it("createLandParcel sukses → identitas di-upsert, revision 0, createdBy dari sesi", async () => {

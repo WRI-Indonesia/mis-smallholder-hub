@@ -111,8 +111,9 @@ describe("scope — pelatihan & Lembaga target", () => {
   it("getTrainingActivities BY_DISTRICT → farmerGroup.districtId in ids; non-SUPERADMIN hanya aktif", async () => {
     getAccessContext.mockResolvedValue(BY_DISTRICT);
     await actions.getTrainingActivities();
+    // Scope di `AND` (#440) agar parameter `farmerGroupId` tak menimpanya.
     expect(db.trainingActivity.findMany.mock.calls[0][0].where).toMatchObject({
-      farmerGroup: { districtId: { in: ["1401"] } }, isActive: true,
+      AND: [{ farmerGroup: { districtId: { in: ["1401"] } } }], isActive: true,
     });
   });
 

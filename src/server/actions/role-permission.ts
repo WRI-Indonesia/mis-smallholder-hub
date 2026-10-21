@@ -7,6 +7,7 @@ import { rolePermissionEditError } from "@/lib/user-admin-guard";
 import type { Role, PermissionLevel } from "@prisma/client";
 import type { ActionResult } from "@/types/action-result";
 import { normalizeRolePermissionUpdates, type RolePermissionUpdate } from "@/lib/role-permission-updates";
+import { rolePermissionUpdatesSchema, USER_ACCESS_INVALID_INPUT } from "@/validations/user-access.schema";
 
 export async function getRolePermissions() {
   if (!(await hasPermission("settings-roles", "VIEW"))) {
@@ -34,12 +35,15 @@ export async function setRolePermissions(
     return { success: false, error: "Tidak memiliki izin untuk mengubah permission" };
   }
 
+  const parsed = rolePermissionUpdatesSchema.safeParse(updates);
+  if (!parsed.success) return { success: false, error: USER_ACCESS_INVALID_INPUT };
+
   const session = await auth();
   // Anti-eskalasi (#386 butir 2): pemegang izin ini bisa menaikkan izin perannya sendiri → SUPERADMIN saja.
   const editError = rolePermissionEditError({ id: session?.user?.id ?? "", role: session?.user?.role ?? "" });
   if (editError) return { success: false, error: editError };
   const userId = session?.user?.id ?? null;
-  const valid = normalizeRolePermissionUpdates(updates);
+  const valid = normalizeRolePermissionUpdates(parsed.data);
   if (valid.length === 0) return { success: true, data: { count: 0 } };
 
   // Batch (#246): satu findMany + updateMany aktif/nonaktif + createMany — bukan

@@ -47,8 +47,19 @@ describe("guard menu dashboard-bmp-monev", () => {
     hasPermission.mockResolvedValue(false);
     await expect(getBmpMonevDashboardView()).rejects.toThrow(/izin/);
     await expect(getBmpMonevPriorityFarmers({ districtId: null, groupId: null, year: 2026 })).rejects.toThrow(/izin/);
+    // Key & level di-hardcode di action — satu cek per action, key menu.csv `dashboard-bmp-monev`.
+    expect(hasPermission.mock.calls).toEqual([["dashboard-bmp-monev", "VIEW"], ["dashboard-bmp-monev", "VIEW"]]);
+    expect(getAccessContext).not.toHaveBeenCalled();
     expect(db.farmerGroup.findMany).not.toHaveBeenCalled();
     expect(db.bmpAssessment.findMany).not.toHaveBeenCalled();
+  });
+
+  it("VIEW diizinkan → masing-masing action memeriksa dashboard-bmp-monev:VIEW lebih dulu", async () => {
+    await getBmpMonevDashboardView();
+    expect(hasPermission.mock.calls[0]).toEqual(["dashboard-bmp-monev", "VIEW"]);
+    hasPermission.mockClear();
+    await getBmpMonevPriorityFarmers({ districtId: null, groupId: null, year: 2026 });
+    expect(hasPermission.mock.calls[0]).toEqual(["dashboard-bmp-monev", "VIEW"]);
   });
 
   it("scope BY_FARMER_GROUP: view memfilter Lembaga; prioritas memasang filter lewat AND di relasi farmerGroup + tahun wajib bilangan bulat", async () => {

@@ -44,7 +44,7 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
-const { updateFarmer, createFarmer, toggleFarmerActive, getFarmerParcelPassport } = await import("@/server/actions/farmer");
+const { updateFarmer, createFarmer, toggleFarmerActive, getFarmerParcelPassport, getFarmerDetail } = await import("@/server/actions/farmer");
 
 const BY_GROUP = { mode: "BY_FARMER_GROUP", ids: ["G1"] };
 const BY_DISTRICT = { mode: "BY_DISTRICT", ids: ["D1"] };
@@ -165,6 +165,17 @@ describe("createFarmer — Lembaga tujuan, keunikan ID, audit (TS-6)", () => {
     expectNoDb();
   });
 
+  it("Zod gagal → fieldErrors per kolom (Lembaga kosong, nama pendek, JK asing), tanpa scope/kueri (#440)", async () => {
+    const res = await createFarmer({ ...NEW, farmerGroupId: "", name: "S", gender: "X" as never });
+    expect(res).toMatchObject({
+      success: false,
+      error: { farmerGroupId: expect.any(Array), name: expect.any(Array), gender: expect.any(Array) },
+    });
+    expect(getAccessContext).not.toHaveBeenCalled();
+    expect(db.farmer.create).not.toHaveBeenCalled();
+    expectNoDb();
+  });
+
   it("Lembaga tujuan di luar scope → ditolak; where = id + isActive + scope di AND; create tak dipanggil", async () => {
     getAccessContext.mockResolvedValue(BY_DISTRICT);
     expect(await createFarmer({ ...NEW, farmerGroupId: "G3" })).toMatchObject({ success: false, error: expect.stringMatching(/lembaga tani ini/) });
@@ -235,5 +246,15 @@ describe("getFarmerParcelPassport — guard PRINT menu Petani", () => {
     passport.fetchParcelPassport.mockResolvedValue({ success: true, data: { id: "lp-1" } });
     expect(await getFarmerParcelPassport("lp-1")).toEqual({ success: true, data: { id: "lp-1" } });
     expect(passport.fetchParcelPassport).toHaveBeenCalledExactlyOnceWith("lp-1", true);
+  });
+});
+
+describe("getFarmerDetail — guard VIEW (#440)", () => {
+  it("tanpa VIEW master-data-farmers → throw, scope & DB tak disentuh", async () => {
+    hasPermission.mockResolvedValue(false);
+    await expect(getFarmerDetail("F1")).rejects.toThrow(/izin/);
+    expect(hasPermission).toHaveBeenCalledExactlyOnceWith("master-data-farmers", "VIEW");
+    expect(getAccessContext).not.toHaveBeenCalled();
+    expectNoDb();
   });
 });

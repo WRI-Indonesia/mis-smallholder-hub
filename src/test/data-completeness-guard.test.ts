@@ -327,3 +327,80 @@ describe("filter dropdown — getDistrictsForCompleteness & getFarmerGroupsForCo
     expect(db.farmerGroup.findMany.mock.calls[1][0].select).toEqual({ id: true, name: true, code: true, districtId: true });
   });
 });
+
+describe("pemetaan DTO petani & persil (Lembaga berisi petani)", () => {
+  // Lembaga dengan 2 petani / 3 persil — jalur flatten di kedua action yang
+  // tak tersentuh fixture `farmers: []` di atas: sentinel geometry, flag modul
+  // per persil (parcelUid) & per petani, luas poligon, dan saring partisipasi tamu.
+  const parcel = (id: string, parcelUid: string) => ({
+    id,
+    parcelUid,
+    parcelId: `A.${id}`,
+    area: 1,
+    plantingYear: 2010,
+    cropType: "SAWIT",
+    landStatus: "MILIK",
+    subGroupLv2: "KT 1",
+    blok: "B1",
+    isPsr: false,
+  });
+  const farmer = (id: string, parcels: ReturnType<typeof parcel>[], trainingParticipants: unknown[] = []) => ({
+    id,
+    farmerId: `F-${id}`,
+    name: `Petani ${id}`,
+    gender: "M",
+    nik: "1401010101010001",
+    address: "Desa",
+    birthPlace: "Kampar",
+    birthDate: new Date("1980-01-01"),
+    joinedYear: 2015,
+    landParcels: parcels,
+    trainingParticipants,
+    productionRecords: [],
+  });
+  const ownTp = { id: "tp-1", preTestScore: 60, postTestScore: 80, activity: { farmerGroupId: "g-1", package: { code: "P1" } } };
+  // Partisipasi di activity Lembaga lain — DA-02 menyaringnya di kueri, DA-03 di JS.
+  const guestTp = { id: "tp-9", preTestScore: null, postTestScore: null, activity: { farmerGroupId: "g-9", package: { code: "P1" } } };
+  const farmers = (withGuest: boolean) => [
+    farmer("f-1", [parcel("p-1", "pu-1"), parcel("p-2", "pu-2")], withGuest ? [ownTp, guestTp] : [ownTp]),
+    farmer("f-2", [parcel("p-3", "pu-3")]),
+  ];
+
+  beforeEach(() => {
+    db.trainingPackage.findMany.mockResolvedValue([{ code: "P1", name: "Paket 1" }]);
+    db.farmerGroup.findFirst.mockResolvedValue({ ...GROUP, farmers: farmers(false) });
+    db.farmerGroup.findMany.mockResolvedValue([{ ...GROUP, farmers: farmers(true) }]);
+    db.landParcel.findMany.mockResolvedValue([{ id: "p-1" }]); // hanya p-1 ber-geometry
+    db.landParcelDocument.groupBy.mockResolvedValue([{ parcelUid: "pu-1" }, { parcelUid: "pu-3" }]);
+    db.tree.groupBy.mockResolvedValue([{ landParcelId: "p-2" }]);
+    db.landStdb.groupBy.mockResolvedValue([{ farmerId: "f-2" }]);
+  });
+
+  const coverage = (list: { key: string; covered: number; total: number }[], key: string) => {
+    const m = list.find((x) => x.key === key);
+    return m && { covered: m.covered, total: m.total };
+  };
+
+  it("DA-02: flag modul persil (parcelUid / id revisi) & petani terhitung per butir", async () => {
+    const res = await analyzeFarmerGroupCompleteness("g-1");
+    expect(res.totalFarmers).toBe(2);
+    expect(coverage(res.moduleCoverage, "surat-tanah")).toEqual({ covered: 2, total: 3 });
+    expect(coverage(res.moduleCoverage, "pohon")).toEqual({ covered: 1, total: 3 });
+    expect(coverage(res.moduleCoverage, "stdb-petani")).toEqual({ covered: 1, total: 2 });
+  });
+
+  it("DA-03: cakupan & skor identik dengan DA-02 — partisipasi tamu (Lembaga lain) tidak ikut terhitung", async () => {
+    const view = await getDataAvailabilityView();
+    const entry = view.data.groups[0];
+    expect(entry).toMatchObject({ totalFarmers: 2, totalParcels: 3 });
+    expect(coverage(entry.moduleCoverage, "surat-tanah")).toEqual({ covered: 2, total: 3 });
+    expect(coverage(entry.moduleCoverage, "pohon")).toEqual({ covered: 1, total: 3 });
+    expect(coverage(entry.moduleCoverage, "stdb-petani")).toEqual({ covered: 1, total: 2 });
+
+    const res = await analyzeFarmerGroupCompleteness("g-1");
+    expect(entry.healthScore).toBe(res.healthScore);
+    // Partisipasi tamu tanpa pre/post test akan menambah anomali bila lolos saringan.
+    expect(entry.totalAnomalies).toBe(res.totalAnomalies);
+    expect(entry.domainScores.pelatihan).toBe(res.domains.find((d) => d.domain === "pelatihan")?.score);
+  });
+});

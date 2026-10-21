@@ -105,7 +105,7 @@ describe("scope — filter getAccessContext ikut ke where", () => {
     getAccessContext.mockResolvedValue(BY_DISTRICT);
     await actions.getProductionRecords({ farmerGroupId: "kt-9" });
     expect(db.productionRecord.findMany.mock.calls[0][0].where.farmer).toEqual({
-      farmerGroup: { districtId: { in: ["1401"] } },
+      AND: [{ farmerGroup: { districtId: { in: ["1401"] } } }],
       farmerGroupId: "kt-9",
     });
   });
@@ -113,7 +113,7 @@ describe("scope — filter getAccessContext ikut ke where", () => {
   it("getProductionRecords BY_FARMER_GROUP → farmer.farmerGroupId in ids", async () => {
     getAccessContext.mockResolvedValue(BY_GROUP);
     await actions.getProductionRecords();
-    expect(db.productionRecord.findMany.mock.calls[0][0].where.farmer).toEqual({ farmerGroupId: { in: ["kt-1"] } });
+    expect(db.productionRecord.findMany.mock.calls[0][0].where.farmer).toEqual({ AND: [{ farmerGroupId: { in: ["kt-1"] } }] });
   });
 
   it("getProductionRecordById & getParcelPeriodRecords membawa filter relasi petani", async () => {

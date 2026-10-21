@@ -25,8 +25,10 @@ export async function getTrainingActivities(search?: string, farmerGroupId?: str
 
   // Soft-delete: hanya SUPERADMIN yang boleh melihat record nonaktif (badge +
   // filter Status di UI, untuk restore). User lain dibatasi ke record aktif.
+  // Scope di `AND` (#440): di mode BY_FARMER_GROUP filter scope memakai kunci
+  // `farmerGroupId` yang sama — bila di-spread, parameter `farmerGroupId` menimpanya.
   const where = {
-    ...farmerAccessFilter(access),
+    AND: [farmerAccessFilter(access)],
     ...((await isSuperAdmin()) ? {} : { isActive: true }),
     ...(farmerGroupId ? { farmerGroupId } : {}),
     ...(search

@@ -50,11 +50,13 @@ export async function getProductionRecords(params?: {
 
   const access = await getAccessContext();
 
-  // Build nested farmer filter — merge access + farmerGroupId to avoid shallow spread overwrite
+  // Scope di dalam AND: di mode BY_FARMER_GROUP kuncinya sama (`farmerGroupId`),
+  // jadi spread biasa membuat parameter menimpa scope (audit #440, pola BUG-007).
   const farmerGroupFilter = params?.farmerGroupId ? { farmerGroupId: params.farmerGroupId } : {};
+  const scope = farmerAccessFilter(access);
 
   const farmerFilter = {
-    ...farmerAccessFilter(access),
+    ...(Object.keys(scope).length > 0 ? { AND: [scope] } : {}),
     ...farmerGroupFilter,
   };
 
