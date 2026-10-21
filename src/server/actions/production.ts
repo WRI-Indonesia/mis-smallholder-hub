@@ -10,6 +10,7 @@ import {
   farmerAccessFilter,
   farmerRelationAccessFilter,
 } from "@/lib/access-context";
+import { scopeAnd } from "@/lib/access-scope";
 
 // Private helper (bukan server action / endpoint) — hanya dipakai internal oleh
 // create/update yang sudah menjaga permission & scope.
@@ -53,10 +54,8 @@ export async function getProductionRecords(params?: {
   // Scope di dalam AND: di mode BY_FARMER_GROUP kuncinya sama (`farmerGroupId`),
   // jadi spread biasa membuat parameter menimpa scope (audit #440, pola BUG-007).
   const farmerGroupFilter = params?.farmerGroupId ? { farmerGroupId: params.farmerGroupId } : {};
-  const scope = farmerAccessFilter(access);
-
   const farmerFilter = {
-    ...(Object.keys(scope).length > 0 ? { AND: [scope] } : {}),
+    ...scopeAnd(farmerAccessFilter(access)),
     ...farmerGroupFilter,
   };
 

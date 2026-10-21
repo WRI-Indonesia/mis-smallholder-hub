@@ -212,45 +212,45 @@ export async function getTrainingReport(filters: TrainingReportFilters): Promise
     throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
   }
 
-  // Retrieve active training activities in this group, excluding package code 'OTHER'
-  const activities = await prisma.trainingActivity.findMany({
-    where: {
-      isActive: true,
-      farmerGroupId: filters.farmerGroupId,
-      package: {
-        code: {
-          not: "OTHER",
+  // Kegiatan aktif Lembaga ini (tanpa paket 'OTHER') + semua petani aktifnya — dua query independen, paralel.
+  const [activities, farmers] = await Promise.all([
+    prisma.trainingActivity.findMany({
+      where: {
+        isActive: true,
+        farmerGroupId: filters.farmerGroupId,
+        package: {
+          code: {
+            not: "OTHER",
+          },
         },
       },
-    },
-    include: {
-      package: true,
-      participants: {
-        where: { isActive: true },
-        select: {
-          farmerId: true,
-          preTestScore: true,
-          postTestScore: true,
+      include: {
+        package: { select: { code: true, name: true } },
+        participants: {
+          where: { isActive: true },
+          select: {
+            farmerId: true,
+            preTestScore: true,
+            postTestScore: true,
+          },
         },
       },
-    },
-    orderBy: { trainingDate: "asc" },
-  });
-
-  // Retrieve all active farmers in this group
-  const farmers = await prisma.farmer.findMany({
-    where: {
-      isActive: true,
-      farmerGroupId: filters.farmerGroupId,
-    },
-    select: {
-      id: true,
-      farmerId: true,
-      name: true,
-      gender: true,
-    },
-    orderBy: { name: "asc" },
-  });
+      orderBy: { trainingDate: "asc" },
+    }),
+    prisma.farmer.findMany({
+      where: {
+        isActive: true,
+        farmerGroupId: filters.farmerGroupId,
+      },
+      select: {
+        id: true,
+        farmerId: true,
+        name: true,
+        gender: true,
+      },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   // Agregasi murni (tanggal paket terawal, baris kegiatan, peserta unik, cakupan & persen) — lib teruji.
   return buildTrainingReport(activities, farmers);

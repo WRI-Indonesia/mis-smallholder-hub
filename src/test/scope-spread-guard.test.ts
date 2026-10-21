@@ -98,27 +98,48 @@ describe("scope spread tidak menimpa id", () => {
   });
 });
 
-describe("scope spread tidak bertabrakan dengan farmerGroupId (#440)", () => {
-  it("tak ada objek `{ ...farmerAccessFilter(…), farmerGroupId … }` di src", () => {
+/**
+ * Spread scope bertabrakan bila objek yang sama juga memuat kunci milik fragment
+ * scope (`farmerGroupId`/`farmerGroup` untuk `farmerAccessFilter`, `farmer` untuk
+ * `farmerRelationAccessFilter`) atau men-spread variabel yang isinya tak terlihat
+ * (bentuk bocor `getProductionRecords` sebelum #440). Pola aman: `scopeAnd(…)`.
+ */
+const SCOPE_KEYS: Record<string, RegExp> = {
+  farmerAccessFilter: /(^|[\s,])farmerGroup(Id)?\s*(:|,|$)/,
+  farmerRelationAccessFilter: /(^|[\s,])farmer\s*(:|,|$)/,
+};
+/** Spread identifier biasa (bukan panggilan/ekspresi): di teks kunci, `(…)` menjadi `,,`. */
+const VARIABLE_SPREAD = /\.\.\.[A-Za-z_$][\w$]*\s*(?:,(?!,)|$)/;
+
+function collides(src: string, at: number, helper: string): boolean {
+  const keys = enclosingObjectKeysText(src, at);
+  return SCOPE_KEYS[helper].test(keys) || VARIABLE_SPREAD.test(keys);
+}
+
+describe("scope spread tidak bertabrakan dengan kunci scope (#440)", () => {
+  it("tak ada objek yang men-spread farmerAccessFilter/farmerRelationAccessFilter bersama kunci scope atau spread variabel", () => {
     const offenders: string[] = [];
     for (const file of sourceFiles(join(process.cwd(), "src"))) {
       const src = readFileSync(file, "utf8");
-      for (const m of src.matchAll(/\.\.\.farmerAccessFilter\(/g)) {
-        if (/(^|[\s,])farmerGroupId\s*(:|,|$)/.test(enclosingObjectKeysText(src, m.index!))) {
-          offenders.push(lineOf(file, src, m.index!));
-        }
+      for (const m of src.matchAll(/\.\.\.(farmerAccessFilter|farmerRelationAccessFilter)\(/g)) {
+        if (collides(src, m.index!, m[1])) offenders.push(lineOf(file, src, m.index!));
       }
     }
     expect(offenders).toEqual([]);
   });
 
-  it("detektor menangkap pola bocor (literal & spread bersyarat) dan meloloskan pola AND", () => {
-    const hit = (src: string) =>
-      /(^|[\s,])farmerGroupId\s*(:|,|$)/.test(enclosingObjectKeysText(src, src.indexOf("...farmerAccessFilter(")));
+  it("detektor menangkap pola bocor dan meloloskan pola aman", () => {
+    const hit = (src: string, helper = "farmerAccessFilter") => collides(src, src.indexOf(`...${helper}(`), helper);
     expect(hit("const w = { ...farmerAccessFilter(a), isActive: true, ...(g ? { farmerGroupId: g } : {}) };")).toBe(true);
     expect(hit("const w = { ...farmerAccessFilter(a), ...(farmerGroupId ? { farmerGroupId } : {}) };")).toBe(true);
     expect(hit("const w = { farmerGroupId, ...farmerAccessFilter(a) };")).toBe(true);
-    expect(hit("const w = { id, ...farmerAccessFilter(a), farmerGroup: { farmerGroupId: x } };")).toBe(false);
+    // BY_DISTRICT: fragment = `{ farmerGroup: { districtId } }` → kunci farmerGroup menimpanya.
+    expect(hit("const w = { id, ...farmerAccessFilter(a), farmerGroup: { isActive: true } };")).toBe(true);
+    // Bentuk production.ts sebelum #440: spread variabel yang memuat farmerGroupId.
+    expect(hit("const f = {\n  ...farmerAccessFilter(access),\n  ...farmerGroupFilter,\n};")).toBe(true);
+    expect(hit("const w = { ...farmerRelationAccessFilter(a), farmer: { isActive: true } };", "farmerRelationAccessFilter")).toBe(true);
     expect(hit("const w = { id, ...farmerAccessFilter(a), isActive: true };")).toBe(false);
+    expect(hit("const w = { ...farmerRelationAccessFilter(a), parcelId: { not: null } };", "farmerRelationAccessFilter")).toBe(false);
+    expect(hit("const w = { ...farmerAccessFilter(a), ...(q ? { OR: [{ name: q }] } : {}) };")).toBe(false);
   });
 });

@@ -16,6 +16,7 @@ import {
   farmerAccessFilter,
   farmerGroupAccessFilter,
 } from "@/lib/access-context";
+import { scopeAnd } from "@/lib/access-scope";
 import { buildFarmerDetail } from "@/lib/farmer-detail";
 import { computeFarmerTrainingItems, fetchParcelPassport } from "@/lib/parcel-passport-query";
 import type { ActionResult } from "@/types/action-result";
@@ -67,7 +68,7 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
   // Scope di `AND` (#440): di mode BY_FARMER_GROUP filter scope memakai kunci
   // `farmerGroupId` yang sama — bila di-spread, parameter `farmerGroupId` menimpanya.
   const where = {
-    AND: [farmerAccessFilter(access)],
+    ...scopeAnd(farmerAccessFilter(access)),
     ...((await isSuperAdmin()) ? {} : { isActive: true }),
     ...(farmerGroupId ? { farmerGroupId } : {}),
     ...(search

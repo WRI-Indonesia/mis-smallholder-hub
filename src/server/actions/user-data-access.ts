@@ -12,7 +12,13 @@ import { userDataAccessSchema, USER_ACCESS_INVALID_INPUT } from "@/validations/u
  * akun sendiri & akun SUPERADMIN (bagi non-SUPERADMIN) terkunci. Saat memberi,
  * wilayah/Lembaga tujuan harus ada & aktif. `{ error }` = ditolak, `{ actorId }` = boleh.
  */
-async function guardDataAccessChange(userId: string, targetExists?: () => Promise<boolean>): Promise<{ error: string } | { actorId: string | null }> {
+async function guardDataAccessChange(
+  userId: string,
+  targetId: string,
+  targetExists?: () => Promise<boolean>,
+): Promise<{ error: string } | { actorId: string | null }> {
+  // Zod (#440) sebelum scope & DB: argumen datang mentah dari klien.
+  if (!userDataAccessSchema.safeParse({ userId, targetId }).success) return { error: USER_ACCESS_INVALID_INPUT };
   const scopeError = userAdminScopeError(await getAccessContext());
   if (scopeError) return { error: scopeError };
   const session = await auth();
@@ -87,10 +93,7 @@ export async function assignUserProvince(userId: string, provinceId: string) {
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const parsed = userDataAccessSchema.safeParse({ userId, targetId: provinceId });
-  if (!parsed.success) return { success: false, error: USER_ACCESS_INVALID_INPUT };
-
-  const guard = await guardDataAccessChange(userId, () => prisma.province.findFirst({ where: { id: provinceId, isActive: true }, select: { id: true } }).then(Boolean));
+  const guard = await guardDataAccessChange(userId, provinceId, () => prisma.province.findFirst({ where: { id: provinceId, isActive: true }, select: { id: true } }).then(Boolean));
   if ("error" in guard) return { success: false, error: guard.error };
 
   try {
@@ -106,10 +109,7 @@ export async function removeUserProvince(userId: string, provinceId: string) {
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const parsed = userDataAccessSchema.safeParse({ userId, targetId: provinceId });
-  if (!parsed.success) return { success: false, error: USER_ACCESS_INVALID_INPUT };
-
-  const guard = await guardDataAccessChange(userId);
+  const guard = await guardDataAccessChange(userId, provinceId);
   if ("error" in guard) return { success: false, error: guard.error };
 
   await prisma.userProvince.deleteMany({ where: { userId, provinceId } });
@@ -123,10 +123,7 @@ export async function assignUserDistrict(userId: string, districtId: string) {
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const parsed = userDataAccessSchema.safeParse({ userId, targetId: districtId });
-  if (!parsed.success) return { success: false, error: USER_ACCESS_INVALID_INPUT };
-
-  const guard = await guardDataAccessChange(userId, () => prisma.district.findFirst({ where: { id: districtId, isActive: true }, select: { id: true } }).then(Boolean));
+  const guard = await guardDataAccessChange(userId, districtId, () => prisma.district.findFirst({ where: { id: districtId, isActive: true }, select: { id: true } }).then(Boolean));
   if ("error" in guard) return { success: false, error: guard.error };
 
   try {
@@ -142,10 +139,7 @@ export async function removeUserDistrict(userId: string, districtId: string) {
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const parsed = userDataAccessSchema.safeParse({ userId, targetId: districtId });
-  if (!parsed.success) return { success: false, error: USER_ACCESS_INVALID_INPUT };
-
-  const guard = await guardDataAccessChange(userId);
+  const guard = await guardDataAccessChange(userId, districtId);
   if ("error" in guard) return { success: false, error: guard.error };
 
   await prisma.userDistrict.deleteMany({ where: { userId, districtId } });
@@ -159,10 +153,7 @@ export async function assignUserFarmerGroup(userId: string, farmerGroupId: strin
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const parsed = userDataAccessSchema.safeParse({ userId, targetId: farmerGroupId });
-  if (!parsed.success) return { success: false, error: USER_ACCESS_INVALID_INPUT };
-
-  const guard = await guardDataAccessChange(userId, () => prisma.farmerGroup.findFirst({ where: { id: farmerGroupId, isActive: true }, select: { id: true } }).then(Boolean));
+  const guard = await guardDataAccessChange(userId, farmerGroupId, () => prisma.farmerGroup.findFirst({ where: { id: farmerGroupId, isActive: true }, select: { id: true } }).then(Boolean));
   if ("error" in guard) return { success: false, error: guard.error };
 
   try {
@@ -178,10 +169,7 @@ export async function removeUserFarmerGroup(userId: string, farmerGroupId: strin
     return { success: false, error: "Tidak memiliki izin" };
   }
 
-  const parsed = userDataAccessSchema.safeParse({ userId, targetId: farmerGroupId });
-  if (!parsed.success) return { success: false, error: USER_ACCESS_INVALID_INPUT };
-
-  const guard = await guardDataAccessChange(userId);
+  const guard = await guardDataAccessChange(userId, farmerGroupId);
   if ("error" in guard) return { success: false, error: guard.error };
 
   await prisma.userFarmerGroup.deleteMany({ where: { userId, farmerGroupId } });

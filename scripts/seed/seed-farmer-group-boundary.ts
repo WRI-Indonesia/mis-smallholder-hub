@@ -192,6 +192,8 @@ async function main() {
       await prisma.$transaction(async (tx) => {
         await tx.farmerGroupBoundary.updateMany({
           where: { farmerGroupId: p.groupId, isActive: true },
+          // Penanda audit sengaja memakai nama berkas lama (sebelum rename #440): baris
+          // yang sudah ada di DB memakai nilai ini, jadi jejaknya tetap satu nama.
           data: { isActive: false, modifiedBy: "seed-boundary-lembaga" },
         });
         const row = await tx.farmerGroupBoundary.create({

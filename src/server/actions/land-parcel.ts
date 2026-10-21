@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { sharedCodeParcels } from "@/lib/parcel-shared-code";
+import { parcelFarmerInScope, sharedCodeParcels } from "@/lib/parcel-shared-code";
 import { auth } from "@/lib/auth";
 import { landParcelSchema, updateLandParcelSchema } from "@/validations/land-parcel.schema";
 import type { LandParcelInput, UpdateLandParcelInput } from "@/validations/land-parcel.schema";
@@ -11,7 +11,6 @@ import {
   getAccessContext,
   farmerAccessFilter,
   farmerRelationAccessFilter,
-  type AccessContext,
 } from "@/lib/access-context";
 import { getFarmerOptions } from "@/lib/select-options";
 import { summarizeProduction } from "@/lib/map-data";
@@ -429,15 +428,6 @@ export async function toggleLandParcelActive(id: string) {
   return { success: true };
 }
 
-/** Petani pemilik revisi lahan berada dalam scope user? (cermin `sharedCodeParcels`). */
-function farmerInScope(farmer: { farmerGroupId: string; farmerGroup: { districtId: string } }, access: AccessContext): boolean {
-  return (
-    access.mode === "ALL" ||
-    (access.mode === "BY_FARMER_GROUP" && access.ids.includes(farmer.farmerGroupId)) ||
-    (access.mode === "BY_DISTRICT" && access.ids.includes(farmer.farmerGroup.districtId))
-  );
-}
-
 /**
  * Satelit lahan (#296) untuk halaman Detail Lahan: dokumen kepemilikan, STDB,
  * UL Parcel Code, program. Menempel ke `parcelUid` (identitas stabil antar
@@ -557,7 +547,7 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
         .filter((p) => p.parcel.revisions.length > 0)
         .map((p) => {
           const rev = p.parcel.revisions[0];
-          return { parcelId: p.parcel.parcelId, id: farmerInScope(rev.farmer, access) ? rev.id : null };
+          return { parcelId: p.parcel.parcelId, id: parcelFarmerInScope(rev.farmer, access) ? rev.id : null };
         }),
     })),
     externalIds: externalIds.map((e) => ({ ...e, otherParcels: sharedCodeParcels(e, sharers, access) })),

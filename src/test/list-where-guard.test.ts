@@ -83,7 +83,7 @@ beforeEach(() => {
 describe("getFarmers — soft delete + scope", () => {
   it("non-SUPERADMIN mode ALL → isActive:true, scope kosong di AND; petani nonaktif tak kembali", async () => {
     expect(ids(await getFarmers())).toEqual(["F1", "F2", "F3"]);
-    expect(whereOf(db.farmer.findMany)).toEqual({ AND: [{}], isActive: true });
+    expect(whereOf(db.farmer.findMany)).toEqual({ isActive: true });
   });
 
   it("SUPERADMIN → tanpa filter isActive (nonaktif ikut untuk restore)", async () => {
@@ -124,7 +124,7 @@ describe("getFarmers — soft delete + scope", () => {
 describe("getTrainingActivities — soft delete + scope", () => {
   it("non-SUPERADMIN → isActive:true; SUPERADMIN → tanpa isActive", async () => {
     expect(ids(await getTrainingActivities())).toEqual(["T-F1", "T-F2", "T-F3"]);
-    expect(whereOf(db.trainingActivity.findMany)).toEqual({ AND: [{}], isActive: true });
+    expect(whereOf(db.trainingActivity.findMany)).toEqual({ isActive: true });
 
     isSuperAdmin.mockResolvedValue(true);
     expect(ids(await getTrainingActivities())).toEqual(["T-F1", "T-F2", "T-F3", "T-F9"]);

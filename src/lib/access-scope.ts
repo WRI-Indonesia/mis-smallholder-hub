@@ -65,6 +65,15 @@ export function farmerAccessFilter(access: AccessContext) {
 }
 
 /**
+ * Bungkus fragment scope dalam `AND` agar kunci filter lain di objek yang sama
+ * (mis. parameter `farmerGroupId`) tidak bisa menimpanya lewat spread (#440,
+ * BUG-007). Fragment kosong (mode ALL) → objek kosong.
+ */
+export function scopeAnd<T extends object>(fragment: T): { AND: T[] } | Record<string, never> {
+  return Object.keys(fragment).length > 0 ? { AND: [fragment] } : {};
+}
+
+/**
  * Prisma `where` fragment scoping a query on a model that owns a `farmer`
  * relation (e.g. `LandParcel`, `ProductionRecord`, `TrainingParticipant`).
  */
