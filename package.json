@@ -74,7 +74,6 @@
   "devDependencies": {
     "@eslint/compat": "^2.1.1",
     "@tailwindcss/postcss": "^4",
-    "@types/cytoscape": "^3.31.0",
     "@types/cytoscape-fcose": "^2.2.5",
     "@types/d3-chord": "^3.0.6",
     "@types/d3-hierarchy": "^3.1.7",

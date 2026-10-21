@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "scripts/**/*.{ts,mjs,js}"
   ],
@@ -8,7 +8,8 @@
     ".claude/**"
   ],
   "ignoreDependencies": [
-    "dotenv-cli"
+    "dotenv-cli",
+    "esbuild"
   ],
   "ignoreExportsUsedInFile": true
 }
