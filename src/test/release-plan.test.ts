@@ -291,9 +291,9 @@ describe("analisa rilis", () => {
     // Rilis tanpa penanda (fixture analisa) belum dirilis → belum ada velocity, walau targetnya lewat.
     const v = releaseVelocity(plan, "2026-10-06");
     expect(v.rows).toEqual([
-      { version: "v1.0.0", phase: "past", state: "late", planned: 9, moved: 5, done: 3, weeks: 1 },
-      { version: "v1.1.0", phase: "active", state: "active", planned: 8, moved: 5, done: 0, weeks: 2 },
-      { version: "v1.2.0", phase: "upcoming", state: "upcoming", planned: 5, moved: 0, done: 0, weeks: 1 },
+      { version: "v1.0.0", phase: "past", state: "late", planned: 9, moved: 5, notPlanned: 0, done: 3, weeks: 1 },
+      { version: "v1.1.0", phase: "active", state: "active", planned: 8, moved: 5, notPlanned: 0, done: 0, weeks: 2 },
+      { version: "v1.2.0", phase: "upcoming", state: "upcoming", planned: 5, moved: 0, notPlanned: 0, done: 0, weeks: 1 },
     ]);
     expect(v.average).toBeNull();
     expect(v.sample).toEqual({ releases: 0, weeks: 0 });
@@ -318,7 +318,7 @@ describe("analisa rilis", () => {
   });
 
   it("poin per status: tumpukan kolom Analisa = komitmen awal velocity (termasuk digeser)", () => {
-    expect(releaseStatusPoints(plan.releases[0])).toEqual({ done: 3, progress: 0, decision: 1, todo: 0, moved: 5 });
+    expect(releaseStatusPoints(plan.releases[0])).toEqual({ done: 3, progress: 0, decision: 1, todo: 0, moved: 5, notPlanned: 0 });
     const v = releaseVelocity(plan, "2026-10-06");
     plan.releases.forEach((r, i) => {
       const pts = releaseStatusPoints(r);
@@ -377,6 +377,82 @@ describe("analisa rilis", () => {
       )
     );
     expect(carryOvers(p)).toEqual([{ issue: "**#286 butir 2**", movedFrom: ["v1.0.0"], destination: null }]);
+  });
+});
+
+describe("⛔ Not planned — tertutup, bukan pekerjaan selesai", () => {
+  const plan = parseReleasePlan(
+    doc(
+      [
+        heading("v1.0.0", "2026-09-28", "2026-10-11", "Satu (dirilis 2026-10-11)"),
+        "",
+        table([
+          "| 1 | **#10** A | Keamanan | L | t | ✅ Selesai | — |",
+          "| 2 | **#11** B | Rilis | M | t | ⛔ Not planned | ✅ Diputuskan: close *not planned* |",
+          "| 3 | **#12** C | Data | S | t | ⏭️ Digeser | — |",
+        ]),
+        "",
+        heading("v1.1.0", "2026-10-12", "2026-10-18", "Dua"),
+        "",
+        table(["| 1 | **#12** C | Data | S | t | 🔲 Todo | — |", "| 2 | **#13** D | Fitur | M | t | ⛔ Not planned | — |"]),
+        "",
+        "#### Backlog",
+        "",
+        backlogTable(["| 1 | **#20** satu | ⛔ Not planned | ditutup | ", "| 2 | **#21** dua | 🔲 Todo | — |"]),
+      ].join("\n")
+    )
+  );
+  const [shipped, next] = plan.releases;
+
+  it("⛔ → notPlanned (rilis & backlog), berlabel 'Tidak dikerjakan'; rilis bertanda dirilis boleh memuatnya", () => {
+    expect(shipped.releasedAt).toBe("2026-10-11");
+    expect(shipped.items.map((i) => i.status)).toEqual(["done", "notPlanned", "moved"]);
+    expect(plan.backlog.map((b) => b.status)).toEqual(["notPlanned", "todo"]);
+    expect(PLAN_STATUS_LABEL.notPlanned).toBe("Tidak dikerjakan");
+  });
+
+  it("tidak dihitung ke total butir/poin, kemajuan, komposisi, maupun total rencana", () => {
+    expect(releaseProgress(shipped)).toEqual({ done: 1, total: 1, donePoints: 5, totalPoints: 5 });
+    expect(releaseProgress(next)).toEqual({ done: 0, total: 1, donePoints: 0, totalPoints: 1 });
+    expect(releaseComposition(shipped).find((c) => c.category === "Rilis")?.points).toBe(0);
+    expect(planTotals(plan).points).toBe(6);
+  });
+
+  it("velocity: poin selesai saja; ⛔ masuk komitmen awal sebagai segmen sendiri (tinggi tumpukan = planned)", () => {
+    const v = releaseVelocity(plan, "2026-10-12");
+    expect(v.rows[0]).toMatchObject({ planned: 9, moved: 1, notPlanned: 3, done: 5 });
+    expect(v.average).toBe(2.5); // 5 poin / 2 minggu — ⛔ tidak menambah poin selesai
+    expect(releaseStatusPoints(shipped)).toEqual({ done: 5, progress: 0, decision: 0, todo: 0, moved: 1, notPlanned: 3 });
+    plan.releases.forEach((r, i) => {
+      const pts = releaseStatusPoints(r);
+      expect(PLAN_STACK_ORDER.reduce((t, k) => t + pts[k], 0)).toBe(v.rows[i].planned);
+    });
+  });
+
+  it("kanban: bukan kolom — lajur terpisah; semua butir tetap terbagi habis", () => {
+    expect(KANBAN_COLUMNS).not.toContain("notPlanned");
+    const k = releaseKanban(shipped);
+    expect(k.notPlanned.map((i) => i.issueRefs[0])).toEqual(["#11"]);
+    expect(k.moved.map((i) => i.issueRefs[0])).toEqual(["#12"]);
+    expect(k.columns.flatMap((c) => c.items).some((i) => i.status === "notPlanned")).toBe(false);
+    expect(k.columns.reduce((t, c) => t + c.items.length, 0) + k.moved.length + k.notPlanned.length).toBe(shipped.items.length);
+    expect(k.columns.reduce((t, c) => t + c.points, 0)).toBe(releaseProgress(shipped).totalPoints);
+  });
+
+  it("Semua Issue: butir ⛔ IKUT dengan statusnya (tak ditulis di tempat lain), butir ⏭️ tidak", () => {
+    expect(allIssues(plan).map((r) => [r.ref, r.status])).toEqual([
+      ["#10", "done"],
+      ["#11", "notPlanned"],
+      ["#12", "todo"],
+      ["#13", "notPlanned"],
+      ["#20", "notPlanned"],
+      ["#21", "todo"],
+    ]);
+  });
+
+  it("rilis dirilis masih menolak butir terbuka; pesan menyebut ⛔ sebagai pilihan", () => {
+    const released = doc([heading("v1.0.0", "2026-09-28", "2026-10-10", "Satu (dirilis 2026-10-02)"), "", table(["| 1 | A | Rilis | S | t | 🔲 Todo | — |"])].join("\n"));
+    expect(() => parseReleasePlan(released)).toThrow(/belum ✅\/⏭️\/⛔/);
   });
 });
 

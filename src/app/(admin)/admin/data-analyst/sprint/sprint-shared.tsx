@@ -29,6 +29,7 @@ export const STATUS_STYLE: Record<PlanItemStatus, string> = {
   decision: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
   done: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
   moved: "border-border text-muted-foreground",
+  notPlanned: "border-dashed border-border text-muted-foreground",
 };
 
 /**

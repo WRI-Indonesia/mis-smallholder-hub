@@ -28,6 +28,9 @@ import {
 } from "@/lib/release-plan";
 import { CategoryLabel, Inline, STATUS_STYLE, SearchBox, matchesQuery } from "./sprint-shared";
 
+/** Chip status = kolom kanban + ⛔ Tidak dikerjakan (ikut tampil di tab ini; Digeser tidak). */
+const STATUS_FILTERS: PlanItemStatus[] = [...KANBAN_COLUMNS, "notPlanned"];
+
 function placeLabel(p: IssuePlace): string {
   return p.kind === "release" ? p.version : `Backlog (urutan ${p.order})`;
 }
@@ -89,7 +92,7 @@ export function SprintIssues({
   );
   const rows = searched.filter((r) => inWhere(r.place));
   const param = get("status");
-  const filter = (KANBAN_COLUMNS as string[]).includes(param ?? "")
+  const filter = (STATUS_FILTERS as string[]).includes(param ?? "")
     ? (param as PlanItemStatus)
     : null;
   // Jumlah per chip dalam satu lintasan (bukan satu filter per chip).
@@ -180,7 +183,7 @@ export function SprintIssues({
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter status">
           <span className="w-14 text-xs text-muted-foreground">Status</span>
           {chip(filter === null, () => setMany({ status: null }), "Semua", rows.length)}
-          {KANBAN_COLUMNS.map((s) =>
+          {STATUS_FILTERS.map((s) =>
             chip(
               filter === s,
               () => setMany({ status: s }),

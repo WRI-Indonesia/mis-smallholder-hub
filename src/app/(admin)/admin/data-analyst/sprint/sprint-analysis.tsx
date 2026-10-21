@@ -44,6 +44,13 @@ const STACK: Record<PlanItemStatus, { label: string; swatch: string; fill: strin
     swatch: "border border-dashed border-muted-foreground/60",
     fill: "border border-dashed border-muted-foreground/60 bg-transparent",
   },
+  // Ditutup tanpa dikerjakan: ikut tinggi komitmen (jujur soal rencana yang dibuang), tapi pudar
+  // dan bertitik agar tak terbaca sebagai sisa kerja; dibedakan dari Digeser oleh pola + label.
+  notPlanned: {
+    label: PLAN_STATUS_LABEL.notPlanned,
+    swatch: "border border-dotted border-muted-foreground/60",
+    fill: "border border-dotted border-muted-foreground/60 bg-transparent",
+  },
 };
 
 const PHASE_TAG: Record<ReleasePhase, string> = { active: "berjalan", upcoming: "rencana", past: "lewat target" };
@@ -251,7 +258,13 @@ function ColumnTooltip({
       <ul className="space-y-1">
         {PLAN_STACK_ORDER.filter((k) => pts[k] > 0).map((k) => (
           <li key={k} className="flex items-center gap-2">
-            <span aria-hidden className={cn("h-0.5 w-3", k === "moved" ? "border-t border-dashed border-muted-foreground" : STACK[k].fill)} />
+            <span
+              aria-hidden
+              className={cn(
+                "h-0.5 w-3",
+                k === "moved" ? "border-t border-dashed border-muted-foreground" : k === "notPlanned" ? "border-t border-dotted border-muted-foreground" : STACK[k].fill
+              )}
+            />
             <span className="font-semibold tabular-nums">{pts[k]}</span>
             <span className="text-muted-foreground">{STACK[k].label}</span>
           </li>

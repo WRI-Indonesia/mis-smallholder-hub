@@ -181,7 +181,7 @@ flowchart LR
 
   pd_sprint_rilis("Tab: Rilis"):::section
   pd_sprint_rilis_pick["Pesan: peringatan kuning bila semua rilis sudah dirilis<br/>Filter: Pemilih rilis belum tuntas — Berjalan · Terlambat · Mendatang · Combobox Riwayat (n) ber-cari<br/>Teks: Ringkasan rilis — badge Berjalan/Terlambat/Mendatang/Dirilis · versi · judul · rentang · hari ke-n dari m · bilah poin · x/y butir selesai"]:::content
-  pd_sprint_rilis_kanban["Kolom: Papan kanban — Belum dimulai · Dikerjakan · Menunggu keputusan · Selesai (label · jumlah butir · poin)<br/>Teks: Kartu ringkas — judul (#nnn → GitHub) · ukuran (S/M/L · poin) · titik kategori · keputusan owner yang masih terbuka<br/>Tombol: Detail / Tutup → target butir<br/>Teks: Kartu Selesai satu baris bercentang · lajur terlipat Digeser ke rilis lain (n)"]:::content
+  pd_sprint_rilis_kanban["Kolom: Papan kanban — Belum dimulai · Dikerjakan · Menunggu keputusan · Selesai (label · jumlah butir · poin)<br/>Teks: Kartu ringkas — judul (#nnn → GitHub) · ukuran (S/M/L · poin) · titik kategori · keputusan owner yang masih terbuka<br/>Tombol: Detail / Tutup → target butir<br/>Teks: Kartu Selesai satu baris bercentang · lajur terlipat Digeser ke rilis lain (n) · lajur terlipat Tidak dikerjakan (n)"]:::content
 
   pd_src_sprint[("sprint.md")]:::data
   pd_github[/"GitHub — repo aplikasi"/]:::external
@@ -213,7 +213,7 @@ flowchart LR
   pd_sprint_analisa_chart["Teks: Beban & kemajuan per rilis — satu kolom per rilis, ditumpuk per status, penanda kapasitas (velocity × minggu rilis), tooltip<br/>Teks: Fokus per kategori — matriks poin kategori × rilis<br/>Teks: Keputusan menunggu owner — Terlambat · Rilis berjalan · Mendatang<br/>Teks: Carry-over — butir digeser: dari rilis mana → rilis tujuan · berapa kali"]:::content
 
   pd_sprint_issue("Tab: Semua Issue"):::section
-  pd_sprint_issue_c["Teks: n issue unik (m baris)<br/>Filter: Cari · Combobox Rilis (belum tuntas → Backlog → riwayat) · Chip Status Todo · Dikerjakan · Menunggu keputusan · Selesai (+ jumlah)<br/>Kolom: No. Issue (tautan GitHub) · Rilis (versi / Backlog urutan n) · Kategori · Status · Deskripsi<br/>Aksi: Urutkan No. Issue · Rilis"]:::content
+  pd_sprint_issue_c["Teks: n issue unik (m baris)<br/>Filter: Cari · Combobox Rilis (belum tuntas → Backlog → riwayat) · Chip Status Todo · Dikerjakan · Menunggu keputusan · Selesai · Tidak dikerjakan (+ jumlah)<br/>Kolom: No. Issue (tautan GitHub) · Rilis (versi / Backlog urutan n) · Kategori · Status · Deskripsi<br/>Aksi: Urutkan No. Issue · Rilis"]:::content
 
   pd_github[/"GitHub — repo aplikasi"/]:::external
 

@@ -102,7 +102,13 @@ function KanbanCard({ item }: { item: PlanItem }) {
   return (
     <li className="space-y-2 rounded-md border bg-card p-3 text-sm shadow-sm">
       <div className="flex items-start gap-2">
-        <span className={cn("min-w-0 flex-1 font-medium leading-snug [overflow-wrap:anywhere]", item.status === "moved" && "font-normal text-muted-foreground")}>
+        <span
+          className={cn(
+            "min-w-0 flex-1 font-medium leading-snug [overflow-wrap:anywhere]",
+            (item.status === "moved" || item.status === "notPlanned") && "font-normal text-muted-foreground",
+            item.status === "notPlanned" && "line-through decoration-muted-foreground/60"
+          )}
+        >
           <Inline text={item.issue} />
         </span>
         <SizeBadge item={item} />
@@ -157,9 +163,9 @@ function ReleaseSummary({ release, state, today }: { release: Release; state: Re
   );
 }
 
-/** Tab Rilis = ringkasan + papan kanban 4 kolom + lajur butir digeser (#389). */
+/** Tab Rilis = ringkasan + papan kanban 4 kolom + lajur butir digeser & tidak dikerjakan (#389). */
 function ReleaseDetail({ release, state, today }: { release: Release; state: ReleaseState; today: string }) {
-  const { columns, moved } = releaseKanban(release);
+  const { columns, moved, notPlanned } = releaseKanban(release);
   return (
     <div className="space-y-4">
       <ReleaseSummary release={release} state={state} today={today} />
@@ -195,6 +201,17 @@ function ReleaseDetail({ release, state, today }: { release: Release; state: Rel
           </summary>
           <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {moved.map((item) => <KanbanCard key={item.no} item={item} />)}
+          </ul>
+        </details>
+      )}
+      {notPlanned.length > 0 && (
+        <details className="rounded-lg border border-dashed bg-muted/20 p-2">
+          <summary className="cursor-pointer px-1 text-sm font-semibold">
+            {PLAN_STATUS_LABEL.notPlanned} ({notPlanned.length})
+            <span className="ml-2 text-xs font-normal text-muted-foreground">ditutup tanpa dikerjakan — poinnya tidak dihitung</span>
+          </summary>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {notPlanned.map((item) => <KanbanCard key={item.no} item={item} />)}
           </ul>
         </details>
       )}

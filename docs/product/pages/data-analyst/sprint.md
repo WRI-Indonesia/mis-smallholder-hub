@@ -49,13 +49,15 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
 │   │   └── Kartu ringkas: judul (markdown inline, `#nnn` → GitHub) · ukuran "M · 3" · titik kategori ·
 │   │       keputusan owner yang masih terbuka (kotak kuning; yang sudah "✅ …" pindah ke Detail) · tombol "Detail"/"Tutup"
 │   │       (`aria-expanded`) → target. Kartu SELESAI satu baris: ✓ + judul + ukuran + panah detail. Read-only
-│   └── Lajur terlipat "Digeser ke rilis lain (n)" — kartu butir ⏭️ (poinnya dihitung di rilis tujuan)
+│   ├── Lajur terlipat "Digeser ke rilis lain (n)" — kartu butir ⏭️ (poinnya dihitung di rilis tujuan)
+│   └── Lajur terlipat "Tidak dikerjakan (n)" — kartu butir ⛔ (judul dicoret, poinnya tidak dihitung)
 ├── Tab Analisa
 │   ├── 4 kartu (`planTotals`): Rencana (poin tanpa butir digeser · n rilis · tanggal akhir) · Tertahan keputusan owner
 │   │   (poin + % rencana + rincian terlambat / rilis berjalan / mendatang — yang nol tidak ditulis) · Velocity rata-rata
 │   │   (poin/minggu kalender dari rilis lewat target + ukuran sampel "n rilis (m minggu)", "sampel masih kecil" bila < 4
 │   │   minggu; bila belum ada: progres rilis berjalan + hari ke-n dari m) · Carry-over
-│   ├── Beban & kemajuan per rilis — satu kolom per rilis, tinggi = KOMITMEN AWAL (termasuk butir yang kemudian digeser),
+│   ├── Beban & kemajuan per rilis — satu kolom per rilis, tinggi = KOMITMEN AWAL (termasuk butir yang kemudian digeser
+│   │   [segmen putus-putus] atau ⛔ tidak dikerjakan [segmen bertitik]),
 │   │   skala sama, ditumpuk per STATUS (`releaseStatusPoints`, `PLAN_STACK_ORDER`); penanda putus per kolom = kapasitas
 │   │   (velocity × minggu rilis) setelah ada rilis lewat target; tooltip saat hover & fokus keyboard
 │   │   └── Warna = STATUS, bukan kategori: enam warna kategori tak lolos validator bila ditumpuk bebas
@@ -67,10 +69,10 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
     ├── Kotak Cari (URL ?q=, `matchesQuery`: setiap kata harus ada di nomor/rilis/status/kategori/deskripsi/catatan)
     ├── Combobox Rilis (URL ?di=<versi>|backlog; urutan opsi: belum tuntas → Backlog → riwayat; setiap kali filter
     │   berpindah ke Backlog urutan jadi urutan prioritas). `get`/`setMany` dioper dari induk (instance hook kedua = URL basi)
-    ├── Chip Status (URL ?status=todo|progress|decision|done) + jumlah (4 nilai tetap — tidak tumbuh)
+    ├── Chip Status (URL ?status=todo|progress|decision|done|notPlanned) + jumlah (5 nilai tetap — tidak tumbuh)
     └── Tabel No. Issue (tautan GitHub) · Rilis (versi / "Backlog (urutan n)") · Kategori (md+, — untuk backlog) ·
         Status · Deskripsi (kolom Issue tanpa `#nnn`, catatan backlog di baris kedua). Header No. Issue & Rilis bisa
-        diklik (`sortIssueRows`, `aria-sort`). Butir ⏭️ dan baris RILIS tanpa `#nnn` tidak ikut; baris BACKLOG tanpa
+        diklik (`sortIssueRows`, `aria-sort`). Butir ⏭️ dan baris RILIS tanpa `#nnn` tidak ikut (butir ⛔ ikut); baris BACKLOG tanpa
         `#nnn` (TD-xxx) ikut tanpa tautan
 ```
 
@@ -83,7 +85,7 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
 | Tabel rilis | 7 kolom: `# \| Issue \| Kategori \| Poin \| Target \| Status \| ⚖️ Keputusan owner` | `PlanItem[]`; `#nnn` di kolom Issue → `issueRefs` |
 | Kategori | Keamanan · Rilis · Performa · Data · Fitur · Kerapian (urutan = prioritas = urutan warna) | `PlanCategory` |
 | Poin | S · M · L | `size` + `points` 1/3/5 |
-| Status | awalan 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser | `todo`/`progress`/`decision`/`done`/`moved` |
+| Status | awalan 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser · ⛔ Not planned | `todo`/`progress`/`decision`/`done`/`moved`/`notPlanned` — ⏭️ & ⛔ tertutup tanpa dihitung ke total/poin selesai/velocity; rilis bertanda dirilis hanya boleh berisi ✅/⏭️/⛔ |
 | Keputusan owner | teks; `—` = tidak ada | `decision: string \| null` |
 | Backlog | `#### Backlog …` + tabel 4 kolom `# \| Issue \| Status \| Catatan` (`#` = urutan kelompok, boleh berulang) | `backlog: BacklogItem[]` |
 

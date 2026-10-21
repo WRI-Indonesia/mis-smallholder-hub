@@ -19,7 +19,7 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   │   — Progres roadmap = tombol → akordeon Detail roadmap
 │   └── Rilis berjalan (CurrentReleaseCard): `summarizeCurrentRelease(releasePlan, today)` dari sprint.md
 │       (rilis berjalan, atau rilis lewat target belum dirilis): versi + judul, target + "hari ke-n/N, sisa n hari"
-│       / "lewat n hari", progressbar butir selesai (tanpa Digeser), poin, dikerjakan, menunggu keputusan
+│       / "lewat n hari", progressbar butir selesai (tanpa Digeser & Tidak dikerjakan), poin, dikerjakan, menunggu keputusan
 │       (kuning); data rencana **hanya dikirim** bila VIEW `data-analyst-sprint` (dicek server, override revoke dihormati) — tanpa akses: keterangan saja
 ├── Jalur kesehatan (1 baris, 4 sel bergaris rambut) — dipindah ke atas grafik (#421)
 │   ├── Bug terbuka (0 → normal; >0 → latar warning)

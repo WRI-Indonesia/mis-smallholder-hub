@@ -14,7 +14,16 @@
  * (pola `tech-debt.ts` / `release-metrics.ts`).
  */
 
-export type PlanItemStatus = "todo" | "progress" | "decision" | "done" | "moved";
+/**
+ * `moved` = digeser (ditulis ulang di rilis tujuan); `notPlanned` = ditutup
+ * tanpa dikerjakan (⛔, issue GitHub *not planned*). Keduanya TERTUTUP dan
+ * bukan pekerjaan selesai: tidak dihitung ke total/poin selesai/velocity.
+ */
+export type PlanItemStatus = "todo" | "progress" | "decision" | "done" | "moved" | "notPlanned";
+
+/** Status tertutup yang bukan pekerjaan selesai — dikeluarkan dari total, kemajuan, velocity, dan kanban. */
+const SET_ASIDE: ReadonlySet<PlanItemStatus> = new Set(["moved", "notPlanned"]);
+const counts = (i: { status: PlanItemStatus }) => !SET_ASIDE.has(i.status);
 
 /** Kategori fokus — urutan ini = urutan prioritas "risiko prod dulu" & urutan warna. */
 export const PLAN_CATEGORIES = ["Keamanan", "Rilis", "Performa", "Data", "Fitur", "Kerapian"] as const;
@@ -81,6 +90,7 @@ const STATUS_PREFIX: [string, PlanItemStatus][] = [
   ["⚖️", "decision"],
   ["✅", "done"],
   ["⏭️", "moved"],
+  ["⛔", "notPlanned"],
 ];
 
 export const PLAN_STATUS_LABEL: Record<PlanItemStatus, string> = {
@@ -89,6 +99,7 @@ export const PLAN_STATUS_LABEL: Record<PlanItemStatus, string> = {
   decision: "Menunggu keputusan",
   done: "Selesai",
   moved: "Digeser",
+  notPlanned: "Tidak dikerjakan",
 };
 
 const SECTION_HEADING = "### Rencana Rilis";
@@ -223,10 +234,11 @@ export function parseReleasePlan(markdown: string): ReleasePlan {
     if (r.releasedAt) {
       if (r.releasedAt < r.start) throw new Error(`sprint.md: Rilis ${r.version} dirilis sebelum tanggal mulai`);
       // Rilis yang sudah keluar tidak boleh menyisakan butir terbuka: yang tidak ikut ditandai ⏭️ dan
-      // ditulis ulang di rilis tujuan — kalau tidak, slip hilang dari carry-over & velocity.
-      const open = r.items.filter((it) => it.status !== "done" && it.status !== "moved");
+      // ditulis ulang di rilis tujuan (atau ⛔ bila ditutup tanpa dikerjakan) — kalau tidak, slip hilang
+      // dari carry-over & velocity.
+      const open = r.items.filter((it) => it.status !== "done" && it.status !== "moved" && it.status !== "notPlanned");
       if (open.length > 0) {
-        throw new Error(`sprint.md: Rilis ${r.version} sudah dirilis tapi baris ${open.map((it) => it.no).join(", ")} belum ✅/⏭️ — tandai ⏭️ Digeser dan tulis ulang di rilis tujuan`);
+        throw new Error(`sprint.md: Rilis ${r.version} sudah dirilis tapi baris ${open.map((it) => it.no).join(", ")} belum ✅/⏭️/⛔ — tandai ⏭️ Digeser dan tulis ulang di rilis tujuan, atau ⛔ Not planned`);
       }
     }
     // Rilis berikutnya boleh mulai sesudah rilis sebelumnya benar-benar keluar (bisa lebih awal dari targetnya).
@@ -260,10 +272,11 @@ export function releaseTimeline(release: Pick<Release, "start" | "end">, today: 
 /**
  * Kemajuan rilis dalam butir dan poin. Butir "Digeser" tidak dihitung ke
  * total: ia sudah ditulis ulang di rilis tujuan, jadi menghitungnya di dua
- * tempat membuat kemajuan tampak lebih rendah dari sebenarnya.
+ * tempat membuat kemajuan tampak lebih rendah dari sebenarnya. Butir ⛔ "Tidak
+ * dikerjakan" juga tidak: ia keluar dari lingkup, bukan sisa kerja dan bukan selesai.
  */
 export function releaseProgress(release: Pick<Release, "items">) {
-  const counted = release.items.filter((i) => i.status !== "moved");
+  const counted = release.items.filter(counts);
   const done = counted.filter((i) => i.status === "done");
   return {
     done: done.length,
@@ -288,11 +301,11 @@ export function releaseState(release: Pick<Release, "start" | "end" | "releasedA
   return phase === "past" ? "late" : phase;
 }
 
-export type ReleaseVelocity = { version: string; phase: ReleasePhase; state: ReleaseState; planned: number; moved: number; done: number; weeks: number };
+export type ReleaseVelocity = { version: string; phase: ReleasePhase; state: ReleaseState; planned: number; moved: number; notPlanned: number; done: number; weeks: number };
 
 /**
- * Velocity per rilis: poin KOMITMEN (termasuk butir yang kemudian Digeser —
- * selisih rencana vs selesai harus terlihat) vs selesai. `average` = poin
+ * Velocity per rilis: poin KOMITMEN (termasuk butir yang kemudian Digeser atau
+ * ⛔ Tidak dikerjakan — selisih rencana vs selesai harus terlihat) vs selesai. `average` = poin
  * selesai per MINGGU KALENDER, hanya dari rilis yang sudah **dirilis**, dengan
  * durasi SEBENARNYA (mulai → tanggal dirilis): rilis berjalan atau terlambat
  * belum selesai dan akan menarik rata-rata ke bawah; target yang meleset tak
@@ -303,8 +316,19 @@ export type ReleaseVelocity = { version: string; phase: ReleasePhase; state: Rel
 export function releaseVelocity(plan: Pick<ReleasePlan, "releases">, today: string) {
   const rows: ReleaseVelocity[] = plan.releases.map((r) => {
     const p = releaseProgress(r);
-    const moved = r.items.filter((i) => i.status === "moved").reduce((t, i) => t + i.points, 0);
-    return { version: r.version, phase: releasePhase(r, today), state: releaseState(r, today), planned: p.totalPoints + moved, moved, done: p.donePoints, weeks: (daysBetween(r.start, r.end) + 1) / 7 };
+    const pointsOf = (status: PlanItemStatus) => r.items.filter((i) => i.status === status).reduce((t, i) => t + i.points, 0);
+    const moved = pointsOf("moved");
+    const notPlanned = pointsOf("notPlanned");
+    return {
+      version: r.version,
+      phase: releasePhase(r, today),
+      state: releaseState(r, today),
+      planned: p.totalPoints + moved + notPlanned,
+      moved,
+      notPlanned,
+      done: p.donePoints,
+      weeks: (daysBetween(r.start, r.end) + 1) / 7,
+    };
   });
   const shipped = plan.releases.filter((r) => releaseState(r, today) === "released");
   const weeks = shipped.reduce((s, r) => s + (daysBetween(r.start, r.releasedAt!) + 1) / 7, 0);
@@ -417,30 +441,31 @@ export function carryOvers(plan: Pick<ReleasePlan, "releases">): CarryOver[] {
   );
 }
 
-/** Poin per kategori (tanpa butir Digeser), urut `PLAN_CATEGORIES`, kategori nol ikut (0). */
+/** Poin per kategori (tanpa butir Digeser & Tidak dikerjakan), urut `PLAN_CATEGORIES`, kategori nol ikut (0). */
 export function releaseComposition(release: Pick<Release, "items">): { category: PlanCategory; points: number }[] {
   return PLAN_CATEGORIES.map((category) => ({
     category,
-    points: release.items.filter((i) => i.status !== "moved" && i.category === category).reduce((s, i) => s + i.points, 0),
+    points: release.items.filter((i) => counts(i) && i.category === category).reduce((s, i) => s + i.points, 0),
   }));
 }
 
 /**
  * Poin per status satu rilis, urutan tumpukan kolom Analisa (bawah → atas):
- * selesai, dikerjakan, menunggu keputusan, belum dimulai, lalu digeser. Butir
- * digeser ikut agar tinggi kolom = komitmen awal (sama dengan `releaseVelocity`).
+ * selesai, dikerjakan, menunggu keputusan, belum dimulai, lalu digeser dan
+ * tidak dikerjakan (dua segmen pudar di puncak). Keduanya ikut agar tinggi
+ * kolom = komitmen awal (sama dengan `releaseVelocity`).
  */
-export const PLAN_STACK_ORDER: PlanItemStatus[] = ["done", "progress", "decision", "todo", "moved"];
+export const PLAN_STACK_ORDER: PlanItemStatus[] = ["done", "progress", "decision", "todo", "moved", "notPlanned"];
 
 export function releaseStatusPoints(release: Pick<Release, "items">): Record<PlanItemStatus, number> {
-  const out: Record<PlanItemStatus, number> = { done: 0, progress: 0, decision: 0, todo: 0, moved: 0 };
+  const out: Record<PlanItemStatus, number> = { done: 0, progress: 0, decision: 0, todo: 0, moved: 0, notPlanned: 0 };
   for (const i of release.items) out[i.status] += i.points;
   return out;
 }
 
 /**
  * Ringkasan seluruh rencana untuk kartu Analisa. `points` tanpa butir digeser
- * (sudah ditulis ulang di rilis tujuan); `pendingShare` = porsi poin rencana
+ * (sudah ditulis ulang di rilis tujuan) dan tidak dikerjakan; `pendingShare` = porsi poin rencana
  * yang tertahan keputusan owner.
  */
 export function planTotals(plan: Pick<ReleasePlan, "releases">) {
@@ -457,14 +482,17 @@ export function planTotals(plan: Pick<ReleasePlan, "releases">) {
 
 /**
  * Kolom kanban (#389), urut alur penyelesaian: belum dimulai → dikerjakan →
- * menunggu keputusan → selesai. Butir digeser TIDAK masuk kolom — dikembalikan
- * terpisah untuk lajur terlipat. Urutan butir dalam kolom = urutan baris.
+ * menunggu keputusan → selesai. Butir digeser dan tidak dikerjakan TIDAK masuk
+ * kolom — dikembalikan terpisah untuk lajur terlipat masing-masing. Urutan
+ * butir dalam kolom = urutan baris.
  */
-export const KANBAN_COLUMNS: Exclude<PlanItemStatus, "moved">[] = ["todo", "progress", "decision", "done"];
+export type KanbanStatus = Exclude<PlanItemStatus, "moved" | "notPlanned">;
+export const KANBAN_COLUMNS: KanbanStatus[] = ["todo", "progress", "decision", "done"];
 
 export function releaseKanban(release: Pick<Release, "items">): {
-  columns: { status: Exclude<PlanItemStatus, "moved">; items: PlanItem[]; points: number }[];
+  columns: { status: KanbanStatus; items: PlanItem[]; points: number }[];
   moved: PlanItem[];
+  notPlanned: PlanItem[];
 } {
   return {
     columns: KANBAN_COLUMNS.map((status) => {
@@ -472,6 +500,7 @@ export function releaseKanban(release: Pick<Release, "items">): {
       return { status, items, points: items.reduce((t, i) => t + i.points, 0) };
     }),
     moved: release.items.filter((i) => i.status === "moved"),
+    notPlanned: release.items.filter((i) => i.status === "notPlanned"),
   };
 }
 
@@ -509,7 +538,7 @@ export function issueDescription(issue: string, ref: string): string {
  * urut nomor issue lalu posisi (rilis sebelum backlog). Satu issue bisa muncul
  * beberapa kali bila dipecah per bagian ("#380 bagian 1", "#286 butir 2") —
  * status melekat pada bagiannya. Butir "Digeser" tidak ikut (sudah ditulis ulang
- * di rilis tujuan). Baris RILIS tanpa `#nnn` (butir rilis itu sendiri) tidak ikut;
+ * di rilis tujuan); butir ⛔ "Tidak dikerjakan" IKUT — tak ditulis di tempat lain. Baris RILIS tanpa `#nnn` (butir rilis itu sendiri) tidak ikut;
  * baris BACKLOG tanpa `#nnn` (TD-xxx) tetap ikut dengan kode awal kolom Issue.
  */
 export function allIssues(plan: Pick<ReleasePlan, "releases" | "backlog">): IssueRow[] {
