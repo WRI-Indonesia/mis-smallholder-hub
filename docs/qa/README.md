@@ -2,12 +2,12 @@
 
 > Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Terkait: [../standards/versioning.md](../standards/versioning.md) §Alur Rilis · [../standards/workflow.md](../standards/workflow.md) §Issue Close
 
-Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum PR `staging → main`**; `05-signoff.md` adalah prasyarat tag. Gate otomatis (lint/build/test) menjaga kode; folder ini menjaga **apa yang dilihat pengguna** dan **angka di DB** — dua hal yang lolos gate pada tiap siklus review (#238, #318, #331).
+Pengujian manual **per versi**, berjalan **dua tahap sebelum PR `staging → main`**: **lokal** (sesudah `/wrapup`, sebelum merge `mvp → staging` — alur owner 2026-10-14, sejak v1.8.0) lalu **staging** (setelah deploy `staging`); `05-signoff.md` adalah prasyarat bump & tag. Gate otomatis (lint/build/test) menjaga kode; folder ini menjaga **apa yang dilihat pengguna** dan **angka di DB** — dua hal yang lolos gate pada tiap siklus review (#238, #318, #331).
 
 ## Prinsip: spesifikasi ≠ hasil
 
 - **Spesifikasi** (`00`–`05`) ditulis dev, stabil, satu blok per kasus, ber-tag prioritas.
-- **Hasil** dicatat per eksekusi di `runs/<tanggal>-<env>[-ulang].md` — satu berkas per run, dibuat oleh skrip, hanya `ID · status · catatan · bukti`. Staging dan prod tidak pernah berbagi tabel.
+- **Hasil** dicatat per eksekusi di `runs/<tanggal>-<env>[-ulang].md` — satu berkas per run, dibuat oleh skrip, hanya `ID · status · catatan · bukti`. Lokal, staging, dan prod tidak pernah berbagi tabel.
 - **Angka DB** tidak disalin tangan: `scripts/qa/data-qc.ts` menjalankan seluruh cek read-only dan mencetak tabel siap tempel.
 
 ## Aturan folder
@@ -17,7 +17,7 @@ Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum 
 | `docs/qa/_template/` | Master berkas — disalin ke folder versi | ✅ |
 | `docs/qa/regression.md` | Kasus uji ber-tag `[regresi]` yang **ikut setiap rilis** (tumbuh dari temuan review/bug) | ✅ |
 | `docs/qa/vX.Y.Z/` | Satu folder per **versi** (tanggal ditulis di run) | ✅ |
-| `docs/qa/vX.Y.Z/runs/` | Lembar hasil per eksekusi | ✅ |
+| `docs/qa/vX.Y.Z/runs/` | Lembar hasil per eksekusi: `<tanggal>-lokal.md` (QA lokal) · `<tanggal>-staging[-ulang].md` · `<tanggal>-prod.md` | ✅ |
 | `docs/qa/archive/vX.Y.Z/` | Paket versi yang sudah sign-off & rilis, **lebih tua dari 3 rilis terakhir yang sudah terbit** (paket rilis yang sedang disiapkan tidak dihitung) — dipindah utuh saat rilis baru di-tag | ✅ |
 | `scripts/local/QA-QC/vX.Y.Z/evidence/` | Screenshot/PDF/Excel bukti + `input/` berkas uji | ❌ gitignored — repo **publik**, bukti memuat nama petani/NIK |
 
@@ -43,11 +43,12 @@ Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum 
 ## Alur
 
 1. Dev: salin `_template/` → `vX.Y.Z/` **kecuali** `runs/_template-run.md` (dibaca `new-run.mjs` langsung dari `_template/`); pindahkan versi tertua di atas ke `archive/` bila kini ada lebih dari 3 versi rilis; isi `00-scope.md` (termasuk akun & persiapan data) dan `02-test-cases.md` (kasus ditulis saat issue ditutup).
-2. Ops (#333-style): migrasi + seed ke `mis-staging` → `data-qc.ts` sebelum/sesudah → deploy `mvp → staging`.
-3. QA: `node scripts/qa/new-run.mjs --version vX.Y.Z --env staging` → jalankan `TC-PREP-*` dulu, lalu smoke + kasus uji + regresi; isi lembar run; bukti ke `evidence/`.
-4. Temuan → `04-findings.md` → issue (`bug`); dev memperbaiki → run ulang **hanya** kasus Fail + smoke P0 halaman terkait (`runs/<tanggal>-staging-ulang.md`).
-5. `node scripts/qa/summary.mjs docs/qa/vX.Y.Z` → tempel ke README → `05-signoff.md` → bump versi, PR `staging → main`, tag.
-6. Setelah prod: `new-run.mjs --env prod --only P0` (smoke + P0 saja) + `data-qc.ts` prod.
+2. Dev (QA lokal, sejak v1.8.0): `/scope` → `/wrapup` (review, test, docs/Bantuan, gate, kasus uji) → `node scripts/qa/new-run.mjs --version vX.Y.Z --env lokal` (nilai `--env` tidak divalidasi skrip — hanya menjadi nama berkas & judul lembar; pesan pakainya masih menyebut `staging|prod`) → jalankan kasus uji di dev server lokal, isi `runs/<tanggal>-lokal.md`; issue ditutup + retro bila **0 Fail**. Baru sesudah itu merge `mvp → staging`.
+3. Ops (#333-style): migrasi + seed ke `mis-staging` → `data-qc.ts` sebelum/sesudah → deploy `mvp → staging`.
+4. QA: `node scripts/qa/new-run.mjs --version vX.Y.Z --env staging` → jalankan `TC-PREP-*` dulu, lalu smoke + kasus uji + regresi; isi lembar run; bukti ke `evidence/`.
+5. Temuan → `04-findings.md` → issue (`bug`); dev memperbaiki → run ulang **hanya** kasus Fail + smoke P0 halaman terkait (`runs/<tanggal>-staging-ulang.md`).
+6. `node scripts/qa/summary.mjs docs/qa/vX.Y.Z` → tempel ke README → `05-signoff.md` → bump versi (`chore(release)`, merge lagi `mvp → staging`), PR `staging → main`, tag.
+7. Setelah prod: `new-run.mjs --env prod --only P0` (smoke + P0 saja) + `data-qc.ts` prod.
 
 ## Status
 
@@ -58,5 +59,5 @@ Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum 
 | Perintah | Fungsi |
 |---|---|
 | `npx dotenv -e .env.<env> -- npx tsx scripts/qa/data-qc.ts [--section A,B] [--parcel <ID Lahan>]` | Cetak DB efektif, jalankan semua cek read-only `03-data-qc`, tabel `id · harapan · aktual · status` |
-| `node scripts/qa/new-run.mjs --version vX.Y.Z --env staging\|prod [--only P0] [--label ulang]` | Buat `runs/<tanggal>-<env>[-label].md` dari `01` + `02` + `regression.md` |
+| `node scripts/qa/new-run.mjs --version vX.Y.Z --env lokal\|staging\|prod [--only P0] [--label ulang]` | Buat `runs/<tanggal>-<env>[-label].md` dari `01` + `02` + `regression.md` |
 | `node scripts/qa/summary.mjs docs/qa/vX.Y.Z` | Rekap Pass/Fail/Blocked/N/A per run + daftar Fail tanpa nomor issue |

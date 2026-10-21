@@ -12,6 +12,7 @@ Merge ke `main` langsung men-deploy produksi (`deploy-main.yml`). Tanpa lingkung
 - Kerja harian hanya di `mvp`; tidak ada branch feature/experiment.
 - Rilis: merge `mvp` → `staging` (deploy staging otomatis) → QA manual `docs/qa/vX.Y.Z/` → PR `staging` → `main` (deploy produksi) → tag + GitHub Release.
 - Migrasi DB diterapkan manual ke `mis-staging` lalu `mis-prod` **sebelum** kode yang membutuhkannya di-deploy.
+- **Pembaruan 2026-10-14 (owner, dipakai sejak v1.8.0):** sebelum merge `mvp` → `staging` ada tahap lokal — `/scope` → `/wrapup` (review, test, docs/Bantuan, kasus uji) → **QA lokal** (run kasus uji lokal, lembar `docs/qa/vX.Y.Z/runs/<tanggal>-lokal.md`; issue ditutup bila 0 Fail). Sesudah sign-off staging: bump `chore(release)` → merge lagi ke `staging` → PR `main` → tag → run prod P0.
 
 ## Alternatif yang ditolak
 - PR `mvp` → `main` langsung — dipakai sebelum staging ada; kini hanya pengecualian atas keputusan owner (preseden v0.35.0–v0.37.0).

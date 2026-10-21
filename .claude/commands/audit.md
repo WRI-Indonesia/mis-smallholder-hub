@@ -37,7 +37,9 @@ Ringkasan ≤ 1 layar: angka per area, delta, lalu temuan tinggi/sedang (≤ 10 
 Pertanyaan yang jawabannya jelas dari docs/memori bukan keputusan — pilih default, sebut di laporan.
 
 ## Langkah 4 — Kerjakan yang disetujui
-Satu commit per area/fase, gate hijau sebelum tiap commit (`lint` · `build` → `typecheck` · `test`). Urutan Mode Penuh:
+**Issue payung dulu (#432):** sebelum commit fase pertama, buat issue `[Audit] /audit <mode> YYYY-MM-DD — <area>` (izin per aksi; tanyakan di Tahap B) berisi fase + temuan yang disetujui sebagai checklist, masukkan ke tabel rilis berjalan di `docs/project/sprint.md` (Kategori Kerapian, poin sesuai jumlah fase, perbarui `Terakhir diperbarui`). Setiap commit fase menulis `(#nnn)` di judulnya agar `/scope` & `/pagi` tidak melaporkannya "tanpa issue". Setelah fase terakhir: centang checklist, tutup dengan retro 6 bagian. Berlaku juga untuk perbaikan sesudah Mode Mingguan.
+
+Satu commit per area/fase, gate hijau sebelum tiap commit (`lint` · `build` → `typecheck` · `test`). Kegagalan test yang berasal dari berkas sesi lain yang belum di-commit tidak memblokir — sebut di pesan laporan, jangan sentuh berkasnya. Urutan Mode Penuh:
 
 - **F1 Dead code** — hapus yang disetujui; regenerasi artefak (`build:lineage` bila import halaman/aksi berubah).
 - **F2 Vitest** — bersih (tanpa `.skip`/`.only`/`todo`/mirror/duplikat; perf pakai `minTime`, ambang ≥ 3×) dan terkini: test baru prioritas guard `hasPermission` (menu key + level), scope `getAccessContext` (termasuk by-id), soft delete, Zod, hot-path; pola `*-guard.test.ts`. Laporkan coverage sebelum/sesudah per area (`npm run test:coverage`).
@@ -49,7 +51,7 @@ Satu commit per area/fase, gate hijau sebelum tiap commit (`lint` · `build` →
 Mode Mingguan memakai fase yang sama, hanya untuk temuan yang disetujui di Langkah 3.
 
 ## Laporan akhir
-- Per fase: yang dihapus / ditambah / diperbaiki + commit; angka coverage sebelum/sesudah; issue & TD yang dibuat/ditutup (nomor).
+- Per fase: yang dihapus / ditambah / diperbaiki + commit; angka coverage sebelum/sesudah; issue & TD yang dibuat/ditutup (nomor), termasuk issue payung.
 - Yang **sengaja dibiarkan** + alasan; kandidat issue/TD yang ditunda.
 - Bila ada commit: satu baris changelog bulan berjalan (`docs/project/changelog/YYYY-MM.md`) "Audit `/audit` <mode> …" — commit terpisah atau ikut fase terakhir.
 - Sebut path laporan lokal `audit-report/audit-YYYY-MM-DD.md` (pengingat > 7 hari dibaca oleh `/pagi`).

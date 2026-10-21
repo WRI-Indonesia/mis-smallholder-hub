@@ -4,9 +4,9 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-10-12 · **Next management review:** 2026-10-13
+**Last updated:** 2026-10-21 · **Next management review:** 2026-10-27
 
-**Perubahan terakhir (2026-10-10):** ditulis ulang untuk periode **2026-09-30 s.d. 2026-10-10** — lima rilis (v1.3.0 · v1.4.0 · v1.5.0 · v1.5.1 hotfix · v1.6.0) dan baseline **Roadmap 2026–2027** (reset 2026-09-30; baseline MVP 88,5% beku di [roadmap-mvp.md](./roadmap-mvp.md)). Brief sebelumnya (periode v0.35.0 → v1.1.0) ada di riwayat git.
+**Perubahan terakhir (2026-10-10):** ditulis ulang untuk periode **2026-09-30 s.d. 2026-10-10** — lima rilis (v1.3.0 · v1.4.0 · v1.5.0 · v1.5.1 hotfix · v1.6.0) dan baseline **Roadmap 2026–2027** (reset 2026-09-30; baseline MVP 88,5% beku di [roadmap-mvp.md](./roadmap-mvp.md)). Brief sebelumnya (periode v0.35.0 → v1.1.0) ada di riwayat git. **Penyegaran 2026-10-21 (audit #440):** status keseluruhan, test, Snapshot Progres & Roadmap % disamakan dengan v1.9.0; periode laporan belum ditulis ulang.
 
 **Source of truth:** tabel **Phase Status** di [`roadmap.md`](./roadmap.md). **Panduan update & checklist:** [`contributing.md`](./contributing.md).
 
@@ -23,9 +23,9 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Item               | Nilai                                                       |
 | ------------------ | ----------------------------------------------------------- |
 | Periode laporan    | 2026-09-30 s.d. 2026-10-10                                  |
-| Status keseluruhan | 🟢 On Track — **v1.7.0 live di produksi** 2026-10-12 (enam rilis dalam 13 hari, semua lewat gate lokal + QA staging); Roadmap 2026–2027 **20,0%** (→ 25,7% saat PLATFORM-08/09 ✅ di rilis berikutnya) (dari 8,6% saat reset) |
-| Basis review       | Audit `/audit` 2026-10-12 (roadmap Phase Status, status issue GitHub, `metrics.md`, run QA v1.7.0 staging/prod) |
-| Test lokal         | ✅ **2.937 test** saat rilis v1.7.0 (dari 2.461 di v1.3.0) · lint 0 error · typecheck ✅ · build ✅ |
+| Status keseluruhan | 🟢 On Track — **v1.9.0 live di produksi** 2026-10-17 (delapan rilis dalam 18 hari, semua lewat gate lokal; QA lokal + staging sejak v1.8.0); Roadmap 2026–2027 **28,6%** (dari 8,6% saat reset) |
+| Basis review       | Audit `/audit` penuh 2026-10-21 (#440: roadmap Phase Status, status issue GitHub, `metrics.md`, run QA v1.9.0 lokal/staging/prod) |
+| Test lokal         | ✅ **3.138 test** saat rilis v1.9.0 (dari 2.461 di v1.3.0; 3.147 di working tree audit 2026-10-21) · lint 0 error · typecheck ✅ · build ✅ |
 | Fokus berikutnya   | **v1.10.0** Supply Chain versi DB (10-18 → 11-08: #380 model + master Mill/Offtaker → import survei → #381 peta → #382 analisa; + #424 · #436 · #366 · #422). Terakhir dirilis: **v1.9.0** 2026-10-17 (Peta Fitur #437 + tampilan Aliran TBS), **v1.8.0** 2026-10-14, **v1.7.0** 2026-10-12 |
 
 ### Ringkasan Eksekutif
@@ -49,12 +49,12 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
 | Total phase    | 26 fase        | Roadmap 2026–2027 (reset 2026-09-30): Now 8 · Next 7 · Later 11 |
-| ✅ Done        | **1 fase**     | OPS-02 (2026-10-07) |
-| 🟠 Partial     | 7 fase         | PLATFORM-08 & PLATFORM-09 (kriteria selesai terpenuhi → ✅ di rilis berikutnya, owner 2026-10-12), DQ-01, DA-09, DA-08, GIS-01, MD-08 |
+| ✅ Done        | **3 fase**     | OPS-02 (2026-10-07), PLATFORM-08 & PLATFORM-09 (v1.8.0, 2026-10-14) |
+| 🟠 Partial     | 6 fase         | DQ-01, DA-09, DA-08, GIS-01, GIS-02 (layer hutan/EUDR #433, v1.8.0), MD-08 |
 | 🔲 Not Started | 3 fase         | SC-01, SC-02, SC-03 (Supply Chain — prototipe CSV sudah live, versi DB di v1.10.0) |
-| 🔲 Planned     | 15 fase        | Horizon Next/Later (DA-05, MAP-04, GIS-02, MD-12, PLATFORM-10, FORM-01, MD-07/10/11/13/14/15/16, GIS-03/04) |
+| 🔲 Planned     | 14 fase        | Horizon Next/Later (DA-05, MAP-04, MD-12, PLATFORM-10, FORM-01, MD-07/10/11/13/14/15/16, GIS-03/04) |
 | 🔴 Blocked     | 0 fase         | — |
-| Roadmap %      | **20,0%**      | Dihitung dari Phase Status (bobot inti ×2) — [metrics.md](./metrics.md); RVS kumulatif 5.594 (v1.7.0) |
+| Roadmap %      | **28,6%**      | Dihitung dari Phase Status (bobot inti ×2) — [metrics.md](./metrics.md); RVS kumulatif 5.881 (v1.9.0) |
 
 > Baseline MVP (51 fase, 88,5%) beku di [roadmap-mvp.md](./roadmap-mvp.md). Angka di atas tidak sebanding dengan brief sebelum 2026-09-30.
 
@@ -62,9 +62,9 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Topik               | Pesan Utama                                                              | Dampak                                                                                    |
 | ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Ritme rilis pasca-MVP** 🟢 | Enam rilis dalam 13 hari (v1.3.0 → v1.7.0) dengan gate hijau dan QA staging 0 Fail; rencana kini **per rilis** (bukan mingguan). | Perbaikan sampai ke lapangan dalam hitungan hari; jalur `mvp → staging → main` dan rollback sudah teruji. |
+| **Ritme rilis pasca-MVP** 🟢 | Delapan rilis dalam 18 hari (v1.3.0 → v1.9.0) dengan gate hijau dan QA staging 0 Fail; rencana kini **per rilis** (bukan mingguan). | Perbaikan sampai ke lapangan dalam hitungan hari; jalur `mvp → staging → main` dan rollback sudah teruji. |
 | **Training Benefit & target kontrak** 🟢 | Kartu Training Benefit per year (per paket, kolom tahun bergeser) + target kontrak di DB (Master Data › Target Program) + tampilan vs Kontrak; Excel 3 sheet untuk donor. | Capaian program vs kontrak terbaca langsung dari dashboard, tanpa rekap manual. Angka kontrak prod diisi owner. |
-| **Rantai Pasok (prototipe)** 🔵 | Dashboard (4 tampilan aliran, Sorotan, volume per Mill/Lembaga, jarak, Excel) + Peta dari CSV survei 2025 di S3 privat — untuk diskusi, bukan versi final. | Bahan keputusan sebelum SC-01..03 (versi DB, v1.7.0 10-26 → 11-08). Lisensi UML sudah diputuskan (CC BY 4.0). |
+| **Rantai Pasok (prototipe)** 🔵 | Dashboard (4 tampilan aliran, Sorotan, volume per Mill/Lembaga, jarak, Excel) + Peta dari CSV survei 2025 di S3 privat — untuk diskusi, bukan versi final. | Bahan keputusan sebelum SC-01..03 (versi DB, v1.10.0 10-18 → 11-08). Lisensi UML sudah diputuskan (CC BY 4.0). |
 | **Keamanan akses** 🟢 | Satu celah kelas BUG-007 ditemukan audit dan ditutup hotfix v1.5.1 hari yang sama; dua celah laten (#409, #386) dan guard Peta BMP (#384) dirilis di v1.7.0 (2026-10-12). | Tidak ada temuan P1 terbuka; audit mingguan `/audit` menjadi rutin. |
 | **Kualitas data prod** 🟢 | DQ-01: tanggal lahir, Detail Lahan Siak, Monev BMP Kampar, tahun tanam & alamat belasan Lembaga sudah masuk prod lewat skrip idempoten (dry-run → persetujuan → tulis). | Dashboard & laporan makin mewakili kondisi lapangan; sisa: APKASDU (ID lahan lama ≠ poligon baru), 82 UL Parcel Code ganda (#395). |
 | Delivery confidence | Test 3.094 → 3.139 (rilis v1.9.0 + penyamaan izin, 2026-10-17); TD aktif 30 (+TD-067…068 dari wrap-up v1.9.0); QA v1.9.0 lokal · staging · prod P0 0 Fail; RVS 5881. | Debt terkendali; tidak ada fase Blocked. |
@@ -73,7 +73,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Keputusan                  | Owner                   | Dibutuhkan Kapan     | Rekomendasi Tech Lead                                                                       |
 | -------------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------------- |
-| Angka target kontrak program di prod (#403) — belum tercatat terisi di docs | Owner | Sebelum review 2026-10-13 | Isi lewat Master Data › Target Program (tabel DB, tanpa deploy); di staging baru angka fiktif uji (TC-PREP-01 v1.4.0). Tampilan vs Kontrak kosong sampai diisi. |
+| Angka target kontrak program di prod (#403) — belum tercatat terisi di docs | Owner | Sebelum review 2026-10-27 | Isi lewat Master Data › Target Program (tabel DB, tanpa deploy); di staging baru angka fiktif uji (TC-PREP-01 v1.4.0). Tampilan vs Kontrak kosong sampai diisi. |
 | APKASDU: berkas Detail Lahan ber-ID lahan baru (#366) | Owner + fasilitator | v1.10.0 | 1.360 baris ditahan karena ID lama ≠ poligon upload ulang 2026-10-02; minta berkas ulang ber-ID baru, jangan dipaksakan. |
 | Kelompok Tani HJP & SSJ (KT NULL, nilai "33 F" di Blok, #334) | Owner + fasilitator | v1.10.0 | Tetapkan: KT+Blok tergabung atau kode blok; KPI KT kedua Lembaga = 0 sampai diputuskan. |
 | Subdistrict & Village hanya 1 baris (#260) | Owner / Product | Tidak mendesak | Sembunyikan dari form sampai ada data, atau isi dari referensi BPS saat modul wilayah disentuh. |

@@ -2,7 +2,7 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [roadmap.md](./roadmap.md) · [sprint.md](./sprint.md) · [tech-debt.md](./tech-debt.md) · [changelog.md](./changelog.md)
 
-> **Ringkasan:** Panduan proses developer: aturan emas & checklist 5 menit update dokumen, peta dependensi docs, template update, acceptance criteria umum, dan checklist kepatuhan `standards/` saat implementasi. Baca saat bingung dokumen mana yang harus ikut diubah.
+> **Ringkasan:** Panduan proses developer: aturan emas & checklist 5 menit update dokumen, template update, acceptance criteria umum, dan checklist kepatuhan `standards/` saat implementasi; peta dependensi fase, urutan implementasi, dan breakdown MD-03 hanya arsip MVP yang dibekukan. Baca saat bingung dokumen mana yang harus ikut diubah.
 
 > Panduan proses untuk developer: cara update dokumen status, urutan implementasi, dan checklist kepatuhan [standar kode](../standards/code-standards.md).
 > Konten stabil (jarang berubah) — dipisah dari `progress.md` (restrukturisasi 2026-07-12) agar file status tetap ramping.
@@ -42,7 +42,7 @@ Contoh bukti yang valid:
 
 **Review roadmap (dua kali setahun).** **Juni 2027:** pilih 2–3 fase Semester 2 yang dinaikkan ke bobot `inti`, geser sisanya, perbarui Linimasa. **Desember 2027:** reset menjadi roadmap 2028 dengan pola 2026-09-30 — tabel lama dibekukan ke berkas arsip, Phase Status baru, Decision Log, baris `metrics.md` bercatatan reset, Bantuan p-8.
 
-### Peta Dependensi
+### Peta Dependensi (arsip MVP, dibekukan 2026-09-30)
 
 ```mermaid
 flowchart LR
@@ -81,7 +81,7 @@ flowchart LR
 | 11   | MD-04       | Parcel schema, CRUD, map context                       | MD-03                            | Penting untuk Production/GIS                             |
 | 12   | MD-06       | Production schema, period, chart/import awal           | MD-03 + kemungkinan MD-04        | Validasi per Farmer vs per Parcel                        |
 
-### MD-03 Farmer — Suggested Issue Breakdown
+### MD-03 Farmer — Suggested Issue Breakdown (arsip MVP, dibekukan 2026-09-30)
 
 | Issue                               | Scope                                                        | Definition of Done                                        |
 | ------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------- |

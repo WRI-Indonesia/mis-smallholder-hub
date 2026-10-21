@@ -67,7 +67,7 @@ Bobot dipakai formula **Roadmap %** ([standards/versioning.md](../standards/vers
 
 Kolom ini adalah **satu-satunya sumber klasifikasi** (dibaca mesin oleh section Detail Roadmap di dashboard Metrik Rilis). Mengubah bobot sebuah fase = mengubah baseline → wajib dicatat di Decision Log.
 
-**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. **v1.4.0 (berjalan, 2026-10-07):** OPS-02 🟠 → ✅ (#232 TC-232-01) → pendukung 1,5/17 → **4,5/35 = 12,9%**; DQ-01 🔲 → 🟠 (#366 di prod) → inti 4/18 → **5,5/35 = 15,7%**. **v1.7.0 (2026-10-12):** DA-08 🔲 → 🟠 (#416 · #417) → **7/35 = 20,0%**. **Audit 2026-10-12 (owner):** PLATFORM-08 & PLATFORM-09 diputuskan 🟠 → ✅ (kriteria "Selesai bila" terpenuhi: #342/#390/#386/#384 dan #335/#253/#320/#251 CLOSED) — diterapkan di bump rilis berikutnya → inti 7/18 → **9/35 = 25,7%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md). **v1.8.0 (2026-10-14):** PLATFORM-08 & PLATFORM-09 🟠 → ✅ (inti +1 +1) · GIS-02 🔲 → 🟠 (#433, owner 2026-10-14; inti +1) → **10/35 = 28,6%**.
+**Baseline 2026-09-30:** 26 fase. Inti 9 fase = 2/18 poin (PLATFORM-08 🟠, MD-08 🟠); pendukung 17 fase = 1/17 (OPS-02 🟠, DA-09 🟠) → **3/35 = 8,6%**. **v1.3.0 (2026-09-30):** PLATFORM-09 🔲 → 🟠 (#335 · #253 · #320 ditutup, #251 di prod) → inti 3/18 → **4/35 = 11,4%**. **v1.4.0 (dirilis 2026-10-07):** OPS-02 🟠 → ✅ (#232 TC-232-01) → pendukung 1,5/17 → **4,5/35 = 12,9%**; DQ-01 🔲 → 🟠 (#366 di prod) → inti 4/18 → **5,5/35 = 15,7%**. **v1.7.0 (2026-10-12):** DA-08 🔲 → 🟠 (#416 · #417) → **7/35 = 20,0%**. **Audit 2026-10-12 (owner):** PLATFORM-08 & PLATFORM-09 diputuskan 🟠 → ✅ (kriteria "Selesai bila" terpenuhi: #342/#390/#386/#384 dan #335/#253/#320/#251 CLOSED) — diterapkan di bump rilis berikutnya → inti 7/18 → **9/35 = 25,7%**. Modul Visi Produk yang belum punya concept note sengaja diberi bobot `pendukung`; naikkan ke `inti` saat ia dijadikan komitmen di review Juni 2027 (catat di Decision Log). Baseline MVP sebelumnya (51 fase, 80,5/91 = 88,5%) diarsipkan di [roadmap-mvp.md](./roadmap-mvp.md). **v1.8.0 (2026-10-14):** PLATFORM-08 & PLATFORM-09 🟠 → ✅ (inti +1 +1) · GIS-02 🔲 → 🟠 (#433, owner 2026-10-14; inti +1) → **10/35 = 28,6%**.
 
 </details>
 
@@ -96,11 +96,11 @@ Satu baris per kuartal. Rilis K4 2026 mengikuti [sprint.md](./sprint.md). Rilis 
 
 | Kuartal | Tema | Fase | Rilis / tenggat |
 | ------- | ---- | ---- | --------------- |
-| **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 · GIS-01 (langkah awal #290) | **v1.3.0** dirilis 09-30 (jalur rilis, keamanan, performa) · **v1.4.0** dirilis 10-07 (kualitas data, Training Benefit & target kontrak) · **v1.5.0** dirilis 10-09 (limpahan v1.4.0: #317 Fase 3, #290, kerapian) · **v1.5.1** hotfix keamanan 10-10 · **v1.6.0** dirilis 10-10 (prototipe Rantai Pasok diperluas) · **v1.7.0** MINOR dirilis 10-12 (celah RBAC laten #409/#386/#384 + kerapian TD #412 + Ketersediaan Data › Produksi #416 & Semua Lembaga ringkas #417 + template Upload Massal #419 + tata letak berkelompok #420 + perbaikan QA #418/glyph PDF — owner 2026-10-11: semula PATCH v1.6.1, #416 ikut → MINOR) · **v1.8.0** MINOR dirilis 10-14 (Dashboard BMP umur tanaman & Excel, Reset filter seragam, Daftar Issue, layer hutan/EUDR #433 → GIS-02 🟠; PLATFORM-08/09 ✅) · **v1.9.0** MINOR dirilis 10-17 (Peta Fitur #437 + perluasan prototipe Aliran TBS #381; tanpa fase — owner 2026-10-17) |
+| **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 · GIS-01 (langkah awal #290) · DA-08 (#416/#417 di v1.7.0; #415 B kalender Pelatihan di v1.11.0) | **v1.3.0** dirilis 09-30 (jalur rilis, keamanan, performa) · **v1.4.0** dirilis 10-07 (kualitas data, Training Benefit & target kontrak) · **v1.5.0** dirilis 10-09 (limpahan v1.4.0: #317 Fase 3, #290, kerapian) · **v1.5.1** hotfix keamanan 10-10 · **v1.6.0** dirilis 10-10 (prototipe Rantai Pasok diperluas) · **v1.7.0** MINOR dirilis 10-12 (celah RBAC laten #409/#386/#384 + kerapian TD #412 + Ketersediaan Data › Produksi #416 & Semua Lembaga ringkas #417 + template Upload Massal #419 + tata letak berkelompok #420 + perbaikan QA #418/glyph PDF — owner 2026-10-11: semula PATCH v1.6.1, #416 ikut → MINOR) · **v1.8.0** MINOR dirilis 10-14 (Dashboard BMP umur tanaman & Excel, Reset filter seragam, Daftar Issue, layer hutan/EUDR #433 → GIS-02 🟠; PLATFORM-08/09 ✅) · **v1.9.0** MINOR dirilis 10-17 (Peta Fitur #437 + perluasan prototipe Aliran TBS #381; tanpa fase — owner 2026-10-17) |
 | | Supply Chain | SC-01 · SC-02 · SC-03 | **v1.10.0** 10-18 → 11-08 (prasyarat: lisensi UML #379; prototipe CSV ikut v1.4.0, diperluas di **v1.6.0** 2026-10-10; semula v1.7.0 — bergeser karena #416 masuk v1.7.0, owner 2026-10-11; lalu v1.8.0 → v1.9.0 karena batch #425–#430 dirilis lebih dulu, owner 2026-10-13; lalu v1.9.0 → v1.10.0 karena Peta Fitur & tampilan Aliran TBS dirilis lebih dulu, owner 2026-10-17) |
 | | Penyangga akhir tahun | tuntaskan DA-09 + concept note GIS-02/MD-12 + limpahan | **v1.11.0** 11-09 → 12-20 |
 | **K1 2027** (Jan–Mar) | Siap musim kemarau 2027 | GIS-01 · DA-05 | Fire Alert tuntas sebelum musim kemarau 2027 (#286) |
-| **K2 2027** (Apr–Jun) | NKT, deforestasi & sertifikasi | MD-08 · GIS-02 · MD-12 · DA-08 · MAP-04 | **Review tengah tahun Juni 2027**; concept note modul S2 selesai |
+| **K2 2027** (Apr–Jun) | NKT, deforestasi & sertifikasi | MD-08 · GIS-02 · MD-12 · DA-08 (#355 · #356 · #358) · MAP-04 | **Review tengah tahun Juni 2027**; concept note modul S2 selesai |
 | **S2 2027** (Jul–Des) | Visi produk lingkar luar + skala data 2028 | PLATFORM-10 · FORM-01 · MD-11 · MD-07 · MD-10 · MD-13 · MD-14 · MD-15 · MD-16 · GIS-03 · GIS-04 | Dipilih di review Juni; **reset roadmap 2028 Desember 2027** |
 
 **Kapasitas:** pengembangan dikerjakan satu orang di sela cleaning data dan kunjungan distrik. Sebelas fase Semester 2 **tidak akan selesai semuanya**. Review Juni 2027 memilih 2–3 yang dijadikan komitmen (bobot naik ke `inti`), sisanya bergeser ke roadmap 2028.
@@ -386,7 +386,7 @@ Fase di bawah ini berasal dari [Visi Produk](#visi-produk) dan **belum punya con
 
 ### Visi Produk
 
-Pemetaan diagram modul MIS (lingkar inti, prioritas MVP, lingkar luar) ke fase. Setiap modul di diagram harus punya tempat di sini: Done (arsip MVP), fase aktif, atau Parkir. Kolom **Status** menggambarkan **kondisi modulnya di aplikasi**, bukan status fase: Fire "live" tetapi fase pengerasannya GIS-01 belum mulai; Certification sudah punya kolom status tetapi fase modulnya MD-12 belum mulai.
+Pemetaan diagram modul MIS (lingkar inti, prioritas MVP, lingkar luar) ke fase. Setiap modul di diagram harus punya tempat di sini: Done (arsip MVP), fase aktif, atau Parkir. Kolom **Status** menggambarkan **kondisi modulnya di aplikasi**, bukan status fase: Fire "live" tetapi fase pengerasannya GIS-01 baru Partial; Certification sudah punya kolom status tetapi fase modulnya MD-12 belum mulai.
 
 | Modul diagram | Status | Fase |
 | ------------- | ------ | ---- |
@@ -396,7 +396,7 @@ Pemetaan diagram modul MIS (lingkar inti, prioritas MVP, lingkar luar) ke fase. 
 | HCV | 🟠 Partial | MD-08 |
 | Supply Chain | 🔲 | SC-01 · SC-02 · SC-03 |
 | GIS: Fire | ✅ live, pengerasan | GIS-01 |
-| GIS: Deforestation | 🔲 | GIS-02 |
+| GIS: Deforestation | 🟠 layer hutan & deforestasi Kemenhut + EUDR/GFW (#433, v1.8.0) | GIS-02 |
 | GIS: Flood, Hazard (opsional) | 🔲 | GIS-03 |
 | GeoServer (tambahan owner, di luar diagram) | 🔲 hanya klien WMS eksternal | GIS-04 |
 | Certification | 🟠 kolom status saja | MD-12 |
@@ -422,7 +422,7 @@ Daftar fase dan epic yang **tidak dihitung** di Roadmap % karena belum punya sco
 | — | Advanced BMP (ide) | Ide di Visi Produk; dinilai bersama MD-16 Regenerative Agriculture |
 | COMM-01 | Community | Belum ada scope |
 | COMM-02 | i18n | Belum ada scope; UI tetap Bahasa Indonesia |
-| #192 | Epic API layer & offline sync aplikasi mobile | ⚖️ masih direncanakan? Bila tidak, close *not planned* |
+| #192 | Epic API layer & offline sync aplikasi mobile | ✅ Diputuskan 2026-09-30: tetap parkir (terkait FORM-01) |
 | #124 | Overlay citra Planet NICFI di Peta Lahan | ✅ Diputuskan 2026-09-30: close *not planned* — GIS-01 memakai GIBS (#290) + Sentinel-2 (#291) |
 | #261 | Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ✅ Diputuskan 2026-09-30: tetap sampel (ditutup) |
 

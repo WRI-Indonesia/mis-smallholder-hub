@@ -49,12 +49,15 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 2. **Titik rilis** — setiap **phase roadmap Done** ([roadmap.md](../project/roadmap.md)) atau setiap **ringkasan dua mingguan** di [changelog.md](../project/changelog.md), mana yang lebih dulu terasa utuh. Tidak rilis per commit.
    - **Maksimal satu rilis per hari.** Bila ada beberapa pemicu dalam sehari (beberapa phase Done / beberapa `feat:`), gabungkan menjadi **satu rilis di akhir hari** dengan bump tertinggi yang berlaku — jangan rilis beruntun seperti 2026-07-15 (v0.9.0 → v0.10.0 → v0.11.0 dalam sehari). Satu-satunya pengecualian: **hotfix kritis produksi** setelah rilis hari itu.
 3. **Gate lokal**: `npm run lint`, `npm run build`, `npm run typecheck`, dan `npm test` lulus (Pre-Commit Gate di [workflow.md](./workflow.md)) — keempatnya **tidak** dijalankan CI, jadi harus dipastikan lokal. Di PR, CI menjalankan `gitleaks` & `semgrep`; periksa `gh pr checks <nomor>` hijau sebelum merge.
-4. **QA/QC manual di staging** — setelah migrasi + seed diterapkan ke `mis-staging` dan `mvp → staging` di-deploy, jalankan `docs/qa/vX.Y.Z/` (smoke per menu, kasus uji per issue, QC angka DB); temuan blocker/major menahan rilis. `05-signoff.md` (dev · QA · owner) adalah prasyarat langkah berikutnya. Lihat [../qa/README.md](../qa/README.md).
-5. **Bump versi**: update `version` di `package.json`, tambah entri rilis di berkas bulan berjalan [changelog/](../project/changelog.md) (`YYYY-MM.md`), commit dengan pesan `chore(release): vX.Y.Z`.
-6. **PR `staging` → `main`** (`staging` sudah berisi `mvp` dari langkah 4), merge setelah approval. ⚠️ **Merge ke `main` memicu deploy produksi otomatis** (`deploy-main.yml`) — pastikan migrasi DB yang dibutuhkan sudah diterapkan lebih dulu (bila terlupa, guard `migrate status` di `deploy-main.yml` menghentikan deploy sebelum build dan aplikasi lama tetap jalan, #394 — terapkan migrasi lalu *re-run* job), lalu segarkan `prisma/migrations/applied-checksums.json` (skrip `scripts/migrations/refresh-applied-checksums.ts`, #303) dan ikutkan di commit rilis. **Migrasi prod di luar rilis** (untuk kebutuhan data, mendahului kode) hanya bila kompatibel mundur dengan tag yang live atau rilisnya menyusul hari yang sama — aturan lengkap di [database/migrations.md](../database/migrations.md) §Migrasi prod di luar rilis (#376, TD-045). Bila rilis harus dibatalkan: [rollback.md](./rollback.md).
+4. **QA/QC manual — lokal dulu, lalu staging** (alur owner 2026-10-14, dipakai sejak v1.8.0). Lihat [../qa/README.md](../qa/README.md).
+   - **Lokal (sebelum merge staging):** `/scope` (matriks issue & objek yang baru/berubah sejak rilis terakhir) → `/wrapup` (review, test, docs/Bantuan, gate, kasus uji `02-test-cases.md`) → **QA lokal** = jalankan kasus uji di dev server lokal dan catat di `docs/qa/vX.Y.Z/runs/<tanggal>-lokal.md`; issue ditutup (dengan retro) bila run lokal **0 Fail**. Baru sesudah itu `mvp` di-merge ke `staging` (contoh: `docs/qa/v1.8.0/runs/2026-10-14-lokal.md`, `docs/qa/v1.9.0/runs/2026-10-17-lokal.md`).
+   - **Staging:** setelah migrasi + seed diterapkan ke `mis-staging` dan `mvp → staging` di-deploy, jalankan `docs/qa/vX.Y.Z/` (smoke per menu, kasus uji per issue, QC angka DB); temuan blocker/major menahan rilis. `05-signoff.md` (dev · QA · owner) adalah prasyarat langkah berikutnya.
+5. **Bump versi**: update `version` di `package.json`, tambah entri rilis di berkas bulan berjalan [changelog/](../project/changelog.md) (`YYYY-MM.md`), commit dengan pesan `chore(release): vX.Y.Z` — **sesudah** sign-off staging, lalu merge lagi `mvp → staging` agar commit bump ikut PR (v1.8.0 `ea2bf03` → `841338c`, v1.9.0 `8c2a8c9` → `6ccb79f`).
+6. **PR `staging` → `main`** (`staging` sudah berisi `mvp` dari langkah 4–5), merge setelah approval. ⚠️ **Merge ke `main` memicu deploy produksi otomatis** (`deploy-main.yml`) — pastikan migrasi DB yang dibutuhkan sudah diterapkan lebih dulu (bila terlupa, guard `migrate status` di `deploy-main.yml` menghentikan deploy sebelum build dan aplikasi lama tetap jalan, #394 — terapkan migrasi lalu *re-run* job), lalu segarkan `prisma/migrations/applied-checksums.json` (skrip `scripts/migrations/refresh-applied-checksums.ts`, #303) dan ikutkan di commit rilis. **Migrasi prod di luar rilis** (untuk kebutuhan data, mendahului kode) hanya bila kompatibel mundur dengan tag yang live atau rilisnya menyusul hari yang sama — aturan lengkap di [database/migrations.md](../database/migrations.md) §Migrasi prod di luar rilis (#376, TD-045). Bila rilis harus dibatalkan: [rollback.md](./rollback.md).
 7. **Tag & Release di `main`**:
    - Annotated tag: `git tag -a vX.Y.Z -m "vX.Y.Z"` pada merge commit di `main`, lalu `git push origin vX.Y.Z`.
    - GitHub Release: `gh release create vX.Y.Z` dengan release notes diambil dari ringkasan changelog — **bukan** auto-generate dari commit mentah, agar konsisten dengan changelog sebagai catatan historis.
+   - **Run prod P0** sesudah deploy produksi: `new-run.mjs --env prod --only P0` + `data-qc.ts` prod ([../qa/README.md](../qa/README.md) §Alur).
 8. **Pengumuman Telegram** — teks **compact**, maks ±6 baris: judul versi, 2–3 poin fitur/perbaikan dalam bahasa awam (tanpa nomor issue/istilah teknis), tutup dengan progres roadmap. Metrik internal (RVS/KPI/jumlah test) **tidak** ikut — cukup di changelog & release notes.
 
 ### Checklist Rilis
@@ -62,6 +65,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 - [ ] Belum ada rilis lain di hari yang sama (aturan **maks. 1 rilis/hari**; kecuali hotfix kritis)
 - [ ] Semua commit sejak rilis terakhir sudah ter-review (issue workflow selesai)
 - [ ] Lint, build, typecheck, dan test lulus lokal
+- [ ] `/scope` + `/wrapup` selesai dan **QA lokal** `docs/qa/vX.Y.Z/runs/<tanggal>-lokal.md` 0 Fail (issue ditutup + retro) **sebelum** merge `mvp → staging`
 - [ ] **QA/QC manual** `docs/qa/vX.Y.Z/` selesai di staging: `01-smoke` + `02-test-cases` + `03-data-qc`, temuan blocker/major tuntas, **`05-signoff.md` terisi** (dev · QA · owner)
 - [ ] `npm run rbac:compare` — selisih izin seed ↔ produksi ditinjau (lihat #263; selisih yang disengaja dicatat, bukan diabaikan)
 - [ ] Check CI di PR hijau (`gitleaks`, `semgrep`) — `gh pr checks <nomor>`
@@ -73,6 +77,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 - [ ] **Metrik Nilai Rilis dihitung** → baris baru di [`project/metrics.md`](../project/metrics.md) (lihat §Metrik Nilai Rilis)
 - [ ] PR `staging` → `main` merged
 - [ ] Annotated tag `vX.Y.Z` dibuat di `main` dan di-push
+- [ ] Run prod P0 (`runs/<tanggal>-prod.md`) terisi sesudah deploy produksi
 - [ ] GitHub Release dibuat dengan notes dari changelog
 - [ ] Teks pengumuman Telegram (compact, §langkah 8) disiapkan
 

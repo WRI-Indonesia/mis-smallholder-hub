@@ -8,15 +8,15 @@
 
 Format: satu berkas per bulan di [`changelog/`](./changelog/) — tiap berkas berisi **Decision Log** (`YYYY-MM-DD`) dan **Changelog** (`MM-DD`). Entri baru ditambahkan sebagai **baris teratas** tabel di berkas bulan berjalan; saat ganti bulan, buat `changelog/YYYY-MM.md` baru dan tambahkan barisnya di tabel di bawah. Keputusan besar (arsitektur, kebijakan, aturan yang berlaku lintas modul) juga ditulis sebagai catatan keputusan di [`../decisions/`](../decisions/README.md).
 
-### Ringkasan Dua Minggu Terakhir (30 September – 10 Oktober 2026)
+### Ringkasan Dua Minggu Terakhir (8 – 21 Oktober 2026)
 
-> Snapshot per 2026-10-10 — perbarui/ganti section ini saat menulis ringkasan periode berikutnya. Ringkasan 15–29 September ada di Changelog September 2026 (rilis v0.35.0 → v1.1.0).
+> Snapshot per 2026-10-21 — perbarui/ganti section ini saat menulis ringkasan periode berikutnya. Ringkasan 30 September – 10 Oktober (v1.3.0 → v1.6.0) ada di riwayat git berkas ini; rincian per hari di Changelog Oktober 2026.
 
-- **Rilis:** **v1.3.0** (09-30, jalur rilis/keamanan/performa; 1 migrasi indeks) → **v1.4.0** (10-07, menu Platform Developer, Target Program `tbl_program_target`, Training Benefit per year, prototipe Rantai Pasok) → **v1.5.0** (10-09, #317 Fase 3 peringatan tumpang tindih saat upload, latar GIBS Fire Alert, kerapian) → **v1.5.1** hotfix keamanan (10-10, filter scope Lembaga tertimpa — kelas BUG-007, #408) → **v1.6.0** (10-10, prototipe Rantai Pasok diperluas + istilah "petani terdaftar"; pengecualian aturan 1 rilis/hari). Rencana kini **per rilis** (keputusan 2026-09-30); roadmap direset ke **Roadmap 2026–2027** (8,6% → **18,6%**).
-- **Keamanan & DevOps:** role/`isActive` dibaca ulang dari DB ≤ 1 menit (#342); guard `migrate status` di deploy staging & prod (#277/#394); rollback teruji di staging (#232, OPS-02 ✅ Done); cek migrasi vs tag (#376); seed akun fiktif (#390). Celah laten #409/#386 diperbaiki di `mvp` → PATCH **v1.6.1** (10-11 → 10-25).
-- **Data prod (DQ-01):** 2.213 tanggal lahir tertukar diperbaiki (#354) + parser tanggal upload (#400); Detail Lahan Siak 9 Lembaga (#366, APKASDU ditahan); Monev BMP Kampar 2026; tahun tanam/alamat/KT belasan Lembaga dari berkas fasilitator; produktivitas BMP **disetahunkan** (Ton/Ha/tahun).
-- **Proses:** `/audit` jadi audit mingguan + workflow (fase F1–F6; 126 test guard 3 lapis, 25 koreksi Bantuan, register TD dirapikan 33 → 31, #412–#414); command `/lanjut`; catatan keputusan `decisions/` 0005–0007.
-- **QA:** test 2.461 (v1.3.0) → **2.804** (v1.6.0); lint 0, typecheck & build ✅; run staging v1.6.0 0 Fail (smoke 17 · kasus 11), run prod P0 ≤ 1 jam pasca-deploy; paket QA v1.3.0 diarsipkan.
+- **Rilis:** **v1.5.0** (10-09) · **v1.5.1** hotfix keamanan + **v1.6.0** (10-10) → **v1.7.0** (10-12, menu induk Ketersediaan Data + kalender Produksi #416, Semua Lembaga ringkas #417, template & pemetaan berkelompok Upload Massal #419/#420; PATCH v1.6.1 batal karena #416 ikut) → **v1.8.0** (10-14, Excel produktivitas per umur tanaman #426 + batas TBM/TM #428, Reset filter seragam #427, menu Daftar Issue #429, layer hutan & deforestasi Kemenhut + EUDR/GFW #433) → **v1.9.0** (10-17, menu Peta Fitur 12 tampilan #437 + prototipe Aliran TBS 10 tab #381). Roadmap 2026–2027 **18,6% → 28,6%** (DA-08 🟠, PLATFORM-08/09 ✅, GIS-02 🟠). Berjalan: **v1.10.0** Supply Chain versi DB (10-18 → 11-08).
+- **Keamanan:** celah laten #409 (distrik tujuan Lembaga), #386 (anti-eskalasi Settings › Users) dan guard Peta BMP #384 dirilis di v1.7.0 → bug open 4 → **0**; izin prod dijadikan acuan sesudah `rbac:compare` v1.9.0 (Dashboard Rantai Pasok & Excel Daftar Issue).
+- **Data prod (DQ-01):** produktivitas BMP disetahunkan (10-08); Monev BMP Kampar 2026 (10-08); label `Estimasi` dilepas dari 6.215 record produksi (10-12) — penggantinya penanda Meragukan #424 di v1.10.0; snapshot BMP prod di-generate ulang (#428).
+- **Proses:** alur rilis owner 2026-10-14 — `/scope` → `/wrapup` → QA lokal (`runs/<tanggal>-lokal.md`) sebelum merge staging; `/audit` mingguan 10-12 (#431) dan audit penuh 10-21 (#440); TD aktif 33 → 23 (#412) → **30** (TD-060…068 dibuka); berkas docs besar ber-`Ringkasan` + arsip beku ke `project/archive/` (10-12).
+- **QA:** test 2.804 (v1.6.0) → **3.138** (v1.9.0); run staging & prod P0 0 Fail di v1.7.0–v1.9.0, run lokal sejak v1.8.0 (v1.9.0 Go dengan catatan: peran OPERATOR/DONOR Blocked); paket QA v1.5.0 & v1.6.0 diarsipkan (10-17).
 
 ---
 
