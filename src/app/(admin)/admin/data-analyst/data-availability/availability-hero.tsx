@@ -40,7 +40,7 @@ export function AvailabilityHero({
       <Card className="border border-dashed border-border/60">
         <CardContent className="flex min-h-[96px] flex-col items-center justify-center gap-1 py-6 text-center">
           <p className="text-sm font-medium">Tidak ada Lembaga Petani pada pilihan filter ini.</p>
-          <p className="text-xs text-muted-foreground">Klik Reset semua di atas — atau cakupan akses Anda memang belum memuat Lembaga.</p>
+          <p className="text-xs text-muted-foreground">Klik ↺ Reset di ujung baris filter — atau cakupan akses Anda memang belum memuat Lembaga.</p>
         </CardContent>
       </Card>
     );

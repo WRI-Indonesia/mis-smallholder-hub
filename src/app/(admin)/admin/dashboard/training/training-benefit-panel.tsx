@@ -490,7 +490,7 @@ export function TrainingBenefitPanel({
                   className="h-8 gap-2"
                   onClick={exportExcel}
                   disabled={exporting}
-                  title="Unduh 2 sheet: Capaian (tabel format donor + grafik) dan Kontrak (target vs realisasi + grafik)"
+                  title="Unduh 3 sheet: Capaian (tabel format donor + grafik), Kontrak (target vs realisasi + grafik), dan Detail (satu baris per petani)"
                 >
                   {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   Excel
