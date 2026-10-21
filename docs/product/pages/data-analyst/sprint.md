@@ -52,12 +52,12 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
 │   ├── Lajur terlipat "Digeser ke rilis lain (n)" — kartu butir ⏭️ (poinnya dihitung di rilis tujuan)
 │   └── Lajur terlipat "Tidak dikerjakan (n)" — kartu butir ⛔ (judul dicoret, poinnya tidak dihitung)
 ├── Tab Analisa
-│   ├── 4 kartu (`planTotals`): Rencana (poin tanpa butir digeser · n rilis · tanggal akhir) · Tertahan keputusan owner
+│   ├── 4 kartu (`planTotals`): Rencana (poin tanpa butir digeser & ⛔ tidak dikerjakan · n rilis · tanggal akhir) · Tertahan keputusan owner
 │   │   (poin + % rencana + rincian terlambat / rilis berjalan / mendatang — yang nol tidak ditulis) · Velocity rata-rata
 │   │   (poin/minggu kalender dari rilis lewat target + ukuran sampel "n rilis (m minggu)", "sampel masih kecil" bila < 4
 │   │   minggu; bila belum ada: progres rilis berjalan + hari ke-n dari m) · Carry-over
 │   ├── Beban & kemajuan per rilis — satu kolom per rilis, tinggi = KOMITMEN AWAL (termasuk butir yang kemudian digeser
-│   │   [segmen putus-putus] atau ⛔ tidak dikerjakan [segmen bertitik]),
+│   │   [segmen putus-putus]; ⛔ tidak dikerjakan TIDAK ditumpuk — bukan beban — hanya disebut di tooltip),
 │   │   skala sama, ditumpuk per STATUS (`releaseStatusPoints`, `PLAN_STACK_ORDER`); penanda putus per kolom = kapasitas
 │   │   (velocity × minggu rilis) setelah ada rilis lewat target; tooltip saat hover & fokus keyboard
 │   │   └── Warna = STATUS, bukan kategori: enam warna kategori tak lolos validator bila ditumpuk bebas

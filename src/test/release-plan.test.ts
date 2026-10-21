@@ -8,6 +8,7 @@ import {
   allIssues,
   carryOvers,
   currentRelease,
+  isClosedStatus,
   summarizeCurrentRelease,
   daysBetween,
   issueDescription,
@@ -291,9 +292,9 @@ describe("analisa rilis", () => {
     // Rilis tanpa penanda (fixture analisa) belum dirilis → belum ada velocity, walau targetnya lewat.
     const v = releaseVelocity(plan, "2026-10-06");
     expect(v.rows).toEqual([
-      { version: "v1.0.0", phase: "past", state: "late", planned: 9, moved: 5, notPlanned: 0, done: 3, weeks: 1 },
-      { version: "v1.1.0", phase: "active", state: "active", planned: 8, moved: 5, notPlanned: 0, done: 0, weeks: 2 },
-      { version: "v1.2.0", phase: "upcoming", state: "upcoming", planned: 5, moved: 0, notPlanned: 0, done: 0, weeks: 1 },
+      { version: "v1.0.0", phase: "past", state: "late", planned: 9, moved: 5, done: 3, weeks: 1 },
+      { version: "v1.1.0", phase: "active", state: "active", planned: 8, moved: 5, done: 0, weeks: 2 },
+      { version: "v1.2.0", phase: "upcoming", state: "upcoming", planned: 5, moved: 0, done: 0, weeks: 1 },
     ]);
     expect(v.average).toBeNull();
     expect(v.sample).toEqual({ releases: 0, weeks: 0 });
@@ -341,8 +342,8 @@ describe("analisa rilis", () => {
     expect(KANBAN_COLUMNS).not.toContain("moved");
   });
 
-  it("urutan tumpukan memuat setiap status tepat sekali, berlabel sama dengan UI", () => {
-    expect([...PLAN_STACK_ORDER].sort()).toEqual(Object.keys(PLAN_STATUS_LABEL).sort());
+  it("urutan tumpukan memuat setiap status tepat sekali kecuali ⛔ (bukan beban), berlabel sama dengan UI", () => {
+    expect([...PLAN_STACK_ORDER, "notPlanned"].sort()).toEqual(Object.keys(PLAN_STATUS_LABEL).sort());
     expect(PLAN_STATUS_LABEL.todo).toBe("Belum dimulai");
   });
 
@@ -359,7 +360,7 @@ describe("analisa rilis", () => {
   });
 
   it("carry-over: berapa kali digeser + rilis tujuan terakhir", () => {
-    expect(carryOvers(plan)).toEqual([{ issue: "**#11** B", movedFrom: ["v1.0.0", "v1.1.0"], destination: "v1.2.0" }]);
+    expect(carryOvers(plan)).toEqual([{ issue: "**#11** B", movedFrom: ["v1.0.0", "v1.1.0"], destination: "v1.2.0", dropped: false }]);
   });
 
   it("carry-over dikunci per baris Issue: bagian berbeda = butir berbeda; digeser tanpa tujuan = belum dijadwalkan", () => {
@@ -376,7 +377,7 @@ describe("analisa rilis", () => {
         ].join("\n")
       )
     );
-    expect(carryOvers(p)).toEqual([{ issue: "**#286 butir 2**", movedFrom: ["v1.0.0"], destination: null }]);
+    expect(carryOvers(p)).toEqual([{ issue: "**#286 butir 2**", movedFrom: ["v1.0.0"], destination: null, dropped: false }]);
   });
 });
 
@@ -418,9 +419,11 @@ describe("⛔ Not planned — tertutup, bukan pekerjaan selesai", () => {
     expect(planTotals(plan).points).toBe(6);
   });
 
-  it("velocity: poin selesai saja; ⛔ masuk komitmen awal sebagai segmen sendiri (tinggi tumpukan = planned)", () => {
+  it("velocity & grafik Beban: ⛔ bukan beban — tak masuk komitmen, tak ditumpuk (tinggi tumpukan = planned)", () => {
     const v = releaseVelocity(plan, "2026-10-12");
-    expect(v.rows[0]).toMatchObject({ planned: 9, moved: 1, notPlanned: 3, done: 5 });
+    expect(v.rows[0]).toMatchObject({ planned: 6, moved: 1, done: 5 });
+    expect(v.rows[0]).not.toHaveProperty("notPlanned");
+    expect(PLAN_STACK_ORDER).not.toContain("notPlanned");
     expect(v.average).toBe(2.5); // 5 poin / 2 minggu — ⛔ tidak menambah poin selesai
     expect(releaseStatusPoints(shipped)).toEqual({ done: 5, progress: 0, decision: 0, todo: 0, moved: 1, notPlanned: 3 });
     plan.releases.forEach((r, i) => {
@@ -448,6 +451,22 @@ describe("⛔ Not planned — tertutup, bukan pekerjaan selesai", () => {
       ["#20", "notPlanned"],
       ["#21", "todo"],
     ]);
+  });
+
+  it("carry-over: digeser lalu ditutup ⛔ = dibuang, bukan dijadwalkan ulang", () => {
+    const p = parseReleasePlan(
+      doc([
+        heading("v1.0.0", "2026-09-28", "2026-10-04", "Satu (dirilis 2026-10-04)"), "",
+        table(["| 1 | **#12** C | Fitur | S | t | ⏭️ Digeser | — |"]), "",
+        heading("v1.1.0", "2026-10-05", "2026-10-11"), "",
+        table(["| 1 | **#12** C | Fitur | S | t | ⛔ Not planned | — |"]),
+      ].join("\n"))
+    );
+    expect(carryOvers(p)).toEqual([{ issue: "**#12** C", movedFrom: ["v1.0.0"], destination: null, dropped: true }]);
+  });
+
+  it("isClosedStatus: ✅ ⏭️ ⛔ tertutup, sisanya terbuka", () => {
+    expect((["done", "moved", "notPlanned", "todo", "progress", "decision"] as const).map(isClosedStatus)).toEqual([true, true, true, false, false, false]);
   });
 
   it("rilis dirilis masih menolak butir terbuka; pesan menyebut ⛔ sebagai pilihan", () => {

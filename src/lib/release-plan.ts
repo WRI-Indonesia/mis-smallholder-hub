@@ -25,6 +25,10 @@ export type PlanItemStatus = "todo" | "progress" | "decision" | "done" | "moved"
 const SET_ASIDE: ReadonlySet<PlanItemStatus> = new Set(["moved", "notPlanned"]);
 const counts = (i: { status: PlanItemStatus }) => !SET_ASIDE.has(i.status);
 
+/** Status tertutup (✅ ⏭️ ⛔): validasi rilis bertanda dirilis, sinkron issue GitHub yang closed. */
+export const CLOSED_STATUSES: readonly PlanItemStatus[] = ["done", "moved", "notPlanned"];
+export const isClosedStatus = (status: PlanItemStatus) => CLOSED_STATUSES.includes(status);
+
 /** Kategori fokus — urutan ini = urutan prioritas "risiko prod dulu" & urutan warna. */
 export const PLAN_CATEGORIES = ["Keamanan", "Rilis", "Performa", "Data", "Fitur", "Kerapian"] as const;
 export type PlanCategory = (typeof PLAN_CATEGORIES)[number];
@@ -236,7 +240,7 @@ export function parseReleasePlan(markdown: string): ReleasePlan {
       // Rilis yang sudah keluar tidak boleh menyisakan butir terbuka: yang tidak ikut ditandai ⏭️ dan
       // ditulis ulang di rilis tujuan (atau ⛔ bila ditutup tanpa dikerjakan) — kalau tidak, slip hilang
       // dari carry-over & velocity.
-      const open = r.items.filter((it) => it.status !== "done" && it.status !== "moved" && it.status !== "notPlanned");
+      const open = r.items.filter((it) => !isClosedStatus(it.status));
       if (open.length > 0) {
         throw new Error(`sprint.md: Rilis ${r.version} sudah dirilis tapi baris ${open.map((it) => it.no).join(", ")} belum ✅/⏭️/⛔ — tandai ⏭️ Digeser dan tulis ulang di rilis tujuan, atau ⛔ Not planned`);
       }
@@ -301,11 +305,12 @@ export function releaseState(release: Pick<Release, "start" | "end" | "releasedA
   return phase === "past" ? "late" : phase;
 }
 
-export type ReleaseVelocity = { version: string; phase: ReleasePhase; state: ReleaseState; planned: number; moved: number; notPlanned: number; done: number; weeks: number };
+export type ReleaseVelocity = { version: string; phase: ReleasePhase; state: ReleaseState; planned: number; moved: number; done: number; weeks: number };
 
 /**
- * Velocity per rilis: poin KOMITMEN (termasuk butir yang kemudian Digeser atau
- * ⛔ Tidak dikerjakan — selisih rencana vs selesai harus terlihat) vs selesai. `average` = poin
+ * Velocity per rilis: poin KOMITMEN (termasuk butir yang kemudian Digeser —
+ * selisih rencana vs selesai harus terlihat; butir ⛔ Tidak dikerjakan tidak ikut:
+ * pekerjaan yang dibuang bukan beban rilis) vs selesai. `average` = poin
  * selesai per MINGGU KALENDER, hanya dari rilis yang sudah **dirilis**, dengan
  * durasi SEBENARNYA (mulai → tanggal dirilis): rilis berjalan atau terlambat
  * belum selesai dan akan menarik rata-rata ke bawah; target yang meleset tak
@@ -318,14 +323,12 @@ export function releaseVelocity(plan: Pick<ReleasePlan, "releases">, today: stri
     const p = releaseProgress(r);
     const pointsOf = (status: PlanItemStatus) => r.items.filter((i) => i.status === status).reduce((t, i) => t + i.points, 0);
     const moved = pointsOf("moved");
-    const notPlanned = pointsOf("notPlanned");
     return {
       version: r.version,
       phase: releasePhase(r, today),
       state: releaseState(r, today),
-      planned: p.totalPoints + moved + notPlanned,
+      planned: p.totalPoints + moved,
       moved,
-      notPlanned,
       done: p.donePoints,
       weeks: (daysBetween(r.start, r.end) + 1) / 7,
     };
@@ -413,6 +416,8 @@ export type CarryOver = {
   movedFrom: string[];
   /** Rilis tempat butir ini ditulis ulang sesudah pergeseran terakhir; null = belum dijadwalkan (mis. ke backlog). */
   destination: string | null;
+  /** Ditulis ulang lalu ditutup ⛔ tanpa dikerjakan — bukan dijadwalkan ulang. */
+  dropped: boolean;
 };
 
 /**
@@ -429,9 +434,14 @@ export function carryOvers(plan: Pick<ReleasePlan, "releases">): CarryOver[] {
         if (entry) {
           entry.movedFrom.push(r.version);
           entry.destination = null;
-        } else byIssue.set(item.issue, { issue: item.issue, movedFrom: [r.version], destination: null });
+          entry.dropped = false;
+        } else byIssue.set(item.issue, { issue: item.issue, movedFrom: [r.version], destination: null, dropped: false });
+      } else if (entry && item.status === "notPlanned") {
+        entry.destination = null;
+        entry.dropped = true;
       } else if (entry) {
         entry.destination = r.version;
+        entry.dropped = false;
       }
     }
   }
@@ -451,11 +461,13 @@ export function releaseComposition(release: Pick<Release, "items">): { category:
 
 /**
  * Poin per status satu rilis, urutan tumpukan kolom Analisa (bawah → atas):
- * selesai, dikerjakan, menunggu keputusan, belum dimulai, lalu digeser dan
- * tidak dikerjakan (dua segmen pudar di puncak). Keduanya ikut agar tinggi
- * kolom = komitmen awal (sama dengan `releaseVelocity`).
+ * selesai, dikerjakan, menunggu keputusan, belum dimulai, lalu digeser (segmen
+ * pudar di puncak) agar tinggi kolom = komitmen awal (sama dengan
+ * `releaseVelocity`). ⛔ Tidak dikerjakan TIDAK ditumpuk: tinggi kolom dibandingkan
+ * dengan garis kapasitas, dan pekerjaan yang dibuang bukan beban — poinnya
+ * disebut terpisah di tooltip.
  */
-export const PLAN_STACK_ORDER: PlanItemStatus[] = ["done", "progress", "decision", "todo", "moved", "notPlanned"];
+export const PLAN_STACK_ORDER: PlanItemStatus[] = ["done", "progress", "decision", "todo", "moved"];
 
 export function releaseStatusPoints(release: Pick<Release, "items">): Record<PlanItemStatus, number> {
   const out: Record<PlanItemStatus, number> = { done: 0, progress: 0, decision: 0, todo: 0, moved: 0, notPlanned: 0 };

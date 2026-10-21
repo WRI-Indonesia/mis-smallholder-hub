@@ -34,22 +34,24 @@ const fmt1 = (n: number) => n.toFixed(1).replace(".", ",");
  * Warna status = palet status dataviz (good/warning) + biru sekuensial untuk
  * "dikerjakan"; selalu berpasangan dengan label di legenda & tooltip.
  */
-const STACK: Record<PlanItemStatus, { label: string; swatch: string; fill: string }> = {
-  done: { label: PLAN_STATUS_LABEL.done, swatch: "bg-[#0ca30c]", fill: "bg-[#0ca30c]" },
-  progress: { label: PLAN_STATUS_LABEL.progress, swatch: "bg-[#3987e5]", fill: "bg-[#3987e5]" },
-  decision: { label: PLAN_STATUS_LABEL.decision, swatch: "bg-[#fab219]", fill: "bg-[#fab219]" },
-  todo: { label: PLAN_STATUS_LABEL.todo, swatch: "bg-muted-foreground/25", fill: "bg-muted-foreground/25" },
+const STACK: Record<PlanItemStatus, { label: string; swatch: string; fill: string; line: string }> = {
+  done: { label: PLAN_STATUS_LABEL.done, swatch: "bg-[#0ca30c]", fill: "bg-[#0ca30c]", line: "bg-[#0ca30c]" },
+  progress: { label: PLAN_STATUS_LABEL.progress, swatch: "bg-[#3987e5]", fill: "bg-[#3987e5]", line: "bg-[#3987e5]" },
+  decision: { label: PLAN_STATUS_LABEL.decision, swatch: "bg-[#fab219]", fill: "bg-[#fab219]", line: "bg-[#fab219]" },
+  todo: { label: PLAN_STATUS_LABEL.todo, swatch: "bg-muted-foreground/25", fill: "bg-muted-foreground/25", line: "bg-muted-foreground/25" },
   moved: {
     label: PLAN_STATUS_LABEL.moved,
     swatch: "border border-dashed border-muted-foreground/60",
     fill: "border border-dashed border-muted-foreground/60 bg-transparent",
+    line: "border-t border-dashed border-muted-foreground",
   },
-  // Ditutup tanpa dikerjakan: ikut tinggi komitmen (jujur soal rencana yang dibuang), tapi pudar
-  // dan bertitik agar tak terbaca sebagai sisa kerja; dibedakan dari Digeser oleh pola + label.
+  // Ditutup tanpa dikerjakan: TIDAK ditumpuk (bukan beban — `PLAN_STACK_ORDER`), hanya disebut
+  // di tooltip dengan penanda bertitik agar terbedakan dari Digeser.
   notPlanned: {
     label: PLAN_STATUS_LABEL.notPlanned,
     swatch: "border border-dotted border-muted-foreground/60",
     fill: "border border-dotted border-muted-foreground/60 bg-transparent",
+    line: "border-t border-dotted border-muted-foreground",
   },
 };
 
@@ -256,14 +258,12 @@ function ColumnTooltip({
       </p>
       <p className="mb-2 text-muted-foreground">{release.title}</p>
       <ul className="space-y-1">
-        {PLAN_STACK_ORDER.filter((k) => pts[k] > 0).map((k) => (
+        {/* ⛔ disebut di tooltip saja (tidak ditumpuk, di luar total komitmen). */}
+        {[...PLAN_STACK_ORDER, "notPlanned" as const].filter((k) => pts[k] > 0).map((k) => (
           <li key={k} className="flex items-center gap-2">
             <span
               aria-hidden
-              className={cn(
-                "h-0.5 w-3",
-                k === "moved" ? "border-t border-dashed border-muted-foreground" : k === "notPlanned" ? "border-t border-dotted border-muted-foreground" : STACK[k].fill
-              )}
+              className={cn("h-0.5 w-3", STACK[k].line)}
             />
             <span className="font-semibold tabular-nums">{pts[k]}</span>
             <span className="text-muted-foreground">{STACK[k].label}</span>
@@ -467,7 +467,7 @@ export function SprintAnalysis({ plan, today }: { plan: ReleasePlan; today: stri
               <li key={c.issue} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-2">
                 <span className="min-w-0 flex-1"><Inline text={c.issue} /></span>
                 <span className="text-xs text-muted-foreground">
-                  {c.movedFrom.join(", ")} → {c.destination === null ? "belum dijadwalkan" : c.destination}
+                  {c.movedFrom.join(", ")} → {c.dropped ? "⛔ tidak dikerjakan" : c.destination === null ? "belum dijadwalkan" : c.destination}
                 </span>
                 <span className={cn("text-xs tabular-nums", c.movedFrom.length > 1 && "font-semibold text-amber-700 dark:text-amber-300")}>
                   {c.movedFrom.length}×

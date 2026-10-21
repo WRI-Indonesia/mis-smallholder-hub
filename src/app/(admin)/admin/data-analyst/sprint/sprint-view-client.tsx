@@ -55,7 +55,8 @@ function KanbanCard({ item }: { item: PlanItem }) {
   const detailId = useId();
   const done = item.status === "done";
   const decided = item.decision?.startsWith("✅") ?? false;
-  const openDecision = !!item.decision && !decided;
+  // Butir ⛔ sudah ditutup: catatan keputusannya bukan antrean owner lagi.
+  const openDecision = !!item.decision && !decided && item.status !== "notPlanned";
   const toggle = (
     <button
       type="button"

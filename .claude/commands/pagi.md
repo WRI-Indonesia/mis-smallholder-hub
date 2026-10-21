@@ -42,12 +42,12 @@ Audit berkala: tanggal laporan terbaru `audit-report/audit-*.md` (folder gitigno
 ## Tahap 2 — Sinkron GitHub ↔ Rencana Rilis
 
 - `gh issue list --state open --limit 200 --json number,title,labels,updatedAt`
-- `gh issue list --state closed --search "closed:>=<start rilis sebelumnya>" --limit 100 --json number,title,closedAt`
+- `gh issue list --state closed --search "closed:>=<start rilis sebelumnya>" --limit 100 --json number,title,closedAt,stateReason`
 - Pembanding: `issueNumbers` dan `issues` (status per issue) dari JSON.
 
 Laporkan tiga selisih — **hanya untuk issue yang relevan dengan rencana**; issue closed yang memang tak pernah ada di rencana bukan temuan:
 1. **Open tapi tak ada di `issueNumbers`** → usulkan rilis/backlog + Kategori + Poin (S/M/L) + alasan.
-2. **Closed di GitHub tapi di `issues` belum `done`** (untuk butir rilis) atau masih di backlog.
+2. **Closed di GitHub tapi di `issues` belum tertutup** — closed *completed* ↔ `done` (✅); closed *not planned* (`stateReason` `NOT_PLANNED`) ↔ `notPlanned` (⛔). Status tertutup yang cocok bukan temuan, termasuk baris backlog ⛔; usulkan ✅/⛔ sesuai `stateReason`, jangan membalik ⛔ ke ✅.
 3. **`done` di rencana tapi masih open** — retro/tutup belum dilakukan (aturan retro sebelum menutup issue).
 
 Lalu **sinkron dengan roadmap** (`docs/project/roadmap.md` — tabel §Phase Status (Indeks) dan blok §Rincian per Phase; `Horizon` Now = kuartal berjalan):
@@ -56,7 +56,7 @@ Lalu **sinkron dengan roadmap** (`docs/project/roadmap.md` — tabel §Phase Sta
 6. **Status fase basi** — semua issue di Next step sebuah fase sudah closed tapi Status belum ✅ Done (atau sebaliknya).
 
 Lalu **sinkron label status**:
-7. **Label `status:*` GitHub ≠ status di rencana** (kanban menu Daftar Issue #429 membaca label ini). Pemetaan butir rilis/backlog yang open: 🔲 Todo → `status:todo` · 🟡 Dikerjakan → `status:in-progress` · ⚖️ Menunggu keputusan → `status:decision`; ⏭️ mengikuti status di rilis tujuannya; ✅ atau issue di luar rencana → **tanpa** label status. Satu issue paling banyak satu label `status:*`; issue yang dipecah per bagian memakai tahap bagian yang paling lanjut. Sebut jumlah selisihnya + contoh (≤ 5), jangan dieksekusi di sini.
+7. **Label `status:*` GitHub ≠ status di rencana** (kanban menu Daftar Issue #429 membaca label ini). Pemetaan butir rilis/backlog yang open: 🔲 Todo → `status:todo` · 🟡 Dikerjakan → `status:in-progress` · ⚖️ Menunggu keputusan → `status:decision`; ⏭️ mengikuti status di rilis tujuannya; ✅, ⛔, atau issue di luar rencana → **tanpa** label status. Satu issue paling banyak satu label `status:*`; issue yang dipecah per bagian memakai tahap bagian yang paling lanjut. Sebut jumlah selisihnya + contoh (≤ 5), jangan dieksekusi di sini.
 
 Lalu **cek keputusan yang mungkin sudah diambil**: untuk tiap issue di `decisions` dan `backlogDecisions`, `gh issue view <n> --json comments` — komentar sesudah `updatedAt` yang menjawab pertanyaannya berarti keputusan sudah ada. Jangan tanyakan ulang; bawa ke Tahap 4 sebagai perubahan status.
 
