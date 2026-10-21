@@ -37,7 +37,7 @@ Dipindah dari `tech-debt.md` 2026-10-12 agar register aktif tetap ringkas. TD/BU
 
 </details>
 
-## Debt Register — Selesai (38 item)
+## Debt Register — Selesai (39 item)
 
 <details>
 <summary><strong>Lihat 38 debt selesai</strong> — TD-001, 016, 052, 003, 005, 006, 007, 009, 011, 012, 013, 015, 018, 019, 020, 021, 022, 023, 024, 025, 027, 028, 029, 033, 036, 045, 004, 058, dan batch #412 (008, 026, 032, 044, 046, 049, 051, 053, 054, 059)</summary>
@@ -53,6 +53,7 @@ Dipindah dari `tech-debt.md` 2026-10-12 agar register aktif tetap ringkas. TD/BU
 | TD-051 | Halaman indeks menu induk me-redirect ke satu anak tetap | P3 | ✅ 2026-10-11 (#412: `redirectToFirstAccessibleChild(parentKey)` di `rbac.ts` + `firstAccessibleChild` murni (`menu-first-child.ts`, test) dipakai 11 halaman indeks induk; fallback `/admin`) |
 | TD-053 | Sisa kecil review wrap-up pra-QA v1.2.0 (predikat bukti · seed-menu-key TS · kolom Evidence) | P3 | ✅ 2026-10-11 (#412: (a) `hasTrainingEvidence` type guard dipakai Ketersediaan Data, profil Lembaga, Dashboard Pelatihan, detail — Data Completeness terlewat, menyusul 2026-10-12 dari audit `/audit`; (b) `scripts/seed/seed-menu-key.ts` memakai `readMenuSeed` + `validateMenuSeedRows`; (c) kolom Evidence disembunyikan saat buat tanpa EDIT + catatan, tutorial t-3) |
 | TD-054 | Dua memo in-process ber-TTL dengan aturan berbeda | P3 | ✅ 2026-10-11 (#412: `createTtlMemo<K,V>({ ttlMs, maxEntries })` di `src/lib/ttl-memo.ts` dipakai memo role (batas 1.000) & memo izin; test lama hijau tanpa diubah + `ttl-memo.test.ts`) |
+| TD-050 | Test RBAC lama menguji salinan logika, bukan modul asli (8 berkas cermin + blok perf) | P3 | ✅ 2026-10-21 (#413: 9 berkas cermin dihapus — kasusnya sudah tercakup `lib-rbac`/`lib-access-context`/`*-guard.test.ts` atau salah semantik; label ringkasan Akses Data diekstrak ke `src/lib/user-data-access-summary.ts` + test; schema user & session callback diuji dari modul asli; 3 blok perf diarahkan ke `buildMenuTree`/`buildDashboardData`/`formatRspoCert`) |
 | TD-059 | ESLint tidak membaca `.gitignore` | P3 | ✅ 2026-10-11 (#412: `includeIgnoreFile(.gitignore)` dari `@eslint/compat` di `eslint.config.mjs`, daftar manual `REPORTING/**` dihapus) |
 | TD-001 | S3/PDF utility belum terintegrasi ke modul Training | P1 | ✅ 2026-07-10 (audit) |
 | TD-016 | Test flaky: 1 test gagal sporadis saat mesin sibuk | P3 | ✅ 2026-09-29 (#311 — ukuran min-of-N `src/test/perf-utils.ts`) |

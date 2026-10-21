@@ -110,6 +110,17 @@ describe("withRoleRefresh + authConfig (#342)", () => {
     expect(src.indexOf("...authConfig,")).toBeLessThan(src.indexOf("callbacks: {"));
   });
 
+  it("session callback menyalin id + role token ke session.user; sesi tanpa user dibiarkan", () => {
+    type SessionLike = { user?: { id: string; role: string; name?: string }; expires: string };
+    const session = authConfig.callbacks!.session! as (p: { session: SessionLike; token: JWT }) => SessionLike;
+    const res = session({
+      session: { user: { id: "", role: "", name: "Contoh Superadmin" }, expires: "2099-01-01" },
+      token: token({ id: "SH-0004", role: "SUPERADMIN" }),
+    });
+    expect(res.user).toEqual({ id: "SH-0004", role: "SUPERADMIN", name: "Contoh Superadmin" });
+    expect(session({ session: { expires: "2099-01-01" }, token: token() })).toEqual({ expires: "2099-01-01" });
+  });
+
   it("/admin tanpa sesi ditolak middleware", () => {
     const authorized = authConfig.callbacks!.authorized! as (p: { auth: null; request: { nextUrl: URL } }) => unknown;
     expect(authorized({ auth: null, request: { nextUrl: new URL("http://localhost/admin") } })).toBe(false);

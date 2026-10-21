@@ -23,6 +23,7 @@ const db = vi.hoisted(() => ({
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
 const actions = await import("@/server/actions/user");
+const { createUserSchema, updateUserSchema } = await import("@/validations/user.schema");
 
 const newUser = (o: Record<string, unknown> = {}) => ({
   name: "Operator Uji", email: "op@example.org", password: "rahasia1", role: "OPERATOR" as const, ...o,
@@ -121,6 +122,25 @@ describe("createUser / updateUser — Zod, email unik, hash, audit", () => {
     const res = await actions.updateUser({ id: "u-1", ...newUser({ name: "A" }) });
     expect(res.error).toHaveProperty("name");
     expect(db.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("skema Zod user (src/validations/user.schema.ts)", () => {
+  it("create: nama < 2 karakter ditolak dengan pesan Bahasa Indonesia", () => {
+    const res = createUserSchema.safeParse(newUser({ name: "T" }));
+    expect(res.success).toBe(false);
+    expect(res.error?.flatten().fieldErrors.name).toEqual(["Nama minimal 2 karakter"]);
+  });
+
+  it("create: role DONOR diterima", () => {
+    expect(createUserSchema.safeParse(newUser({ role: "DONOR" })).success).toBe(true);
+  });
+
+  it("update: password baru < 6 karakter ditolak (kosong = tidak diganti, tetap lolos)", () => {
+    const res = updateUserSchema.safeParse({ id: "u-1", ...newUser({ password: "123" }) });
+    expect(res.success).toBe(false);
+    expect(res.error?.flatten().fieldErrors).toHaveProperty("password");
+    expect(updateUserSchema.safeParse({ id: "u-1", ...newUser({ password: "" }) }).success).toBe(true);
   });
 });
 

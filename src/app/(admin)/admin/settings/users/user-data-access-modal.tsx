@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Map, Building2, Tractor, ShieldAlert } from "lucide-react";
+import { Loader2, Map, Building2, Tractor, ShieldAlert, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   getUserDataAccess,
@@ -25,6 +25,7 @@ import {
   assignUserFarmerGroup,
   removeUserFarmerGroup,
 } from "@/server/actions/user-data-access";
+import { accessSummaryLabels, type AccessSummaryKind } from "@/lib/user-data-access-summary";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,12 @@ interface Props {
 
 type UserAccess = Awaited<ReturnType<typeof getUserDataAccess>>;
 type Regions = Awaited<ReturnType<typeof getRegionsForSelect>>;
+
+const SUMMARY_ICON: Record<AccessSummaryKind, LucideIcon> = {
+  province: Map,
+  district: Building2,
+  farmerGroup: Tractor,
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -167,24 +174,15 @@ export function UserDataAccessModal({ open, onClose, onDataChange, userId, userN
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
-                  {access?.provinces.map((p) => (
-                    <Badge key={p.provinceId} variant="secondary" className="gap-1">
-                      <Map className="h-3 w-3" />
-                      Semua district di {p.province.name}
-                    </Badge>
-                  ))}
-                  {access?.districts.map((d) => (
-                    <Badge key={d.districtId} variant="secondary" className="gap-1">
-                      <Building2 className="h-3 w-3" />
-                      {d.district.name}
-                    </Badge>
-                  ))}
-                  {access?.farmerGroups.map((f) => (
-                    <Badge key={f.farmerGroupId} variant="secondary" className="gap-1">
-                      <Tractor className="h-3 w-3" />
-                      {f.farmerGroup.abrv ?? f.farmerGroup.name}
-                    </Badge>
-                  ))}
+                  {(access ? accessSummaryLabels(access) : []).map(({ key, kind, label }) => {
+                    const Icon = SUMMARY_ICON[kind];
+                    return (
+                      <Badge key={key} variant="secondary" className="gap-1">
+                        <Icon className="h-3 w-3" />
+                        {label}
+                      </Badge>
+                    );
+                  })}
                 </div>
               )}
             </div>

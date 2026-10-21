@@ -33,6 +33,8 @@ import {
 import { addParticipantsSchema } from "@/validations/training-participant.schema";
 import { deriveFarmerSubGroups } from "@/lib/farmer-subgroups";
 import { formatRspoCert } from "@/lib/farmer-group-labels";
+import { buildMenuTree } from "@/lib/menu-tree";
+import { buildDashboardData, type RawFarmer, type RawGroup } from "@/lib/dashboard-aggregation";
 import { readSheetRows, type RawSheetRow } from "@/lib/excel-sheet-reader";
 import { uniqueMarkerRows, groupMarkersByParcel, planMarkersFromVertices, type MarkerLinkRow, type NearbyMarker } from "@/lib/land-marker";
 import { buildNktReportInput, summarizeNktReport, type NktReportData, type NktReportParcel } from "@/lib/nkt-report";
@@ -81,101 +83,19 @@ describe("Performance - Auth operations", () => {
     expect(duration).toBeLessThan(500);
   });
 
-  it("menu tree building handles 100 items under 5ms", () => {
-    // Generate 100 mock items
-    const items = Array.from({ length: 10 }, (_, i) => ({
-      key: `parent-${i}`,
-      parentKey: null as string | null,
-      title: `Parent ${i}`,
-      url: `/p${i}`,
-      icon: null as string | null,
-    }));
-
-    // Add 9 children per parent
+  it("menu tree building handles 100 items under 1ms", () => {
+    // 10 induk × 9 anak = 100 item datar, dibangun lewat buildMenuTree asli (#413).
+    const items = Array.from({ length: 10 }, (_, i) => ({ key: `parent-${i}`, parentKey: null as string | null }));
     for (let p = 0; p < 10; p++) {
-      for (let c = 0; c < 9; c++) {
-        items.push({
-          key: `child-${p}-${c}`,
-          parentKey: `parent-${p}`,
-          title: `Child ${p}-${c}`,
-          url: `/p${p}/c${c}`,
-          icon: null,
-        });
-      }
+      for (let c = 0; c < 9; c++) items.push({ key: `child-${p}-${c}`, parentKey: `parent-${p}` });
     }
 
-    const { ms: duration } = minTime(() => {
-      const parents = items.filter((i) => !i.parentKey);
-      parents.map((p) => ({
-        ...p,
-        children: items.filter((c) => c.parentKey === p.key),
-      }));
-    });
+    const { value: tree, ms: duration } = minTime(() => buildMenuTree(items));
 
     console.log(`  menu tree (100 items): ${duration.toFixed(2)}ms`);
-    expect(duration).toBeLessThan(5);
-  });
-
-  it("RBAC resolution handles 50 districts under 1ms", () => {
-    const provinces: Record<string, string[]> = {};
-    for (let i = 0; i < 5; i++) {
-      provinces[`prov-${i}`] = Array.from({ length: 10 }, (_, j) => `dist-${i}-${j}`);
-    }
-
-    const user = { provinces: ["prov-0", "prov-1", "prov-2"], districts: ["extra-1", "extra-2"] };
-
-    const { value: { ids }, ms: duration } = minTime(() => {
-      const ids = new Set<string>();
-      for (const prov of user.provinces) {
-        (provinces[prov] ?? []).forEach((d) => ids.add(d));
-      }
-      for (const d of user.districts) ids.add(d);
-      return { ids };
-    });
-
-    console.log(`  RBAC resolve (50 districts): ${duration.toFixed(3)}ms`);
-    expect(duration).toBeLessThan(1);
-    expect(ids.size).toBe(32); // 30 from provinces + 2 direct
-  });
-});
-
-describe("Performance - AUDIT-P0 RBAC scope guard (#125)", () => {
-  // bulkCreateFarmers memvalidasi setiap baris terhadap set lembaga petani yang
-  // boleh diakses user. Harus O(n) via Set membership — bukan N+1 query atau
-  // Array.includes O(n²). Test ini membuktikan hot-path in-memory tetap murah
-  // untuk upload besar.
-  it("bulk scope validation: 10.000 baris × Set membership under 20ms", () => {
-    const allowedGroupIds = new Set(Array.from({ length: 200 }, (_, i) => `kt-${i}`));
-    // 10k baris, semua valid kecuali satu di paling akhir (worst case: scan penuh).
-    const rows = Array.from({ length: 10_000 }, (_, i) => ({
-      farmerGroupId: i === 9_999 ? "kt-outside-scope" : `kt-${i % 200}`,
-    }));
-
-    const { value: { unauthorized }, ms: duration } = minTime(() => {
-      const unauthorized = rows.find((r) => !allowedGroupIds.has(r.farmerGroupId));
-      return { unauthorized };
-    });
-
-    console.log(`  bulk scope validation (10k baris): ${duration.toFixed(3)}ms`);
-    expect(duration).toBeLessThan(20);
-    expect(unauthorized?.farmerGroupId).toBe("kt-outside-scope");
-  });
-
-  it("bulk scope validation short-circuits pada pelanggaran pertama", () => {
-    const allowedGroupIds = new Set(["kt-1"]);
-    let scanned = 0;
-    const rows = Array.from({ length: 10_000 }, (_, i) => ({
-      farmerGroupId: i === 0 ? "kt-bad" : "kt-1",
-    }));
-
-    const unauthorized = rows.find((r) => {
-      scanned++;
-      return !allowedGroupIds.has(r.farmerGroupId);
-    });
-
-    // Pelanggaran di baris pertama → berhenti setelah 1 iterasi (tidak scan 10k).
-    expect(scanned).toBe(1);
-    expect(unauthorized?.farmerGroupId).toBe("kt-bad");
+    expect(tree).toHaveLength(10);
+    expect(tree.every((n) => n.children.length === 9 && n.children[0].depth === 1)).toBe(true);
+    expect(duration).toBeLessThan(1); // aktual ±0,01 ms
   });
 });
 
@@ -596,34 +516,42 @@ describe("Performance - addParticipants Zod validation (#130)", () => {
   });
 });
 
-// Forward-looking untuk #148 (card "Total Kelompok Tani"): sub-kelompok interim
-// disimpan denormalisasi per-lahan di LandParcel.subGroupLv2 (#146). Count = distinct
-// nilai ternormalisasi (trim+lowercase, buang null) — buktikan pendekatan O(n) tetap
-// murah pada skala besar & normalisasi meredam noise typo/spasi (dedup benar).
-describe("Performance - Kelompok Tani distinct aggregation (#148, subGroupLv2)", () => {
-  it("counts distinct normalized subGroupLv2 over 50k parcels under 100ms", () => {
-    const KT_POOL = Array.from({ length: 500 }, (_, i) => `Kelompok Tani ${i}`);
-    // 50k lahan: ~1/7 null, sisanya salah satu dari 500 KT + noise spasi/kapital
-    const parcels = Array.from({ length: 50_000 }, (_, i) => ({
-      subGroupLv2:
-        i % 7 === 0
-          ? null
-          : (i % 3 === 0 ? "  " : "") + KT_POOL[i % 500] + (i % 5 === 0 ? " " : ""),
+// #148/#153: card "Total Kelompok Tani" + kolom KT per Lembaga di snapshot
+// dashboard = distinct subGroupLv2 ternormalisasi (trim+lowercase, buang null)
+// per Lembaga, dihitung buildDashboardData di generator snapshot. Ukur fungsi
+// asli pada skala besar (#413: dulu menyalin loop Set ke dalam test).
+describe("Performance - Dashboard snapshot aggregation (#148/#153, distinct KT per Lembaga)", () => {
+  it("buildDashboardData: 25k petani × 2 lahan (50k) di 100 Lembaga under 30ms", () => {
+    const N_LEMBAGA = 100;
+    const groups: RawGroup[] = Array.from({ length: N_LEMBAGA }, (_, g) => ({
+      id: `lembaga-${g}`, name: `Lembaga ${g}`, code: null, districtId: `d-${g % 10}`, districtName: null,
+      locationLat: null, locationLong: null,
     }));
-
-    const { value: { count }, ms: duration } = minTime(() => {
-      const distinct = new Set<string>();
-      for (const p of parcels) {
-        const v = p.subGroupLv2?.trim().toLowerCase();
-        if (v) distinct.add(v);
-      }
-      const count = distinct.size;
-      return { count };
+    // Petani i di Lembaga i % 100; KT = (i / 100) % 5 → tepat 5 KT per Lembaga.
+    // Lahan kedua: noise spasi/kapital (harus ter-dedup) atau null tiap petani ke-7.
+    const farmers: RawFarmer[] = Array.from({ length: 25_000 }, (_, i) => {
+      const kt = `Kelompok Tani ${Math.floor(i / N_LEMBAGA) % 5}`;
+      return {
+        id: `f-${i}`,
+        farmerGroupId: `lembaga-${i % N_LEMBAGA}`,
+        gender: i % 2 === 0 ? "M" : "F",
+        joinedYear: 2020 + (i % 6),
+        landParcels: [
+          { area: 1.5, subGroupLv2: kt },
+          { area: null, subGroupLv2: i % 7 === 0 ? null : `  ${kt.toUpperCase()} ` },
+        ],
+        trainingParticipants: i % 3 === 0 ? [{ activity: { isActive: true, package: { code: "PAKET_2_MK" } } }] : [],
+      };
     });
 
-    console.log(`  distinct KT over 50k lahan: ${count} in ${duration.toFixed(2)}ms`);
-    expect(count).toBe(500); // noise spasi/kapital ter-dedup ke 500 KT unik
-    expect(duration).toBeLessThan(100); // margin longgar (aktual ~5ms) — guard O(n), bukan micro-benchmark
+    const { value: data, ms: duration } = minTime(() => buildDashboardData(groups, farmers));
+
+    console.log(`  buildDashboardData (${N_LEMBAGA} Lembaga × 50k lahan): ${duration.toFixed(2)}ms`);
+    expect(data.kelompokTaniList).toHaveLength(N_LEMBAGA);
+    expect(data.kelompokTaniList.every((kt) => kt.kelompokTaniCount === 5)).toBe(true);
+    expect(data.stats.totalKelompokTaniLahan).toBe(500);
+    expect(data.stats.totalPersilLahan).toBe(50_000);
+    expect(duration).toBeLessThan(30); // aktual ±7,5–9 ms — guard O(n), bukan micro-benchmark
   });
 });
 
@@ -650,81 +578,22 @@ describe("Performance - Farmer sub-group derivation (#152)", () => {
   });
 });
 
-// #160: kolom "Sertifikasi RSPO" di list Lembaga Petani di-sort via sortValue
-// (string rank "0-<tahun>"/"1-<tahun>") dan di-render/export via formatRspoCert.
-// Stress 10k baris (jauh di atas jumlah lembaga riil ~31) — guard bahwa sort
-// kustom + format tetap murah untuk client-side DataTable.
-describe("Performance - RSPO cert sort & format (#160)", () => {
-  it("sortValue rank + formatRspoCert over 10k rows under 100ms", () => {
+// #160: kolom "Sertifikasi RSPO" di list Lembaga Petani di-render/export via
+// formatRspoCert. Stress 10k baris (jauh di atas jumlah lembaga riil ~31) —
+// guard bahwa format tetap murah untuk client-side DataTable.
+describe("Performance - RSPO cert format (#160)", () => {
+  it("formatRspoCert over 10k rows under 2ms", () => {
     const rows = Array.from({ length: 10_000 }, (_, i) => ({
       rspoCertStatus: i % 3 === 0 ? null : i % 3 === 1 ? "CERTIFIED" : "PLANNED",
       rspoCertYear: i % 4 === 0 ? null : 2020 + (i % 8),
     }));
-    const rank = (r: (typeof rows)[number]) =>
-      r.rspoCertStatus === "CERTIFIED"
-        ? `0-${r.rspoCertYear ?? 9999}`
-        : r.rspoCertStatus === "PLANNED"
-          ? `1-${r.rspoCertYear ?? 9999}`
-          : null;
 
-    const { value: { labels }, ms: duration } = minTime(() => {
-      const sorted = [...rows].sort((a, b) => {
-        const aVal = rank(a);
-        const bVal = rank(b);
-        if (aVal == null && bVal == null) return 0;
-        if (aVal == null) return 1;
-        if (bVal == null) return -1;
-        return aVal.localeCompare(bVal, "id");
-      });
-      const labels = sorted.map((r) => formatRspoCert(r));
-      return { labels };
-    });
+    const { value: labels, ms: duration } = minTime(() => rows.map((r) => formatRspoCert(r)));
 
-    console.log(`  RSPO sort+format (10k baris): ${duration.toFixed(2)}ms`);
-    // Certified tahun terkecil di depan (2021: i%8==0 selalu beririsan dgn year null).
-    expect(labels[0]).toBe("2021");
-    expect(labels[labels.length - 1]).toBe("—"); // kosong selalu di akhir
-    expect(duration).toBeLessThan(100);
-  });
-});
-
-// Forward-looking untuk #153 (Master Lembaga Petani, snapshot-backed Opsi A): saat
-// generate snapshot, agregasi per-Lembaga = distinct KT/Blok dari lahan
-// seluruh petani di Lembaga tsb. Buktikan agregasi O(n) satu-pass tetap murah →
-// aman dihitung di generator snapshot (bukan real-time per-baris list).
-describe("Performance - Lembaga Petani snapshot aggregation (#153, per-Lembaga distinct)", () => {
-  it("aggregates distinct KT/Blok per Lembaga over 50k parcels under 100ms", () => {
-    const N_LEMBAGA = 100;
-    const parcels = Array.from({ length: 50_000 }, (_, i) => ({
-      farmerGroupId: `lembaga-${i % N_LEMBAGA}`,
-      subGroupLv2: i % 6 === 0 ? null : `KT ${i % 500}`,
-      blok: i % 4 === 0 ? null : `Blok ${i % 200}`,
-    }));
-
-    const { value: { perLembaga }, ms: duration } = minTime(() => {
-      const perLembaga = new Map<
-        string,
-        { kt: Set<string>; blok: Set<string> }
-      >();
-      for (const p of parcels) {
-        let agg = perLembaga.get(p.farmerGroupId);
-        if (!agg) {
-          agg = { kt: new Set(), blok: new Set() };
-          perLembaga.set(p.farmerGroupId, agg);
-        }
-        const kt = p.subGroupLv2?.trim().toLowerCase();
-        if (kt) agg.kt.add(kt);
-        const b = p.blok?.trim().toLowerCase();
-        if (b) agg.blok.add(b);
-      }
-      return { perLembaga };
-    });
-
-    console.log(
-      `  per-Lembaga distinct (${N_LEMBAGA} lembaga × 50k lahan): ${duration.toFixed(2)}ms`,
-    );
-    expect(perLembaga.size).toBe(N_LEMBAGA);
-    expect(duration).toBeLessThan(100); // margin longgar (aktual ~8ms) — guard O(n), bukan micro-benchmark
+    console.log(`  RSPO format (10k baris): ${duration.toFixed(2)}ms`);
+    expect(labels).toHaveLength(10_000);
+    expect(labels[0]).toBe("—"); // status kosong
+    expect(duration).toBeLessThan(2); // aktual ±0,18 ms
   });
 });
 
