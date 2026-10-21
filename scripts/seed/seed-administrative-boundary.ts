@@ -16,8 +16,8 @@
  * env `SEED_DATA_DIR`.
  *
  * Jalankan (dry-run default, tulis dengan --apply):
- *   npx dotenv -e .env -- npx tsx scripts/seed/seed-batas-administrasi.ts
- *   npx dotenv -e .env -- npx tsx scripts/seed/seed-batas-administrasi.ts --apply
+ *   npx dotenv -e .env -- npx tsx scripts/seed/seed-administrative-boundary.ts
+ *   npx dotenv -e .env -- npx tsx scripts/seed/seed-administrative-boundary.ts --apply
  *   ... --data=/path/ke/folder-zip     (bila data tidak di lokasi bawaan)
  */
 import "dotenv/config";

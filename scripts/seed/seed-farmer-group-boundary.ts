@@ -24,8 +24,8 @@
  *     ST_GeomFromGeoJSON pada baris yang sama.
  *
  * Jalankan (dry-run default, tulis dengan --apply):
- *   npx dotenv -e .env -- npx tsx scripts/seed/seed-boundary-lembaga.ts
- *   npx dotenv -e .env -- npx tsx scripts/seed/seed-boundary-lembaga.ts --apply
+ *   npx dotenv -e .env -- npx tsx scripts/seed/seed-farmer-group-boundary.ts
+ *   npx dotenv -e .env -- npx tsx scripts/seed/seed-farmer-group-boundary.ts --apply
  *   ... --data=/path/ke/folder-zip     (bila data tidak di lokasi bawaan)
  */
 import "dotenv/config";

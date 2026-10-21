@@ -1,7 +1,7 @@
 // #172 — Pure aggregation for the Petani 360° detail page (pola #171).
 // Kept free of Prisma/Next imports so it is directly unit-testable.
 
-import { deriveFarmerSubGroups, type FarmerSubGroups } from "@/lib/farmer-sub-groups";
+import { deriveFarmerSubGroups, type FarmerSubGroups } from "@/lib/farmer-subgroups";
 import { NIK_REGEX } from "@/lib/data-completeness";
 import type { DataMonthsByYear } from "@/lib/productivity-annualize";
 import {

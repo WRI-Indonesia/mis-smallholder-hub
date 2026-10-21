@@ -31,7 +31,7 @@ import {
   bmpChartSeries,
 } from "@/lib/bmp-dashboard-aggregation";
 import { addParticipantsSchema } from "@/validations/training-participant.schema";
-import { deriveFarmerSubGroups } from "@/lib/farmer-sub-groups";
+import { deriveFarmerSubGroups } from "@/lib/farmer-subgroups";
 import { formatRspoCert } from "@/lib/farmer-group-labels";
 import { readSheetRows, type RawSheetRow } from "@/lib/excel-sheet-reader";
 import { uniqueMarkerRows, groupMarkersByParcel, planMarkersFromVertices, type MarkerLinkRow, type NearbyMarker } from "@/lib/land-marker";

@@ -15,8 +15,8 @@ Shapefile, Excel, ZIP, dan apa pun yang berisi data petani/pengguna **tetap di `
 
 | Berkas | Fungsi | Butuh data eksternal |
 | --- | --- | --- |
-| `seed-boundary-lembaga.ts` | 30 poligon ICS (UTM 47S → WGS84) → `tbl_farmer_group_boundary`, ditulis `geojson` + `geom` PostGIS | `Groups-Boundary.zip` |
-| `seed-batas-administrasi.ts` | 12 kabupaten BIG → `tbl_administrative_boundary`, `geojson` disimpan tersimplifikasi 0,001° | `Batas_Administrasi_Kabupaten_Riau.zip` |
+| `seed-farmer-group-boundary.ts` | 30 poligon ICS (UTM 47S → WGS84) → `tbl_farmer_group_boundary`, ditulis `geojson` + `geom` PostGIS | `Groups-Boundary.zip` |
+| `seed-administrative-boundary.ts` | 12 kabupaten BIG → `tbl_administrative_boundary`, `geojson` disimpan tersimplifikasi 0,001° | `Batas_Administrasi_Kabupaten_Riau.zip` |
 | `seed-menu-only.ts` | menu + role-permissions saja, tanpa `prisma db seed` penuh (yang tidak idempotent). Menu: baris baru dibuat, baris yang ada **diperbarui kolom strukturalnya** (judul, url, ikon, order, induk); `isActive`/`isVisible` tidak disentuh | — |
 | `seed-menu-key.ts <key>` | **parsial generik** (#378): satu menu + seluruh izinnya, dibaca langsung dari `menu.csv` & `role-permissions.csv` (tidak ada daftar izin yang disalin tangan); hanya menambah yang belum ada, tidak menimpa label/urutan menu yang sudah ada. Menggantikan skrip parsial per menu (`seed-menu-report-marker.mjs`, `seed-menu-bmp-monev.mjs` — dihapus 2026-09-29); padanannya kini `seed-menu-key.ts report-marker`, `… master-data-bmp-monev`, `… dashboard-bmp-monev` (penggeseran `order` menu lain yang dulu ikut dilakukan skrip Monev → `seed-menu-only.ts`). | — |
 
@@ -30,12 +30,12 @@ Ketiganya **dry-run secara bawaan**; menulis hanya dengan `--apply`.
 
 ```bash
 # lokal (.env)
-npx dotenv -e .env -- npx tsx scripts/seed/seed-boundary-lembaga.ts
-npx dotenv -e .env -- npx tsx scripts/seed/seed-boundary-lembaga.ts --apply
+npx dotenv -e .env -- npx tsx scripts/seed/seed-farmer-group-boundary.ts
+npx dotenv -e .env -- npx tsx scripts/seed/seed-farmer-group-boundary.ts --apply
 
 # data di tempat lain
-npx dotenv -e .env -- npx tsx scripts/seed/seed-boundary-lembaga.ts --data=/path/ke/folder
-SEED_DATA_DIR=/path/ke/folder npx dotenv -e .env -- npx tsx scripts/seed/seed-batas-administrasi.ts
+npx dotenv -e .env -- npx tsx scripts/seed/seed-farmer-group-boundary.ts --data=/path/ke/folder
+SEED_DATA_DIR=/path/ke/folder npx dotenv -e .env -- npx tsx scripts/seed/seed-administrative-boundary.ts
 ```
 
 Bawaannya mencari data di `scripts/local/seed/data-boundary-lembaga/` dan `scripts/local/seed/data-batas-administrasi/`. Bila tidak ada, skrip berhenti dengan pesan yang menyebut lokasi yang dicari dan cara menunjuk folder lain — bukan diam-diam "berhasil" tanpa mengerjakan apa pun.

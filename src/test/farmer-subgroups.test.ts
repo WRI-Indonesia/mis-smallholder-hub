@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveFarmerSubGroups } from "@/lib/farmer-sub-groups";
+import { deriveFarmerSubGroups } from "@/lib/farmer-subgroups";
 
 describe("deriveFarmerSubGroups (#152)", () => {
   it("mengembalikan list kosong bila petani tidak punya lahan", () => {

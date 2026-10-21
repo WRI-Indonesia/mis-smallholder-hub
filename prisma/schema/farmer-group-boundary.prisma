@@ -8,7 +8,7 @@ model FarmerGroupBoundary {
   // analisa spasial (ST_Intersects/ST_Contains, GiST index di migration);
   // `geojson` adalah cache GeoJSON untuk rendering peta (pola LandParcel).
   // Kolom Unsupported tidak terbaca Prisma Client — tulis via $executeRaw
-  // ST_GeomFromGeoJSON (lihat scripts/local/seed/seed-boundary-lembaga.ts).
+  // ST_GeomFromGeoJSON (lihat scripts/seed/seed-farmer-group-boundary.ts).
   geom          Unsupported("geometry(MultiPolygon, 4326)")?
   geojson       Json        @map("geojson") // GeoJSON MultiPolygon WGS84
   source        String?     @map("source") // nama file shapefile asal
