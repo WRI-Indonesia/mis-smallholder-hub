@@ -32,11 +32,11 @@ export function accessSummaryLabels(access: AccessSummaryInput): AccessSummaryLa
       kind: "district" as const,
       label: d.district.name,
     })),
-    // Singkatan Lembaga bila ada, selain itu nama lengkap.
+    // Singkatan Lembaga bila terisi (bukan kosong/spasi — skema form tak mengubah "" ke null), selain itu nama lengkap.
     ...access.farmerGroups.map((f) => ({
       key: `farmerGroup-${f.farmerGroupId}`,
       kind: "farmerGroup" as const,
-      label: f.farmerGroup.abrv ?? f.farmerGroup.name,
+      label: f.farmerGroup.abrv?.trim() || f.farmerGroup.name,
     })),
   ];
 }

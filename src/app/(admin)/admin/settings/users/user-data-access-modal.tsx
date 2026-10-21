@@ -84,10 +84,9 @@ export function UserDataAccessModal({ open, onClose, onDataChange, userId, userN
   const assignedDistrictIds = new Set(access?.districts.map((d) => d.districtId) ?? []);
   const assignedFarmerGroupIds = new Set(access?.farmerGroups.map((f) => f.farmerGroupId) ?? []);
 
-  const hasAnyAssignment =
-    assignedProvinceIds.size > 0 ||
-    assignedDistrictIds.size > 0 ||
-    assignedFarmerGroupIds.size > 0;
+  // Satu sumber untuk badge Ringkasan Akses dan penanda "belum dibatasi" (daftar kosong).
+  const summary = access ? accessSummaryLabels(access) : [];
+  const hasAnyAssignment = summary.length > 0;
 
   const q = search.toLowerCase();
   const filteredProvinces = regions?.provinces.filter((p) =>
@@ -174,7 +173,7 @@ export function UserDataAccessModal({ open, onClose, onDataChange, userId, userN
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
-                  {(access ? accessSummaryLabels(access) : []).map(({ key, kind, label }) => {
+                  {summary.map(({ key, kind, label }) => {
                     const Icon = SUMMARY_ICON[kind];
                     return (
                       <Badge key={key} variant="secondary" className="gap-1">

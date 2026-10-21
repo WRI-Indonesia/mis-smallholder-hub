@@ -198,7 +198,7 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 3 | **#358** DA-03 peta kesiapan data per Lembaga | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
 | 3 | **#258** Peta aplikasi (sitemap) di Bantuan | 🔲 Todo | — |
 | 3 | **#439** Peta Fitur: board Miro dari `docs/product/sitemap` | 🔲 Todo | Lanjutan Peta Fitur (#437, ditutup saat dirilis v1.9.0, 2026-10-17). Menunggu review MD owner; satu frame per diagram lewat MCP Miro; tanpa fase roadmap |
-| 3 | **#413** Test cermin → modul asli + judul perf + test hot-path import (TS-7/9/11, TD-050) | 🟡 Dikerjakan | Dari audit `/audit` 2026-10-10; TS-9 & TS-11 selesai (#440, 2026-10-21), sisa 8 berkas cermin + blok perf cermin |
+| 3 | **#413** Test cermin → modul asli + judul perf + test hot-path import (TS-7/9/11, TD-050) | ✅ Selesai 2026-10-21 | Dari audit `/audit` 2026-10-10; TS-9 & TS-11 selesai (#440), 8 berkas cermin + blok perf cermin (`d9c8130`) |
 | 3 | **#441** Workflow `deploy-dev` dorman sejak 2026-05 — hapus atau seragamkan ke `.yml` | ⚖️ Menunggu keputusan | Dari audit `/audit` 2026-10-21 (#440); keputusan owner/DevOps |
 | 3 | **#414** `ActionResult`: pisahkan `error` (string) dan `fieldErrors` (TD-010) | 🔲 Todo | Kontrak lintas ±10 form — satu PR berlingkup jelas |
 | 3 | **#203** Detail Lahan: riwayat revisi lahan | 🔲 Todo | — |
@@ -211,7 +211,7 @@ Keputusan owner 2026-10-10 (sesudah audit + QA v1.6.0): bug laten RBAC yang semu
 | 5 | **#192** Epic API layer & offline sync aplikasi mobile | 🔲 Todo | Parkir roadmap (terkait FORM-01). ✅ Diputuskan 2026-09-30: tetap parkir |
 | 5 | **#124** Peta Lahan: overlay citra Planet NICFI | ✅ Selesai | ✅ Diputuskan 2026-09-30: close *not planned* (GIS-01 memakai GIBS #290 + Sentinel-2 #291) |
 | 6 | **TD-049** Auto-fit kolom Excel | ✅ Selesai 2026-10-11 (#412, v1.7.0) | Tech debt, audit 2026-09-29 |
-| 6 | **TD-050** 2 test RBAC menyalin logika | 🔲 Todo | Tech debt, audit 2026-09-29 |
+| 6 | **TD-050** 2 test RBAC menyalin logika | ✅ Selesai 2026-10-21 (#413, `d9c8130`) | Tech debt, audit 2026-09-29 |
 | 6 | **TD-054** Dua memo in-process ber-TTL, memo role tanpa batas ukuran | ✅ Selesai 2026-10-11 (#412, v1.7.0) | Tech debt, wrap-up v1.3.0 2026-09-30 |
 | 6 | **#397** `/pagi`: tandai commit fitur/fix sejak rilis terakhir yang tak merujuk issue terbuka | 🔲 Todo | Tooling OPS-02; wrap-up v1.3.0 (kasus #396) |
 | 6 | **#432** `/audit` penuh: buat issue payung sebelum fase perbaikan pertama | 🔲 Todo | Tooling (Kerapian, S); kasus #431: issue dibuat sehari sesudah commit audit |

@@ -36,6 +36,11 @@ describe("accessSummaryLabels", () => {
     expect(accessSummaryLabels({ ...empty, farmerGroups: [group("g2", "Kelompok Makmur", null)] })[0].label).toBe("Kelompok Makmur");
   });
 
+  it("Lembaga dengan singkatan kosong/spasi → nama lengkap (badge tak boleh kosong)", () => {
+    expect(accessSummaryLabels({ ...empty, farmerGroups: [group("g3", "Kelompok Sejahtera", "")] })[0].label).toBe("Kelompok Sejahtera");
+    expect(accessSummaryLabels({ ...empty, farmerGroups: [group("g4", "Kelompok Jaya", "  ")] })[0].label).toBe("Kelompok Jaya");
+  });
+
   it("gabungan → urutan provinsi, distrik, Lembaga; kunci unik walau id sama lintas jenis", () => {
     const labels = accessSummaryLabels({
       provinces: [province("x", "Riau")],

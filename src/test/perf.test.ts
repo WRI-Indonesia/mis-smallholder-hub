@@ -83,7 +83,7 @@ describe("Performance - Auth operations", () => {
     expect(duration).toBeLessThan(500);
   });
 
-  it("menu tree building handles 100 items under 1ms", () => {
+  it("menu tree building handles 100 items under 5ms", () => {
     // 10 induk × 9 anak = 100 item datar, dibangun lewat buildMenuTree asli (#413).
     const items = Array.from({ length: 10 }, (_, i) => ({ key: `parent-${i}`, parentKey: null as string | null }));
     for (let p = 0; p < 10; p++) {
@@ -95,7 +95,7 @@ describe("Performance - Auth operations", () => {
     console.log(`  menu tree (100 items): ${duration.toFixed(2)}ms`);
     expect(tree).toHaveLength(10);
     expect(tree.every((n) => n.children.length === 9 && n.children[0].depth === 1)).toBe(true);
-    expect(duration).toBeLessThan(1); // aktual ±0,01 ms
+    expect(duration).toBeLessThan(5); // aktual ±0,01 ms — ambang longgar: jeda GC/JIT di mesin sibuk (TD-016)
   });
 });
 
@@ -521,7 +521,7 @@ describe("Performance - addParticipants Zod validation (#130)", () => {
 // per Lembaga, dihitung buildDashboardData di generator snapshot. Ukur fungsi
 // asli pada skala besar (#413: dulu menyalin loop Set ke dalam test).
 describe("Performance - Dashboard snapshot aggregation (#148/#153, distinct KT per Lembaga)", () => {
-  it("buildDashboardData: 25k petani × 2 lahan (50k) di 100 Lembaga under 30ms", () => {
+  it("buildDashboardData: 25k petani × 2 lahan (50k) di 100 Lembaga under 100ms", () => {
     const N_LEMBAGA = 100;
     const groups: RawGroup[] = Array.from({ length: N_LEMBAGA }, (_, g) => ({
       id: `lembaga-${g}`, name: `Lembaga ${g}`, code: null, districtId: `d-${g % 10}`, districtName: null,
@@ -551,7 +551,7 @@ describe("Performance - Dashboard snapshot aggregation (#148/#153, distinct KT p
     expect(data.kelompokTaniList.every((kt) => kt.kelompokTaniCount === 5)).toBe(true);
     expect(data.stats.totalKelompokTaniLahan).toBe(500);
     expect(data.stats.totalPersilLahan).toBe(50_000);
-    expect(duration).toBeLessThan(30); // aktual ±7,5–9 ms — guard O(n), bukan micro-benchmark
+    expect(duration).toBeLessThan(100); // aktual ±7,5–9 ms (≥ 10×: gate tetap hijau saat build paralel, #311) — guard O(n), bukan micro-benchmark
   });
 });
 
@@ -582,7 +582,7 @@ describe("Performance - Farmer sub-group derivation (#152)", () => {
 // formatRspoCert. Stress 10k baris (jauh di atas jumlah lembaga riil ~31) —
 // guard bahwa format tetap murah untuk client-side DataTable.
 describe("Performance - RSPO cert format (#160)", () => {
-  it("formatRspoCert over 10k rows under 2ms", () => {
+  it("formatRspoCert over 10k rows under 20ms", () => {
     const rows = Array.from({ length: 10_000 }, (_, i) => ({
       rspoCertStatus: i % 3 === 0 ? null : i % 3 === 1 ? "CERTIFIED" : "PLANNED",
       rspoCertYear: i % 4 === 0 ? null : 2020 + (i % 8),
@@ -593,7 +593,7 @@ describe("Performance - RSPO cert format (#160)", () => {
     console.log(`  RSPO format (10k baris): ${duration.toFixed(2)}ms`);
     expect(labels).toHaveLength(10_000);
     expect(labels[0]).toBe("—"); // status kosong
-    expect(duration).toBeLessThan(2); // aktual ±0,18 ms
+    expect(duration).toBeLessThan(20); // aktual ±0,18 ms — ambang longgar: jeda GC/JIT (TD-016)
   });
 });
 
