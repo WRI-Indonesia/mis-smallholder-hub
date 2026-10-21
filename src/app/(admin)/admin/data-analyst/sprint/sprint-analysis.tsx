@@ -12,8 +12,8 @@ import {
   pendingDecisions,
   planTotals,
   releaseComposition,
-  releasePhase,
   releaseProgress,
+  releaseState,
   releaseStatusPoints,
   releaseTimeline,
   releaseVelocity,
@@ -22,6 +22,7 @@ import {
   type Release,
   type ReleasePhase,
   type ReleasePlan,
+  type ReleaseState,
 } from "@/lib/release-plan";
 import { CATEGORY_COLOR, Inline, fmtDate } from "./sprint-shared";
 
@@ -55,7 +56,9 @@ const STACK: Record<PlanItemStatus, { label: string; swatch: string; fill: strin
   },
 };
 
-const PHASE_TAG: Record<ReleasePhase, string> = { active: "berjalan", upcoming: "rencana", past: "lewat target" };
+// Keadaan dari `releaseState` (membaca tanda `(dirilis …)`), bukan fase kalender: rilis yang sudah
+// keluar sebelum targetnya tidak boleh berlabel "berjalan".
+const STATE_TAG: Record<ReleaseState, string> = { active: "berjalan", upcoming: "rencana", late: "lewat target", released: "dirilis" };
 
 function Stat({ icon, label, value, note, tone }: { icon: ReactNode; label: string; value: string; note: ReactNode; tone?: "warn" }) {
   return (
@@ -126,7 +129,7 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
   const [hover, setHover] = useState<string | null>(null);
   const cols = plan.releases.map((r) => ({
     release: r,
-    phase: releasePhase(r, today),
+    state: releaseState(r, today),
     pts: releaseStatusPoints(r),
     capacity: average === null ? null : average * (releaseTimeline(r, today).days / 7),
   }));
@@ -151,10 +154,10 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
             <div key={t} aria-hidden className="absolute inset-x-0 border-t border-border/60" style={{ bottom: `${(t / yMax) * 100}%` }} />
           ))}
           <div className="absolute inset-0 grid gap-2" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))` }}>
-            {cols.map(({ release, phase, pts, capacity }, idx) => {
+            {cols.map(({ release, state, pts, capacity }, idx) => {
               const total = totalOf(pts);
               const segs = PLAN_STACK_ORDER.filter((k) => pts[k] > 0);
-              const aria = `Rilis ${release.version}, ${PHASE_TAG[phase]}: ${total} poin${capacity === null ? "" : `, kapasitas ±${fmt1(capacity)}`} — ${segs.map((k) => `${STACK[k].label} ${pts[k]}`).join(", ")}`;
+              const aria = `Rilis ${release.version}, ${STATE_TAG[state]}: ${total} poin${capacity === null ? "" : `, kapasitas ±${fmt1(capacity)}`} — ${segs.map((k) => `${STACK[k].label} ${pts[k]}`).join(", ")}`;
               return (
                 <div
                   key={release.version}
@@ -167,7 +170,7 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
                   onBlur={() => setHover(null)}
                   className={cn(
                     "relative flex h-full flex-col justify-end rounded-md px-[18%] outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    phase === "active" && "bg-primary/[0.06]",
+                    state === "active" && "bg-primary/[0.06]",
                     hover === release.version && "bg-muted/60"
                   )}
                 >
@@ -193,7 +196,7 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
                   {hover === release.version && (
                     <ColumnTooltip
                       release={release}
-                      phase={phase}
+                      state={state}
                       pts={pts}
                       total={total}
                       capacity={capacity}
@@ -210,11 +213,11 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
       <div className="grid grid-cols-[2rem_1fr] gap-2">
         <span />
         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))` }}>
-          {cols.map(({ release, phase }) => (
+          {cols.map(({ release, state }) => (
             <div key={release.version} className="text-center leading-tight">
-              <p className={cn("text-xs font-medium", phase === "active" && "text-primary")}>{release.version}</p>
+              <p className={cn("text-xs font-medium", state === "active" && "text-primary")}>{release.version}</p>
               <p className="text-[10px] text-muted-foreground">target {fmtDate(release.end, false)}</p>
-              {phase === "active" && <p className="text-[10px] font-medium text-primary">berjalan</p>}
+              {state === "active" && <p className="text-[10px] font-medium text-primary">berjalan</p>}
             </div>
           ))}
         </div>
@@ -230,14 +233,14 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
 
 function ColumnTooltip({
   release,
-  phase,
+  state,
   pts,
   total,
   capacity,
   side,
 }: {
   release: Release;
-  phase: ReleasePhase;
+  state: ReleaseState;
   pts: Record<PlanItemStatus, number>;
   total: number;
   capacity: number | null;
@@ -254,7 +257,7 @@ function ColumnTooltip({
       )}
     >
       <p className="font-medium">
-        Rilis {release.version} <span className="font-normal text-muted-foreground">· {fmtDate(release.start, false)}–{fmtDate(release.end, false)} · {PHASE_TAG[phase]}</span>
+        Rilis {release.version} <span className="font-normal text-muted-foreground">· {fmtDate(release.start, false)}–{fmtDate(release.end, false)} · {STATE_TAG[state]}</span>
       </p>
       <p className="mb-2 text-muted-foreground">{release.title}</p>
       <ul className="space-y-1">
@@ -285,7 +288,7 @@ function ColumnTooltip({
  * baris hanya penanda identitas yang berlabel.
  */
 function FocusMatrix({ plan, today }: { plan: ReleasePlan; today: string }) {
-  const comp = plan.releases.map((r) => ({ release: r, phase: releasePhase(r, today), parts: releaseComposition(r) }));
+  const comp = plan.releases.map((r) => ({ release: r, state: releaseState(r, today), parts: releaseComposition(r) }));
   const maxCell = Math.max(1, ...comp.flatMap((c) => c.parts.map((p) => p.points)));
   const rowTotal = (cat: string) => comp.reduce((t, c) => t + (c.parts.find((p) => p.category === cat)?.points ?? 0), 0);
 
@@ -295,8 +298,8 @@ function FocusMatrix({ plan, today }: { plan: ReleasePlan; today: string }) {
         <thead>
           <tr className="text-xs text-muted-foreground">
             <th className="py-1 pr-3 text-left font-medium">Kategori</th>
-            {comp.map(({ release, phase }) => (
-              <th key={release.version} className={cn("px-1 py-1 text-center font-medium", phase === "active" && "text-primary")}>
+            {comp.map(({ release, state }) => (
+              <th key={release.version} className={cn("px-1 py-1 text-center font-medium", state === "active" && "text-primary")}>
                 {release.version}
               </th>
             ))}
@@ -399,7 +402,7 @@ export function SprintAnalysis({ plan, today }: { plan: ReleasePlan; today: stri
     current > 0 && `${current} di rilis berjalan`,
     upcoming > 0 && `${upcoming} mendatang`,
   ].filter(Boolean);
-  const active = plan.releases.find((r) => releasePhase(r, today) === "active");
+  const active = plan.releases.find((r) => releaseState(r, today) === "active");
   const activeProgress = active ? releaseProgress(active) : null;
   const activeTimeline = active ? releaseTimeline(active, today) : null;
 

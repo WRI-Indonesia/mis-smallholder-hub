@@ -59,7 +59,8 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
 │   ├── Beban & kemajuan per rilis — satu kolom per rilis, tinggi = KOMITMEN AWAL (termasuk butir yang kemudian digeser
 │   │   [segmen putus-putus]; ⛔ tidak dikerjakan TIDAK ditumpuk — bukan beban — hanya disebut di tooltip),
 │   │   skala sama, ditumpuk per STATUS (`releaseStatusPoints`, `PLAN_STACK_ORDER`); penanda putus per kolom = kapasitas
-│   │   (velocity × minggu rilis) setelah ada rilis lewat target; tooltip saat hover & fokus keyboard
+│   │   (velocity × minggu rilis) setelah ada rilis lewat target; tooltip saat hover & fokus keyboard; label sumbu X &
+│   │   tooltip memakai `releaseState` (dirilis · berjalan · lewat target · rencana), bukan fase kalender
 │   │   └── Warna = STATUS, bukan kategori: enam warna kategori tak lolos validator bila ditumpuk bebas
 │   ├── Fokus per kategori — matriks angka poin kategori × rilis
 │   ├── Keputusan menunggu owner — butir ⚖️ di rilis, per urgensi: Terlambat (target lewat) · Rilis berjalan · Mendatang
